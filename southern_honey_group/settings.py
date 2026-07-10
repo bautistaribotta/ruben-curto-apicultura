@@ -20,24 +20,16 @@ ENVIRONMENT = os.getenv('ENVIRONMENT', 'development')
 
 if ENVIRONMENT == 'production':
     DEBUG = False
-    ALLOWED_HOSTS = ['192.168.0.200', '100.82.236.64', 'localhost', '127.0.0.1']
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1']
     # Para que Django no rechace los formularios
     CSRF_TRUSTED_ORIGINS = [
-        'http://192.168.0.200:8000',
-        'http://100.82.236.64:8000',
         'http://localhost:8000',
         'http://127.0.0.1:8000',
     ]
 
-
-elif ENVIRONMENT == "demonstration":
-    DEBUG = False
-    ALLOWED_HOSTS = ['bautistaribotta.pythonanywhere.com']
-
 else:
     DEBUG = True
     ALLOWED_HOSTS = []
-
 
 # Application definition
 
