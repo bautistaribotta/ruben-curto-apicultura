@@ -157,11 +157,7 @@
   white-space: nowrap;
 }
 
-.celda-flota-vacia {
-  text-align: center;
-  padding: 2rem;
-  color: var(--text-subtle);
-}
+/* Celda vacia (.celda-vacia): estilos unificados en base.css */
 
 /* Botones de acción por fila */
 .boton-accion-flota {

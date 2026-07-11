@@ -844,51 +844,7 @@ html {
   filter: brightness(0.9);
 }
 
-/* --- PAGINACIÓN --- */
-.paginacion {
-  padding: 1rem 2rem;
-  border-top: 1px solid var(--stone-200);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background-color: var(--color-blanco);
-}
-
-.paginacion-info {
-  font-size: 0.75rem;
-  color: var(--slate-500);
-}
-
-.paginacion-info span {
-  font-weight: 600;
-  color: var(--slate-700);
-}
-
-.paginacion-botones {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.boton-paginacion {
-  padding: 0.25rem 0.75rem;
-  border: 1px solid var(--stone-200);
-  border-radius: 0.25rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--slate-600);
-  background-color: var(--color-blanco);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.boton-paginacion:hover:not(:disabled) {
-  background-color: var(--stone-200);
-}
-
-.boton-paginacion:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+/* Paginacion: estilos unificados en base.css */
 
 /* Botón Registrar Pago */
 #boton-confirmar-pago {

@@ -384,51 +384,7 @@
   background-color: var(--color-rosa-claro);
 }
 
-/* --- PAGINACIÓN --- */
-.paginacion {
-  padding: 1rem 1.5rem;
-  border-top: 1px solid var(--border-subtle);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background-color: var(--color-blanco);
-}
-
-.paginacion-info {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-}
-
-.paginacion-info span {
-  font-weight: 600;
-  color: var(--text-body);
-}
-
-.paginacion-botones {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.boton-paginacion {
-  padding: 0.25rem 0.75rem;
-  border: 1px solid var(--border-subtle);
-  border-radius: 0.25rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--text-muted);
-  background-color: var(--color-blanco);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.boton-paginacion:hover:not(:disabled) {
-  background-color: var(--border-subtle);
-}
-
-.boton-paginacion:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+/* Paginacion: estilos unificados en base.css */
 
 /* --- PANEL LATERAL (SLIDE-OVER) --- */
 #contenedor-slide-over {

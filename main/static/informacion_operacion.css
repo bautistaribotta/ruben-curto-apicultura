@@ -397,12 +397,7 @@
   color: var(--danger-700);
 }
 
-.op-table td.op-empty {
-  text-align: center;
-  color: var(--text-subtle);
-  padding: 2rem 1rem;
-  font-size: var(--text-sm);
-}
+/* Celda vacia (.celda-vacia): estilos unificados en base.css */
 
 /* --- Responsive --- */
 @media (max-width: 960px) {
