@@ -3,7 +3,7 @@
   <thead id="cabecera-tabla">
     <tr>
       <th>Fecha</th>
-      <th>Vehiculo</th>
+      <th>Vehículo</th>
       <th>Chofer</th>
       <th>Destinos</th>
     </tr>
@@ -30,7 +30,7 @@
       </td>
       <td>
         <span class="meli-chofer">
-          <span class="meli-avatar">{{ viaje.chofer.nombre|first|upper }}{{ viaje.chofer.apellido|first|upper }}</span>
+          <span class="avatar-iniciales avatar-iniciales--chofer">{{ viaje.chofer.nombre|first|upper }}{{ viaje.chofer.apellido|first|upper }}</span>
           <span class="meli-chofer__name">{{ viaje.chofer.nombre }} {{ viaje.chofer.apellido }}</span>
         </span>
       </td>

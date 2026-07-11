@@ -13,7 +13,7 @@
             <tr data-url="{% url 'informacion_operacion' deudor.id %}?origen=deudores" onclick="window.location.href=this.dataset.url" class="fila-deudor">
               <td>
                 <div class="deu-cliente">
-                  <span class="deu-avatar">{{ deudor.iniciales }}</span>
+                  <span class="avatar-iniciales avatar-iniciales--cliente">{{ deudor.iniciales }}</span>
                   <div>
                     <div class="deudor-nombre"> {{ deudor.cliente }} </div>
                     <div class="deudor-id"> Operación #{{ deudor.id }} </div>

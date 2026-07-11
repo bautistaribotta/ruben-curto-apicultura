@@ -4,7 +4,7 @@
       <th> Cliente </th>
       <th> Localidad </th>
       <th> Dirección </th>
-      <th class="texto-centrado"> Telefono </th>
+      <th class="texto-centrado"> Teléfono </th>
       <th class="texto-derecha"> Acciones </th> <!-- Editar/Eliminar -->
     </tr>
   </thead>
@@ -14,7 +14,7 @@
         <td class="td-enlace">
           <a href="{% url 'informacion_clientes' cliente.id %}" class="enlace-fila">
             <div class="cli-cliente">
-              <span class="cli-avatar">{{ cliente.nombre|first|upper }}{{ cliente.apellido|default:''|first|upper }}</span>
+              <span class="avatar-iniciales avatar-iniciales--cliente">{{ cliente.nombre|first|upper }}{{ cliente.apellido|default:''|first|upper }}</span>
               <div>
                 <div class="cliente-nombre"> {{ cliente.nombre }} {% if cliente.apellido and cliente.apellido != 'None' %}{{ cliente.apellido }}{% endif %} </div>
                 <div class="cliente-id"> ID: {{ cliente.id }}{% if cliente.cuit %} &middot; CUIT {{ cliente.cuit }}{% endif %} </div>

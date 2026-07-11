@@ -31,13 +31,13 @@
     </div>
 
     <div class="grupo-botones-meli">
-      <a id="btn-gestionar-flota-meli" href="{% url 'flota' %}?origen=reparto">
+      <a id="btn-gestionar-flota-meli" class="boton-nuevo secundario" href="{% url 'flota' %}?origen=reparto">
         <span class="material-symbols-outlined">groups</span>
-        <span class="boton-nuevo-reparto"> Choferes y Vehiculos </span>
+        Choferes y Vehículos
       </a>
-      <button id="nuevo-viaje-meli" onclick="abrirSlideOver('slide-over-reparto')">
+      <button id="nuevo-viaje-meli" class="boton-nuevo" onclick="abrirSlideOver('slide-over-reparto')">
         <span class="material-symbols-outlined">local_shipping</span>
-        <span class="boton-nuevo-reparto"> Nuevo reparto </span>
+        Nuevo reparto
       </button>
     </div>
   </div>
@@ -95,9 +95,9 @@
           </div>
 
           <div class="grupo-input">
-            <label for="vehiculo-reparto">Vehiculo</label>
+            <label for="vehiculo-reparto">Vehículo</label>
             <select id="vehiculo-reparto" name="id_vehiculo" class="select-estandar" required>
-              <option value="" disabled selected>Seleccione un vehiculo</option>
+              <option value="" disabled selected>Seleccione un vehículo</option>
               {% for vehiculo in vehiculos %}
               <option value="{{ vehiculo.id }}">{{ vehiculo.nombre }} ({{ vehiculo.patente }})</option>
               {% endfor %}

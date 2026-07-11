@@ -161,7 +161,7 @@
                 <a href="?tipo=venta#seccion-operaciones" class="tab-operacion {% if tipo_actual == 'venta' %}activa{% endif %}">Ventas</a>
             </div>
             <div class="grupo-botones-operacion">
-                <a href="{% url 'nueva_operacion_compra' cliente.id %}" class="boton-nuevo boton-nuevo-compra" data-id="{{ cliente.id }}">
+                <a href="{% url 'nueva_operacion_compra' cliente.id %}" class="boton-nuevo secundario" data-id="{{ cliente.id }}">
                     <span class="material-symbols-outlined">shopping_bag</span>
                     Nueva Compra
                 </a>

@@ -77,12 +77,12 @@
         <div class="vd-data__row">
           <span class="vd-data__ico"><span class="material-symbols-outlined">local_shipping</span></span>
           <div class="vd-data__meta">
-            <div class="vd-data__label">Vehiculo</div>
-            <div class="vd-data__value">{% if viaje_reparto.vehiculo %}{{ viaje_reparto.vehiculo.nombre }}<span class="vd-pat">{{ viaje_reparto.vehiculo.patente }}</span>{% else %}Vehiculo no especificado{% endif %}</div>
+            <div class="vd-data__label">Vehículo</div>
+            <div class="vd-data__value">{% if viaje_reparto.vehiculo %}{{ viaje_reparto.vehiculo.nombre }}<span class="vd-pat">{{ viaje_reparto.vehiculo.patente }}</span>{% else %}Vehículo no especificado{% endif %}</div>
           </div>
         </div>
         <div class="vd-data__row">
-          <span class="vd-avatar">{% if viaje_reparto.chofer %}{{ viaje_reparto.chofer.nombre|first|upper }}{{ viaje_reparto.chofer.apellido|first|upper }}{% else %}?{% endif %}</span>
+          <span class="avatar-iniciales avatar-iniciales--chofer">{% if viaje_reparto.chofer %}{{ viaje_reparto.chofer.nombre|first|upper }}{{ viaje_reparto.chofer.apellido|first|upper }}{% else %}?{% endif %}</span>
           <div class="vd-data__meta">
             <div class="vd-data__label">Chofer</div>
             <div class="vd-data__value">{% if viaje_reparto.chofer %}{{ viaje_reparto.chofer.nombre }} {{ viaje_reparto.chofer.apellido }}{% else %}Chofer no especificado{% endif %}</div>
@@ -204,7 +204,7 @@
             min="1"
             required>
         </div>
-        <span class="vd-hint">Numero entero, sin puntos ni comas.</span>
+        <span class="vd-hint">Número entero, sin puntos ni comas.</span>
       </div>
 
       <div class="acciones-modal">
@@ -290,9 +290,9 @@
           </div>
 
           <div class="grupo-input">
-            <label for="vehiculo-reparto-editar">Vehiculo</label>
+            <label for="vehiculo-reparto-editar">Vehículo</label>
             <select id="vehiculo-reparto-editar" name="id_vehiculo" class="select-estandar" required>
-              <option value="" disabled>Seleccione un vehiculo</option>
+              <option value="" disabled>Seleccione un vehículo</option>
               {% for vehiculo in vehiculos %}
               <option value="{{ vehiculo.id }}" {% if viaje_reparto.vehiculo_id == vehiculo.id %}selected{% endif %}>{{ vehiculo.nombre }} ({{ vehiculo.patente }})</option>
               {% endfor %}

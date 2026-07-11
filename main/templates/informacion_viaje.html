@@ -95,7 +95,7 @@
           </div>
         </div>
         <div class="vd-data__row">
-          <span class="vd-avatar">{% if viaje.chofer %}{{ viaje.chofer.nombre|first|upper }}{{ viaje.chofer.apellido|first|upper }}{% else %}?{% endif %}</span>
+          <span class="avatar-iniciales avatar-iniciales--chofer">{% if viaje.chofer %}{{ viaje.chofer.nombre|first|upper }}{{ viaje.chofer.apellido|first|upper }}{% else %}?{% endif %}</span>
           <div class="vd-data__meta">
             <div class="vd-data__label">Chofer</div>
             <div class="vd-data__value">{% if viaje.chofer %}{{ viaje.chofer.nombre }} {{ viaje.chofer.apellido }}{% else %}Chofer no especificado{% endif %}</div>

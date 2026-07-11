@@ -636,19 +636,104 @@ body {
 }
 
 /* --- CABECERA UNIFICADA PARA TODAS LAS TABLAS --- */
-/* Mismo estilo de "head" oscuro de marca con texto claro en todo el sistema.
+/* Estilo compartido de cabecera: fondo crema hundido con texto en mayusculas.
    base.css se carga despues de los CSS de cada pagina, por lo que esta regla
-   tiene prioridad sobre el color de cabecera definido en cada tabla. */
+   pisa cualquier copia local; las desviaciones intencionales (densidad de
+   flota e informacion de cliente) viven en el CSS de cada pagina con un
+   selector mas especifico. Las tablas compactas de paneles (cart-table,
+   op-table) mantienen su propia densidad. */
+.tabla-viajes th,
 .tabla-clientes th,
 .tabla-deudores th,
-.tabla-operaciones th,
 .tabla-productos th,
-.tabla-carrito th,
-.tabla-viajes th,
 .tabla-flota th,
-.tabla-productos-disponibles th {
-  background-color: var(--brand-olive);
-  color: var(--color-blanco);
+.tabla-operaciones th,
+#tabla-viajes-meli th {
+  padding: 0.9rem 1.5rem;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  background-color: var(--surface-sunken);
+  border-bottom: 1px solid var(--border-subtle);
+  white-space: nowrap;
+}
+
+/* --- AVATAR DE INICIALES UNIFICADO --- */
+/* Dos variantes semanticas: chofer (paleta miel, como la tabla de viajes)
+   y cliente (paleta pino, como la tabla de clientes). */
+.avatar-iniciales {
+  flex: none;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: var(--weight-extra);
+  letter-spacing: 0.02em;
+}
+
+.avatar-iniciales--chofer {
+  width: 32px;
+  height: 32px;
+  background-color: var(--honey-50);
+  border: 1px solid var(--honey-200);
+  color: var(--brand-active);
+  font-size: 0.72rem;
+}
+
+.avatar-iniciales--cliente {
+  width: 36px;
+  height: 36px;
+  background-color: var(--brand-secondary);
+  border: 1px solid var(--brand-secondary);
+  color: var(--text-on-inverse);
+  font-size: 0.78rem;
+}
+
+/* --- BOTON "NUEVO" UNIFICADO --- */
+/* Boton primario de cabecera de seccion (Nuevo cliente, Nuevo viaje, etc.).
+   Los ajustes responsive por pagina viven en el CSS de cada una con un
+   selector mas especifico (.barra-herramientas .boton-nuevo). */
+.boton-nuevo {
+  background-color: var(--brand-secondary);
+  color: var(--text-on-inverse);
+  padding: 0.625rem 1.25rem;
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  border: none;
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all var(--dur-normal) var(--ease-standard);
+  font-family: inherit;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.boton-nuevo:hover {
+  background-color: var(--pine-950);
+}
+
+.boton-nuevo:active {
+  transform: scale(0.95);
+}
+
+/* Variante secundaria: claro con borde (Gestionar flota, Nueva compra) */
+.boton-nuevo.secundario {
+  background-color: var(--surface-card);
+  color: var(--text-body);
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 1px 2px var(--color-sombra-1);
+}
+
+.boton-nuevo.secundario:hover {
+  background-color: var(--surface-hover);
+  border-color: var(--sand-400);
 }
 
 /* --- ESTADO VACIO UNIFICADO PARA TODAS LAS TABLAS --- */
