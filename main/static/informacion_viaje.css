@@ -147,21 +147,7 @@ html {
   vertical-align: 1px;
 }
 
-.vd-avatar {
-  width: 34px;
-  height: 34px;
-  flex: none;
-  border-radius: 50%;
-  background-color: var(--brand-secondary);
-  border: 1px solid var(--brand-secondary);
-  color: var(--text-on-inverse);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.74rem;
-  font-weight: var(--weight-extra);
-  letter-spacing: 0.02em;
-}
+/* Avatar de iniciales (.avatar-iniciales--chofer): estilos unificados en base.css */
 
 /* dos fechas lado a lado */
 .vd-dates {

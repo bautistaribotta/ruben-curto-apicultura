@@ -409,31 +409,7 @@ html {
   color: var(--brand-active);
 }
 
-.boton-nuevo {
-  background-color: var(--brand-secondary);
-  color: var(--text-on-inverse);
-  padding: 0.625rem 1.25rem;
-  border-radius: var(--radius-md);
-  font-size: var(--text-sm);
-  font-weight: var(--weight-bold);
-  border: 1px solid transparent;
-  box-shadow: var(--shadow-md);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: all var(--dur-normal) var(--ease-standard);
-  font-family: inherit;
-  text-decoration: none;
-}
-
-.boton-nuevo:hover {
-  background-color: var(--pine-950);
-}
-
-.boton-nuevo:active {
-  transform: scale(0.95);
-}
+/* Boton "Nuevo" (.boton-nuevo): estilos unificados en base.css */
 
 /* Agrupa los botones Nueva Compra / Nueva Venta */
 .grupo-botones-operacion {
@@ -450,17 +426,7 @@ html {
   justify-content: center;
 }
 
-/* Botón de compra: estilo secundario para diferenciarlo de la venta (primaria) */
-.boton-nuevo-compra {
-  background-color: var(--surface-card);
-  color: var(--text-body);
-  border: 1px solid var(--border-subtle);
-  box-shadow: 0 1px 2px var(--color-sombra-1);
-}
-
-.boton-nuevo-compra:hover {
-  background-color: var(--surface-hover);
-}
+/* Boton de compra: usa la variante .boton-nuevo.secundario de base.css */
 
 /* --- Barra superior de la tabla: pestañas a la izquierda, botones a la derecha --- */
 .barra-operaciones {
@@ -536,15 +502,10 @@ html {
 }
 
 /* Mayor especificidad que la regla unificada de cabeceras de base.css */
+/* Cabecera de tabla: estilos unificados en base.css; esta tabla mantiene su
+   padding horizontal mas ancho para alinear con las celdas de 2rem */
 .tabla-operaciones-container .tabla-operaciones th {
-  background-color: var(--surface-sunken);
   padding: 0.9rem 2rem;
-  font-size: var(--text-xs);
-  font-weight: var(--weight-bold);
-  text-transform: uppercase;
-  color: var(--text-muted);
-  letter-spacing: var(--tracking-wide);
-  border-bottom: 1px solid var(--border-subtle);
 }
 
 .tabla-operaciones td {
@@ -926,7 +887,8 @@ html {
   .contenedor-tabla {
     overflow-x: auto;
   }
-  .tabla-operaciones th, .tabla-operaciones td {
+  /* Mas especificidad que la cabecera unificada de base.css */
+  .tabla-operaciones-container .tabla-operaciones th, .tabla-operaciones-container .tabla-operaciones td {
     padding: 0.875rem 1rem;
   }
   .acciones-modal {

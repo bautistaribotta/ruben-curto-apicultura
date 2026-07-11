@@ -401,58 +401,7 @@ html {
   gap: 0.5rem;
 }
 
-.boton-nuevo {
-  background-color: var(--brand-olive);
-  color: var(--color-blanco);
-  padding: 0.625rem 1.25rem;
-  border-radius: 0.5rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  border: 1px solid transparent;
-  box-shadow: 0 1px 2px 0 var(--color-sombra-1);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: all 0.2s;
-  font-family: inherit;
-  text-decoration: none;
-}
-
-.boton-nuevo:hover {
-  background-color: var(--color-hover-boton);
-}
-
-.boton-nuevo:active {
-  transform: scale(0.95);
-}
-
-/* Agrupa los botones Nueva Compra / Nueva Venta */
-.grupo-botones-operacion {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-/* Igualo el ancho de los 4 botones (editar/eliminar y nueva compra/venta)
-   para que los grupos midan lo mismo y queden perfectamente alineados */
-.acciones-cliente .boton-accion,
-.grupo-botones-operacion .boton-nuevo {
-  min-width: 12.5rem;
-  justify-content: center;
-}
-
-/* Botón de compra: estilo secundario para diferenciarlo de la venta (primaria) */
-.boton-nuevo-compra {
-  background-color: var(--color-blanco);
-  color: var(--slate-700);
-  border: 1px solid var(--stone-200);
-  box-shadow: 0 1px 2px var(--color-sombra-1);
-}
-
-.boton-nuevo-compra:hover {
-  background-color: var(--color-gris-claro-hover);
-}
+/* Boton "Nuevo" (.boton-nuevo): estilos unificados en base.css */
 
 /* --- Barra superior de la tabla: pestañas a la izquierda, botones a la derecha --- */
 .barra-operaciones {
@@ -527,16 +476,7 @@ html {
   text-align: left;
 }
 
-.tabla-operaciones th {
-  background-color: var(--color-gris-fondo-input-alt);
-  padding: 1rem 2rem;
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: var(--slate-500);
-  letter-spacing: 0.05em;
-  border-bottom: 1px solid var(--stone-200);
-}
+/* Cabecera de tabla: estilos unificados en base.css */
 
 .tabla-operaciones td {
   padding: 1.25rem 2rem;

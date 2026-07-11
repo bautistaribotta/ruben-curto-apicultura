@@ -64,28 +64,8 @@
   font-size: 20px;
 }
 
-.boton-nuevo-flota {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  background-color: var(--brand-secondary);
-  color: var(--text-on-inverse);
-  border: none;
-  border-radius: var(--radius-md);
-  padding: 0.5rem 0.875rem;
-  font-size: 0.8125rem;
-  font-weight: var(--weight-bold);
-  font-family: inherit;
-  cursor: pointer;
-  box-shadow: var(--shadow-md);
-  transition: background-color var(--dur-normal) var(--ease-standard);
-}
-
-.boton-nuevo-flota:hover {
-  background-color: var(--pine-950);
-}
-
-.boton-nuevo-flota .material-symbols-outlined {
+/* Boton "Nuevo" (.boton-nuevo): estilos unificados en base.css */
+.flota-columna-header .boton-nuevo .material-symbols-outlined {
   font-size: 18px;
 }
 
@@ -96,17 +76,10 @@
   text-align: left;
 }
 
-/* Mayor especificidad que la regla unificada de cabeceras de base.css */
+/* Cabecera de tabla: estilos unificados en base.css; esta tabla mantiene su
+   densidad compacta para alinear con las celdas de 1.25rem */
 .flota-columna .tabla-flota th {
   padding: 0.75rem 1.25rem;
-  font-size: var(--text-xs);
-  font-weight: var(--weight-bold);
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-wide);
-  background-color: var(--surface-sunken);
-  border-bottom: 1px solid var(--border-subtle);
-  white-space: nowrap;
 }
 
 .tabla-flota td {
