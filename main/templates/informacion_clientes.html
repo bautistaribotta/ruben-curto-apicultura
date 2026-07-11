@@ -123,16 +123,16 @@
                 <div class="campo-info">
                     <label>Teléfono</label>
                     <p class="valor-vista">{{ cliente.telefono|default:"N/A" }}</p>
-                    <input 
-                        type="text" 
-                        name="telefono" 
-                        class="input-edicion" 
-                        value="{{ cliente.telefono|default:'' }}" 
-                        required 
-                        style="display: none;" 
-                        maxlength="16" 
-                        pattern="[\d]{6,}">
-                    <span class="mensaje-error">Mínimo 6 números, sin letras ni símbolos</span>
+                    <input
+                        type="tel"
+                        name="telefono"
+                        class="input-edicion"
+                        value="{{ cliente.telefono|default:'' }}"
+                        required
+                        style="display: none;"
+                        maxlength="20"
+                        pattern="[\d\-/. ]{6,}">
+                    <span class="mensaje-error">Mínimo 6 caracteres: números, guiones, barras, puntos o espacios</span>
                 </div>
             </div>
 
