@@ -45,7 +45,7 @@ const buscarMeli = (urlString = null) => {
  */
 const vincularPaginacionMeli = () => {
   if (!contenedorTablaMeli) return;
-  const linksPaginacion = contenedorTablaMeli.querySelectorAll('.paginacion-meli__botones a');
+  const linksPaginacion = contenedorTablaMeli.querySelectorAll('.paginacion-botones a');
 
   linksPaginacion.forEach((link) => {
     link.addEventListener('click', (e) => {

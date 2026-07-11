@@ -47,20 +47,14 @@
       </td>
     </tr>
     {% empty %}
-    <tr>
-      <td colspan="4">
-        <div class="meli-vacio">
-          <span class="meli-vacio__icono">
-            <span class="material-symbols-outlined">local_shipping</span>
-          </span>
-          {% if q %}
-          <p class="meli-vacio__titulo">Sin resultados para "{{ q }}"</p>
-          <p class="meli-vacio__texto">Proba con otro chofer, vehiculo o destino.</p>
-          {% else %}
-          <p class="meli-vacio__titulo">Todavia no hay repartos</p>
-          <p class="meli-vacio__texto">Cargá el primero con el boton "Nuevo reparto".</p>
-          {% endif %}
-        </div>
+    <tr class="fila-vacia">
+      <td colspan="4" class="celda-vacia">
+        <span class="material-symbols-outlined">local_shipping</span>
+        {% if q %}
+        No se encontraron repartos con esos filtros.
+        {% else %}
+        Todavía no hay repartos. Cargá el primero con el botón "Nuevo reparto".
+        {% endif %}
       </td>
     </tr>
     {% endfor %}
@@ -68,26 +62,26 @@
 </table>
 
 <!-- FOOTER / PAGINACION -->
-<div class="paginacion-meli">
-  <div class="paginacion-meli__info">
+<div class="paginacion">
+  <div class="paginacion-info">
     Mostrando <span>{{ page_obj.start_index|default:"0" }}-{{ page_obj.end_index|default:"0" }}</span>
     de <span>{{ page_obj.paginator.count|default:"0" }}</span> repartos
   </div>
-  <div class="paginacion-meli__botones">
+  <div class="paginacion-botones">
     {% if page_obj.has_previous %}
       <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}">
-        <button class="boton-paginacion-meli">Anterior</button>
+        <button class="boton-paginacion">Anterior</button>
       </a>
     {% else %}
-      <button class="boton-paginacion-meli" disabled>Anterior</button>
+      <button class="boton-paginacion" disabled>Anterior</button>
     {% endif %}
 
     {% if page_obj.has_next %}
       <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}">
-        <button class="boton-paginacion-meli">Siguiente</button>
+        <button class="boton-paginacion">Siguiente</button>
       </a>
     {% else %}
-      <button class="boton-paginacion-meli" disabled>Siguiente</button>
+      <button class="boton-paginacion" disabled>Siguiente</button>
     {% endif %}
   </div>
 </div>

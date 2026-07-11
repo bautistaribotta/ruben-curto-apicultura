@@ -42,9 +42,9 @@
             </tr>
           {% empty %}
             <tr class="fila-vacia">
-              <td colspan="5" class="prod-table__empty">
+              <td colspan="5" class="celda-vacia">
                 <span class="material-symbols-outlined">paid</span>
-                No hay deudores registrados.
+                {% if q %}No se encontraron deudores con esos filtros.{% else %}No hay deudores registrados.{% endif %}
               </td>
             </tr>
           {% endfor %}

@@ -50,8 +50,11 @@
         </td>
       </tr>
     {% empty %}
-      <tr>
-        <td colspan="5" style="text-align: center;"> No hay productos registrados. </td>
+      <tr class="fila-vacia">
+        <td colspan="5" class="celda-vacia">
+          <span class="material-symbols-outlined">inventory_2</span>
+          {% if q or categoria %}No se encontraron productos con esos filtros.{% else %}No hay productos registrados.{% endif %}
+        </td>
       </tr>
     {% endfor %}
   </tbody>

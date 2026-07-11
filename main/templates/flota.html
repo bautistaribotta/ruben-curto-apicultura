@@ -76,8 +76,11 @@
               </td>
             </tr>
             {% empty %}
-            <tr>
-              <td colspan="3" class="celda-flota-vacia">No hay choferes registrados.</td>
+            <tr class="fila-vacia">
+              <td colspan="3" class="celda-vacia">
+                <span class="material-symbols-outlined">person</span>
+                No hay choferes registrados.
+              </td>
             </tr>
             {% endfor %}
           </tbody>
@@ -129,8 +132,11 @@
               </td>
             </tr>
             {% empty %}
-            <tr>
-              <td colspan="4" class="celda-flota-vacia">No hay vehículos registrados.</td>
+            <tr class="fila-vacia">
+              <td colspan="4" class="celda-vacia">
+                <span class="material-symbols-outlined">local_shipping</span>
+                No hay vehículos registrados.
+              </td>
             </tr>
             {% endfor %}
           </tbody>
