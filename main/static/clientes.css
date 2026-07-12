@@ -106,12 +106,12 @@
 
 /* Dirección */
 .tabla-clientes th:nth-child(4) {
-  width: 15%;
+  width: 18%;
 }
 
 /* Telefono */
 .tabla-clientes th:nth-child(5) {
-  width: 10%;
+  width: 7%;
 }
 
 /* Acciones */
