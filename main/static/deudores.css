@@ -68,6 +68,16 @@
   color: var(--text-muted);
 }
 
+/* La tarjeta principal toma el color del lado que muestra: pino para cobrar,
+   rojo para pagar. Refuerza el cambio al alternar el filtro. */
+.deu-stat__value--cobrar {
+  color: var(--pine-900);
+}
+
+.deu-stat__value--pagar {
+  color: var(--danger-600);
+}
+
 /* --- BARRA DE HERRAMIENTAS (Buscador) --- */
 .barra-herramientas {
   display: flex;

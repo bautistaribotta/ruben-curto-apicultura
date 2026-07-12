@@ -895,11 +895,20 @@ def deudores(request):
 
     lista_deudores = obtener_listado_deudores(q, tipo)
 
+    # Las tarjetas de resumen muestran un solo lado: por defecto (y con el filtro de
+    # cobros) el total a cobrar; con el filtro de pagos activo, el total a pagar.
+    # Por eso los totales se calculan sobre el subconjunto del tipo correspondiente,
+    # aunque la tabla sin filtro muestre ambos.
+    modo = "pagar" if tipo == "pagos" else "cobrar"
+    tipo_op_tarjetas = "compra" if modo == "pagar" else "venta"
+    filas_tarjetas = [d for d in lista_deudores if d["tipo_operacion"] == tipo_op_tarjetas]
+
     # Totales sobre el listado completo (no solo la página) para las tarjetas de resumen
     UMBRAL_VENCIDA = 90  # días para marcar una deuda como antigua
-    total_pesos = sum((d["deuda_pesos"] or 0) for d in lista_deudores)
-    total_usd_hoy = sum((d["deuda_dolar_actual"] or 0) for d in lista_deudores)
-    total_miel_hoy = sum((d["kg_miel_actual"] or 0) for d in lista_deudores)
+    total_pesos = sum((d["deuda_pesos"] or 0) for d in filas_tarjetas)
+    total_usd_hoy = sum((d["deuda_dolar_actual"] or 0) for d in filas_tarjetas)
+    total_miel_hoy = sum((d["kg_miel_actual"] or 0) for d in filas_tarjetas)
+    # El aviso de vencidas sigue el listado visible (la tabla), no solo las tarjetas.
     vencidos = sum(1 for d in lista_deudores if d["dias"] > UMBRAL_VENCIDA)
 
     # Orden seleccionado por las píldoras: por monto adeudado o por antigüedad
@@ -918,6 +927,7 @@ def deudores(request):
         "deudores": pagina_obj,
         "q": q,
         "tipo": tipo,
+        "modo": modo,
         "total_pesos": total_pesos,
         "total_usd_hoy": total_usd_hoy,
         "total_miel_hoy": total_miel_hoy,
@@ -925,9 +935,10 @@ def deudores(request):
         "total_deudores": len(lista_deudores),
         "orden": orden,
     }
-    
+
     if request.headers.get("x-requested-with") == "XMLHttpRequest":
-        return render(request, "tabla_deudores.html", contexto)
+        # El AJAX refresca tanto las tarjetas (que cambian de a cobrar a pagar) como la tabla.
+        return render(request, "deudores_ajax.html", contexto)
         
     return render(request, "deudores.html", contexto)
 

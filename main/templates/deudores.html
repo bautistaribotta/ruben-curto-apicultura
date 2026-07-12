@@ -20,29 +20,9 @@
   <!-- ÁREA DE TRABAJO -->
   <section id="area-trabajo">
 
-    <!-- Tarjetas de resumen -->
-    <div class="deu-stats">
-      <article class="deu-stat">
-        <div class="deu-stat__head">
-          <span class="deu-stat__label">Total por cobrar</span>
-          <span class="deu-stat__icon"><span class="material-symbols-outlined">account_balance_wallet</span></span>
-        </div>
-        <span class="deu-stat__value">$ {{ total_pesos|floatformat:"-2g" }}</span>
-      </article>
-      <article class="deu-stat">
-        <div class="deu-stat__head">
-          <span class="deu-stat__label">Equivale a (hoy)</span>
-          <span class="deu-stat__icon"><span class="material-symbols-outlined">attach_money</span></span>
-        </div>
-        <span class="deu-stat__value">US$ {{ total_usd_hoy|floatformat:"-2g" }}</span>
-      </article>
-      <article class="deu-stat">
-        <div class="deu-stat__head">
-          <span class="deu-stat__label">Equivale a (hoy)</span>
-          <span class="deu-stat__icon"><span class="material-symbols-outlined">water_drop</span></span>
-        </div>
-        <span class="deu-stat__value">{{ total_miel_hoy|floatformat:"-2g" }} <small>kg miel</small></span>
-      </article>
+    <!-- Tarjetas de resumen (se refrescan por AJAX al cambiar el filtro de tipo) -->
+    <div class="deu-stats" id="deu-stats-region">
+      {% include "deu_stats.html" %}
     </div>
 
     <!-- Controles Superiores: Buscador -->

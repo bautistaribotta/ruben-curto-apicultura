@@ -51,12 +51,25 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         .then((response) => response.text())
         .then((html) => {
-            // Actualizo el contenedor con la nueva tabla
-            contenedorTabla.innerHTML = html;
-            
+            // La respuesta trae dos regiones (tarjetas y tabla). Las parseo y reemplazo
+            // cada una por su id, sin tocar la barra de busqueda/filtros.
+            const fragmento = document.createElement('div');
+            fragmento.innerHTML = html;
+
+            const nuevasTarjetas = fragmento.querySelector('#deu-stats-region');
+            const nuevaTabla = fragmento.querySelector('#tabla-deudores-region');
+
+            const tarjetas = document.getElementById('deu-stats-region');
+            if (nuevasTarjetas && tarjetas) {
+                tarjetas.innerHTML = nuevasTarjetas.innerHTML;
+            }
+            if (nuevaTabla && contenedorTabla) {
+                contenedorTabla.innerHTML = nuevaTabla.innerHTML;
+            }
+
             // Actualizo la URL en la barra del navegador sin recargar la página
             window.history.pushState({}, '', url);
-            
+
             // Vuelvo a vincular los eventos a los nuevos botones de paginación
             vincularPaginacion();
         })

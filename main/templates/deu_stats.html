@@ -1,0 +1,23 @@
+{# Tarjetas de resumen. Muestran un solo lado segun 'modo': 'cobrar' o 'pagar'. #}
+<article class="deu-stat">
+  <div class="deu-stat__head">
+    <span class="deu-stat__label">{% if modo == 'pagar' %}Total por pagar{% else %}Total por cobrar{% endif %}</span>
+    <span class="deu-stat__icon"><span class="material-symbols-outlined">account_balance_wallet</span></span>
+  </div>
+  <span class="deu-stat__value {% if modo == 'pagar' %}deu-stat__value--pagar{% else %}deu-stat__value--cobrar{% endif %}">$ {{ total_pesos|floatformat:"-2g" }}</span>
+</article>
+<article class="deu-stat">
+  <div class="deu-stat__head">
+    <span class="deu-stat__label">Equivale a (hoy)</span>
+    <span class="deu-stat__icon"><span class="material-symbols-outlined">attach_money</span></span>
+  </div>
+  {# El prefijo "US$" queda neutro; solo el numero toma el rojo en modo pagar #}
+  <span class="deu-stat__value">US$ <span class="{% if modo == 'pagar' %}deu-stat__value--pagar{% endif %}">{{ total_usd_hoy|floatformat:"-2g" }}</span></span>
+</article>
+<article class="deu-stat">
+  <div class="deu-stat__head">
+    <span class="deu-stat__label">Equivale a (hoy)</span>
+    <span class="deu-stat__icon"><span class="material-symbols-outlined">water_drop</span></span>
+  </div>
+  <span class="deu-stat__value {% if modo == 'pagar' %}deu-stat__value--pagar{% endif %}">{{ total_miel_hoy|floatformat:"-2g" }} <small>kg miel</small></span>
+</article>
