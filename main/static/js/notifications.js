@@ -43,6 +43,14 @@ function notificarExito(msj) { crearToast(msj, 'success'); }
 function notificarError(msj) { crearToast(msj, 'error'); }
 function notificarInfo(msj) { crearToast(msj, 'info'); }
 
+// Los errores que frenan una acción ya iniciada (no se pudo crear/eliminar/completar)
+// se muestran en el modal central, no como toast. Las validaciones previas de input
+// siguen usando notificarError (toast). El modal vive en paneles.js.
+function notificarErrorModal(msj) {
+    if (typeof abrirModalError === 'function') abrirModalError(msj);
+    else alert(msj);
+}
+
 /**
  * Cierra un toast con una animación de desvanecimiento
  */
@@ -66,5 +74,26 @@ function inicializarToasts() {
     });
 }
 
+// Los mensajes de error que llegan del servidor (Django messages con tag 'error')
+// no se muestran como toast: se juntan y se muestran en el modal central.
+function inicializarErroresServidor() {
+    const contenedor = document.getElementById('errores-servidor');
+    if (!contenedor) return;
+
+    // Uso textContent (no innerText): el contenedor tiene el atributo hidden y en
+    // varios motores innerText devuelve '' para elementos no renderizados.
+    const mensajes = Array.from(contenedor.querySelectorAll('p'))
+        .map(p => p.textContent.trim())
+        .filter(Boolean);
+
+    if (mensajes.length === 0) return;
+
+    // Si hay varios errores, los uno en un solo modal (uno por línea)
+    if (typeof abrirModalError === 'function') {
+        abrirModalError(mensajes.join('\n'));
+    }
+}
+
 // Lanzo la inicialización cuando el documento está listo
 document.addEventListener('DOMContentLoaded', inicializarToasts);
+document.addEventListener('DOMContentLoaded', inicializarErroresServidor);

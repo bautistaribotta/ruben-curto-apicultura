@@ -640,6 +640,7 @@ body {
   font-size: var(--text-base);
   color: var(--text-muted);
   line-height: 1.5;
+  white-space: pre-line;
   max-width: 42ch;
   margin-bottom: 1.5rem;
   padding-bottom: 1.5rem;

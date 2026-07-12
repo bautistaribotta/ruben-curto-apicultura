@@ -517,14 +517,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         window.location.href = `/informacion_clientes/${data.id_cliente}/`;
                     }
                 } else {
-                    avisar(data.error || 'Algo salió mal. Por favor, volvé a intentarlo.');
+                    notificarErrorModal(data.error || 'Algo salió mal. Por favor, volvé a intentarlo.');
                     botonConfirmar.disabled = false;
                     botonConfirmar.innerHTML = '<span class="material-symbols-outlined">check_circle</span> Confirmar compra';
                 }
             })
             .catch(error => {
                 console.error('Error en la petición:', error);
-                avisar('Algo salió mal. Por favor, volvé a intentarlo.');
+                notificarErrorModal('Algo salió mal. Por favor, volvé a intentarlo.');
                 botonConfirmar.disabled = false;
                 botonConfirmar.innerHTML = '<span class="material-symbols-outlined">check_circle</span> Confirmar compra';
             });

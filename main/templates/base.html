@@ -121,13 +121,14 @@
       {% endblock %}
 
       <!-- CONTENEDOR DE NOTIFICACIONES TOAST (centralizado) -->
+      <!-- Los errores NO se muestran como toast: se juntan mas abajo y van al modal central -->
       <div id="contenedor-toast" class="contenedor-toast">
         {% if messages %}
           {% for message in messages %}
+            {% if message.tags != 'error' %}
             <div class="toast {{ message.tags }}">
               <span class="material-symbols-outlined">
                 {% if message.tags == 'success' %}check_circle
-                {% elif message.tags == 'error' %}error
                 {% else %}info{% endif %}
               </span>
               <div class="toast-contenido">
@@ -138,9 +139,19 @@
               </button>
               <div class="toast-progress"></div>
             </div>
+            {% endif %}
           {% endfor %}
         {% endif %}
       </div>
+
+      <!-- Errores del servidor: no van como toast, notifications.js los recoge y los muestra en el modal central -->
+      {% if messages %}
+        <div id="errores-servidor" hidden>
+          {% for message in messages %}
+            {% if message.tags == 'error' %}<p>{{ message }}</p>{% endif %}
+          {% endfor %}
+        </div>
+      {% endif %}
 
       <!-- ÁREA DE TRABAJO -->
       {% block area-trabajo %}

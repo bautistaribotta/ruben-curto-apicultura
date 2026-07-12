@@ -183,8 +183,8 @@ const prepararPanelEditarCliente = (id) => {
     })
     .catch((error) => {
       console.error(error);
-      if (typeof crearToast === 'function') {
-        crearToast('Error al cargar los datos del cliente', 'error');
+      if (typeof notificarErrorModal === 'function') {
+        notificarErrorModal('Error al cargar los datos del cliente');
       }
     });
 };
