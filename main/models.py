@@ -239,13 +239,18 @@ class Chofer(models.Model):
 
     @property
     def total_viajes(self):
-        # Cantidad de viajes activos del chofer. Un viaje cuenta como uno,
-        # sin importar cuantos destinos tenga. Si el queryset vino anotado con
-        # _num_viajes (ver obtener_choferes_activos) reutilizo ese valor para
-        # evitar una query por fila en el listado de flota.
+        # Cantidad de viajes activos del chofer, sumando los tres tipos de viaje
+        # (miel/cera, reparto y cereal). Un viaje cuenta como uno, sin importar
+        # cuantos destinos tenga. Si el queryset vino anotado con _num_viajes
+        # (ver obtener_choferes_activos) reutilizo ese valor para evitar una
+        # query por fila en el listado de flota.
         if hasattr(self, "_num_viajes"):
             return self._num_viajes
-        return self.viaje_set.filter(activo=True).count()
+        return (
+            self.viaje_set.filter(activo=True).count()
+            + self.viajereparto_set.filter(activo=True).count()
+            + self.viajecereal_set.filter(activo=True).count()
+        )
 
     def __str__(self):
         return f"Chofer: {self.nombre} {self.apellido}"
@@ -261,9 +266,15 @@ class Vehiculo(models.Model):
 
     @property
     def total_viajes(self):
+        # Suma los tres tipos de viaje activos (miel/cera, reparto y cereal),
+        # igual que en Chofer.
         if hasattr(self, "_num_viajes"):
             return self._num_viajes
-        return self.viaje_set.filter(activo=True).count()
+        return (
+            self.viaje_set.filter(activo=True).count()
+            + self.viajereparto_set.filter(activo=True).count()
+            + self.viajecereal_set.filter(activo=True).count()
+        )
 
     def __str__(self):
         return f"Vehiculo {self.nombre} ({self.patente})"

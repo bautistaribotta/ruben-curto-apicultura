@@ -741,10 +741,16 @@ def crear_viaje(id_chofer, id_vehiculo, destinos, inicio_caja, fecha_inicio, fec
 
 def obtener_choferes_activos():
     # Anoto _num_viajes (viajes activos) para que la property total_viajes no
-    # dispare una query por cada chofer en el listado de flota.
+    # dispare una query por cada chofer en el listado de flota. Sumo los tres
+    # tipos de viaje. Uso distinct=True en cada Count porque los tres LEFT JOIN
+    # generan fan-out y sin el distinct los conteos se multiplicarian entre si.
     return (
         Chofer.objects.filter(activo=True)
-        .annotate(_num_viajes=Count("viaje", filter=Q(viaje__activo=True)))
+        .annotate(_num_viajes=(
+            Count("viaje", filter=Q(viaje__activo=True), distinct=True)
+            + Count("viajereparto", filter=Q(viajereparto__activo=True), distinct=True)
+            + Count("viajecereal", filter=Q(viajecereal__activo=True), distinct=True)
+        ))
         .order_by('nombre')
     )
 
@@ -752,7 +758,11 @@ def obtener_choferes_activos():
 def obtener_vehiculos_activos():
     return (
         Vehiculo.objects.filter(activo=True)
-        .annotate(_num_viajes=Count("viaje", filter=Q(viaje__activo=True)))
+        .annotate(_num_viajes=(
+            Count("viaje", filter=Q(viaje__activo=True), distinct=True)
+            + Count("viajereparto", filter=Q(viajereparto__activo=True), distinct=True)
+            + Count("viajecereal", filter=Q(viajecereal__activo=True), distinct=True)
+        ))
         .order_by('nombre')
     )
 
