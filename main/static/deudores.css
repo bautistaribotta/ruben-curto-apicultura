@@ -78,6 +78,11 @@
   color: var(--danger-600);
 }
 
+/* En modo pagar, el sufijo "kg miel" (normalmente atenuado) acompaña el rojo del monto */
+.deu-stat__value--pagar small {
+  color: var(--danger-600);
+}
+
 /* --- BARRA DE HERRAMIENTAS (Buscador) --- */
 .barra-herramientas {
   display: flex;
