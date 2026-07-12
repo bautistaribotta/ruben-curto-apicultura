@@ -148,6 +148,25 @@
       {% endblock %}
     </main>
 
+    <!-- MODAL DE ERROR (global, disponible en todas las vistas) -->
+    <!-- Solo se cierra con el botón "Entendido": el fondo no tiene onclick a propósito -->
+    <div id="contenedor-modal-error">
+      <div id="modal-error-fondo"></div>
+
+      <div id="modal-error">
+        <div id="icono-error-modal">
+          <span class="material-symbols-outlined">error</span>
+        </div>
+
+        <h3>Ocurrió un error</h3>
+        <p id="texto-modal-error"></p>
+
+        <div id="acciones-modal-error">
+          <button type="button" id="boton-entendido-error" onclick="cerrarModalError()">Entendido</button>
+        </div>
+      </div>
+    </div>
+
     {% block codigo-javascript %}
 
     {% endblock %}

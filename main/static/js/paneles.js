@@ -103,6 +103,19 @@ function cerrarSlideOver(idContenedor = 'contenedor-slide-over') {
     }
 }
 
+// Modal de error global (vive en base.html, disponible en todas las vistas)
+// Se abre con el motivo del error y solo se cierra con el botón "Entendido"
+function abrirModalError(motivo) {
+    document.getElementById('texto-modal-error').innerText = motivo;
+    document.getElementById('contenedor-modal-error').classList.add('abierto');
+    document.body.style.overflow = 'hidden';
+}
+
+function cerrarModalError() {
+    document.getElementById('contenedor-modal-error').classList.remove('abierto');
+    document.body.style.overflow = 'auto';
+}
+
 function abrirPanelEliminar() {
     document.getElementById('contenedor-panel-eliminar').classList.add('abierto');
     document.body.style.overflow = 'hidden';
