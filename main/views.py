@@ -886,7 +886,14 @@ def informacion_viaje(request, id_viaje):
 @staff_member_required(login_url="inicio")
 def deudores(request):
     q = request.GET.get("q", "")
-    lista_deudores = obtener_listado_deudores(q)
+
+    # Filtro por tipo de deuda: 'cobros' (ventas impagas) o 'pagos' (compras impagas).
+    # Cualquier otro valor se ignora y se muestran todas.
+    tipo = request.GET.get("tipo", "")
+    if tipo not in ("cobros", "pagos"):
+        tipo = ""
+
+    lista_deudores = obtener_listado_deudores(q, tipo)
 
     # Totales sobre el listado completo (no solo la página) para las tarjetas de resumen
     UMBRAL_VENCIDA = 90  # días para marcar una deuda como antigua
@@ -910,6 +917,7 @@ def deudores(request):
     contexto = {
         "deudores": pagina_obj,
         "q": q,
+        "tipo": tipo,
         "total_pesos": total_pesos,
         "total_usd_hoy": total_usd_hoy,
         "total_miel_hoy": total_miel_hoy,

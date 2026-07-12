@@ -128,6 +128,8 @@
   flex: none;
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 0.75rem;
 }
 
@@ -169,6 +171,36 @@
   background-color: var(--brand-secondary);
   color: var(--text-on-inverse);
   border-color: var(--brand-secondary);
+}
+
+/* --- Filtro por tipo (cobros / pagos): dimension distinta al orden. Un divisor
+   sutil separa los dos grupos de chips, sin importar cual quede primero. --- */
+.prod-chips + .prod-chips {
+  padding-left: 0.75rem;
+  border-left: 1px solid var(--border-subtle);
+}
+
+/* Los chips inactivos muestran la flecha ya tintada como pista del significado:
+   pino para cobros (entra plata), rojo para pagos (sale plata). */
+.prod-chip--cobros:not(.is-active) .material-symbols-outlined {
+  color: var(--pine-900);
+}
+
+.prod-chip--pagos:not(.is-active) .material-symbols-outlined {
+  color: var(--danger-600);
+}
+
+/* El estado activo toma el mismo color que los montos que filtra en la tabla. */
+.prod-chip--cobros.is-active {
+  background-color: var(--pine-900);
+  border-color: var(--pine-900);
+  color: var(--sand-50);
+}
+
+.prod-chip--pagos.is-active {
+  background-color: var(--danger-600);
+  border-color: var(--danger-600);
+  color: var(--color-blanco);
 }
 
 .deu-vencidos {
@@ -301,6 +333,16 @@
   color: var(--text-strong);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+/* Direccion del dinero: a cobrar (venta impaga) en pino con +,
+   a pagar (compra impaga) en rojo con -. El signo acompana al color. */
+.valor-pesos--cobrar {
+  color: var(--pine-900);
+}
+
+.valor-pesos--pagar {
+  color: var(--danger-600);
 }
 
 /* --- Celda equivalencia (hoy grande + origen tenue) --- */

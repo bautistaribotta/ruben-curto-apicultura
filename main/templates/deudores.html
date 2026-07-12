@@ -50,7 +50,7 @@
       <div class="grupo-busqueda">
         <div class="contenedor-input-busqueda">
           <span class="material-symbols-outlined icono-busqueda">search</span>
-          <input type="text" id="buscar-deudor" class="input-busqueda" placeholder="Buscar deudores por nombre o ID" value="{{ q }}">
+          <input type="text" id="buscar-deudor" class="input-busqueda" placeholder="Buscar clientes/proveedores por nombre o ID" value="{{ q }}">
         </div>
       </div>
       <div class="barra-herramientas__right">
@@ -60,6 +60,16 @@
             {{ vencidos }} deuda{{ vencidos|pluralize }} con más de 90 días
           </span>
         {% endif %}
+        <div class="prod-chips prod-chips--tipo" id="chips-tipo" role="group" aria-label="Filtrar por cobros o pagos">
+          <button type="button" class="prod-chip prod-chip--cobros {% if tipo == 'cobros' %}is-active{% endif %}" data-tipo="cobros">
+            <span class="material-symbols-outlined">arrow_upward</span>
+            Cobros
+          </button>
+          <button type="button" class="prod-chip prod-chip--pagos {% if tipo == 'pagos' %}is-active{% endif %}" data-tipo="pagos">
+            <span class="material-symbols-outlined">arrow_downward</span>
+            Pagos
+          </button>
+        </div>
         <div class="prod-chips" id="chips-orden" role="group" aria-label="Ordenar deudores">
           <button type="button" class="prod-chip {% if orden == 'monto' %}is-active{% endif %}" data-orden="monto">
             <span class="material-symbols-outlined">payments</span>

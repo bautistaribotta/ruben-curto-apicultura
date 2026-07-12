@@ -378,7 +378,7 @@ def _iniciales(nombre, apellido=None):
     return nombre[:2].upper()
 
 
-def obtener_listado_deudores(q=""):
+def obtener_listado_deudores(q="", tipo=""):
     dolar_actual_data = get_cotizacion_dolar_oficial()
     dolar_actual = Decimal(str(dolar_actual_data.get("venta") or 1))  # Prevención división por 0 si falla la API
 
@@ -415,6 +415,13 @@ def obtener_listado_deudores(q=""):
         .select_related('cliente')
         .order_by('-fecha')
     )
+
+    # Filtro por tipo de deuda: "cobros" son ventas impagas (el cliente nos debe) y
+    # "pagos" son compras impagas (nosotros le debemos al proveedor).
+    if tipo == "cobros":
+        operaciones_adeudadas = operaciones_adeudadas.filter(tipo_operacion="venta")
+    elif tipo == "pagos":
+        operaciones_adeudadas = operaciones_adeudadas.filter(tipo_operacion="compra")
 
     if q:
         from django.db.models import Q
@@ -454,6 +461,10 @@ def obtener_listado_deudores(q=""):
 
         lista_deudores.append({
             "id": operacion.id,
+            # Tipo de operacion para diferenciar en la tabla: una venta impaga es una
+            # deuda "a cobrar" (el cliente nos debe) y una compra impaga es "a pagar"
+            # (nosotros le debemos al proveedor).
+            "tipo_operacion": operacion.tipo_operacion,
             "cliente": f"{operacion.cliente.nombre} {operacion.cliente.apellido or ''}".strip(),
             "iniciales": _iniciales(operacion.cliente.nombre, operacion.cliente.apellido),
             "fecha": operacion.fecha,

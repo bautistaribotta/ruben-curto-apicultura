@@ -26,7 +26,10 @@
                   <span class="deu-fecha__age {% if deudor.dias > 90 %}is-old{% endif %}">{% if deudor.dias == 0 %}Hoy{% else %}hace {{ deudor.dias }} día{{ deudor.dias|pluralize }}{% endif %}</span>
                 </div>
               </td>
-              <td class="texto-derecha"><span class="valor-pesos"> $ {{ deudor.deuda_pesos|floatformat:"-2g" }} </span></td>
+              <td class="texto-derecha">
+                {# Compra impaga = deuda "a pagar" (rojo, -); venta impaga = "a cobrar" (pino, +). Color + signo. #}
+                <span class="valor-pesos {% if deudor.tipo_operacion == 'compra' %}valor-pesos--pagar{% else %}valor-pesos--cobrar{% endif %}">{% if deudor.tipo_operacion == 'compra' %}−{% else %}+{% endif %} $ {{ deudor.deuda_pesos|floatformat:"-2g" }} </span>
+              </td>
               <td class="texto-derecha">
                 <div class="deu-equiv">
                   <span class="deu-equiv__now">{% if deudor.deuda_dolar_actual != None %}US$ {{ deudor.deuda_dolar_actual|floatformat:"-2g" }}{% else %}-{% endif %}</span>
@@ -58,7 +61,7 @@
         </div>
         <div class="paginacion-botones">
           {% if deudores.has_previous %}
-            <a href="?page={{ deudores.previous_page_number }}{% if q %}&q={{ q }}{% endif %}&orden={{ orden }}">
+            <a href="?page={{ deudores.previous_page_number }}{% if q %}&q={{ q }}{% endif %}&orden={{ orden }}{% if tipo %}&tipo={{ tipo }}{% endif %}">
               <button class="boton-paginacion">Anterior</button>
             </a>
           {% else %}
@@ -66,7 +69,7 @@
           {% endif %}
 
           {% if deudores.has_next %}
-            <a href="?page={{ deudores.next_page_number }}{% if q %}&q={{ q }}{% endif %}&orden={{ orden }}">
+            <a href="?page={{ deudores.next_page_number }}{% if q %}&q={{ q }}{% endif %}&orden={{ orden }}{% if tipo %}&tipo={{ tipo }}{% endif %}">
               <button class="boton-paginacion">Siguiente</button>
             </a>
           {% else %}
