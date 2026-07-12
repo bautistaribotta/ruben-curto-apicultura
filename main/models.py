@@ -105,6 +105,9 @@ class Operacion(models.Model):
     tipo_operacion = models.CharField(max_length=10, choices=TIPO_OPERACION)
     valor_dolar = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     valor_kilo_miel = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    # Cotizacion de "Cera Operculo" al momento de crear la operacion, para poder
+    # mostrar la equivalencia en kilos de cera "de origen" igual que con la miel
+    valor_kilo_cera = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
 
     # Obligo a Django a nombrar la tabla como "operaciones"
     class Meta:

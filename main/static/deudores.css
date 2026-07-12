@@ -260,32 +260,44 @@
 
 /* Anchos de columnas para Deudores (5 columnas) */
 .tabla-deudores th:nth-child(1) {
-  width: 30%;
+  width: 24%;
 }
 
 /* Cliente */
 .tabla-deudores th:nth-child(2) {
-  width: 16%;
+  width: 14%;
 }
 
 /* Fecha */
 .tabla-deudores th:nth-child(3) {
-  width: 18%;
+  width: 17%;
 }
 
 /* Deuda */
 .tabla-deudores th:nth-child(4) {
-  width: 18%;
+  width: 15%;
 }
 
 /* En dolares */
 .tabla-deudores th:nth-child(5) {
-  width: 18%;
+  width: 15%;
+}
+
+.tabla-deudores th:nth-child(6) {
+  width: 15%;
 }
 
 /* En miel */
+/* Padding horizontal mas compacto que el resto de las tablas: con seis
+   columnas el 1.5rem original dejaba el contenido sin aire. El th necesita
+   el prefijo del contenedor para ganarle a la regla unificada de base.css. */
+.contenedor-tabla .tabla-deudores th {
+  padding-left: 1.125rem;
+  padding-right: 1.125rem;
+}
+
 .tabla-deudores td {
-  padding: 1rem 1.5rem;
+  padding: 1rem 1.125rem;
   font-size: var(--text-sm);
   border-bottom: 1px solid var(--border-subtle);
   color: var(--text-body);

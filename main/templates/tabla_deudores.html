@@ -6,6 +6,7 @@
             <th class="texto-derecha"> Deuda </th>
             <th class="texto-derecha"> En dólares </th>
             <th class="texto-derecha"> En miel </th>
+            <th class="texto-derecha"> En cera </th>
           </tr>
         </thead>
         <tbody>
@@ -42,10 +43,17 @@
                   {% if deudor.kg_miel_historico != None %}<span class="deu-equiv__then">origen {{ deudor.kg_miel_historico|floatformat:"-2g" }} kg</span>{% endif %}
                 </div>
               </td>
+              <td class="texto-derecha">
+                {# Equivalencia en cera sobre la cotizacion de Cera Operculo: hoy + origen, igual que la miel #}
+                <div class="deu-equiv">
+                  <span class="deu-equiv__now">{% if deudor.kg_cera_actual != None %}{{ deudor.kg_cera_actual|floatformat:"-2g" }} kg{% else %}-{% endif %}</span>
+                  {% if deudor.kg_cera_historico != None %}<span class="deu-equiv__then">origen {{ deudor.kg_cera_historico|floatformat:"-2g" }} kg</span>{% endif %}
+                </div>
+              </td>
             </tr>
           {% empty %}
             <tr class="fila-vacia">
-              <td colspan="5" class="celda-vacia">
+              <td colspan="6" class="celda-vacia">
                 <span class="material-symbols-outlined">paid</span>
                 {% if q %}No se encontraron deudores con esos filtros.{% else %}No hay deudores registrados.{% endif %}
               </td>

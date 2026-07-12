@@ -244,6 +244,7 @@ def crear_operacion(cliente, items, metodo_pago, tipo_operacion, viaje=None):
         valor_dolar = None
 
     valor_miel = get_cotizacion_miel_50mm()
+    valor_cera = get_cotizacion_cera_operculo()
 
     with transaction.atomic():
         # Creo la operación con las cotizaciones actuales
@@ -252,7 +253,8 @@ def crear_operacion(cliente, items, metodo_pago, tipo_operacion, viaje=None):
             viaje=viaje,
             tipo_operacion=tipo_operacion,
             valor_dolar=valor_dolar,
-            valor_kilo_miel=valor_miel
+            valor_kilo_miel=valor_miel,
+            valor_kilo_cera=valor_cera
         )
 
         for item in items:
@@ -388,6 +390,13 @@ def obtener_listado_deudores(q="", tipo=""):
     except ValueError:
         miel_actual = None
 
+    # La equivalencia en cera usa siempre la cotizacion actual de "Cera Operculo"
+    cera_actual_data = get_cotizacion_cera_operculo()
+    try:
+        cera_actual = Decimal(str(cera_actual_data)) if cera_actual_data else None
+    except ValueError:
+        cera_actual = None
+
     # Filtramos operaciones activas donde el total pagado es menor al monto total.
     # Como 'monto_total' ahora es una @property (no un campo de BD), lo recreo en la query.
     # Uso subqueries (no JOINs directos) para sumar detalles y pagos por separado y así
@@ -459,6 +468,13 @@ def obtener_listado_deudores(q="", tipo=""):
         kg_miel_historico = (deuda_pesos / valor_miel_historico) if valor_miel_historico else None
         kg_miel_actual = (deuda_pesos / miel_actual) if miel_actual else None
 
+        # Cálculos de la cera: misma metodologia que la miel, equivalencia a la
+        # cotizacion de hoy y a la guardada al crear la operacion (origen)
+        valor_cera_historico = operacion.valor_kilo_cera if operacion.valor_kilo_cera else None
+
+        kg_cera_historico = (deuda_pesos / valor_cera_historico) if valor_cera_historico else None
+        kg_cera_actual = (deuda_pesos / cera_actual) if cera_actual else None
+
         lista_deudores.append({
             "id": operacion.id,
             # Tipo de operacion para diferenciar en la tabla: una venta impaga es una
@@ -473,7 +489,9 @@ def obtener_listado_deudores(q="", tipo=""):
             "deuda_dolar_historico": round(deuda_dolar_historico, 2) if deuda_dolar_historico else None,
             "deuda_dolar_actual": round(deuda_dolar_actual, 2) if deuda_dolar_actual else None,
             "kg_miel_historico": round(kg_miel_historico, 2) if kg_miel_historico else None,
-            "kg_miel_actual": round(kg_miel_actual, 2) if kg_miel_actual else None
+            "kg_miel_actual": round(kg_miel_actual, 2) if kg_miel_actual else None,
+            "kg_cera_historico": round(kg_cera_historico, 2) if kg_cera_historico else None,
+            "kg_cera_actual": round(kg_cera_actual, 2) if kg_cera_actual else None
         })
 
     return lista_deudores
@@ -575,6 +593,19 @@ def get_cotizacion_miel_50mm():
         return miel.monto
     except Cotizaciones.DoesNotExist:
         return 1.00
+
+
+def get_cotizacion_cera_operculo():
+    """
+    Obtiene la cotización de la cera. Se toma 'Cera Operculo' como referencia.
+    Devuelve None si no existe para que quien la use muestre un guion en vez
+    de calcular una equivalencia sin sentido.
+    """
+    try:
+        cera = Cotizaciones.objects.get(articulo="Cera Operculo")
+        return cera.monto
+    except Cotizaciones.DoesNotExist:
+        return None
 
 
 def crear_chofer(nombre, apellido):
