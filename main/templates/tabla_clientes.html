@@ -24,7 +24,7 @@
         </td>
         <td class="td-enlace"> <a href="{% url 'informacion_clientes' cliente.id %}" class="enlace-fila">{{ cliente.localidad|default:"-" }}</a> </td>
         <td class="td-enlace"> <a href="{% url 'informacion_clientes' cliente.id %}" class="enlace-fila">{{ cliente.direccion|default:"-" }}</a> </td>
-        <td class="texto-centrado td-enlace"> <a href="{% url 'informacion_clientes' cliente.id %}" class="enlace-fila">{{ cliente.telefono }}</a> </td>
+        <td class="texto-centrado td-enlace"> <a href="{% url 'informacion_clientes' cliente.id %}" class="enlace-fila">{% if cliente.telefono and cliente.telefono != 'None' %}{{ cliente.telefono }}{% else %}-{% endif %}</a> </td>
         <td>
 
           <div class="acciones-tabla">
