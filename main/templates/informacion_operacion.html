@@ -81,12 +81,12 @@
             <span class="op-total__v">$ {{ operacion.monto_total|floatformat:"-2g" }}</span>
         </div>
         <div class="op-total op-total--paid">
-            <span class="op-total__k"><span class="material-symbols-outlined">paid</span>Pagado</span>
+            <span class="op-total__k"><span class="material-symbols-outlined">paid</span>{% if operacion.tipo_operacion == 'venta' %}Cobrado{% else %}Pagado{% endif %}</span>
             <span class="op-total__v">$ {{ total_pagado|floatformat:"-2g" }}</span>
             <div class="op-total__bar"><div class="op-total__barfill" style="width: {{ pct_pagado|floatformat:0 }}%"></div></div>
         </div>
         <div class="op-total {% if restante > 0 %}op-total--rest{% else %}op-total--paid{% endif %}">
-            <span class="op-total__k"><span class="material-symbols-outlined">{% if restante > 0 %}schedule{% else %}check_circle{% endif %}</span>Restante a pagar</span>
+            <span class="op-total__k"><span class="material-symbols-outlined">{% if restante > 0 %}schedule{% else %}check_circle{% endif %}</span>{% if operacion.tipo_operacion == 'venta' %}Restante a cobrar{% else %}Restante a pagar{% endif %}</span>
             <span class="op-total__v">$ {{ restante|floatformat:"-2g" }}</span>
         </div>
     </div>
@@ -167,11 +167,11 @@
                 </tbody>
                 <tfoot class="op-table__foot">
                     <tr>
-                        <td>Total pagado</td>
+                        <td>{% if operacion.tipo_operacion == 'venta' %}Total cobrado{% else %}Total pagado{% endif %}</td>
                         <td class="r">$ {{ total_pagado|floatformat:"-2g" }}</td>
                     </tr>
                     <tr class="op-foot-rest">
-                        <td>Restante a pagar</td>
+                        <td>{% if operacion.tipo_operacion == 'venta' %}Restante a cobrar{% else %}Restante a pagar{% endif %}</td>
                         <td class="r">$ {{ restante|floatformat:"-2g" }}</td>
                     </tr>
                 </tfoot>
@@ -217,7 +217,7 @@
         </div>
 
         <h3 id="titulo-modal-pago">Añadir pago</h3>
-        <p id="texto-info-pago">Monto restante a pagar: <strong id="monto-restante-pago">$0.00</strong></p>
+        <p id="texto-info-pago">Monto restante a {% if operacion.tipo_operacion == 'venta' %}cobrar{% else %}pagar{% endif %}: <strong id="monto-restante-pago">$0.00</strong></p>
 
         <form id="form-registrar-pago" onsubmit="event.preventDefault(); procesarPago();">
             <input type="hidden" id="id_operacion_pago" value="">
