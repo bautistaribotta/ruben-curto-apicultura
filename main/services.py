@@ -290,47 +290,7 @@ def crear_operacion(cliente, items, metodo_pago, tipo_operacion, viaje=None, fec
             valor_kilo_cera=valor_cera
         )
 
-        for item in items:
-            # Item a granel: viene con id_cotizacion en vez de id_producto y la
-            # cantidad son kilos, por eso se parsea como Decimal (admite fracciones)
-            id_cotizacion = item.get("id_cotizacion")
-            if id_cotizacion:
-                _procesar_item_granel(operacion, item, tipo_operacion)
-                continue
-
-            id_producto = item.get("id_producto")
-            # Los productos envasados se venden por unidad entera: la columna de
-            # stock es un entero, asi que la cantidad se mantiene como int
-            cantidad = int(item.get("cantidad", 0))
-
-            producto = get_object_or_404(Producto, id=id_producto, activo=True)
-
-            if tipo_operacion == "venta":
-                # En una venta, el precio se toma del producto
-                precio_unitario = producto.precio
-                # Resto el stock y sumo a la cantidad vendida con un incremento
-                # atómico a nivel BD (F()), evitando el lost update del patrón
-                # refresh + save sobre una copia en memoria.
-                modificar_stock(id_producto, -cantidad)
-                Producto.objects.filter(id=id_producto).update(
-                    cantidad_vendida=F("cantidad_vendida") + cantidad
-                )
-            else:
-                # En una compra, el precio viene en el ítem
-                precio_unitario = Decimal(item.get("precio_unitario"))
-                # Sumo el stock y sumo a la cantidad comprada de forma atómica
-                modificar_stock(id_producto, cantidad)
-                Producto.objects.filter(id=id_producto).update(
-                    cantidad_comprada=F("cantidad_comprada") + cantidad
-                )
-
-            # Creo el detalle vinculado a la operación
-            DetalleOperacion.objects.create(
-                operacion=operacion,
-                producto=producto,
-                cantidad=cantidad,
-                precio_unitario=precio_unitario,
-            )
+        _aplicar_items(operacion, items, tipo_operacion)
 
         # Si el pago es "contado", generamos automáticamente un pago usando el monto_total calculado.
         # El pago lleva la misma fecha que la operación (importa al cargar operaciones viejas)
@@ -342,6 +302,61 @@ def crear_operacion(cliente, items, metodo_pago, tipo_operacion, viaje=None, fec
             )
 
     return operacion
+
+
+def _aplicar_items(operacion, items, tipo_operacion):
+    """
+    Crea los detalles de la operación aplicando el impacto de stock de cada
+    ítem (productos envasados y líneas a granel). Debe llamarse dentro de
+    transaction.atomic(). Compartido entre crear_operacion y editar_operacion.
+    """
+    for item in items:
+        # Item a granel: viene con id_cotizacion en vez de id_producto y la
+        # cantidad son kilos, por eso se parsea como Decimal (admite fracciones)
+        id_cotizacion = item.get("id_cotizacion")
+        if id_cotizacion:
+            _procesar_item_granel(operacion, item, tipo_operacion)
+            continue
+
+        id_producto = item.get("id_producto")
+        # Los productos envasados se venden por unidad entera: la columna de
+        # stock es un entero, asi que la cantidad se mantiene como int
+        cantidad = int(item.get("cantidad", 0))
+
+        producto = get_object_or_404(Producto, id=id_producto, activo=True)
+
+        if tipo_operacion == "venta":
+            # El precio del producto se autocompleta en el front pero es
+            # editable, así que se toma del ítem; si no viniera, se cae al
+            # precio registrado del producto.
+            precio_item = item.get("precio_unitario")
+            if precio_item in (None, ""):
+                precio_unitario = producto.precio
+            else:
+                precio_unitario = Decimal(str(precio_item))
+            # Resto el stock y sumo a la cantidad vendida con un incremento
+            # atómico a nivel BD (F()), evitando el lost update del patrón
+            # refresh + save sobre una copia en memoria.
+            modificar_stock(id_producto, -cantidad)
+            Producto.objects.filter(id=id_producto).update(
+                cantidad_vendida=F("cantidad_vendida") + cantidad
+            )
+        else:
+            # En una compra, el precio viene en el ítem
+            precio_unitario = Decimal(item.get("precio_unitario"))
+            # Sumo el stock y sumo a la cantidad comprada de forma atómica
+            modificar_stock(id_producto, cantidad)
+            Producto.objects.filter(id=id_producto).update(
+                cantidad_comprada=F("cantidad_comprada") + cantidad
+            )
+
+        # Creo el detalle vinculado a la operación
+        DetalleOperacion.objects.create(
+            operacion=operacion,
+            producto=producto,
+            cantidad=cantidad,
+            precio_unitario=precio_unitario,
+        )
 
 
 def servicio_cancelar_operacion(id_operacion):
@@ -359,48 +374,144 @@ def servicio_cancelar_operacion(id_operacion):
             return operacion
 
         detalles = DetalleOperacion.objects.filter(operacion=operacion)
-
-        # Revertimos el stock de cada producto en el detalle según el tipo de operación
-        for detalle in detalles:
-            # Lineas a granel: los kilos se revierten sobre la tabla de cotizaciones
-            if detalle.cotizacion_id:
-                if operacion.tipo_operacion == "venta":
-                    # Venta cancelada: los kilos vuelven al deposito
-                    Cotizaciones.objects.filter(id=detalle.cotizacion_id).update(
-                        cantidad=F("cantidad") + detalle.cantidad
-                    )
-                else:
-                    # Compra cancelada: quito los kilos, con el mismo chequeo
-                    # condicional atomico para no dejar el stock negativo
-                    filas = Cotizaciones.objects.filter(
-                        id=detalle.cotizacion_id, cantidad__gte=detalle.cantidad
-                    ).update(cantidad=F("cantidad") - detalle.cantidad)
-
-                    if filas == 0:
-                        raise ValueError(
-                            "No se puede cancelar la compra: los kilos a granel ya fueron vendidos."
-                        )
-                continue
-
-            producto = detalle.producto
-
-            if operacion.tipo_operacion == "venta":
-                # Si era venta, devuelvo stock y resto de cantidad vendida de
-                # forma atómica con F()
-                modificar_stock(producto.id, detalle.cantidad)
-                Producto.objects.filter(id=producto.id).update(
-                    cantidad_vendida=F("cantidad_vendida") - detalle.cantidad
-                )
-            else:
-                # Si era compra, quito stock y resto de cantidad comprada
-                modificar_stock(producto.id, -detalle.cantidad)
-                Producto.objects.filter(id=producto.id).update(
-                    cantidad_comprada=F("cantidad_comprada") - detalle.cantidad
-                )
+        _revertir_stock_detalles(operacion, detalles)
 
         # Marcamos la operación como inactiva (cancelada)
         operacion.activa = False
         operacion.save(update_fields=["activa"])
+
+    return operacion
+
+
+def _revertir_stock_detalles(operacion, detalles):
+    """
+    Revierte el impacto de stock de los detalles dados según el tipo de
+    operación. Debe llamarse dentro de transaction.atomic(). Compartido entre
+    cancelar y editar una operación.
+    """
+    for detalle in detalles:
+        # Lineas a granel: los kilos se revierten sobre la tabla de cotizaciones
+        if detalle.cotizacion_id:
+            if operacion.tipo_operacion == "venta":
+                # Venta revertida: los kilos vuelven al deposito
+                Cotizaciones.objects.filter(id=detalle.cotizacion_id).update(
+                    cantidad=F("cantidad") + detalle.cantidad
+                )
+            else:
+                # Compra revertida: quito los kilos, con el mismo chequeo
+                # condicional atomico para no dejar el stock negativo
+                filas = Cotizaciones.objects.filter(
+                    id=detalle.cotizacion_id, cantidad__gte=detalle.cantidad
+                ).update(cantidad=F("cantidad") - detalle.cantidad)
+
+                if filas == 0:
+                    raise ValueError(
+                        "No se puede revertir la compra: los kilos a granel ya fueron vendidos."
+                    )
+            continue
+
+        producto = detalle.producto
+
+        if operacion.tipo_operacion == "venta":
+            # Si era venta, devuelvo stock y resto de cantidad vendida de
+            # forma atómica con F()
+            modificar_stock(producto.id, detalle.cantidad)
+            Producto.objects.filter(id=producto.id).update(
+                cantidad_vendida=F("cantidad_vendida") - detalle.cantidad
+            )
+        else:
+            # Si era compra, quito stock y resto de cantidad comprada
+            modificar_stock(producto.id, -detalle.cantidad)
+            Producto.objects.filter(id=producto.id).update(
+                cantidad_comprada=F("cantidad_comprada") - detalle.cantidad
+            )
+
+
+def editar_operacion(id_operacion, items, metodo_pago, fecha=None):
+    """
+    Reemplaza los ítems de una operación activa por los nuevos (revirtiendo el
+    stock viejo y aplicando el nuevo), y actualiza la fecha si cambió.
+
+    Pagos: si la operación no tiene pagos, el método es editable y "contado"
+    genera el pago automático por el nuevo total. Si ya tiene pagos, el método
+    no se puede cambiar y los pagos se conservan; el único caso especial es el
+    contado puro (un único pago que cubría el total), donde ese pago se ajusta
+    al nuevo total para que la operación siga saldada.
+    """
+    # La fecha se parsea y las cotizaciones se consultan antes de la
+    # transacción para no hacer llamadas externas dentro de ella
+    fecha_date = None
+    if fecha:
+        try:
+            fecha_date = datetime.strptime(str(fecha).strip(), "%Y-%m-%d").date()
+        except (ValueError, TypeError):
+            raise ValueError("La fecha de la operación no es válida.")
+
+    cotizaciones_hoy = None
+    if fecha_date == timezone.localdate():
+        cotizacion_dolar = get_cotizacion_dolar_oficial()
+        cotizaciones_hoy = {
+            "valor_dolar": cotizacion_dolar.get("venta") if cotizacion_dolar else None,
+            "valor_kilo_miel": get_cotizacion_miel_50mm(),
+            "valor_kilo_cera": get_cotizacion_cera_operculo(),
+        }
+
+    with transaction.atomic():
+        # Mismo bloqueo que al cancelar: evita ediciones/cancelaciones concurrentes
+        operacion = get_object_or_404(
+            Operacion.objects.select_for_update(), id=id_operacion
+        )
+
+        if not operacion.activa:
+            raise ValueError("No se puede editar una operación cancelada.")
+
+        # Total anterior: se necesita para detectar el pago automático de contado
+        monto_anterior = operacion.monto_total
+
+        # 1) Revierto el stock de los ítems actuales y los borro
+        detalles = DetalleOperacion.objects.filter(operacion=operacion)
+        _revertir_stock_detalles(operacion, detalles)
+        detalles.delete()
+
+        # 2) Aplico los ítems nuevos con las mismas validaciones que al crear
+        _aplicar_items(operacion, items, operacion.tipo_operacion)
+
+        # 3) Fecha: solo si cambió respecto de la actual. Mismas reglas que al
+        # crear: fecha de hoy lleva cotizaciones actuales; otra fecha las vacía
+        if fecha_date and fecha_date != timezone.localtime(operacion.fecha).date():
+            if cotizaciones_hoy:
+                operacion.fecha = timezone.now()
+                operacion.valor_dolar = cotizaciones_hoy["valor_dolar"]
+                operacion.valor_kilo_miel = cotizaciones_hoy["valor_kilo_miel"]
+                operacion.valor_kilo_cera = cotizaciones_hoy["valor_kilo_cera"]
+            else:
+                # Mediodía local para que la fecha no se corra de día en UTC
+                operacion.fecha = timezone.make_aware(datetime.combine(fecha_date, time(12, 0)))
+                operacion.valor_dolar = None
+                operacion.valor_kilo_miel = None
+                operacion.valor_kilo_cera = None
+            operacion.save(update_fields=["fecha", "valor_dolar", "valor_kilo_miel", "valor_kilo_cera"])
+
+        # 4) Pagos según la regla de edición
+        pagos = Pago.objects.filter(operacion=operacion)
+        cantidad_pagos = pagos.count()
+        monto_nuevo = operacion.monto_total
+
+        if cantidad_pagos == 0:
+            # Sin pagos: el método es editable y contado salda la operación
+            if (metodo_pago or "").lower() == "contado":
+                Pago.objects.create(
+                    operacion=operacion,
+                    fecha=operacion.fecha,
+                    monto=monto_nuevo,
+                )
+        elif cantidad_pagos == 1:
+            # Contado puro: el único pago cubría el total anterior, lo ajusto
+            # al nuevo total para que la operación siga saldada
+            pago = pagos.first()
+            if pago.monto == monto_anterior:
+                pago.monto = monto_nuevo
+                pago.save(update_fields=["monto"])
 
     return operacion
 

@@ -47,8 +47,10 @@ document.addEventListener('DOMContentLoaded', () => {
         refrescar();
     });
 
+    // Devuelve siempre el valor cargado: al crear, el backend trata la fecha de
+    // hoy igual que no mandar nada; al editar, hoy es un valor nuevo legitimo.
     window.obtenerFechaOperacion = function () {
-        return esHoy() ? null : input.value;
+        return input.value || null;
     };
 
     refrescar();

@@ -21,6 +21,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Clave en sessionStorage para persistir el carrito
     const STORAGE_KEY = 'carrito_operacion';
 
+    // Modo edición: el template inyecta los datos de la operación a editar
+    const scriptEdicion = document.getElementById('datos-edicion');
+    const edicion = scriptEdicion ? JSON.parse(scriptEdicion.textContent) : null;
+
     // =============================================
     //  PERSISTENCIA DEL CARRITO (sessionStorage)
     // =============================================
@@ -42,13 +46,38 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             items.push({
                 id: fila.dataset.id,
-                precio: fila.dataset.precio,
+                precio: fila.querySelector('.input-precio-item').value,
                 nombre: fila.querySelector('.cart-item__name').textContent,
                 cantidad: parseInt(fila.querySelector('.input-cantidad').value),
                 stockOriginal: parseInt(fila.dataset.stockOriginal)
             });
         });
         sessionStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    }
+
+    // Precarga el carrito con los ítems de la operación que se está editando
+    function cargarEdicion() {
+        edicion.items.forEach(item => {
+            if (item.tipo === 'granel') {
+                crearFilaGranel(
+                    item.id,
+                    item.nombre,
+                    item.precio,
+                    item.cantidad,
+                    normalizarDecimal(item.stock)
+                );
+                return;
+            }
+            crearFilaCarrito(
+                item.id,
+                item.nombre,
+                item.precio,
+                item.cantidad,
+                parseInt(item.stock)
+            );
+        });
+        actualizarTotal();
+        ajustarStockVisual();
     }
 
     function restaurarCarrito() {
@@ -78,7 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
             crearFilaCarrito(
                 item.id,
                 item.nombre,
-                parseFloat(item.precio),
+                item.precio,
                 item.cantidad,
                 item.stockOriginal
             );
@@ -364,17 +393,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     <input type="number" class="input-cantidad" value="${cantidad}" min="1" max="${stockOriginal}">
                     <button type="button" data-step="mas" title="Sumar"><span class="material-symbols-outlined">add</span></button>
                 </div>
-                <span class="cart-pricestatic">$ <strong>${formatoMoneda.format(precio)}</strong> c/u</span>
+                <div class="cart-priceedit">
+                    <span class="cart-priceedit__cur">$</span>
+                    <input type="number" class="input-precio-item" placeholder="0.00" min="0" step="0.01" value="${precio}">
+                    <span class="cart-priceedit__u">c/u</span>
+                </div>
             </div>
             <div class="cart-item__sub2">
                 <span class="cart-item__sublabel">Subtotal</span>
-                <span class="cart-item__subval">$ ${formatoMoneda.format(precio * cantidad)}</span>
+                <span class="cart-item__subval">$ 0,00</span>
             </div>
         `;
 
         const inputCantidad = fila.querySelector('.input-cantidad');
         const botonMenos = fila.querySelector('[data-step="menos"]');
         const botonMas = fila.querySelector('[data-step="mas"]');
+        const inputPrecio = fila.querySelector('.input-precio-item');
 
         // Quita el producto del carrito y restaura el stock y el resaltado
         function quitar() {
@@ -389,6 +423,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Escritura libre: no forzamos el valor; la validación se hace al confirmar
         inputCantidad.addEventListener('input', function () {
+            actualizarFila(fila);
+            actualizarTotal();
+            guardarCarrito();
+        });
+
+        // El precio se autocompleta con el del producto pero se puede editar
+        inputPrecio.addEventListener('input', function () {
             actualizarFila(fila);
             actualizarTotal();
             guardarCarrito();
@@ -430,7 +471,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function actualizarFila(fila) {
-        const precio = parseFloat(fila.dataset.precio);
+        const precio = parseFloat(fila.querySelector('.input-precio-item').value) || 0;
         const stockOriginal = parseInt(fila.dataset.stockOriginal);
         const cantidad = parseInt(fila.querySelector('.input-cantidad').value) || 0;
 
@@ -452,7 +493,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 total += kilos * precioKilo;
                 return;
             }
-            const precio = parseFloat(fila.dataset.precio);
+            const precio = parseFloat(fila.querySelector('.input-precio-item').value) || 0;
             const cantidad = parseInt(fila.querySelector('.input-cantidad').value) || 0;
             total += precio * cantidad;
         });
@@ -573,6 +614,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const items = [];
         let cantidadInvalida = false;
+        let precioInvalido = false;
         let granelInvalido = false;
         let precioGranelInvalido = false;
 
@@ -600,14 +642,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const cantidad = parseInt(fila.querySelector('.input-cantidad').value);
             const stockOriginal = parseInt(fila.dataset.stockOriginal);
+            const precioStr = fila.querySelector('.input-precio-item').value.trim();
+            const precio = parseFloat(precioStr);
             if (isNaN(cantidad) || cantidad < 1 || cantidad > stockOriginal) {
                 cantidadInvalida = true;
             }
-            items.push({ id_producto: fila.dataset.id, cantidad: cantidad });
+            if (isNaN(precio) || precio <= 0) {
+                precioInvalido = true;
+            }
+            items.push({ id_producto: fila.dataset.id, cantidad: cantidad, precio_unitario: precioStr });
         });
 
         if (cantidadInvalida) {
             avisar('Revisá las cantidades: cada producto necesita un número válido y dentro del stock disponible.');
+            return;
+        }
+
+        if (precioInvalido) {
+            avisar('Cargá un precio mayor a 0 en todos los productos.');
             return;
         }
 
@@ -630,6 +682,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const metodoPago = metodoPagoSeleccionado.value;
 
+        // Guardo el contenido original del boton ("Confirmar venta" o "Guardar cambios")
+        const textoBotonOriginal = botonConfirmar.innerHTML;
         botonConfirmar.disabled = true;
         botonConfirmar.innerHTML = 'Procesando...';
 
@@ -645,13 +699,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 tipo_operacion: 'venta',
                 // null si la operacion es de hoy; "YYYY-MM-DD" si se cargo una fecha distinta
                 fecha: typeof obtenerFechaOperacion === 'function' ? obtenerFechaOperacion() : null,
+                // id de la operacion a editar; null cuando se crea una nueva
+                editar: edicion ? edicion.id : null,
             }),
         })
             .then(response => response.json().then(data => ({ ok: response.ok, data })))
             .then(({ ok, data }) => {
                 if (ok && data.ok) {
                     limpiarCarritoStorage();
-                    if (data.id_viaje) {
+                    if (data.editada) {
+                        window.location.href = `/informacion_operacion/${data.id_operacion}/`;
+                    } else if (data.id_viaje) {
                         window.location.href = `/informacion_viaje/${data.id_viaje}/`;
                     } else {
                         window.location.href = `/informacion_clientes/${data.id_cliente}/`;
@@ -659,14 +717,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     notificarErrorModal(data.error || 'Algo salió mal. Por favor, volvé a intentarlo.');
                     botonConfirmar.disabled = false;
-                    botonConfirmar.innerHTML = '<span class="material-symbols-outlined">check_circle</span> Confirmar venta';
+                    botonConfirmar.innerHTML = textoBotonOriginal;
                 }
             })
             .catch(error => {
                 console.error('Error en la petición:', error);
                 notificarErrorModal('Algo salió mal. Por favor, volvé a intentarlo.');
                 botonConfirmar.disabled = false;
-                botonConfirmar.innerHTML = '<span class="material-symbols-outlined">check_circle</span> Confirmar venta';
+                botonConfirmar.innerHTML = textoBotonOriginal;
             });
     });
 
@@ -674,7 +732,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (cuerpoCarrito.querySelectorAll('.cart-item').length > 0) guardarCarrito();
     });
 
-    restaurarCarrito();
+    // En modo edición el carrito se precarga con la operación; si no, se
+    // restaura el que quedó en sessionStorage tras una recarga
+    if (edicion) {
+        cargarEdicion();
+    } else {
+        restaurarCarrito();
+    }
     actualizarVistaResumen();
     vincularBotonesAgregar();
     vincularBotonesGranel();

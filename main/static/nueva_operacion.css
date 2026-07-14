@@ -1126,6 +1126,15 @@
   box-shadow: inset 0 1px 2px var(--shadow-tint);
 }
 
+/* Modo edición con pagos registrados: el método queda bloqueado */
+.cart-payseg__opt:disabled {
+  cursor: not-allowed;
+}
+
+.cart-payseg__opt:disabled:not(.is-selected) {
+  opacity: 0.45;
+}
+
 .cart-payseg__opt {
   position: relative;
   z-index: 2;

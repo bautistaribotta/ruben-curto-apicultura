@@ -19,6 +19,23 @@ document.addEventListener('DOMContentLoaded', () => {
     // Clave en sessionStorage para persistir el carrito de compra
     const STORAGE_KEY = 'carrito_compra';
 
+    // Modo edición: el template inyecta los datos de la compra a editar
+    const scriptEdicion = document.getElementById('datos-edicion');
+    const edicion = scriptEdicion ? JSON.parse(scriptEdicion.textContent) : null;
+
+    // Precarga el carrito con los ítems de la compra que se está editando
+    function cargarEdicion() {
+        edicion.items.forEach(item => {
+            if (item.tipo === 'granel') {
+                crearFilaGranel(item.id, item.nombre, item.precio, item.cantidad);
+                return;
+            }
+            crearFilaCarrito(item.id, item.nombre, item.cantidad, item.precio);
+        });
+        actualizarTotal();
+        actualizarVistaResumen();
+    }
+
     // =============================================
     //  PERSISTENCIA DEL CARRITO (sessionStorage)
     // =============================================
@@ -492,6 +509,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const metodoPago = metodoPagoSeleccionado.value;
 
+        // Guardo el contenido original del boton ("Confirmar compra" o "Guardar cambios")
+        const textoBotonOriginal = botonConfirmar.innerHTML;
         botonConfirmar.disabled = true;
         botonConfirmar.innerHTML = 'Procesando...';
 
@@ -507,13 +526,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 tipo_operacion: 'compra',
                 // null si la compra es de hoy; "YYYY-MM-DD" si se cargo una fecha distinta
                 fecha: typeof obtenerFechaOperacion === 'function' ? obtenerFechaOperacion() : null,
+                // id de la compra a editar; null cuando se crea una nueva
+                editar: edicion ? edicion.id : null,
             }),
         })
             .then(response => response.json().then(data => ({ ok: response.ok, data })))
             .then(({ ok, data }) => {
                 if (ok && data.ok) {
                     limpiarCarritoStorage();
-                    if (data.id_viaje) {
+                    if (data.editada) {
+                        window.location.href = `/informacion_operacion/${data.id_operacion}/`;
+                    } else if (data.id_viaje) {
                         window.location.href = `/informacion_viaje/${data.id_viaje}/`;
                     } else {
                         window.location.href = `/informacion_clientes/${data.id_cliente}/`;
@@ -521,14 +544,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     notificarErrorModal(data.error || 'Algo salió mal. Por favor, volvé a intentarlo.');
                     botonConfirmar.disabled = false;
-                    botonConfirmar.innerHTML = '<span class="material-symbols-outlined">check_circle</span> Confirmar compra';
+                    botonConfirmar.innerHTML = textoBotonOriginal;
                 }
             })
             .catch(error => {
                 console.error('Error en la petición:', error);
                 notificarErrorModal('Algo salió mal. Por favor, volvé a intentarlo.');
                 botonConfirmar.disabled = false;
-                botonConfirmar.innerHTML = '<span class="material-symbols-outlined">check_circle</span> Confirmar compra';
+                botonConfirmar.innerHTML = textoBotonOriginal;
             });
     });
 
@@ -536,7 +559,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (cuerpoCarrito.querySelectorAll('.cart-item').length > 0) guardarCarrito();
     });
 
-    restaurarCarrito();
+    // En modo edición el carrito se precarga con la compra; si no, se
+    // restaura el que quedó en sessionStorage tras una recarga
+    if (edicion) {
+        cargarEdicion();
+    } else {
+        restaurarCarrito();
+    }
     actualizarVistaResumen();
     vincularBotonesAgregar();
     vincularBotonesGranel();

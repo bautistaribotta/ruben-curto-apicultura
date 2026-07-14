@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block nombre-pestaña %}
-  <title> Nueva Compra </title>
+  <title> {% if edicion %}Editar Compra{% else %}Nueva Compra{% endif %} </title>
 {% endblock %}
 
 {% block links %}
@@ -18,18 +18,25 @@
   <section id="area-trabajo" class="area-operacion">
     <div class="cart-screen">
       <!-- Encabezado de la vista -->
+      {% if edicion %}
+      <a href="{% url 'informacion_operacion' edicion.id %}" class="cart-back">
+        <span class="material-symbols-outlined">arrow_back</span>
+        Volver a la operación #{{ edicion.id }}
+      </a>
+      {% else %}
       <a href="{% url 'informacion_clientes' cliente.id %}" class="cart-back">
         <span class="material-symbols-outlined">arrow_back</span>
         Volver al perfil del cliente
       </a>
+      {% endif %}
 
       <div class="cart-head">
         <div class="cart-head__left">
           <div class="cart-head__tile">
-            <span class="material-symbols-outlined">shopping_bag</span>
+            <span class="material-symbols-outlined">{% if edicion %}edit{% else %}shopping_bag{% endif %}</span>
           </div>
           <div>
-            <h2 class="cart-head__title">Nueva Compra</h2>
+            <h2 class="cart-head__title">{% if edicion %}Editar Compra #{{ edicion.id }}{% else %}Nueva Compra{% endif %}</h2>
             <div class="cart-head__sub">
               <span class="cart-head__cliente">
                 <span class="material-symbols-outlined">person</span>
@@ -105,7 +112,7 @@
                 <span class="cart-fecha__accion">Ocultar</span>
               </button>
               <div class="cart-fecha__panel" id="panel-fecha">
-                <input type="date" id="input-fecha-operacion" class="cart-fecha__input" value="{% now 'Y-m-d' %}" data-hoy="{% now 'Y-m-d' %}" aria-label="Fecha de la compra">
+                <input type="date" id="input-fecha-operacion" class="cart-fecha__input" value="{% if edicion %}{{ edicion.fecha }}{% else %}{% now 'Y-m-d' %}{% endif %}" data-hoy="{% now 'Y-m-d' %}" aria-label="Fecha de la compra">
                 <button type="button" class="cart-fecha__hoy oculto" id="boton-fecha-hoy">Hoy</button>
               </div>
               <p class="cart-fecha__hint oculto" id="fecha-hint">
@@ -118,7 +125,8 @@
             <div>
               <p class="cart-pay__label">Método de pago</p>
               <div class="cart-pay__seg">
-                <div class="cart-payseg" id="segmento-pago" role="tablist" aria-label="Método de pago">
+                <div class="cart-payseg" id="segmento-pago" role="tablist" aria-label="Método de pago"
+                     {% if edicion %}data-inicial="{{ edicion.metodo }}" {% if edicion.metodo_bloqueado %}data-bloqueado="1"{% endif %}{% endif %}>
                   <span class="cart-payseg__thumb oculto" id="segmento-pago-thumb"></span>
                   <button type="button" role="tab" aria-selected="false" class="cart-payseg__opt" data-value="cuenta_corriente">
                     <input type="radio" name="metodo_pago" value="cuenta_corriente" class="oculto">
@@ -130,6 +138,12 @@
                   </button>
                 </div>
               </div>
+              {% if edicion and edicion.metodo_bloqueado %}
+              <p class="cart-foot__help">
+                <span class="material-symbols-outlined">lock</span>
+                Con pagos registrados el método no se puede cambiar.
+              </p>
+              {% endif %}
             </div>
 
             <!-- Totales -->
@@ -143,11 +157,11 @@
             <!-- Confirmar -->
             <button class="cart-confirm boton-confirmar-operacion">
               <span class="material-symbols-outlined">check_circle</span>
-              Confirmar compra
+              {% if edicion %}Guardar cambios{% else %}Confirmar compra{% endif %}
             </button>
             <p class="cart-foot__help">
               <span class="material-symbols-outlined">add_box</span>
-              Al confirmar se añade al stock.
+              {% if edicion %}Al guardar se recalcula el stock.{% else %}Al confirmar se añade al stock.{% endif %}
             </p>
           </div>
         </aside>
@@ -185,8 +199,22 @@
           }
         });
       });
+
+      // Modo edición: preselecciona el método inferido y lo bloquea si ya hay pagos
+      const metodoInicial = segmento.dataset.inicial;
+      if (metodoInicial) {
+        const opcionInicial = segmento.querySelector(`.cart-payseg__opt[data-value="${metodoInicial}"]`);
+        if (opcionInicial) opcionInicial.click();
+        if (segmento.dataset.bloqueado) {
+          opciones.forEach(o => { o.disabled = true; });
+        }
+      }
     });
   </script>
+
+  {% if edicion %}
+    {{ edicion|json_script:"datos-edicion" }}
+  {% endif %}
 
   <!-- Selector de fecha de la operación (compartido con ventas) -->
   <script src="{% static 'js/fecha_operacion.js' %}"></script>

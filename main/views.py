@@ -10,12 +10,13 @@ from django.core.paginator import Paginator
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
 from django.db import transaction
+from django.utils import timezone
 
 from .models import Cliente, Producto, Operacion, DetalleOperacion, Pago, Cotizaciones, Chofer, Vehiculo, Viaje, ViajeCereal, ViajeReparto
 from .pdf_services import Remito
 from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo_cliente, editar_cliente,
                        eliminar_cliente, buscar_clientes, get_cotizacion_dolar_oficial, get_cotizaciones, get_total_kilos_granel, get_articulos_granel, actualizar_cotizacion, obtener_datos_cliente,
-                       obtener_datos_producto, modificar_stock, crear_operacion, servicio_cancelar_operacion,
+                       obtener_datos_producto, modificar_stock, crear_operacion, editar_operacion, servicio_cancelar_operacion,
                        obtener_listado_deudores, crear_chofer, crear_vehiculo, crear_viaje, obtener_choferes_activos,
                        obtener_vehiculos_activos, obtener_viajes, obtener_datos_viaje, editar_viaje, eliminar_viaje, crear_gasto,
                        incluir_asignado,
@@ -434,6 +435,55 @@ def generar_remito(request, id_operacion):
     return response
 
 
+def _contexto_edicion(operacion):
+    """
+    Arma los datos que el front necesita para precargar el carrito al editar
+    una operación: ítems (con stock ajustado), fecha y método de pago inferido.
+    """
+    es_venta = operacion.tipo_operacion == "venta"
+
+    items = []
+    detalles = operacion.detalleoperacion_set.select_related("producto", "cotizacion")
+    for d in detalles:
+        if d.cotizacion_id:
+            # En una venta editada, los kilos de esta operación vuelven a estar
+            # disponibles, por eso el stock efectivo suma los propios
+            stock = d.cotizacion.cantidad + d.cantidad if es_venta else d.cotizacion.cantidad
+            items.append({
+                "tipo": "granel",
+                "id": d.cotizacion_id,
+                "nombre": d.cotizacion.articulo,
+                "cantidad": str(d.cantidad),
+                "precio": str(d.precio_unitario),
+                "stock": str(stock),
+            })
+        else:
+            stock = d.producto.cantidad + int(d.cantidad) if es_venta else d.producto.cantidad
+            items.append({
+                "tipo": "producto",
+                "id": d.producto_id,
+                "nombre": d.producto.nombre,
+                "cantidad": int(d.cantidad),
+                "precio": str(d.precio_unitario),
+                "stock": stock,
+            })
+
+    # El método de pago no se guarda: se infiere de los pagos. Con pagos
+    # registrados queda bloqueado (regla de edición)
+    cantidad_pagos = operacion.pago_set.count()
+    total_pagado = operacion.total_pagado or 0
+    monto_total = operacion.monto_total or 0
+    metodo = "contado" if cantidad_pagos and total_pagado >= monto_total else "cuenta_corriente"
+
+    return {
+        "id": operacion.id,
+        "fecha": timezone.localtime(operacion.fecha).strftime("%Y-%m-%d"),
+        "metodo": metodo,
+        "metodo_bloqueado": cantidad_pagos > 0,
+        "items": items,
+    }
+
+
 @login_required
 @ensure_csrf_cookie
 def nueva_operacion_venta(request, id_cliente):
@@ -455,6 +505,17 @@ def nueva_operacion_venta(request, id_cliente):
 
             # Fecha opcional para cargar operaciones viejas (None = hoy)
             fecha = datos.get("fecha")
+
+            # Modo edición (solo staff): reemplaza los ítems de una operación existente
+            id_editar = datos.get("editar")
+            if id_editar:
+                if not request.user.is_staff:
+                    return JsonResponse({"error": "Solo el personal autorizado puede editar operaciones."}, status=403)
+                # Valido que la operación exista, sea de este cliente y de este tipo
+                get_object_or_404(Operacion, id=id_editar, cliente=cliente, tipo_operacion="venta", activa=True)
+                operacion = editar_operacion(id_editar, items, metodo_pago, fecha=fecha)
+                messages.success(request, "Operación actualizada correctamente")
+                return JsonResponse({"ok": True, "id_cliente": cliente.id, "id_operacion": operacion.id, "editada": True})
 
             # Delegamos toda la lógica de creación a la capa de servicios
             operacion = crear_operacion(cliente, items, metodo_pago, tipo_operacion, viaje, fecha=fecha)
@@ -500,6 +561,15 @@ def nueva_operacion_venta(request, id_cliente):
     pagina_numero = request.GET.get("page")
     pagina_obj = paginator_productos.get_page(pagina_numero)
 
+    # Modo edición (solo staff): precarga el carrito con la operación existente
+    edicion = None
+    id_editar = request.GET.get("editar")
+    if id_editar:
+        if not request.user.is_staff:
+            return redirect("informacion_operacion", id_operacion=id_editar)
+        operacion = get_object_or_404(Operacion, id=id_editar, cliente=cliente, tipo_operacion="venta", activa=True)
+        edicion = _contexto_edicion(operacion)
+
     contexto = {
         "cliente": cliente,
         "productos": pagina_obj,
@@ -507,6 +577,7 @@ def nueva_operacion_venta(request, id_cliente):
         "categoria": categoria_filtrada,
         "categorias": Producto.categorias,
         "granel": get_articulos_granel(),
+        "edicion": edicion,
     }
 
     # Si es una petición AJAX, devuelvo solo la tabla parcial
@@ -536,6 +607,16 @@ def nueva_operacion_compra(request, id_cliente):
 
             # Fecha opcional para cargar compras viejas (None = hoy)
             fecha = datos.get("fecha")
+
+            # Modo edición (solo staff): reemplaza los ítems de una compra existente
+            id_editar = datos.get("editar")
+            if id_editar:
+                if not request.user.is_staff:
+                    return JsonResponse({"error": "Solo el personal autorizado puede editar operaciones."}, status=403)
+                get_object_or_404(Operacion, id=id_editar, cliente=cliente, tipo_operacion="compra", activa=True)
+                operacion = editar_operacion(id_editar, items, metodo_pago, fecha=fecha)
+                messages.success(request, "Compra actualizada correctamente")
+                return JsonResponse({"ok": True, "id_cliente": cliente.id, "id_operacion": operacion.id, "editada": True})
 
             # El tipo se fuerza a "compra"; en compra el precio viene en cada item
             operacion = crear_operacion(cliente, items, metodo_pago, "compra", viaje, fecha=fecha)
@@ -579,6 +660,15 @@ def nueva_operacion_compra(request, id_cliente):
     pagina_numero = request.GET.get("page")
     pagina_obj = paginator_productos.get_page(pagina_numero)
 
+    # Modo edición (solo staff): precarga el carrito con la compra existente
+    edicion = None
+    id_editar = request.GET.get("editar")
+    if id_editar:
+        if not request.user.is_staff:
+            return redirect("informacion_operacion", id_operacion=id_editar)
+        operacion = get_object_or_404(Operacion, id=id_editar, cliente=cliente, tipo_operacion="compra", activa=True)
+        edicion = _contexto_edicion(operacion)
+
     contexto = {
         "cliente": cliente,
         "productos": pagina_obj,
@@ -586,6 +676,7 @@ def nueva_operacion_compra(request, id_cliente):
         "categoria": categoria_filtrada,
         "categorias": Producto.categorias,
         "granel": get_articulos_granel(),
+        "edicion": edicion,
     }
 
     if request.headers.get("x-requested-with") == "XMLHttpRequest":
