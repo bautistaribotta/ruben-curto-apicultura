@@ -431,7 +431,10 @@ class ViajeCereal(models.Model):
     # El CTG es un codigo de hasta 15 digitos que puede tener ceros a la izquierda, por eso
     # lo guardo como texto: un IntegerField perderia esos ceros (00123456 -> 123456)
     codigo_trazabilidad_granos = models.CharField(max_length=15)
-    toneladas = models.PositiveIntegerField(default=0)
+    # Toneladas transportadas. Uso Decimal (no Integer/Float) para admitir hasta dos
+    # decimales sin el ruido de precision del punto flotante, igual que en el resto de
+    # las cantidades comerciales del sistema (DetalleOperacion, Cotizaciones).
+    toneladas = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     precio_tonelada = models.PositiveIntegerField(default=0)
     porcentaje_chofer = models.PositiveIntegerField(default=0)
     activo = models.BooleanField(default=True)

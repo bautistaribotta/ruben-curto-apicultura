@@ -925,13 +925,27 @@ def _validar_viaje_cereal(id_cliente, id_chofer, id_vehiculo, tipo_cereal, codig
     if not REGEX_CTG.match(codigo_limpio):
         raise ValueError("El codigo de trazabilidad debe ser numerico y tener hasta 15 digitos.")
 
-    # 6. Toneladas: entero positivo dentro del limite de la BD
+    # 6. Toneladas: numero positivo con hasta dos decimales, dentro del limite de la BD.
+    #    Acepto coma o punto como separador decimal (la coma es lo habitual en es-AR).
     try:
-        toneladas_val = int(toneladas)
-        if toneladas_val <= 0 or toneladas_val > 2147483647:
-            raise ValueError()
-    except (ValueError, TypeError):
-        raise ValueError("Las toneladas deben ser un numero entero positivo.")
+        toneladas_val = Decimal(str(toneladas).strip().replace(",", "."))
+    except (InvalidOperation, TypeError, AttributeError):
+        raise ValueError("Las toneladas deben ser un numero valido (hasta 2 decimales).")
+
+    if toneladas_val <= 0:
+        raise ValueError("Las toneladas deben ser un numero positivo.")
+
+    # No mas de dos decimales: si al redondear a 2 el valor cambia, tenia mas precision
+    toneladas_cuant = toneladas_val.quantize(Decimal("0.01"))
+    if toneladas_cuant != toneladas_val:
+        raise ValueError("Las toneladas admiten como maximo 2 decimales.")
+
+    # max_digits=10 con 2 decimales => parte entera de hasta 8 digitos
+    if toneladas_cuant >= Decimal("100000000"):
+        raise ValueError("El valor de toneladas es demasiado grande.")
+
+    # Normalizo a 2 decimales para que "5,5" se guarde como 5.50
+    toneladas_val = toneladas_cuant
 
     # 7. Precio por tonelada: entero positivo dentro del limite de la BD
     try:
