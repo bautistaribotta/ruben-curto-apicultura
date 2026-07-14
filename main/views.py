@@ -911,13 +911,8 @@ def deudores(request):
     # El aviso de vencidas sigue el listado visible (la tabla), no solo las tarjetas.
     vencidos = sum(1 for d in lista_deudores if d["dias"] > UMBRAL_VENCIDA)
 
-    # Orden seleccionado por las píldoras: por monto adeudado o por antigüedad
-    orden = request.GET.get("orden", "monto")
-    if orden == "antiguedad":
-        lista_deudores.sort(key=lambda d: d["dias"], reverse=True)
-    else:
-        orden = "monto"
-        lista_deudores.sort(key=lambda d: d["deuda_pesos"] or 0, reverse=True)
+    # Las deudas se ordenan siempre de la más antigua a la más nueva
+    lista_deudores.sort(key=lambda d: d["dias"], reverse=True)
 
     paginator_deudores = Paginator(lista_deudores, 8)
     pagina_numero = request.GET.get("page")
@@ -933,7 +928,6 @@ def deudores(request):
         "total_miel_hoy": total_miel_hoy,
         "vencidos": vencidos,
         "total_deudores": len(lista_deudores),
-        "orden": orden,
     }
 
     if request.headers.get("x-requested-with") == "XMLHttpRequest":

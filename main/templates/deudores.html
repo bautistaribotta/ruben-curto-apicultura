@@ -50,16 +50,11 @@
             Pagar
           </button>
         </div>
-        <div class="prod-chips" id="chips-orden" role="group" aria-label="Ordenar deudores">
-          <button type="button" class="prod-chip {% if orden == 'monto' %}is-active{% endif %}" data-orden="monto">
-            <span class="material-symbols-outlined">payments</span>
-            Por monto
-          </button>
-          <button type="button" class="prod-chip {% if orden == 'antiguedad' %}is-active{% endif %}" data-orden="antiguedad">
-            <span class="material-symbols-outlined">schedule</span>
-            Por antigüedad
-          </button>
-        </div>
+        {# Orden por antiguedad fijo: indicador estatico, no un boton. #}
+        <span class="deu-orden" role="status">
+          <span class="material-symbols-outlined">schedule</span>
+          Ordenado por antigüedad
+        </span>
       </div>
     </div>
 

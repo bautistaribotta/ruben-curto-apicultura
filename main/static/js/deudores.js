@@ -2,14 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Selecciono los elementos del DOM que voy a usar para la búsqueda
     const inputBusqueda = document.getElementById('buscar-deudor');
     const contenedorTabla = document.getElementById('tabla-deudores-container');
-    const pildoras = document.querySelectorAll('#chips-orden .prod-chip');
     const chipsTipo = document.querySelectorAll('#chips-tipo .prod-chip');
-
-    // Devuelve el orden actualmente seleccionado por las píldoras
-    const ordenActivo = () => {
-        const activa = document.querySelector('#chips-orden .prod-chip.is-active');
-        return activa ? activa.dataset.orden : 'monto';
-    };
 
     // Devuelve el tipo filtrado (cobros/pagos) o '' si no hay ninguno activo (= todas)
     const tipoActivo = () => {
@@ -33,7 +26,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (inputBusqueda) {
                 url.searchParams.set('q', inputBusqueda.value);
             }
-            url.searchParams.set('orden', ordenActivo());
             const tipo = tipoActivo();
             if (tipo) {
                 url.searchParams.set('tipo', tipo);
@@ -96,16 +88,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (inputBusqueda) {
         inputBusqueda.addEventListener('input', () => buscar());
     }
-
-    // Píldoras de orden: marco la activa y vuelvo a buscar manteniendo el filtro
-    pildoras.forEach((pildora) => {
-        pildora.addEventListener('click', () => {
-            if (pildora.classList.contains('is-active')) return;
-            pildoras.forEach((p) => p.classList.remove('is-active'));
-            pildora.classList.add('is-active');
-            buscar();
-        });
-    });
 
     // Chips de tipo (cobros/pagos): seleccion unica o ninguna. Si clickeo el que
     // ya esta activo, lo apago y vuelvo a "todas"; si no, activo ese y apago el otro.

@@ -68,17 +68,21 @@
   color: var(--text-muted);
 }
 
-/* La tarjeta principal toma el color del lado que muestra: pino para cobrar,
+/* La tarjeta principal toma el color del lado que muestra: verde para cobrar,
    rojo para pagar. Refuerza el cambio al alternar el filtro. */
 .deu-stat__value--cobrar {
-  color: var(--pine-900);
+  color: var(--success-500);
 }
 
 .deu-stat__value--pagar {
   color: var(--danger-600);
 }
 
-/* En modo pagar, el sufijo "kg miel" (normalmente atenuado) acompaña el rojo del monto */
+/* El sufijo "kg miel" (normalmente atenuado) acompaña el color del monto */
+.deu-stat__value--cobrar small {
+  color: var(--success-500);
+}
+
 .deu-stat__value--pagar small {
   color: var(--danger-600);
 }
@@ -196,9 +200,9 @@
 }
 
 /* Los chips inactivos muestran la flecha ya tintada como pista del significado:
-   pino para cobros (entra plata), rojo para pagos (sale plata). */
+   verde para cobros (entra plata), rojo para pagos (sale plata). */
 .prod-chip--cobros:not(.is-active) .material-symbols-outlined {
-  color: var(--pine-900);
+  color: var(--success-500);
 }
 
 .prod-chip--pagos:not(.is-active) .material-symbols-outlined {
@@ -207,9 +211,9 @@
 
 /* El estado activo toma el mismo color que los montos que filtra en la tabla. */
 .prod-chip--cobros.is-active {
-  background-color: var(--pine-900);
-  border-color: var(--pine-900);
-  color: var(--sand-50);
+  background-color: var(--success-500);
+  border-color: var(--success-500);
+  color: var(--color-blanco);
 }
 
 .prod-chip--pagos.is-active {
@@ -234,6 +238,23 @@
 
 .deu-vencidos .material-symbols-outlined {
   font-size: 1.05rem;
+}
+
+/* Indicador de orden: informativo, no interactivo. Se lee como una nota tenue,
+   no como un chip clickeable, porque el orden por antiguedad es fijo. */
+.deu-orden {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.deu-orden .material-symbols-outlined {
+  font-size: 1.05rem;
+  color: var(--text-subtle);
 }
 
 /* --- CONTENEDOR PRINCIPAL TABLA --- */
@@ -362,10 +383,10 @@
   white-space: nowrap;
 }
 
-/* Direccion del dinero: a cobrar (venta impaga) en pino con +,
+/* Direccion del dinero: a cobrar (venta impaga) en verde con +,
    a pagar (compra impaga) en rojo con -. El signo acompana al color. */
 .valor-pesos--cobrar {
-  color: var(--pine-900);
+  color: var(--success-500);
 }
 
 .valor-pesos--pagar {

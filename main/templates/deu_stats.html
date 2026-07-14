@@ -11,12 +11,12 @@
     <span class="deu-stat__label">Equivale a (hoy)</span>
     <span class="deu-stat__icon"><span class="material-symbols-outlined">attach_money</span></span>
   </div>
-  <span class="deu-stat__value {% if modo == 'pagar' %}deu-stat__value--pagar{% endif %}">US$ {{ total_usd_hoy|floatformat:"-2g" }}</span>
+  <span class="deu-stat__value {% if modo == 'pagar' %}deu-stat__value--pagar{% else %}deu-stat__value--cobrar{% endif %}">US$ {{ total_usd_hoy|floatformat:"-2g" }}</span>
 </article>
 <article class="deu-stat">
   <div class="deu-stat__head">
     <span class="deu-stat__label">Equivale a (hoy)</span>
     <span class="deu-stat__icon"><span class="material-symbols-outlined">water_drop</span></span>
   </div>
-  <span class="deu-stat__value {% if modo == 'pagar' %}deu-stat__value--pagar{% endif %}">{{ total_miel_hoy|floatformat:"-2g" }} <small>kg miel</small></span>
+  <span class="deu-stat__value {% if modo == 'pagar' %}deu-stat__value--pagar{% else %}deu-stat__value--cobrar{% endif %}">{{ total_miel_hoy|floatformat:"-2g" }} <small>kg miel</small></span>
 </article>
