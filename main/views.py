@@ -1126,14 +1126,7 @@ def viaje_cereales(request):
 
     from django.db.models import Q
 
-    # Base de viajes de cereal activos (sirve para los conteos y para filtrar)
-    base_viajes = obtener_viajes_cereales()
-
-    # Conteos por tipo de cereal, calculados sobre el total (para los chips de filtro)
-    count_total = base_viajes.count()
-    counts_cereal = {c[0]: base_viajes.filter(tipo_cereal=c[0]).count() for c in ViajeCereal.cereales}
-
-    lista_viajes = base_viajes
+    lista_viajes = obtener_viajes_cereales()
 
     # Busqueda por vehiculo, chofer, tipo de cereal, destino o ID
     q = request.GET.get("q", "")
@@ -1150,11 +1143,6 @@ def viaje_cereales(request):
                 | Q(destinos__destino__icontains=q)
             ).distinct()
 
-    # Filtro por tipo de cereal (chips)
-    cereal = request.GET.get("cereal", "")
-    if cereal in dict(ViajeCereal.cereales):
-        lista_viajes = lista_viajes.filter(tipo_cereal=cereal)
-
     # Cargo de a 5 viajes
     paginator = Paginator(lista_viajes, 5)
     pagina_numero = request.GET.get("page")
@@ -1166,9 +1154,6 @@ def viaje_cereales(request):
         "vehiculos": obtener_vehiculos_activos(),
         "cereales": ViajeCereal.cereales,
         "q": q,
-        "cereal": cereal,
-        "count_total": count_total,
-        "counts_cereal": counts_cereal,
     }
 
     # Si es una peticion AJAX (buscador/chips/paginacion), devuelvo solo la tabla parcial

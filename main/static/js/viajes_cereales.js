@@ -1,24 +1,22 @@
 /**
  * -----------------------------------------------------------------------------
- * BÚSQUEDA, FILTRADO POR CEREAL Y PAGINACIÓN (AJAX)
- * Mismo comportamiento que la tabla de viajes: busca, filtra y pagina sin
- * recargar la página entera, y mantiene el bloqueo de los botones del footer.
+ * BÚSQUEDA Y PAGINACIÓN (AJAX)
+ * Mismo comportamiento que la tabla de viajes: busca y pagina sin recargar
+ * la página entera, y mantiene el bloqueo de los botones del footer.
  * -----------------------------------------------------------------------------
  */
 
 const inputBusqueda = document.getElementById('buscar-viaje-cereal');
-const filtroCereal = document.getElementById('filtro-cereal');
 const contenedorTabla = document.getElementById('tabla-viajes-cereales-container');
 
 /**
- * Busca viajes de cereales aplicando texto y filtro de cereal mediante AJAX.
+ * Busca viajes de cereales aplicando el texto ingresado mediante AJAX.
  * @param {string|null} urlString - URL opcional (ej: para paginación).
  */
 const buscar = (urlString = null) => {
-  if (!inputBusqueda || !filtroCereal || !contenedorTabla) return;
+  if (!inputBusqueda || !contenedorTabla) return;
 
   const q = inputBusqueda.value;
-  const cereal = filtroCereal.value;
   let url;
 
   if (urlString) {
@@ -26,11 +24,6 @@ const buscar = (urlString = null) => {
   } else {
     url = new URL(window.location.href);
     url.searchParams.set('q', q);
-    if (cereal) {
-      url.searchParams.set('cereal', cereal);
-    } else {
-      url.searchParams.delete('cereal');
-    }
     url.searchParams.delete('page');
   }
 
@@ -64,20 +57,5 @@ const vincularPaginacion = () => {
 };
 
 if (inputBusqueda) inputBusqueda.addEventListener('input', () => buscar());
-
-// Chips de tipo de cereal
-const chipsCereal = document.getElementById('chips-cereal');
-if (chipsCereal) {
-  chipsCereal.addEventListener('click', (e) => {
-    const chip = e.target.closest('.prod-chip');
-    if (!chip) return;
-
-    chipsCereal.querySelectorAll('.prod-chip').forEach((c) => c.classList.remove('is-active'));
-    chip.classList.add('is-active');
-
-    if (filtroCereal) filtroCereal.value = chip.dataset.cereal;
-    buscar();
-  });
-}
 
 vincularPaginacion();

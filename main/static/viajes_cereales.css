@@ -129,23 +129,6 @@
   background-color: var(--sand-400);
 }
 
-/* --- Puntos de color en los chips de filtro por cereal --- */
-.prod-chip__dot--maiz {
-  background-color: var(--cereal-maiz-dot);
-}
-
-.prod-chip__dot--soja {
-  background-color: var(--cereal-soja-dot);
-}
-
-.prod-chip__dot--trigo {
-  background-color: var(--cereal-trigo-dot);
-}
-
-.prod-chip__dot--mani {
-  background-color: var(--cereal-mani-dot);
-}
-
 /* --- Slide-over "Nuevo acopio" ---
    Las clases internas del panel (.panel-cabecera, .grupo-input, .boton-primario,
    etc.) y las reglas base de #slide-over-fondo / #slide-over-panel se heredan de

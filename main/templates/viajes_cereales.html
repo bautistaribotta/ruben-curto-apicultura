@@ -43,26 +43,6 @@
     </div>
   </div>
 
-  <!-- Filtros por tipo de cereal como pildoras -->
-  <input type="hidden" id="filtro-cereal" value="{{ cereal|default:'' }}">
-  <div class="prod-chips" id="chips-cereal">
-    <button type="button" class="prod-chip {% if not cereal %}is-active{% endif %}" data-cereal="">
-      Todos <span class="vje-chipcount">{{ count_total }}</span>
-    </button>
-    <button type="button" class="prod-chip {% if cereal == 'Maiz' %}is-active{% endif %}" data-cereal="Maiz">
-      <span class="prod-chip__dot prod-chip__dot--maiz"></span>Maíz <span class="vje-chipcount">{{ counts_cereal.Maiz }}</span>
-    </button>
-    <button type="button" class="prod-chip {% if cereal == 'Soja' %}is-active{% endif %}" data-cereal="Soja">
-      <span class="prod-chip__dot prod-chip__dot--soja"></span>Soja <span class="vje-chipcount">{{ counts_cereal.Soja }}</span>
-    </button>
-    <button type="button" class="prod-chip {% if cereal == 'Trigo' %}is-active{% endif %}" data-cereal="Trigo">
-      <span class="prod-chip__dot prod-chip__dot--trigo"></span>Trigo <span class="vje-chipcount">{{ counts_cereal.Trigo }}</span>
-    </button>
-    <button type="button" class="prod-chip {% if cereal == 'Mani' %}is-active{% endif %}" data-cereal="Mani">
-      <span class="prod-chip__dot prod-chip__dot--mani"></span>Maní <span class="vje-chipcount">{{ counts_cereal.Mani }}</span>
-    </button>
-  </div>
-
   <!-- Tabla de viajes de cereales -->
   <div class="contenedor-tabla" id="tabla-viajes-cereales-container">
     {% include 'tabla_viajes_cereales.html' %}
