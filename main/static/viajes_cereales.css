@@ -164,3 +164,16 @@
   display: flex;
   flex-direction: column;
 }
+
+/* fallback-oklch-autogenerado */
+/* Safari < 15.4 no soporta oklch(): redefinimos las variables en sRGB. */
+@supports not (color: oklch(0% 0 0)) {
+  :root {
+    --cereal-trigo-bg: #ffedd3;
+    --cereal-trigo-fg: #805127;
+    --cereal-trigo-dot: #d18e45;
+    --cereal-mani-bg: #ffe6d6;
+    --cereal-mani-fg: #764834;
+    --cereal-mani-dot: #ba7652;
+  }
+}

@@ -234,6 +234,7 @@
   position: absolute;
   inset: 0;
   background-color: var(--overlay-ink);
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   opacity: 0;
   transition: opacity var(--dur-slow) var(--ease-standard);
@@ -640,6 +641,7 @@ input:checked + .slider:before {
   position: absolute;
   inset: 0;
   background-color: var(--overlay-ink);
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   opacity: 0;
   transition: opacity var(--dur-slow) var(--ease-standard);
@@ -858,5 +860,13 @@ input:checked + .slider:before {
   /* Ocultar columnas menos importantes en móviles muy pequeños */
   .columna-ocultable-movil {
     display: none;
+  }
+}
+
+/* fallback-oklch-autogenerado */
+/* Safari < 15.4 no soporta oklch(): redefinimos las variables en sRGB. */
+@supports not (color: oklch(0% 0 0)) {
+  :root {
+    --color-rojo-eliminacion: #dc2626;
   }
 }

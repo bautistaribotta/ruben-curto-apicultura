@@ -626,6 +626,7 @@ html {
   position: absolute;
   inset: 0;
   background-color: var(--color-slate-900-transparente-40);
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   opacity: 0;
   transition: opacity 0.3s ease-in-out;
@@ -883,5 +884,13 @@ html {
   }
   .separador-vertical {
     display: none;
+  }
+}
+
+/* fallback-oklch-autogenerado */
+/* Safari < 15.4 no soporta oklch(): redefinimos las variables en sRGB. */
+@supports not (color: oklch(0% 0 0)) {
+  :root {
+    --color-rojo-eliminacion: #dc2626;
   }
 }

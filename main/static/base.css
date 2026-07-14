@@ -185,6 +185,10 @@ body {
   font-family: var(--font-main);
   background-color: var(--brand-cream);
   height: 100vh;
+  /* En Safari iOS/iPadOS la barra de direcciones dinamica hace que 100vh sea mas
+     alto que lo visible y corta el contenido inferior; dvh sigue al viewport real.
+     Los navegadores sin soporte descartan esta linea y conservan el 100vh. */
+  height: 100dvh;
   overflow: hidden;
   display: flex;
 }
@@ -564,6 +568,7 @@ body {
   position: absolute;
   inset: 0;
   background-color: var(--overlay-ink);
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   opacity: 0;
   transition: opacity var(--dur-slow) var(--ease-standard);
@@ -735,6 +740,7 @@ body {
     position: fixed;
     inset: 0;
     background-color: var(--color-sombra-oscuro);
+    -webkit-backdrop-filter: blur(4px);
     backdrop-filter: blur(4px);
     z-index: 1500;
     opacity: 0;
@@ -990,4 +996,107 @@ tbody tr.fila-vacia:active {
 .boton-paginacion:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* fallback-oklch-autogenerado */
+/* Safari < 15.4 no soporta oklch(): redefinimos las variables en sRGB. */
+@supports not (color: oklch(0% 0 0)) {
+  :root {
+    /* Sombras compuestas (agregadas a mano: el script solo convierte valores oklch puros) */
+    --shadow-xs: 0 1px 2px rgba(10, 27, 21, 0.06);
+    --shadow-sm: 0 1px 3px rgba(10, 27, 21, 0.09), 0 1px 2px rgba(10, 27, 21, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(10, 27, 21, 0.09), 0 2px 4px -2px rgba(10, 27, 21, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(10, 27, 21, 0.11), 0 4px 6px -4px rgba(10, 27, 21, 0.07);
+    --shadow-xl: 0 20px 25px -5px rgba(10, 27, 21, 0.13), 0 8px 10px -6px rgba(10, 27, 21, 0.08);
+    --shadow-honey: 0 6px 16px -4px rgba(255, 181, 4, 0.40);
+    --color-toast-success: #15803d;
+    --brand-cream: #fdfcf8;
+    --stone-900: #0c0a09;
+    --slate-900: #0f172a;
+    --slate-700: #334155;
+    --slate-600: #475569;
+    --slate-500: #64748b;
+    --slate-400: #94a3b8;
+    --stone-300: #d6d3d1;
+    --stone-200: #e7e5e4;
+    --color-rojo-eliminacion-transparente-30: rgba(220, 38, 38, 0.3);
+    --color-rojo-eliminacion: #dc2626;
+    --color-rojo-muy-claro: #ffebe6;
+    --color-rojo-claro-etiqueta: #ffe4e6;
+    --color-rojo-texto-etiqueta: #991b1b;
+    --color-rojo-borde-etiqueta: #fecdd3;
+    --color-rosa-claro: #fef2f2;
+    --color-blanco: #ffffff;
+    --color-gris-claro-hover: #f1f5f9;
+    --color-gris-fondo-input: #f8fafc;
+    --color-azul-claro: #e2e8f0;
+    --color-gris-fondo-input-alt: #f9fafb;
+    --color-verde-claro-etiqueta: #f7fee7;
+    --color-gris-borde-etiqueta: #cbd5e1;
+    --color-cera-fondo-etiqueta: #fefce8;
+    --color-amarillo-claro-etiqueta: #fffbeb;
+    --color-gris-claro-etiqueta: #f5f5f4;
+    --color-morado-claro-fondo: #eff6ff;
+    --color-madera-fondo-etiqueta: #fff7ed;
+    --color-madera-borde-etiqueta: #ffedd5;
+    --color-insumos-fondo-etiqueta: #e0e7ff;
+    --color-insumos-borde-etiqueta: #c7d2fe;
+    --color-borde-login: #fecaca;
+    --color-gris-fondo-input-transparente-50: rgba(248, 250, 252, 0.5);
+    --color-crema-transparente: rgba(253, 252, 248, 0.101961);
+    --color-sombra-1: rgba(0, 0, 0, 0.01);
+    --color-sombra-5: rgba(0, 0, 0, 0.05);
+    --color-sombra-10: rgba(0, 0, 0, 0.1);
+    --color-sombra-oscuro: rgba(0, 0, 0, 0.3);
+    --color-verde-transparente-20: rgba(15, 40, 32, 0.2);
+    --color-verde-transparente-20-alt: rgba(15, 40, 32, 0.203922);
+    --color-slate-900-transparente-40: rgba(15, 23, 42, 0.4);
+    --color-verde-medio-transparente-10: rgba(15, 40, 32, 0.1);
+    --color-verde-medio-transparente-10-alt: rgba(15, 40, 32, 0.101961);
+    --color-verde-texto-etiqueta: #4d7c0f;
+    --color-verde-borde-etiqueta: #d9f99d;
+    --color-amarillo-texto-etiqueta: #b45309;
+    --color-amarillo-borde-etiqueta: #fde68a;
+    --color-gris-texto-etiqueta: #57534e;
+    --color-morado-texto: #3b82f6;
+    --color-morado-oscuro-texto: #2563eb;
+    --color-cera-texto-etiqueta: #a16207;
+    --color-cera-borde-etiqueta: #fef08a;
+    --color-madera-texto-etiqueta: #c2410c;
+    --color-insumos-texto-etiqueta: #3730a3;
+    --color-slate-400-transparente-10: rgba(148, 163, 184, 0.1);
+    --color-verde-transparente-5: rgba(15, 40, 32, 0.05);
+    --color-verde-transparente-10: rgba(15, 40, 32, 0.1);
+    --color-verde-transparente-30: rgba(15, 40, 32, 0.3);
+    --color-verde-transparente-40: rgba(15, 40, 32, 0.4);
+    --pine-900: #0f2820;
+    --pine-950: #0a1b15;
+    --honey-500: #ffb504;
+    --honey-600: #e09a00;
+    --sand-50: #fcf9f1;
+    --sand-300: #dbd1bb;
+    --sand-200: #ece5d4;
+    --sand-500: #94886c;
+    --sand-600: #6f6549;
+    --sand-700: #4d452f;
+    --sand-800: #322c1d;
+    --honey-tint-10: rgba(255, 181, 4, 0.12);
+    --honey-tint-20: rgba(255, 181, 4, 0.22);
+    --blanco-transparente-6: rgba(255, 255, 255, 0.06);
+    --honey-50: #fff8e6;
+    --honey-200: #ffe08a;
+    --honey-300: #ffd24f;
+    --honey-700: #b87a02;
+    --sand-100: #f6f1e4;
+    --sand-400: #bcaf92;
+    --success-600: #2e8b57;
+    --success-500: #38a169;
+    --success-50: #eaf6ef;
+    --success-200: #bfe3cd;
+    --danger-600: #c53434;
+    --danger-500: #d64545;
+    --danger-50: #fceded;
+    --shadow-tint: rgba(10, 27, 21, 0.12);
+    --overlay-ink: rgba(10, 27, 21, 0.5);
+  }
 }

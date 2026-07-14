@@ -185,6 +185,7 @@
   position: absolute;
   inset: 0;
   background-color: var(--overlay-ink);
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   opacity: 0;
   transition: opacity var(--dur-slow) var(--ease-standard);
@@ -480,6 +481,7 @@
   position: absolute;
   inset: 0;
   background-color: var(--overlay-ink);
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
 }
 
@@ -625,5 +627,13 @@
   }
   .modal-eliminar-acciones {
     grid-template-columns: 1fr;
+  }
+}
+
+/* fallback-oklch-autogenerado */
+/* Safari < 15.4 no soporta oklch(): redefinimos las variables en sRGB. */
+@supports not (color: oklch(0% 0 0)) {
+  :root {
+    --color-rojo-eliminacion: #dc2626;
   }
 }

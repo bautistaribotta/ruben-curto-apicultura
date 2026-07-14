@@ -140,6 +140,7 @@
 }
 
 .prod-chip.is-active .vje-chipcount {
+  background-color: rgba(255, 255, 255, 0.18);
   background-color: oklch(100% 0 0 / 0.18);
   color: var(--text-on-inverse);
 }
@@ -402,6 +403,7 @@
   position: absolute;
   inset: 0;
   background-color: var(--overlay-ink);
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   opacity: 0;
   transition: opacity var(--dur-slow) var(--ease-standard);
@@ -830,5 +832,17 @@
   }
   .panel-pie button {
     width: 100%;
+  }
+}
+
+/* fallback-oklch-autogenerado */
+/* Safari < 15.4 no soporta oklch(): redefinimos las variables en sRGB. */
+@supports not (color: oklch(0% 0 0)) {
+  :root {
+    --color-rojo-eliminacion: #dc2626;
+    --info-50: #ebf5ff;
+    --info-200: #badbfe;
+    --info-500: #418ad1;
+    --info-600: #1b71bc;
   }
 }

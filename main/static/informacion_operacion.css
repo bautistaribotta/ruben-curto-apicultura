@@ -517,3 +517,16 @@
 .campo-info label {
   color: var(--text-body);
 }
+
+/* fallback-oklch-autogenerado */
+/* Safari < 15.4 no soporta oklch(): redefinimos las variables en sRGB. */
+@supports not (color: oklch(0% 0 0)) {
+  :root {
+    --info-50: #ebf5ff;
+    --info-200: #badbfe;
+    --info-700: #005fad;
+    --danger-200: #ffc9c9;
+    --danger-700: #a81f20;
+    --success-700: #207041;
+  }
+}

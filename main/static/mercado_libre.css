@@ -283,6 +283,7 @@
   position: absolute;
   inset: 0;
   background-color: var(--overlay-ink);
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   opacity: 0;
   transition: opacity var(--dur-slow) var(--ease-standard);
