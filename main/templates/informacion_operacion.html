@@ -57,6 +57,11 @@
             </div>
         </div>
         <div class="op-head__actions">
+            <button class="op-btn op-btn--dark"
+                {% if operacion.estado_pago == 'Cancelada' or operacion.estado_pago == 'Pagada' %}disabled{% else %}onclick="abrirModalPago('{{ operacion.id }}', '{{ operacion.monto_total|default_if_none:0|stringformat:'f' }}', '{{ operacion.total_pagado|default_if_none:0|stringformat:'f' }}');"{% endif %}>
+                <span class="material-symbols-outlined">payments</span>
+                Añadir pago
+            </button>
             {% if request.user.is_staff and operacion.activa %}
             <a href="{% if operacion.tipo_operacion == 'compra' %}{% url 'nueva_operacion_compra' operacion.cliente.id %}{% else %}{% url 'nueva_operacion_venta' operacion.cliente.id %}{% endif %}?editar={{ operacion.id }}"
                class="op-btn op-btn--secondary">
@@ -64,11 +69,6 @@
                 Editar operación
             </a>
             {% endif %}
-            <button class="op-btn op-btn--dark"
-                {% if operacion.estado_pago == 'Cancelada' or operacion.estado_pago == 'Pagada' %}disabled{% else %}onclick="abrirModalPago('{{ operacion.id }}', '{{ operacion.monto_total|default_if_none:0|stringformat:'f' }}', '{{ operacion.total_pagado|default_if_none:0|stringformat:'f' }}');"{% endif %}>
-                <span class="material-symbols-outlined">payments</span>
-                Añadir pago
-            </button>
             <a href="{% url 'generar_remito' operacion.id %}" target="_blank" class="op-btn op-btn--secondary">
                 <span class="material-symbols-outlined">download</span>
                 Imprimir remito
