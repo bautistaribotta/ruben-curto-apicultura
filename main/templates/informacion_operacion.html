@@ -24,7 +24,7 @@
         <span class="material-symbols-outlined">arrow_back</span>
         Volver al perfil de {{ operacion.cliente.nombre }} {{ operacion.cliente.apellido|default:"" }}
     </a>
-    {% elif operacion.viaje %}
+    {% elif operacion.viaje and operacion.viaje.activo %}
     <a href="{% url 'informacion_viaje' operacion.viaje.id %}" class="boton-volver">
         <span class="material-symbols-outlined">arrow_back</span>
         Volver al viaje #{{ operacion.viaje.id }}
@@ -47,11 +47,16 @@
                 <div class="op-head__meta">
                     <span class="op-head__metaitem"><span class="material-symbols-outlined">event</span>{{ operacion.fecha|date:"d/m/Y" }}</span>
                     <span class="op-head__metaitem"><span class="material-symbols-outlined">person</span>{{ operacion.cliente.nombre }} {{ operacion.cliente.apellido|default:"" }}</span>
-                    {% if operacion.viaje %}
+                    {% if operacion.viaje and operacion.viaje.activo %}
                     <a href="{% url 'informacion_viaje' operacion.viaje.id %}" class="op-viaje">
                         <span class="material-symbols-outlined">local_shipping</span>
                         Realizada en el viaje #{{ operacion.viaje.id }}
                     </a>
+                    {% elif operacion.viaje %}
+                    <span class="op-viaje op-viaje--eliminado" title="El viaje fue eliminado">
+                        <span class="material-symbols-outlined">local_shipping</span>
+                        Realizada en el viaje #{{ operacion.viaje.id }} (eliminado)
+                    </span>
                     {% endif %}
                 </div>
             </div>

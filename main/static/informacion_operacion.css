@@ -133,6 +133,14 @@
   font-size: 0.95rem;
 }
 
+/* Chip de viaje eliminado: informativo pero no clickeable */
+.op-viaje--eliminado {
+  background-color: var(--neutral-100, #f3f4f6);
+  border-color: var(--neutral-200, #e5e7eb);
+  color: var(--neutral-500, #6b7280);
+  cursor: default;
+}
+
 .op-head__actions {
   display: flex;
   gap: 0.6rem;
