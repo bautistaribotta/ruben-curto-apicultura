@@ -1,6 +1,7 @@
 from django.db import models
 from django.db.models import Sum, F, Subquery, OuterRef, DecimalField, Value
 from django.db.models.functions import Coalesce
+from django.utils import timezone
 
 
 class Producto(models.Model):
@@ -101,7 +102,8 @@ class Operacion(models.Model):
     viaje = models.ForeignKey("Viaje", on_delete=models.SET_NULL, null=True,
                               blank=True, related_name="operaciones", db_column="id_viaje")
     cliente = models.ForeignKey(Cliente, on_delete=models.PROTECT, db_column="id_cliente")
-    fecha = models.DateTimeField(auto_now_add=True)
+    # default (y no auto_now_add) para poder cargar operaciones viejas con fecha propia
+    fecha = models.DateTimeField(default=timezone.now)
     activa = models.BooleanField(default=True)
     tipo_operacion = models.CharField(max_length=10, choices=TIPO_OPERACION)
     valor_dolar = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
@@ -200,7 +202,9 @@ class DetalleOperacion(models.Model):
 
 class Pago(models.Model):
     operacion = models.ForeignKey(Operacion, on_delete=models.CASCADE, db_column="id_operacion")
-    fecha = models.DateTimeField(auto_now_add=True)
+    # default (y no auto_now_add) para que el pago automatico de una operacion
+    # "contado" con fecha vieja pueda llevar esa misma fecha
+    fecha = models.DateTimeField(default=timezone.now)
     monto = models.DecimalField(max_digits=15, decimal_places=2)
 
     class Meta:

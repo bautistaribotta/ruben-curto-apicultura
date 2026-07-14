@@ -453,8 +453,11 @@ def nueva_operacion_venta(request, id_cliente):
             id_viaje = request.GET.get("viaje")
             viaje = get_object_or_404(Viaje, id=id_viaje) if id_viaje else None
 
+            # Fecha opcional para cargar operaciones viejas (None = hoy)
+            fecha = datos.get("fecha")
+
             # Delegamos toda la lógica de creación a la capa de servicios
-            operacion = crear_operacion(cliente, items, metodo_pago, tipo_operacion, viaje)
+            operacion = crear_operacion(cliente, items, metodo_pago, tipo_operacion, viaje, fecha=fecha)
 
             # Enviar mensaje de éxito a través del framework de mensajes de Django
             messages.success(request, "Operación creada correctamente")
@@ -531,8 +534,11 @@ def nueva_operacion_compra(request, id_cliente):
             id_viaje = request.GET.get("viaje")
             viaje = get_object_or_404(Viaje, id=id_viaje) if id_viaje else None
 
+            # Fecha opcional para cargar compras viejas (None = hoy)
+            fecha = datos.get("fecha")
+
             # El tipo se fuerza a "compra"; en compra el precio viene en cada item
-            operacion = crear_operacion(cliente, items, metodo_pago, "compra", viaje)
+            operacion = crear_operacion(cliente, items, metodo_pago, "compra", viaje, fecha=fecha)
 
             messages.success(request, "Compra creada correctamente")
 

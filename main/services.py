@@ -1,6 +1,7 @@
 import re
-from datetime import datetime
+from datetime import datetime, time
 import requests
+from django.utils import timezone
 from decimal import Decimal, InvalidOperation
 
 from django.shortcuts import get_object_or_404
@@ -235,16 +236,47 @@ def _procesar_item_granel(operacion, item, tipo_operacion):
     )
 
 
-def crear_operacion(cliente, items, metodo_pago, tipo_operacion, viaje=None):
-    # Obtenemos las cotizaciones actuales antes de la transacción
-    cotizacion_dolar = get_cotizacion_dolar_oficial()
-    if cotizacion_dolar:
-        valor_dolar = cotizacion_dolar.get("venta")
-    else:
-        valor_dolar = None
+def _parsear_fecha_operacion(fecha):
+    """
+    Convierte la fecha "YYYY-MM-DD" que manda el front en un datetime aware,
+    o devuelve None si viene vacía o es la fecha de hoy (comportamiento normal).
+    """
+    if not fecha:
+        return None
 
-    valor_miel = get_cotizacion_miel_50mm()
-    valor_cera = get_cotizacion_cera_operculo()
+    try:
+        fecha_date = datetime.strptime(str(fecha).strip(), "%Y-%m-%d").date()
+    except (ValueError, TypeError):
+        raise ValueError("La fecha de la operación no es válida.")
+
+    if fecha_date == timezone.localdate():
+        return None
+
+    # Mediodía local para que la fecha no se corra de día al guardarse en UTC
+    return timezone.make_aware(datetime.combine(fecha_date, time(12, 0)))
+
+
+def crear_operacion(cliente, items, metodo_pago, tipo_operacion, viaje=None, fecha=None):
+    # Fecha personalizada: permite cargar operaciones viejas. None = hoy.
+    fecha_personalizada = _parsear_fecha_operacion(fecha)
+
+    if fecha_personalizada:
+        # No hay cotizaciones históricas en el sistema: para una operación con
+        # fecha distinta a hoy las cotizaciones "de origen" quedan vacías en vez
+        # de guardar las de hoy como si fueran las de aquel día.
+        valor_dolar = None
+        valor_miel = None
+        valor_cera = None
+    else:
+        # Obtenemos las cotizaciones actuales antes de la transacción
+        cotizacion_dolar = get_cotizacion_dolar_oficial()
+        if cotizacion_dolar:
+            valor_dolar = cotizacion_dolar.get("venta")
+        else:
+            valor_dolar = None
+
+        valor_miel = get_cotizacion_miel_50mm()
+        valor_cera = get_cotizacion_cera_operculo()
 
     with transaction.atomic():
         # Creo la operación con las cotizaciones actuales
@@ -252,6 +284,7 @@ def crear_operacion(cliente, items, metodo_pago, tipo_operacion, viaje=None):
             cliente=cliente,
             viaje=viaje,
             tipo_operacion=tipo_operacion,
+            fecha=fecha_personalizada or timezone.now(),
             valor_dolar=valor_dolar,
             valor_kilo_miel=valor_miel,
             valor_kilo_cera=valor_cera
@@ -299,10 +332,12 @@ def crear_operacion(cliente, items, metodo_pago, tipo_operacion, viaje=None):
                 precio_unitario=precio_unitario,
             )
 
-        # Si el pago es "contado", generamos automáticamente un pago usando el monto_total calculado
+        # Si el pago es "contado", generamos automáticamente un pago usando el monto_total calculado.
+        # El pago lleva la misma fecha que la operación (importa al cargar operaciones viejas)
         if metodo_pago.lower() == "contado":
             Pago.objects.create(
                 operacion=operacion,
+                fecha=operacion.fecha,
                 monto=operacion.monto_total
             )
 
@@ -441,7 +476,6 @@ def obtener_listado_deudores(q="", tipo=""):
                 Q(cliente__nombre__icontains=q) | Q(cliente__apellido__icontains=q)
             )
 
-    from django.utils import timezone
     hoy = timezone.localdate()
 
     lista_deudores = []
