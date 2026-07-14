@@ -217,6 +217,13 @@
               return;
             }
 
+            if (parseFloat(nuevoValor) < 1) {
+              notificarErrorModal('No se puede colocar una cotización menor a 1');
+              restaurar();
+              guardando = false;
+              return;
+            }
+
             fetch('{% url "actualizar_cotizacion" %}', {
               method: 'POST',
               headers: {

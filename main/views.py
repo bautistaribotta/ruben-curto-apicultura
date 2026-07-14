@@ -71,6 +71,8 @@ def actualizar_cotizacion_ajax(request):
             monto = datos.get("monto")
 
             if articulo and monto is not None:
+                if float(monto) < 1:
+                    return JsonResponse({"error": "La cotización no puede ser menor a 1"}, status=400)
                 actualizar_cotizacion(articulo, monto)
                 return JsonResponse({"ok": True})
             else:
