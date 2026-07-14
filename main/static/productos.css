@@ -131,6 +131,10 @@
   background-color: var(--color-rojo-texto-etiqueta);
 }
 
+.prod-chip__dot--tambores-vacios {
+  background-color: var(--slate-500);
+}
+
 .prod-chip__dot--otros {
   background-color: var(--color-gris-texto-etiqueta);
 }
@@ -264,6 +268,12 @@
   background-color: var(--color-rojo-claro-etiqueta);
   color: var(--color-rojo-texto-etiqueta);
   border: 1px solid var(--color-rojo-borde-etiqueta);
+}
+
+.etiqueta-tambores-vacios {
+  background-color: var(--color-azul-claro);
+  color: var(--slate-700);
+  border: 1px solid var(--color-gris-borde-etiqueta);
 }
 
 .etiqueta-otros {

@@ -11,7 +11,7 @@
     <tr>
       <td>
         <div class="cart-prod">
-          <span class="cart-prod__dot cat-dot--{{ producto.categoria|default:'otros'|lower }}"></span>
+          <span class="cart-prod__dot cat-dot--{{ producto.categoria|default:'otros'|slugify }}"></span>
           <div>
             <div class="cart-prod__name">{{producto.nombre}}</div>
             <div class="cart-prod__sub">ID: {{producto.id}}</div>

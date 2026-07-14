@@ -16,7 +16,7 @@
           <div class="producto-id"> ID: {{ producto.id }} </div>
         </td>
         <td class="texto-centrado categoria-valor">
-          <span class="etiqueta etiqueta-{{ producto.categoria|lower }}">
+          <span class="etiqueta etiqueta-{{ producto.categoria|slugify }}">
             {{ producto.categoria }}
           </span>
         </td>

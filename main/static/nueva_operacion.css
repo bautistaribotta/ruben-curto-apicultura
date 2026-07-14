@@ -51,6 +51,10 @@
   background: var(--color-rojo-texto-etiqueta);
 }
 
+.cat-dot--tambores-vacios {
+  background: var(--slate-500);
+}
+
 .cat-dot--otros {
   background: var(--color-gris-texto-etiqueta);
 }

@@ -56,7 +56,7 @@
               <button type="button" class="cart-chip{% if not categoria %} is-active{% endif %}" data-categoria="">Todas</button>
               {% for valor, etiqueta in categorias %}
               <button type="button" class="cart-chip{% if categoria == valor %} is-active{% endif %}" data-categoria="{{ valor }}">
-                <span class="cart-chip__dot cat-dot--{{ valor|lower }}"></span>{{ etiqueta }}
+                <span class="cart-chip__dot cat-dot--{{ valor|slugify }}"></span>{{ etiqueta }}
               </button>
               {% endfor %}
             </div>

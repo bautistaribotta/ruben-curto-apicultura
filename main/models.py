@@ -12,6 +12,7 @@ class Producto(models.Model):
         ("Estampado", "Estampado"),
         ("Insumos", "Insumos"),
         ("Medicamentos", "Medicamentos"),
+        ("Tambores Vacios", "Tambores Vacios"),
         ("Otros", "Otros"),
     ]
     nombre = models.CharField(max_length=50, unique=True)
