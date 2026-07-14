@@ -97,6 +97,23 @@
               <span class="material-symbols-outlined">delete_sweep</span>Vaciar carrito
             </button>
 
+            <!-- Fecha de la operación: hoy por defecto, plegada tras "Cambiar" -->
+            <div class="cart-fecha" id="cart-fecha">
+              <button type="button" class="cart-fecha__toggle" id="boton-cambiar-fecha" aria-expanded="true" aria-controls="panel-fecha">
+                <span class="material-symbols-outlined">event</span>
+                <span class="cart-fecha__texto">Fecha: <strong id="fecha-etiqueta">hoy</strong></span>
+                <span class="cart-fecha__accion">Ocultar</span>
+              </button>
+              <div class="cart-fecha__panel" id="panel-fecha">
+                <input type="date" id="input-fecha-operacion" class="cart-fecha__input" value="{% now 'Y-m-d' %}" data-hoy="{% now 'Y-m-d' %}" aria-label="Fecha de la operación">
+                <button type="button" class="cart-fecha__hoy oculto" id="boton-fecha-hoy">Hoy</button>
+              </div>
+              <p class="cart-fecha__hint oculto" id="fecha-hint">
+                <span class="material-symbols-outlined">info</span>
+                Con fecha distinta a hoy no se guardan cotizaciones de origen.
+              </p>
+            </div>
+
             <!-- Método de Pago -->
             <div>
               <p class="cart-pay__label">Método de pago</p>
@@ -170,6 +187,9 @@
       });
     });
   </script>
+
+  <!-- Selector de fecha de la operación (compartido con compras) -->
+  <script src="{% static 'js/fecha_operacion.js' %}"></script>
 
   <!-- Script del Carrito y Lógica de Operaciones -->
   <script src="{% static 'js/operaciones.js' %}"></script>

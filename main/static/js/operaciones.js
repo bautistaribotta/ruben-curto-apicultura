@@ -643,6 +643,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 items: items,
                 metodo_pago: metodoPago,
                 tipo_operacion: 'venta',
+                // null si la operacion es de hoy; "YYYY-MM-DD" si se cargo una fecha distinta
+                fecha: typeof obtenerFechaOperacion === 'function' ? obtenerFechaOperacion() : null,
             }),
         })
             .then(response => response.json().then(data => ({ ok: response.ok, data })))

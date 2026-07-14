@@ -537,8 +537,8 @@
   height: 22px;
   padding: 0 0.45rem;
   border-radius: var(--radius-pill);
-  background: var(--brand);
-  color: var(--brand-secondary);
+  background: var(--brand-active);
+  color: var(--text-on-inverse);
   font-size: var(--text-xs);
   font-weight: var(--weight-bold);
 }
@@ -996,6 +996,108 @@
   display: flex;
   flex-direction: column;
   gap: 0.9rem;
+}
+
+/* ============================================
+   FECHA DE LA OPERACIÓN (hoy por defecto, plegada)
+   ============================================ */
+
+.cart-fecha__toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.cart-fecha__toggle .material-symbols-outlined {
+  font-size: 1.05rem;
+}
+
+.cart-fecha__texto strong {
+  font-weight: var(--weight-bold);
+  color: var(--text-strong);
+}
+
+/* Con fecha distinta a hoy, la etiqueta toma el acento para avisar de un vistazo */
+.cart-fecha.is-cambiada .cart-fecha__texto strong {
+  color: var(--brand-secondary);
+}
+
+.cart-fecha__accion {
+  margin-left: auto;
+  font-weight: var(--weight-bold);
+  color: var(--brand-secondary);
+}
+
+.cart-fecha__toggle:hover .cart-fecha__accion {
+  text-decoration: underline;
+}
+
+.cart-fecha__panel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.55rem;
+}
+
+.cart-fecha__panel.oculto {
+  display: none;
+}
+
+.cart-fecha__input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  color: var(--text-body);
+}
+
+.cart-fecha__input:focus {
+  border-color: var(--brand);
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.cart-fecha__hoy {
+  flex: none;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-pill);
+  background: var(--surface-card);
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: var(--weight-bold);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-standard);
+}
+
+.cart-fecha__hoy:hover {
+  background: var(--surface-sunken);
+}
+
+.cart-fecha__hint {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0.5rem 0 0;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.cart-fecha__hint .material-symbols-outlined {
+  font-size: 0.95rem;
 }
 
 .cart-pay__label {
