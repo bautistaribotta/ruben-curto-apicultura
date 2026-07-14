@@ -58,7 +58,7 @@
   </div>
 
   <!-- DATOS GENERALES + RESULTADO DEL REPARTO -->
-  <div class="op-grid">
+  <div class="op-grid{% if not user.is_staff %} op-grid--solo{% endif %}">
 
     <!-- Datos generales -->
     <div class="op-card">
@@ -112,7 +112,8 @@
       </div>
     </div>
 
-    <!-- Resultado del reparto -->
+    <!-- Resultado del reparto (solo staff) -->
+    {% if user.is_staff %}
     <div class="op-card">
       <div class="op-card__head">
         <span class="material-symbols-outlined">payments</span>
@@ -152,6 +153,7 @@
         </div>
       </div>
     </div>
+    {% endif %}
 
   </div>
 
