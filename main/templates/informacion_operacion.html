@@ -80,12 +80,12 @@
             <span class="op-total__k"><span class="material-symbols-outlined">receipt</span>Total operación</span>
             <span class="op-total__v">$ {{ operacion.monto_total|floatformat:"-2g" }}</span>
         </div>
-        <div class="op-total op-total--paid">
+        <div class="op-total {% if operacion.tipo_operacion == 'compra' %}op-total--rest{% else %}op-total--paid{% endif %}">
             <span class="op-total__k"><span class="material-symbols-outlined">paid</span>{% if operacion.tipo_operacion == 'venta' %}Cobrado{% else %}Pagado{% endif %}</span>
             <span class="op-total__v">$ {{ total_pagado|floatformat:"-2g" }}</span>
-            <div class="op-total__bar"><div class="op-total__barfill" style="width: {{ pct_pagado|floatformat:0 }}%"></div></div>
+            <div class="op-total__bar"><div class="op-total__barfill {% if operacion.tipo_operacion == 'compra' %}op-total__barfill--compra{% endif %}" style="width: {{ pct_pagado|floatformat:0 }}%"></div></div>
         </div>
-        <div class="op-total {% if restante > 0 %}op-total--rest{% else %}op-total--paid{% endif %}">
+        <div class="op-total {% if operacion.tipo_operacion == 'compra' %}{% if restante > 0 %}op-total--paid{% else %}op-total--rest{% endif %}{% else %}{% if restante > 0 %}op-total--rest{% else %}op-total--paid{% endif %}{% endif %}">
             <span class="op-total__k"><span class="material-symbols-outlined">{% if restante > 0 %}schedule{% else %}check_circle{% endif %}</span>{% if operacion.tipo_operacion == 'venta' %}Restante a cobrar{% else %}Restante a pagar{% endif %}</span>
             <span class="op-total__v">$ {{ restante|floatformat:"-2g" }}</span>
         </div>
