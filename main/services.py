@@ -276,8 +276,8 @@ def _parsear_cotizaciones_historicas(datos):
             valor = Decimal(str(datos.get(campo, "")).strip())
         except InvalidOperation:
             raise ValueError(f"El valor de {nombre} no es un número válido.")
-        if valor <= 0:
-            raise ValueError(f"El valor de {nombre} debe ser mayor a 0.")
+        if valor < 1:
+            raise ValueError(f"El valor de {nombre} debe ser de 1 o más.")
         resultado[campo] = valor
     return resultado
 

@@ -128,7 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         Object.entries(inputsModal).forEach(([campo, campoInput]) => {
             const valor = parseFloat(campoInput.value);
-            const esValido = !isNaN(valor) && valor > 0;
+            const esValido = !isNaN(valor) && valor >= 1;
             campoInput.closest('.modal-cotiz__campo').classList.toggle('es-invalido', !esValido);
             if (esValido) valores[campo] = campoInput.value.trim();
             else invalido = true;
