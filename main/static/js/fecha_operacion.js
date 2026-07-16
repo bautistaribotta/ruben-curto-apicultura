@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
         errorModal.classList.add('oculto');
         modal.classList.add('abierto');
         document.body.style.overflow = 'hidden';
-        setTimeout(() => inputsModal.valor_kilo_miel.focus(), 100);
+        setTimeout(() => inputsModal.valor_dolar.focus(), 100);
     }
 
     function cerrarModal() {
