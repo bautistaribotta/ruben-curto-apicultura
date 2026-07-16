@@ -1301,3 +1301,314 @@
 .boton-volver-sistema .material-symbols-outlined {
   font-size: 1.15rem;
 }
+
+/* ============================================================
+   Modal de cotizaciones históricas (fecha anterior a hoy)
+   Pide miel 50mm, dólar oficial venta y cera opérculo de aquel
+   día para guardarlos como cotizaciones de origen. Mismo
+   esqueleto centrado que los modales de pago/cancelación.
+   ============================================================ */
+#contenedor-modal-cotizaciones {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  visibility: hidden;
+  transition: visibility 0.3s;
+}
+
+#contenedor-modal-cotizaciones.abierto {
+  visibility: visible;
+  transition: none;
+}
+
+#contenedor-modal-fondo-cotizaciones {
+  position: absolute;
+  inset: 0;
+  background-color: var(--color-slate-900-transparente-40);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+#contenedor-modal-cotizaciones.abierto #contenedor-modal-fondo-cotizaciones {
+  opacity: 1;
+}
+
+#panel-cotizaciones {
+  position: relative;
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 2.25rem 2rem 2rem;
+  width: 90%;
+  max-width: 430px;
+  box-shadow: var(--shadow-xl);
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  opacity: 0;
+  transform: scale(0.95);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#contenedor-modal-cotizaciones.abierto #panel-cotizaciones {
+  opacity: 1;
+  transform: scale(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #contenedor-modal-fondo-cotizaciones,
+  #panel-cotizaciones {
+    transition: none;
+  }
+}
+
+.modal-cotiz__cerrar {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 32px;
+  height: 32px;
+  background: none;
+  border: none;
+  color: var(--text-subtle);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.modal-cotiz__cerrar:hover {
+  background-color: var(--surface-hover);
+  color: var(--text-muted);
+}
+
+.modal-cotiz__icono {
+  align-self: center;
+  margin-bottom: 0.75rem;
+  display: flex;
+  justify-content: center;
+  color: var(--brand-secondary);
+}
+
+.modal-cotiz__icono .material-symbols-outlined {
+  font-size: 3.25rem;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 48;
+}
+
+#panel-cotizaciones h3 {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  color: var(--text-strong);
+  margin: 0 0 0.6rem;
+}
+
+.modal-cotiz__fecha {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0 0 0.75rem;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+/* Píldora con la fecha elegida: el día que se está reconstruyendo
+   es el protagonista del modal */
+.modal-cotiz__pildora {
+  padding: 0.2rem 0.7rem;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-default);
+  font-weight: var(--weight-bold);
+  color: var(--text-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+.modal-cotiz__ayuda {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin: 0 0 1.25rem;
+}
+
+#form-cotizaciones {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  text-align: left;
+}
+
+.modal-cotiz__campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.modal-cotiz__label {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  color: var(--text-body);
+}
+
+/* Puntos con el mismo lenguaje de color de los chips de categoría */
+.modal-cotiz__dot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+}
+
+.modal-cotiz__dot--miel {
+  background: var(--color-amarillo-texto-etiqueta);
+}
+
+.modal-cotiz__dot--dolar {
+  background: var(--color-verde-texto-etiqueta);
+}
+
+.modal-cotiz__dot--cera {
+  background: var(--color-cera-texto-etiqueta);
+}
+
+.modal-cotiz__unidad {
+  margin-left: auto;
+  font-weight: var(--weight-medium);
+  color: var(--text-subtle);
+}
+
+.modal-cotiz__inputwrap {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.modal-cotiz__inputwrap:focus-within {
+  border-color: var(--brand);
+  box-shadow: var(--ring);
+}
+
+.modal-cotiz__prefijo {
+  padding: 0 0 0 0.7rem;
+  font-size: var(--text-sm);
+  color: var(--text-subtle);
+}
+
+.modal-cotiz__inputwrap input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: none;
+  padding: 0.55rem 0.7rem 0.55rem 0.4rem;
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  color: var(--text-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Campo inválido tras intentar guardar */
+.modal-cotiz__campo.es-invalido .modal-cotiz__inputwrap {
+  border-color: var(--color-rojo-eliminacion);
+}
+
+.modal-cotiz__error {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--color-rojo-eliminacion);
+}
+
+.modal-cotiz__error.oculto {
+  display: none;
+}
+
+.modal-cotiz__error .material-symbols-outlined {
+  font-size: 1rem;
+}
+
+.modal-cotiz__acciones {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 0.75rem;
+  margin-top: 0.4rem;
+}
+
+.modal-cotiz__secundario {
+  background-color: var(--surface-card);
+  color: var(--text-body);
+  border: 1px solid var(--border-default);
+  padding: 0.7rem;
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.modal-cotiz__secundario:hover {
+  background-color: var(--surface-sunken);
+}
+
+.modal-cotiz__primario {
+  background-color: var(--brand-secondary);
+  color: var(--text-on-inverse);
+  border: none;
+  padding: 0.7rem;
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.modal-cotiz__primario:hover {
+  background-color: var(--color-hover-boton);
+}
+
+@media (max-width: 600px) {
+  #panel-cotizaciones {
+    padding: 1.75rem 1.25rem 1.25rem;
+  }
+
+  .modal-cotiz__acciones {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Hint del selector de fecha con cotizaciones ya cargadas */
+.cart-fecha__editar-cotiz {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-left: 0.25rem;
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  font-weight: var(--weight-bold);
+  color: var(--brand-secondary);
+  cursor: pointer;
+}
+
+.cart-fecha__editar-cotiz:hover {
+  text-decoration: underline;
+}
+
+.cart-fecha__editar-cotiz.oculto {
+  display: none;
+}

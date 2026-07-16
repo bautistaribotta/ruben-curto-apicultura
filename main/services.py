@@ -256,17 +256,56 @@ def _parsear_fecha_operacion(fecha):
     return timezone.make_aware(datetime.combine(fecha_date, time(12, 0)))
 
 
-def crear_operacion(cliente, items, metodo_pago, tipo_operacion, viaje=None, fecha=None):
+def _parsear_cotizaciones_historicas(datos):
+    """
+    Valida el dict {valor_dolar, valor_kilo_miel, valor_kilo_cera} que manda el
+    front cuando la operación lleva fecha anterior a hoy (los valores de aquel
+    día, cargados a mano en el modal). Devuelve Decimals o None si no vino nada.
+    """
+    if not datos:
+        return None
+
+    nombres = {
+        "valor_kilo_miel": "la miel 50mm",
+        "valor_dolar": "el dólar oficial",
+        "valor_kilo_cera": "la cera opérculo",
+    }
+    resultado = {}
+    for campo, nombre in nombres.items():
+        try:
+            valor = Decimal(str(datos.get(campo, "")).strip())
+        except InvalidOperation:
+            raise ValueError(f"El valor de {nombre} no es un número válido.")
+        if valor <= 0:
+            raise ValueError(f"El valor de {nombre} debe ser mayor a 0.")
+        resultado[campo] = valor
+    return resultado
+
+
+def crear_operacion(cliente, items, metodo_pago, tipo_operacion, viaje=None, fecha=None,
+                    cotizaciones_historicas=None):
     # Fecha personalizada: permite cargar operaciones viejas. None = hoy.
     fecha_personalizada = _parsear_fecha_operacion(fecha)
 
     if fecha_personalizada:
-        # No hay cotizaciones históricas en el sistema: para una operación con
-        # fecha distinta a hoy las cotizaciones "de origen" quedan vacías en vez
-        # de guardar las de hoy como si fueran las de aquel día.
-        valor_dolar = None
-        valor_miel = None
-        valor_cera = None
+        # Con fecha anterior a hoy las cotizaciones "de origen" las carga el
+        # usuario en el modal (migración desde el sistema viejo) y son
+        # obligatorias. Con fecha futura no hay valores conocibles: quedan
+        # vacías en vez de guardar las de hoy como si fueran las de aquel día.
+        historicas = _parsear_cotizaciones_historicas(cotizaciones_historicas)
+        if historicas:
+            valor_dolar = historicas["valor_dolar"]
+            valor_miel = historicas["valor_kilo_miel"]
+            valor_cera = historicas["valor_kilo_cera"]
+        elif fecha_personalizada.date() < timezone.localdate():
+            raise ValueError(
+                "Para una operación con fecha anterior a hoy hay que cargar las "
+                "cotizaciones de ese día (miel 50mm, dólar oficial y cera opérculo)."
+            )
+        else:
+            valor_dolar = None
+            valor_miel = None
+            valor_cera = None
     else:
         # Obtenemos las cotizaciones actuales antes de la transacción
         cotizacion_dolar = get_cotizacion_dolar_oficial()
@@ -427,7 +466,7 @@ def _revertir_stock_detalles(operacion, detalles):
             )
 
 
-def editar_operacion(id_operacion, items, metodo_pago, fecha=None):
+def editar_operacion(id_operacion, items, metodo_pago, fecha=None, cotizaciones_historicas=None):
     """
     Reemplaza los ítems de una operación activa por los nuevos (revirtiendo el
     stock viejo y aplicando el nuevo), y actualiza la fecha si cambió.
@@ -456,6 +495,9 @@ def editar_operacion(id_operacion, items, metodo_pago, fecha=None):
             "valor_kilo_cera": get_cotizacion_cera_operculo(),
         }
 
+    # Valores de aquel día cargados a mano en el modal (fecha anterior a hoy)
+    historicas = _parsear_cotizaciones_historicas(cotizaciones_historicas)
+
     with transaction.atomic():
         # Mismo bloqueo que al cancelar: evita ediciones/cancelaciones concurrentes
         operacion = get_object_or_404(
@@ -477,7 +519,8 @@ def editar_operacion(id_operacion, items, metodo_pago, fecha=None):
         _aplicar_items(operacion, items, operacion.tipo_operacion)
 
         # 3) Fecha: solo si cambió respecto de la actual. Mismas reglas que al
-        # crear: fecha de hoy lleva cotizaciones actuales; otra fecha las vacía
+        # crear: fecha de hoy lleva cotizaciones actuales; fecha anterior lleva
+        # las históricas cargadas en el modal; fecha futura las vacía
         if fecha_date and fecha_date != timezone.localtime(operacion.fecha).date():
             if cotizaciones_hoy:
                 operacion.fecha = timezone.now()
@@ -485,11 +528,21 @@ def editar_operacion(id_operacion, items, metodo_pago, fecha=None):
                 operacion.valor_kilo_miel = cotizaciones_hoy["valor_kilo_miel"]
                 operacion.valor_kilo_cera = cotizaciones_hoy["valor_kilo_cera"]
             else:
+                if historicas:
+                    operacion.valor_dolar = historicas["valor_dolar"]
+                    operacion.valor_kilo_miel = historicas["valor_kilo_miel"]
+                    operacion.valor_kilo_cera = historicas["valor_kilo_cera"]
+                elif fecha_date < timezone.localdate():
+                    raise ValueError(
+                        "Para cambiar la operación a una fecha anterior a hoy hay que cargar las "
+                        "cotizaciones de ese día (miel 50mm, dólar oficial y cera opérculo)."
+                    )
+                else:
+                    operacion.valor_dolar = None
+                    operacion.valor_kilo_miel = None
+                    operacion.valor_kilo_cera = None
                 # Mediodía local para que la fecha no se corra de día en UTC
                 operacion.fecha = timezone.make_aware(datetime.combine(fecha_date, time(12, 0)))
-                operacion.valor_dolar = None
-                operacion.valor_kilo_miel = None
-                operacion.valor_kilo_cera = None
             operacion.save(update_fields=["fecha", "valor_dolar", "valor_kilo_miel", "valor_kilo_cera"])
 
         # 4) Pagos según la regla de edición

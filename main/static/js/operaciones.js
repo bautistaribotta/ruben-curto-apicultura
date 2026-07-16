@@ -682,6 +682,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const metodoPago = metodoPagoSeleccionado.value;
 
+        // Fecha anterior a hoy sin cotizaciones de origen confirmadas: se
+        // reabre el modal en vez de mandar la operación incompleta
+        if (typeof faltanCotizacionesHistoricas === 'function' && faltanCotizacionesHistoricas()) {
+            abrirModalCotizacionesHistoricas();
+            return;
+        }
+
         // Guardo el contenido original del boton ("Confirmar venta" o "Guardar cambios")
         const textoBotonOriginal = botonConfirmar.innerHTML;
         botonConfirmar.disabled = true;
@@ -699,6 +706,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 tipo_operacion: 'venta',
                 // null si la operacion es de hoy; "YYYY-MM-DD" si se cargo una fecha distinta
                 fecha: typeof obtenerFechaOperacion === 'function' ? obtenerFechaOperacion() : null,
+                // valores de miel 50mm, dolar oficial y cera operculo de aquel
+                // dia; null salvo que la fecha sea anterior a hoy
+                cotizaciones_historicas: typeof obtenerCotizacionesHistoricas === 'function' ? obtenerCotizacionesHistoricas() : null,
                 // id de la operacion a editar; null cuando se crea una nueva
                 editar: edicion ? edicion.id : null,
             }),

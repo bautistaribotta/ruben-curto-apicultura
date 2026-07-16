@@ -117,7 +117,8 @@
               </div>
               <p class="cart-fecha__hint oculto" id="fecha-hint">
                 <span class="material-symbols-outlined">info</span>
-                Con fecha distinta a hoy no se guardan cotizaciones de origen.
+                <span id="fecha-hint-texto">Con fecha distinta a hoy no se guardan cotizaciones de origen.</span>
+                <button type="button" class="cart-fecha__editar-cotiz oculto" id="boton-editar-cotizaciones">Editar</button>
               </p>
             </div>
 
@@ -215,6 +216,9 @@
   {% if edicion %}
     {{ edicion|json_script:"datos-edicion" }}
   {% endif %}
+
+  <!-- Modal de cotizaciones históricas (fecha anterior a hoy) -->
+  {% include "modal_cotizaciones_historicas.html" %}
 
   <!-- Selector de fecha de la operación (compartido con ventas) -->
   <script src="{% static 'js/fecha_operacion.js' %}"></script>

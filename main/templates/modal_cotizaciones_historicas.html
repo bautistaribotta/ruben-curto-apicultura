@@ -1,0 +1,76 @@
+<!-- Modal de cotizaciones históricas: se abre al elegir una fecha anterior a hoy
+     en el selector de fecha (ventas y compras). Pide los 3 valores de aquel día
+     para guardarlos como cotizaciones "de origen" de la operación migrada. -->
+<div id="contenedor-modal-cotizaciones" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-cotizaciones">
+  <div id="contenedor-modal-fondo-cotizaciones"></div>
+
+  <div id="panel-cotizaciones">
+    <button type="button" class="modal-cotiz__cerrar" id="boton-cerrar-cotizaciones" aria-label="Cerrar sin guardar">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+
+    <div class="modal-cotiz__icono">
+      <span class="material-symbols-outlined">history</span>
+    </div>
+
+    <h3 id="titulo-modal-cotizaciones">Cotizaciones de origen</h3>
+
+    <p class="modal-cotiz__fecha">
+      Operación del
+      <span class="modal-cotiz__pildora" id="fecha-modal-cotizaciones">—</span>
+    </p>
+
+    <p class="modal-cotiz__ayuda">
+      Ingresá los valores que regían ese día. Quedan guardados con la operación
+      para calcular sus equivalencias históricas.
+    </p>
+
+    <form id="form-cotizaciones" novalidate>
+      <label class="modal-cotiz__campo">
+        <span class="modal-cotiz__label">
+          <span class="modal-cotiz__dot modal-cotiz__dot--miel"></span>
+          Miel 50mm
+          <span class="modal-cotiz__unidad">$ por kilo</span>
+        </span>
+        <span class="modal-cotiz__inputwrap">
+          <span class="modal-cotiz__prefijo">$</span>
+          <input type="number" id="input-cotiz-miel" inputmode="decimal" min="0.01" step="0.01" placeholder="0,00" autocomplete="off">
+        </span>
+      </label>
+
+      <label class="modal-cotiz__campo">
+        <span class="modal-cotiz__label">
+          <span class="modal-cotiz__dot modal-cotiz__dot--dolar"></span>
+          Dólar oficial
+          <span class="modal-cotiz__unidad">$ venta</span>
+        </span>
+        <span class="modal-cotiz__inputwrap">
+          <span class="modal-cotiz__prefijo">$</span>
+          <input type="number" id="input-cotiz-dolar" inputmode="decimal" min="0.01" step="0.01" placeholder="0,00" autocomplete="off">
+        </span>
+      </label>
+
+      <label class="modal-cotiz__campo">
+        <span class="modal-cotiz__label">
+          <span class="modal-cotiz__dot modal-cotiz__dot--cera"></span>
+          Cera Opérculo
+          <span class="modal-cotiz__unidad">$ por kilo</span>
+        </span>
+        <span class="modal-cotiz__inputwrap">
+          <span class="modal-cotiz__prefijo">$</span>
+          <input type="number" id="input-cotiz-cera" inputmode="decimal" min="0.01" step="0.01" placeholder="0,00" autocomplete="off">
+        </span>
+      </label>
+
+      <p class="modal-cotiz__error oculto" id="error-modal-cotizaciones">
+        <span class="material-symbols-outlined">error</span>
+        Completá los 3 valores con números mayores a 0.
+      </p>
+
+      <div class="modal-cotiz__acciones">
+        <button type="submit" class="modal-cotiz__primario" id="boton-guardar-cotizaciones">Guardar cotizaciones</button>
+        <button type="button" class="modal-cotiz__secundario" id="boton-cancelar-cotizaciones">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
