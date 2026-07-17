@@ -1013,12 +1013,9 @@ def deudores(request):
     filas_tarjetas = [d for d in lista_deudores if d["tipo_operacion"] == tipo_op_tarjetas]
 
     # Totales sobre el listado completo (no solo la página) para las tarjetas de resumen
-    UMBRAL_VENCIDA = 90  # días para marcar una deuda como antigua
     total_pesos = sum((d["deuda_pesos"] or 0) for d in filas_tarjetas)
     total_usd_hoy = sum((d["deuda_dolar_actual"] or 0) for d in filas_tarjetas)
     total_miel_hoy = sum((d["kg_miel_actual"] or 0) for d in filas_tarjetas)
-    # El aviso de vencidas sigue el listado visible (la tabla), no solo las tarjetas.
-    vencidos = sum(1 for d in lista_deudores if d["dias"] > UMBRAL_VENCIDA)
 
     # Las deudas se ordenan siempre de la más antigua a la más nueva
     lista_deudores.sort(key=lambda d: d["dias"], reverse=True)
@@ -1035,7 +1032,6 @@ def deudores(request):
         "total_pesos": total_pesos,
         "total_usd_hoy": total_usd_hoy,
         "total_miel_hoy": total_miel_hoy,
-        "vencidos": vencidos,
         "total_deudores": len(lista_deudores),
     }
 

@@ -34,12 +34,6 @@
         </div>
       </div>
       <div class="barra-herramientas__right">
-        {% if vencidos %}
-          <span class="deu-vencidos">
-            <span class="material-symbols-outlined">schedule</span>
-            {{ vencidos }} deuda{{ vencidos|pluralize }} con más de 90 días
-          </span>
-        {% endif %}
         <div class="prod-chips prod-chips--tipo" id="chips-tipo" role="group" aria-label="Filtrar por cobros o pagos">
           <button type="button" class="prod-chip prod-chip--cobros {% if tipo == 'cobros' %}is-active{% endif %}" data-tipo="cobros">
             <span class="material-symbols-outlined">arrow_upward</span>
