@@ -402,15 +402,20 @@ def generar_remito(request, id_operacion):
 
     # Armamos la lista estructurada de los productos para enviarlo al PDF
     lista_productos = []
+    total = 0
     for d in detalles:
         if d.es_granel:
             # Los kilos se muestran sin ceros de mas y con la unidad explicita
             cantidad = f"{d.cantidad:.2f}".rstrip("0").rstrip(".") + " kg"
         else:
             cantidad = d.cantidad
+        # Subtotal de la fila: cantidad por precio unitario
+        subtotal = d.cantidad * d.precio_unitario
+        total += subtotal
         lista_productos.append({
             'cantidad': cantidad,
             'detalle': d.nombre_item,
+            'subtotal': subtotal,
         })
 
     pdf = Remito(
@@ -423,7 +428,8 @@ def generar_remito(request, id_operacion):
         apellido=cliente.apellido if cliente.apellido else "",
         cuit=cliente.cuit if cliente.cuit else "",
         telefono=cliente.telefono if cliente.telefono else "",
-        observaciones=operacion.observaciones
+        observaciones=operacion.observaciones,
+        total=total
     )
 
     pdf_bytes = pdf.generate_pdf()

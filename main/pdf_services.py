@@ -1,7 +1,19 @@
 from fpdf import FPDF
 
+
+def _formato_moneda(valor):
+    # Formato argentino: punto para los miles y coma para los decimales
+    # ("$ 12.100,00"). Convierto el separador estándar de Python al criterio local.
+    try:
+        s = f"{float(valor or 0):,.2f}"
+    except (TypeError, ValueError):
+        s = "0.00"
+    s = s.replace(",", "X").replace(".", ",").replace("X", ".")
+    return f"$ {s}"
+
+
 class Remito(FPDF):
-    def __init__(self, id_operacion, fecha, nombre, localidad, direccion, productos, apellido=" ", cuit=" ", telefono="", observaciones=""):
+    def __init__(self, id_operacion, fecha, nombre, localidad, direccion, productos, apellido=" ", cuit=" ", telefono="", observaciones="", total=0):
         # A4 Apaisado (Landscape): 297mm x 210mm
         super().__init__(orientation='L', format='A4')
         self.set_auto_page_break(auto=True, margin=5)
@@ -17,6 +29,8 @@ class Remito(FPDF):
         # Nota opcional de la operación; el campo se imprime siempre (con o
         # sin texto) para poder completarlo a mano, con tope de 250 caracteres
         self.observaciones = str(observaciones or "")[:250]
+        # Total de la operación, para la casilla grande al pie del comprobante
+        self.total = total
 
     def header(self):
         self.dibujar_esqueleto(0, "ORIGINAL")
@@ -142,16 +156,20 @@ class Remito(FPDF):
         # Reset color para encabezados de tabla
         self.set_text_color(0, 0, 0)
 
-        # Columnas
+        # Columnas: CANT. | DETALLE | SUBTOTAL
         self.set_font('Arial', 'B', 9)
         self.set_xy(offset_x + 5, 70)
-        self.cell(20, 8, 'CANT.', 0, 0, 'C')
-        self.cell(118.5, 8, 'DETALLE', 0, 0, 'C')
+        self.cell(17, 8, 'CANT.', 0, 0, 'C')
+        self.set_xy(offset_x + 22, 70)
+        self.cell(86, 8, 'DETALLE', 0, 0, 'C')
+        self.set_xy(offset_x + 108, 70)
+        self.cell(35.5, 8, 'SUBTOTAL', 0, 0, 'C')
         self.line(offset_x + 5, 78, offset_x + 143.5, 78)
 
-        # Lineas verticales de la tabla (corta en 193 para dejar limpia la
-        # franja inferior de observaciones y firma)
-        self.line(offset_x + 25, 70, offset_x + 25, 193)
+        # Lineas verticales de la tabla (cortan en 193; la casilla de total las
+        # tapa con relleno blanco sobre la ultima pagina)
+        self.line(offset_x + 22, 70, offset_x + 22, 193)
+        self.line(offset_x + 108, 70, offset_x + 108, 193)
 
     def draw_products(self):
         y_pos = 78
@@ -163,35 +181,64 @@ class Remito(FPDF):
 
             if isinstance(prod, dict):
                 detalle = str(prod.get('detalle', prod.get('nombre', prod.get('producto', '-'))))
+                subtotal = prod.get('subtotal', 0)
             else:
                 if hasattr(prod, 'producto'):
                     detalle = getattr(prod.producto, 'nombre', str(prod.producto))
                 else:
                     detalle = str(getattr(prod, 'detalle', getattr(prod, 'nombre', '-')))
+                subtotal = getattr(prod, 'subtotal', 0)
 
-            self.escribir_fila(0, y_pos, cant, detalle)
-            self.escribir_fila(148.5, y_pos, cant, detalle)
+            sub_str = _formato_moneda(subtotal)
+            self.escribir_fila(0, y_pos, cant, detalle, sub_str)
+            self.escribir_fila(148.5, y_pos, cant, detalle, sub_str)
 
             y_pos += 8
             self.set_text_color(0, 0, 0) # Líneas en negro
             self.line(5, y_pos, 143.5, y_pos)
             self.line(148.5 + 5, y_pos, 148.5 + 143.5, y_pos)
 
-            if y_pos >= 193:
+            # Corto antes para dejar el pie (casilla de total + observaciones/firma)
+            if y_pos >= 182:
                 self.add_page()
                 y_pos = 78
 
+        self.dibujar_total(0)
+        self.dibujar_total(148.5)
         self.dibujar_observaciones(0)
         self.dibujar_observaciones(148.5)
         self.dibujar_firma(0)
         self.dibujar_firma(148.5)
 
-    def escribir_fila(self, offset_x, y, c, d):
+    def escribir_fila(self, offset_x, y, c, d, s):
         self.set_xy(offset_x + 5, y)
-        self.cell(20, 8, c, 0, 0, 'C')
-        self.set_xy(offset_x + 25, y)
-        # Mostrar el detalle con limite de caracteres y ajustado
-        self.cell(118.5, 8, f' {d[:65]}', 0, 0, 'L')
+        self.cell(17, 8, c, 0, 0, 'C')
+        self.set_xy(offset_x + 22, y)
+        # Detalle con limite de caracteres para no invadir la columna de subtotal
+        self.cell(86, 8, f' {d[:48]}', 0, 0, 'L')
+        self.set_xy(offset_x + 108, y)
+        self.cell(34.5, 8, s, 0, 0, 'R')
+
+    def dibujar_total(self, offset_x):
+        """
+        Casilla grande de total al pie del comprobante, alineada con la columna
+        de subtotal y por encima de la franja de observaciones y firma.
+        """
+        self.set_auto_page_break(auto=False)
+
+        # Relleno blanco para tapar las lineas de la grilla dentro de la casilla
+        self.set_fill_color(255, 255, 255)
+        self.set_draw_color(0, 0, 0)
+        self.rect(offset_x + 78, 183, 65.5, 9.5, 'DF')
+
+        self.set_text_color(0, 0, 0)
+        self.set_font('Arial', 'B', 12)
+        self.set_xy(offset_x + 81, 183)
+        self.cell(28, 9.5, 'TOTAL', 0, 0, 'L')
+
+        self.set_font('Arial', 'B', 13)
+        self.set_xy(offset_x + 108, 183)
+        self.cell(33, 9.5, _formato_moneda(self.total), 0, 0, 'R')
 
     def dibujar_observaciones(self, offset_x):
         """
