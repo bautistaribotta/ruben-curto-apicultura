@@ -650,6 +650,32 @@
   margin-top: 1px;
 }
 
+/* Producto dado de baja: la linea queda congelada al editar la operacion
+   (sin cambiar cantidad ni precio, sin poder quitarla del carrito) */
+.cart-item--bloqueado .cart-stepper,
+.cart-item--bloqueado .cart-priceedit {
+  opacity: 0.55;
+}
+
+.cart-item--bloqueado .cart-item__rm {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.cart-item__badge-baja {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 2px;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--text-subtle);
+}
+
+.cart-item__badge-baja .material-symbols-outlined {
+  font-size: 0.9rem;
+}
+
 .cart-item__rm {
   margin-left: auto;
   flex: none;

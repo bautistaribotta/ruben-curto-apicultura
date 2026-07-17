@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 crearFilaGranel(item.id, item.nombre, item.precio, item.cantidad);
                 return;
             }
-            crearFilaCarrito(item.id, item.nombre, item.cantidad, item.precio);
+            crearFilaCarrito(item.id, item.nombre, item.cantidad, item.precio, item.bloqueado);
         });
         actualizarTotal();
         actualizarVistaResumen();
@@ -58,7 +58,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 id: fila.dataset.id,
                 nombre: fila.querySelector('.cart-item__name').textContent,
                 cantidad: parseInt(fila.querySelector('.input-cantidad').value),
-                precio: fila.querySelector('.input-precio-item').value
+                precio: fila.querySelector('.input-precio-item').value,
+                bloqueado: fila.dataset.bloqueado === '1'
             });
         });
         sessionStorage.setItem(STORAGE_KEY, JSON.stringify(items));
@@ -82,7 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 crearFilaGranel(item.id, item.nombre, item.precio, item.kilos);
                 return;
             }
-            crearFilaCarrito(item.id, item.nombre, item.cantidad, item.precio);
+            crearFilaCarrito(item.id, item.nombre, item.cantidad, item.precio, item.bloqueado);
         });
         actualizarTotal();
         actualizarVistaResumen();
@@ -135,15 +136,19 @@ document.addEventListener('DOMContentLoaded', () => {
         guardarCarrito();
     }
 
-    function crearFilaCarrito(id, nombre, cantidad, precio) {
+    function crearFilaCarrito(id, nombre, cantidad, precio, bloqueado = false) {
         const fila = document.createElement('div');
         fila.className = 'cart-item';
         fila.dataset.id = id;
+        // Producto dado de baja: la línea viaja igual pero queda congelada
+        // (sin cambiar cantidad ni precio, sin poder quitarla del carrito)
+        if (bloqueado) fila.dataset.bloqueado = '1';
 
         fila.innerHTML = `
             <div class="cart-item__top">
                 <div>
                     <div class="cart-item__name" title="${nombre}">${nombre}</div>
+                    ${bloqueado ? '<span class="cart-item__badge-baja"><span class="material-symbols-outlined">lock</span>Producto dado de baja</span>' : ''}
                 </div>
                 <button type="button" class="cart-item__rm" title="Quitar">
                     <span class="material-symbols-outlined">close</span>
@@ -170,6 +175,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const botonMenos = fila.querySelector('[data-step="menos"]');
         const botonMas = fila.querySelector('[data-step="mas"]');
         const inputPrecio = fila.querySelector('.input-precio-item');
+
+        if (bloqueado) {
+            fila.classList.add('cart-item--bloqueado');
+            inputCantidad.disabled = true;
+            inputPrecio.disabled = true;
+            botonMenos.disabled = true;
+            botonMas.disabled = true;
+            const botonQuitar = fila.querySelector('.cart-item__rm');
+            botonQuitar.disabled = true;
+            botonQuitar.title = 'Producto dado de baja: no se puede quitar';
+
+            cuerpoCarrito.appendChild(fila);
+            actualizarSubtotalFila(fila);
+            actualizarVistaResumen();
+            return;
+        }
 
         // Escritura libre: no forzamos el valor; la validación se hace al confirmar
         function alCambiar() {
@@ -344,7 +365,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     botonVaciar.addEventListener('click', function () {
-        cuerpoCarrito.innerHTML = '';
+        // Las filas bloqueadas (productos dados de baja) no se pueden quitar
+        cuerpoCarrito.querySelectorAll('.cart-item').forEach(fila => {
+            if (fila.dataset.bloqueado !== '1') fila.remove();
+        });
         actualizarTotal();
         actualizarVistaResumen();
         guardarCarrito();

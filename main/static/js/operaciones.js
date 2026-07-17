@@ -49,7 +49,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 precio: fila.querySelector('.input-precio-item').value,
                 nombre: fila.querySelector('.cart-item__name').textContent,
                 cantidad: parseInt(fila.querySelector('.input-cantidad').value),
-                stockOriginal: parseInt(fila.dataset.stockOriginal)
+                stockOriginal: parseInt(fila.dataset.stockOriginal),
+                bloqueado: fila.dataset.bloqueado === '1'
             });
         });
         sessionStorage.setItem(STORAGE_KEY, JSON.stringify(items));
@@ -73,7 +74,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 item.nombre,
                 item.precio,
                 item.cantidad,
-                parseInt(item.stock)
+                parseInt(item.stock),
+                item.bloqueado
             );
         });
         actualizarTotal();
@@ -109,7 +111,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 item.nombre,
                 item.precio,
                 item.cantidad,
-                item.stockOriginal
+                item.stockOriginal,
+                item.bloqueado
             );
         });
         actualizarTotal();
@@ -371,17 +374,21 @@ document.addEventListener('DOMContentLoaded', () => {
         guardarCarrito();
     }
 
-    function crearFilaCarrito(id, nombre, precio, cantidad, stockOriginal) {
+    function crearFilaCarrito(id, nombre, precio, cantidad, stockOriginal, bloqueado = false) {
         const fila = document.createElement('div');
         fila.className = 'cart-item';
         fila.dataset.id = id;
         fila.dataset.precio = precio;
         fila.dataset.stockOriginal = stockOriginal;
+        // Producto dado de baja: la línea viaja igual pero queda congelada
+        // (sin cambiar cantidad ni precio, sin poder quitarla del carrito)
+        if (bloqueado) fila.dataset.bloqueado = '1';
 
         fila.innerHTML = `
             <div class="cart-item__top">
                 <div>
                     <div class="cart-item__name" title="${nombre}">${nombre}</div>
+                    ${bloqueado ? '<span class="cart-item__badge-baja"><span class="material-symbols-outlined">lock</span>Producto dado de baja</span>' : ''}
                 </div>
                 <button type="button" class="cart-item__rm" title="Quitar">
                     <span class="material-symbols-outlined">close</span>
@@ -409,6 +416,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const botonMenos = fila.querySelector('[data-step="menos"]');
         const botonMas = fila.querySelector('[data-step="mas"]');
         const inputPrecio = fila.querySelector('.input-precio-item');
+
+        if (bloqueado) {
+            fila.classList.add('cart-item--bloqueado');
+            inputCantidad.disabled = true;
+            inputPrecio.disabled = true;
+            botonMenos.disabled = true;
+            botonMas.disabled = true;
+            const botonQuitar = fila.querySelector('.cart-item__rm');
+            botonQuitar.disabled = true;
+            botonQuitar.title = 'Producto dado de baja: no se puede quitar';
+
+            cuerpoCarrito.appendChild(fila);
+            actualizarFila(fila);
+            actualizarVistaResumen();
+            return;
+        }
 
         // Quita el producto del carrito y restaura el stock y el resaltado
         function quitar() {
@@ -476,8 +499,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const cantidad = parseInt(fila.querySelector('.input-cantidad').value) || 0;
 
         fila.querySelector('.cart-item__subval').textContent = `$ ${formatoMoneda.format(precio * cantidad)}`;
-        // El boton mas se frena al llegar al stock; el menos nunca se deshabilita (en 1 saca el producto)
-        fila.querySelector('[data-step="mas"]').disabled = cantidad >= stockOriginal;
+        // El boton mas se frena al llegar al stock; el menos nunca se deshabilita (en 1 saca el producto).
+        // Fila bloqueada (producto dado de baja): el mas queda deshabilitado siempre
+        fila.querySelector('[data-step="mas"]').disabled = fila.dataset.bloqueado === '1' || cantidad >= stockOriginal;
 
         actualizarStockProducto(fila.dataset.id, stockOriginal - cantidad);
     }
@@ -504,13 +528,15 @@ document.addEventListener('DOMContentLoaded', () => {
     botonVaciar.addEventListener('click', function () {
         const filas = cuerpoCarrito.querySelectorAll('.cart-item');
         filas.forEach(fila => {
+            // Las filas bloqueadas (productos dados de baja) no se pueden quitar
+            if (fila.dataset.bloqueado === '1') return;
             if (fila.dataset.tipo === 'granel') {
                 actualizarStockGranel(fila.dataset.granelId, normalizarDecimal(fila.dataset.stockOriginal));
             } else {
                 actualizarStockProducto(fila.dataset.id, parseInt(fila.dataset.stockOriginal));
             }
+            fila.remove();
         });
-        cuerpoCarrito.innerHTML = '';
         actualizarTotal();
         actualizarVistaResumen();
         guardarCarrito();

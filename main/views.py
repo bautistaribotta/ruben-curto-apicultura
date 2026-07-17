@@ -466,6 +466,9 @@ def _contexto_edicion(operacion):
                 "cantidad": int(d.cantidad),
                 "precio": str(d.precio_unitario),
                 "stock": stock,
+                # Producto dado de baja: la línea queda congelada en el carrito
+                # (sin cambiar cantidad ni precio, sin poder quitarla)
+                "bloqueado": not d.producto.activo,
             })
 
     # El método de pago no se guarda: se infiere de los pagos. Con pagos

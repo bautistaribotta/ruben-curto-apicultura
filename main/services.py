@@ -50,17 +50,25 @@ def obtener_datos_producto(id_producto):
         return None
 
 
-def modificar_stock(id_producto, cantidad):
+def modificar_stock(id_producto, cantidad, permitir_inactivos=False):
     """
     Modifica el stock de un producto sumando o restando según el valor de 'cantidad'.
     - cantidad > 0 → suma stock (ingreso de mercadería, devolución, etc.)
     - cantidad < 0 → resta stock (venta, egreso, etc.)
 
+    Con permitir_inactivos=True también opera sobre productos dados de baja
+    (activo=False): lo usan las reversiones de stock al cancelar o editar una
+    operación, porque el historial puede referenciar productos ya eliminados.
+
     Retorna el producto actualizado o lanza ValueError si el stock quedaría negativo.
     """
+    filtro_base = {"id": id_producto}
+    if not permitir_inactivos:
+        filtro_base["activo"] = True
+
     # Verifico existencia para mantener el comportamiento 404 ante productos
     # inexistentes o inactivos
-    if not Producto.objects.filter(id=id_producto, activo=True).exists():
+    if not Producto.objects.filter(**filtro_base).exists():
         raise Http404("Producto no encontrado")
 
     if cantidad < 0:
@@ -69,7 +77,7 @@ def modificar_stock(id_producto, cantidad):
         # sentencia SQL. No hay ventana entre verificar y escribir, por lo que
         # se elimina el read-modify-write que permitía lost updates y sobreventa.
         filas = Producto.objects.filter(
-            id=id_producto, activo=True, cantidad__gte=abs(cantidad)
+            **filtro_base, cantidad__gte=abs(cantidad)
         ).update(cantidad=F("cantidad") + cantidad)
 
         if filas == 0:
@@ -77,7 +85,7 @@ def modificar_stock(id_producto, cantidad):
             raise ValueError("No se puede quitar más stock del existente.")
     else:
         # Ingreso de stock: incremento atómico sin lectura previa
-        Producto.objects.filter(id=id_producto, activo=True).update(
+        Producto.objects.filter(**filtro_base).update(
             cantidad=F("cantidad") + cantidad
         )
 
@@ -453,23 +461,73 @@ def _revertir_stock_detalles(operacion, detalles):
 
         if operacion.tipo_operacion == "venta":
             # Si era venta, devuelvo stock y resto de cantidad vendida de
-            # forma atómica con F()
-            modificar_stock(producto.id, detalle.cantidad)
+            # forma atómica con F(). La reversión admite productos inactivos:
+            # el historial puede referenciar productos ya dados de baja.
+            modificar_stock(producto.id, detalle.cantidad, permitir_inactivos=True)
             Producto.objects.filter(id=producto.id).update(
                 cantidad_vendida=F("cantidad_vendida") - detalle.cantidad
             )
         else:
             # Si era compra, quito stock y resto de cantidad comprada
-            modificar_stock(producto.id, -detalle.cantidad)
+            modificar_stock(producto.id, -detalle.cantidad, permitir_inactivos=True)
             Producto.objects.filter(id=producto.id).update(
                 cantidad_comprada=F("cantidad_comprada") - detalle.cantidad
             )
+
+
+def _validar_items_congelados(items, detalles_congelados):
+    """
+    Al editar una operación, los detalles de productos dados de baja
+    (activo=False) están congelados: deben venir en el carrito exactamente
+    como estaban (misma cantidad y mismo precio) y no se pueden quitar.
+
+    Devuelve los ítems restantes (los que sí se procesan) y lanza ValueError
+    si algún congelado falta en el carrito o llegó modificado.
+    """
+    congelados = {d.producto_id: d for d in detalles_congelados}
+    restantes = []
+    for item in items:
+        # El front manda el id como string; se normaliza a int para matchear
+        # contra producto_id
+        try:
+            id_producto = int(item.get("id_producto"))
+        except (TypeError, ValueError):
+            id_producto = None
+        detalle = congelados.pop(id_producto, None) if id_producto else None
+        if detalle is None:
+            restantes.append(item)
+            continue
+
+        cantidad = Decimal(str(item.get("cantidad", 0)))
+        precio_item = item.get("precio_unitario")
+        precio = (
+            detalle.precio_unitario
+            if precio_item in (None, "")
+            else Decimal(str(precio_item))
+        )
+        if cantidad != detalle.cantidad or precio != detalle.precio_unitario:
+            raise ValueError(
+                f'El producto "{detalle.producto.nombre}" fue dado de baja: '
+                "no se puede modificar su cantidad ni su precio en la operación."
+            )
+
+    if congelados:
+        nombres = ", ".join(d.producto.nombre for d in congelados.values())
+        raise ValueError(
+            "Estos productos fueron dados de baja y no se pueden quitar "
+            f"de la operación: {nombres}."
+        )
+
+    return restantes
 
 
 def editar_operacion(id_operacion, items, metodo_pago, fecha=None, cotizaciones_historicas=None):
     """
     Reemplaza los ítems de una operación activa por los nuevos (revirtiendo el
     stock viejo y aplicando el nuevo), y actualiza la fecha si cambió.
+
+    Los detalles de productos dados de baja (activo=False) quedan congelados:
+    no se revierten ni se reemplazan, y el carrito debe traerlos idénticos.
 
     Pagos: si la operación no tiene pagos, el método es editable y "contado"
     genera el pago automático por el nuevo total. Si ya tiene pagos, el método
@@ -510,13 +568,23 @@ def editar_operacion(id_operacion, items, metodo_pago, fecha=None, cotizaciones_
         # Total anterior: se necesita para detectar el pago automático de contado
         monto_anterior = operacion.monto_total
 
-        # 1) Revierto el stock de los ítems actuales y los borro
-        detalles = DetalleOperacion.objects.filter(operacion=operacion)
-        _revertir_stock_detalles(operacion, detalles)
-        detalles.delete()
+        # 1) Separo los detalles congelados (productos dados de baja): su fila
+        # y su stock no se tocan. El resto se revierte y se borra.
+        detalles = DetalleOperacion.objects.filter(operacion=operacion).select_related("producto")
+        detalles_congelados = [
+            d for d in detalles if d.producto_id and not d.producto.activo
+        ]
+
+        # El carrito debe traer cada congelado exactamente igual (misma
+        # cantidad y precio); devuelve los ítems que sí se procesan
+        items_editables = _validar_items_congelados(items, detalles_congelados)
+
+        detalles_editables = detalles.exclude(id__in=[d.id for d in detalles_congelados])
+        _revertir_stock_detalles(operacion, detalles_editables)
+        detalles_editables.delete()
 
         # 2) Aplico los ítems nuevos con las mismas validaciones que al crear
-        _aplicar_items(operacion, items, operacion.tipo_operacion)
+        _aplicar_items(operacion, items_editables, operacion.tipo_operacion)
 
         # 3) Fecha: solo si cambió respecto de la actual. Mismas reglas que al
         # crear: fecha de hoy lleva cotizaciones actuales; fecha anterior lleva
