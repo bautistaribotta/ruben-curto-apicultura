@@ -60,6 +60,13 @@
   display: flex;
   align-items: flex-start;
   gap: 0.95rem;
+  min-width: 0;
+}
+
+/* El bloque de texto (título, meta y observación) debe poder encogerse para
+   que la observación aplique su elipsis y no empuje los botones de acción */
+.op-head__left > div {
+  min-width: 0;
 }
 
 .op-head__tile {
@@ -114,16 +121,27 @@
   color: var(--sand-400);
 }
 
-/* Observación de la operación (la misma nota que se imprime en el remito) */
+/* Observación de la operación (la misma nota que se imprime en el remito).
+   Una sola línea con elipsis: una nota larga (incluso sin espacios) no debe
+   ensanchar la cabecera ni empujar los botones de acción fuera de la vista.
+   El texto completo queda en el title del elemento. */
 .op-head__obs {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 0.35rem;
   margin: 0.5rem 0 0;
   max-width: 60ch;
+  min-width: 0;
   font-size: var(--text-sm);
   color: var(--text-muted);
   font-style: italic;
+}
+
+.op-head__obstext {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .op-head__obs .material-symbols-outlined {

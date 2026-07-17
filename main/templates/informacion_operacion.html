@@ -60,9 +60,9 @@
                     {% endif %}
                 </div>
                 {% if operacion.observaciones %}
-                <p class="op-head__obs">
+                <p class="op-head__obs" title="{{ operacion.observaciones }}">
                     <span class="material-symbols-outlined">sticky_note_2</span>
-                    {{ operacion.observaciones }}
+                    <span class="op-head__obstext">{{ operacion.observaciones|truncatechars:120 }}</span>
                 </p>
                 {% endif %}
             </div>

@@ -1,12 +1,12 @@
 <!-- Observación opcional de la operación: plegada por defecto, misma
      gramática que el selector de fecha. Se imprime en el remito. -->
 <div class="cart-obs" id="cart-obs">
-  <button type="button" class="cart-obs__toggle" id="boton-observacion" aria-expanded="false" aria-controls="panel-observacion">
+  <button type="button" class="cart-obs__toggle" id="boton-observacion" aria-expanded="true" aria-controls="panel-observacion">
     <span class="material-symbols-outlined">sticky_note_2</span>
     <span class="cart-obs__texto">Observación: <strong id="obs-etiqueta">sin nota</strong></span>
-    <span class="cart-obs__accion">Agregar</span>
+    <span class="cart-obs__accion">Ocultar</span>
   </button>
-  <div class="cart-obs__panel oculto" id="panel-observacion">
+  <div class="cart-obs__panel" id="panel-observacion">
     <textarea id="input-observacion" class="cart-obs__input" maxlength="250" rows="3"
               placeholder="Nota para el remito (opcional)"
               aria-label="Observación de la operación"></textarea>
