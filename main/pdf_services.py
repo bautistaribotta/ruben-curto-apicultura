@@ -156,24 +156,46 @@ class Remito(FPDF):
         # Reset color para encabezados de tabla
         self.set_text_color(0, 0, 0)
 
+        # Fila 4: Observaciones (debajo del domicilio). La etiqueta se imprime
+        # siempre; el texto va en gris y se parte en hasta 3 lineas
+        self.set_font('Arial', 'B', 9)
+        self.set_xy(offset_x + 5, 71)
+        self.set_text_color(0, 0, 0)
+        self.cell(self.get_string_width(' Observaciones: '), 4, ' Observaciones: ')
+
+        self.set_font('Arial', '', 8)
+        self.set_text_color(80, 80, 80)
+        y_obs = 75.5
+        for texto_linea in self._lineas_observaciones(133):
+            self.set_xy(offset_x + 6, y_obs)
+            self.cell(133, 2.8, texto_linea, 0, 0, 'L')
+            y_obs += 2.8
+        self.set_text_color(0, 0, 0)
+        self.line(offset_x + 5, 84, offset_x + 143.5, 84)
+
         # Columnas: CANT. | DETALLE | SUBTOTAL
         self.set_font('Arial', 'B', 9)
-        self.set_xy(offset_x + 5, 70)
+        self.set_xy(offset_x + 5, 84)
         self.cell(17, 8, 'CANT.', 0, 0, 'C')
-        self.set_xy(offset_x + 22, 70)
+        self.set_xy(offset_x + 22, 84)
         self.cell(86, 8, 'DETALLE', 0, 0, 'C')
-        self.set_xy(offset_x + 108, 70)
+        self.set_xy(offset_x + 108, 84)
         self.cell(35.5, 8, 'SUBTOTAL', 0, 0, 'C')
-        self.line(offset_x + 5, 78, offset_x + 143.5, 78)
+        self.line(offset_x + 5, 92, offset_x + 143.5, 92)
 
-        # Lineas verticales de la tabla (cortan en 193; la casilla de total las
-        # tapa con relleno blanco sobre la ultima pagina)
-        self.line(offset_x + 22, 70, offset_x + 22, 193)
-        self.line(offset_x + 108, 70, offset_x + 108, 193)
+        # Lineas verticales de la tabla (cortan en 193; las casillas de firma y
+        # total las tapan con relleno blanco sobre la ultima pagina)
+        self.line(offset_x + 22, 84, offset_x + 22, 193)
+        self.line(offset_x + 108, 84, offset_x + 108, 193)
 
     def draw_products(self):
-        y_pos = 78
+        y_pos = 92
         for prod in self.productos:
+            # Corto antes de dibujar para dejar libre el pie (firma + total)
+            if y_pos + 8 > 192:
+                self.add_page()
+                y_pos = 92
+
             self.set_font('Arial', '', 9)
             self.set_text_color(80, 80, 80) # Datos de productos en gris oscuro
 
@@ -198,17 +220,10 @@ class Remito(FPDF):
             self.line(5, y_pos, 143.5, y_pos)
             self.line(148.5 + 5, y_pos, 148.5 + 143.5, y_pos)
 
-            # Corto antes para dejar el pie (casilla de total + observaciones/firma)
-            if y_pos >= 182:
-                self.add_page()
-                y_pos = 78
-
-        self.dibujar_total(0)
-        self.dibujar_total(148.5)
-        self.dibujar_observaciones(0)
-        self.dibujar_observaciones(148.5)
         self.dibujar_firma(0)
         self.dibujar_firma(148.5)
+        self.dibujar_total(0)
+        self.dibujar_total(148.5)
 
     def escribir_fila(self, offset_x, y, c, d, s):
         self.set_xy(offset_x + 5, y)
@@ -221,52 +236,35 @@ class Remito(FPDF):
 
     def dibujar_total(self, offset_x):
         """
-        Casilla grande de total al pie del comprobante, alineada con la columna
-        de subtotal y por encima de la franja de observaciones y firma.
+        Casilla de total al pie derecho del comprobante, en la posicion que
+        antes ocupaba la firma. La etiqueta "TOTAL" va arriba del importe.
         """
         self.set_auto_page_break(auto=False)
 
         # Relleno blanco para tapar las lineas de la grilla dentro de la casilla
         self.set_fill_color(255, 255, 255)
         self.set_draw_color(0, 0, 0)
-        self.rect(offset_x + 78, 183, 65.5, 9.5, 'DF')
+        self.rect(offset_x + 103.5, 193, 40, 12, 'DF')
 
         self.set_text_color(0, 0, 0)
-        self.set_font('Arial', 'B', 12)
-        self.set_xy(offset_x + 81, 183)
-        self.cell(28, 9.5, 'TOTAL', 0, 0, 'L')
+        self.set_font('Arial', 'B', 8)
+        self.set_xy(offset_x + 103.5, 194)
+        self.cell(40, 4, 'TOTAL', 0, 0, 'C')
 
-        self.set_font('Arial', 'B', 13)
-        self.set_xy(offset_x + 108, 183)
-        self.cell(33, 9.5, _formato_moneda(self.total), 0, 0, 'R')
+        self.set_font('Arial', 'B', 11)
+        self.set_xy(offset_x + 103.5, 198)
+        self.cell(40, 5, _formato_moneda(self.total), 0, 0, 'C')
 
-    def dibujar_observaciones(self, offset_x):
+    def _lineas_observaciones(self, ancho_max):
         """
-        Franja inferior izquierda del comprobante (a la par del recuadro de
-        firma): etiqueta "Observaciones:" siempre impresa, con la nota de la
-        operación en gris o el espacio en blanco para completar a mano.
+        Parte la observación en hasta 3 líneas que entren en 'ancho_max' mm con
+        la fuente actual; si no entra, la última corta con elipsis. Debe
+        llamarse con la fuente ya seteada (usa get_string_width). Sin nota
+        devuelve una lista vacía.
         """
-        # La franja vive pegada al borde inferior: sin esto, la última línea
-        # dispara el salto de página automático y rompe el comprobante
-        self.set_auto_page_break(auto=False)
-
-        # Separo la franja de la tabla de productos
-        self.line(offset_x + 5, 193, offset_x + 103.5, 193)
-
-        self.set_font('Arial', 'B', 7)
-        self.set_text_color(0, 0, 0)
-        self.set_xy(offset_x + 6, 193.5)
-        self.cell(30, 3, 'Observaciones:', 0, 0, 'L')
-
         if not self.observaciones:
-            self.set_auto_page_break(auto=True, margin=5)
-            return
+            return []
 
-        # Texto en gris, partido a mano en hasta 3 lineas dentro de la franja
-        # (193-205); si no entra, la ultima linea corta con elipsis
-        self.set_font('Arial', '', 6)
-        self.set_text_color(80, 80, 80)
-        ancho_max = 95.5
         lineas = []
         linea = ''
         for palabra in self.observaciones.split():
@@ -276,7 +274,7 @@ class Remito(FPDF):
             else:
                 if linea:
                     lineas.append(linea)
-                # Palabra mas larga que la franja: se corta por caracteres
+                # Palabra mas larga que el ancho: se corta por caracteres
                 while self.get_string_width(palabra) > ancho_max:
                     corte = len(palabra)
                     while corte > 1 and self.get_string_width(palabra[:corte]) > ancho_max:
@@ -290,26 +288,20 @@ class Remito(FPDF):
         if len(lineas) > 3:
             lineas = lineas[:3]
             lineas[-1] = lineas[-1][:-1] + '…'
-
-        y = 196.5
-        for texto_linea in lineas:
-            self.set_xy(offset_x + 6, y)
-            self.cell(96.5, 2.6, texto_linea, 0, 0, 'L')
-            y += 2.6
-
-        self.set_text_color(0, 0, 0)
-        self.set_auto_page_break(auto=True, margin=5)
+        return lineas
 
     def dibujar_firma(self, offset_x):
+        self.set_auto_page_break(auto=False)
         self.set_fill_color(255, 255, 255)
-        # Dibujo el recuadro de firma
-        self.rect(offset_x + 103.5, 193, 40, 12, "DF")
+        self.set_draw_color(0, 0, 0)
+        # Recuadro de firma al pie izquierdo del comprobante
+        self.rect(offset_x + 5, 193, 40, 12, "DF")
 
         self.set_font("Arial", "B", 7)
         self.set_text_color(0, 0, 0)
-        
-        # Posiciono el texto 'FIRMA' arriba del recuadro (y=193.5)
-        self.set_xy(offset_x + 103.5, 193.5)
+
+        # Etiqueta 'FIRMA' arriba del recuadro
+        self.set_xy(offset_x + 5, 193.5)
         self.cell(40, 4, "FIRMA", 0, 0, "C")
 
     def generate_pdf(self, path=None):
