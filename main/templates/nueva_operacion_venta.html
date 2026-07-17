@@ -122,6 +122,9 @@
               </p>
             </div>
 
+            <!-- Observación opcional (se imprime en el remito) -->
+            {% include "widget_observacion.html" %}
+
             <!-- Método de Pago -->
             <div>
               <p class="cart-pay__label">Método de pago</p>
@@ -222,6 +225,9 @@
 
   <!-- Selector de fecha de la operación (compartido con compras) -->
   <script src="{% static 'js/fecha_operacion.js' %}"></script>
+
+  <!-- Observación opcional de la operación (compartido con compras) -->
+  <script src="{% static 'js/observacion_operacion.js' %}"></script>
 
   <!-- Script del Carrito y Lógica de Operaciones -->
   <script src="{% static 'js/operaciones.js' %}"></script>

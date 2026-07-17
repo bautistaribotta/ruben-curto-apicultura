@@ -114,6 +114,24 @@
   color: var(--sand-400);
 }
 
+/* Observación de la operación (la misma nota que se imprime en el remito) */
+.op-head__obs {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+  margin: 0.5rem 0 0;
+  max-width: 60ch;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.op-head__obs .material-symbols-outlined {
+  font-size: 1.05rem;
+  color: var(--sand-400);
+  flex: none;
+}
+
 .op-viaje {
   display: inline-flex;
   align-items: center;

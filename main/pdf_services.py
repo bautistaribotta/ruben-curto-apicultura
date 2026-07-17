@@ -1,7 +1,7 @@
 from fpdf import FPDF
 
 class Remito(FPDF):
-    def __init__(self, id_operacion, fecha, nombre, localidad, direccion, productos, apellido=" ", cuit=" ", telefono=""):
+    def __init__(self, id_operacion, fecha, nombre, localidad, direccion, productos, apellido=" ", cuit=" ", telefono="", observaciones=""):
         # A4 Apaisado (Landscape): 297mm x 210mm
         super().__init__(orientation='L', format='A4')
         self.set_auto_page_break(auto=True, margin=5)
@@ -14,6 +14,9 @@ class Remito(FPDF):
         self.productos = productos
         self.cuit = cuit
         self.telefono = telefono
+        # Nota opcional de la operación; el campo se imprime siempre (con o
+        # sin texto) para poder completarlo a mano, con tope de 250 caracteres
+        self.observaciones = str(observaciones or "")[:250]
 
     def header(self):
         self.dibujar_esqueleto(0, "ORIGINAL")
@@ -146,8 +149,9 @@ class Remito(FPDF):
         self.cell(118.5, 8, 'DETALLE', 0, 0, 'C')
         self.line(offset_x + 5, 78, offset_x + 143.5, 78)
 
-        # Lineas verticales de la tabla
-        self.line(offset_x + 25, 70, offset_x + 25, 205)
+        # Lineas verticales de la tabla (corta en 193 para dejar limpia la
+        # franja inferior de observaciones y firma)
+        self.line(offset_x + 25, 70, offset_x + 25, 193)
 
     def draw_products(self):
         y_pos = 78
@@ -177,6 +181,8 @@ class Remito(FPDF):
                 self.add_page()
                 y_pos = 78
 
+        self.dibujar_observaciones(0)
+        self.dibujar_observaciones(148.5)
         self.dibujar_firma(0)
         self.dibujar_firma(148.5)
 
@@ -186,6 +192,66 @@ class Remito(FPDF):
         self.set_xy(offset_x + 25, y)
         # Mostrar el detalle con limite de caracteres y ajustado
         self.cell(118.5, 8, f' {d[:65]}', 0, 0, 'L')
+
+    def dibujar_observaciones(self, offset_x):
+        """
+        Franja inferior izquierda del comprobante (a la par del recuadro de
+        firma): etiqueta "Observaciones:" siempre impresa, con la nota de la
+        operación en gris o el espacio en blanco para completar a mano.
+        """
+        # La franja vive pegada al borde inferior: sin esto, la última línea
+        # dispara el salto de página automático y rompe el comprobante
+        self.set_auto_page_break(auto=False)
+
+        # Separo la franja de la tabla de productos
+        self.line(offset_x + 5, 193, offset_x + 103.5, 193)
+
+        self.set_font('Arial', 'B', 7)
+        self.set_text_color(0, 0, 0)
+        self.set_xy(offset_x + 6, 193.5)
+        self.cell(30, 3, 'Observaciones:', 0, 0, 'L')
+
+        if not self.observaciones:
+            self.set_auto_page_break(auto=True, margin=5)
+            return
+
+        # Texto en gris, partido a mano en hasta 3 lineas dentro de la franja
+        # (193-205); si no entra, la ultima linea corta con elipsis
+        self.set_font('Arial', '', 6)
+        self.set_text_color(80, 80, 80)
+        ancho_max = 95.5
+        lineas = []
+        linea = ''
+        for palabra in self.observaciones.split():
+            candidata = f'{linea} {palabra}'.strip()
+            if self.get_string_width(candidata) <= ancho_max:
+                linea = candidata
+            else:
+                if linea:
+                    lineas.append(linea)
+                # Palabra mas larga que la franja: se corta por caracteres
+                while self.get_string_width(palabra) > ancho_max:
+                    corte = len(palabra)
+                    while corte > 1 and self.get_string_width(palabra[:corte]) > ancho_max:
+                        corte -= 1
+                    lineas.append(palabra[:corte])
+                    palabra = palabra[corte:]
+                linea = palabra
+        if linea:
+            lineas.append(linea)
+
+        if len(lineas) > 3:
+            lineas = lineas[:3]
+            lineas[-1] = lineas[-1][:-1] + '…'
+
+        y = 196.5
+        for texto_linea in lineas:
+            self.set_xy(offset_x + 6, y)
+            self.cell(96.5, 2.6, texto_linea, 0, 0, 'L')
+            y += 2.6
+
+        self.set_text_color(0, 0, 0)
+        self.set_auto_page_break(auto=True, margin=5)
 
     def dibujar_firma(self, offset_x):
         self.set_fill_color(255, 255, 255)

@@ -735,6 +735,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 // valores de miel 50mm, dolar oficial y cera operculo de aquel
                 // dia; null salvo que la fecha sea anterior a hoy
                 cotizaciones_historicas: typeof obtenerCotizacionesHistoricas === 'function' ? obtenerCotizacionesHistoricas() : null,
+                // nota opcional que se imprime en el remito
+                observaciones: typeof obtenerObservacion === 'function' ? obtenerObservacion() : '',
                 // id de la operacion a editar; null cuando se crea una nueva
                 editar: edicion ? edicion.id : null,
             }),

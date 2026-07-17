@@ -425,7 +425,8 @@ def generar_remito(request, id_operacion):
         productos=lista_productos,
         apellido=cliente.apellido if cliente.apellido else "",
         cuit=cliente.cuit if cliente.cuit else "",
-        telefono=cliente.telefono if cliente.telefono else ""
+        telefono=cliente.telefono if cliente.telefono else "",
+        observaciones=operacion.observaciones
     )
 
     pdf_bytes = pdf.generate_pdf()
@@ -483,6 +484,7 @@ def _contexto_edicion(operacion):
         "fecha": timezone.localtime(operacion.fecha).strftime("%Y-%m-%d"),
         "metodo": metodo,
         "metodo_bloqueado": cantidad_pagos > 0,
+        "observaciones": operacion.observaciones,
         "items": items,
     }
 
@@ -512,6 +514,9 @@ def nueva_operacion_venta(request, id_cliente):
             # Cotizaciones de aquel día (obligatorias con fecha anterior a hoy)
             cotizaciones_historicas = datos.get("cotizaciones_historicas")
 
+            # Nota opcional que se imprime en el remito
+            observaciones = datos.get("observaciones")
+
             # Modo edición (solo staff): reemplaza los ítems de una operación existente
             id_editar = datos.get("editar")
             if id_editar:
@@ -520,13 +525,15 @@ def nueva_operacion_venta(request, id_cliente):
                 # Valido que la operación exista, sea de este cliente y de este tipo
                 get_object_or_404(Operacion, id=id_editar, cliente=cliente, tipo_operacion="venta", activa=True)
                 operacion = editar_operacion(id_editar, items, metodo_pago, fecha=fecha,
-                                             cotizaciones_historicas=cotizaciones_historicas)
+                                             cotizaciones_historicas=cotizaciones_historicas,
+                                             observaciones=observaciones)
                 messages.success(request, "Operación actualizada correctamente")
                 return JsonResponse({"ok": True, "id_cliente": cliente.id, "id_operacion": operacion.id, "editada": True})
 
             # Delegamos toda la lógica de creación a la capa de servicios
             operacion = crear_operacion(cliente, items, metodo_pago, tipo_operacion, viaje, fecha=fecha,
-                                        cotizaciones_historicas=cotizaciones_historicas)
+                                        cotizaciones_historicas=cotizaciones_historicas,
+                                        observaciones=observaciones)
 
             # Enviar mensaje de éxito a través del framework de mensajes de Django
             messages.success(request, "Operación creada correctamente")
@@ -619,6 +626,9 @@ def nueva_operacion_compra(request, id_cliente):
             # Cotizaciones de aquel día (obligatorias con fecha anterior a hoy)
             cotizaciones_historicas = datos.get("cotizaciones_historicas")
 
+            # Nota opcional que se imprime en el remito
+            observaciones = datos.get("observaciones")
+
             # Modo edición (solo staff): reemplaza los ítems de una compra existente
             id_editar = datos.get("editar")
             if id_editar:
@@ -626,13 +636,15 @@ def nueva_operacion_compra(request, id_cliente):
                     return JsonResponse({"error": "Solo el personal autorizado puede editar operaciones."}, status=403)
                 get_object_or_404(Operacion, id=id_editar, cliente=cliente, tipo_operacion="compra", activa=True)
                 operacion = editar_operacion(id_editar, items, metodo_pago, fecha=fecha,
-                                             cotizaciones_historicas=cotizaciones_historicas)
+                                             cotizaciones_historicas=cotizaciones_historicas,
+                                             observaciones=observaciones)
                 messages.success(request, "Compra actualizada correctamente")
                 return JsonResponse({"ok": True, "id_cliente": cliente.id, "id_operacion": operacion.id, "editada": True})
 
             # El tipo se fuerza a "compra"; en compra el precio viene en cada item
             operacion = crear_operacion(cliente, items, metodo_pago, "compra", viaje, fecha=fecha,
-                                        cotizaciones_historicas=cotizaciones_historicas)
+                                        cotizaciones_historicas=cotizaciones_historicas,
+                                        observaciones=observaciones)
 
             messages.success(request, "Compra creada correctamente")
 

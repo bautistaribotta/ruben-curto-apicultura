@@ -1126,6 +1126,90 @@
   font-size: 0.95rem;
 }
 
+/* Observación opcional: mismo lenguaje plegable que el selector de fecha */
+.cart-obs__toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.cart-obs__toggle .material-symbols-outlined {
+  font-size: 1.05rem;
+}
+
+.cart-obs__texto {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cart-obs__texto strong {
+  font-weight: var(--weight-bold);
+  color: var(--text-strong);
+}
+
+/* Con nota cargada, el adelanto toma el acento para avisar de un vistazo */
+.cart-obs.is-con-nota .cart-obs__texto strong {
+  color: var(--brand-secondary);
+}
+
+.cart-obs__accion {
+  margin-left: auto;
+  flex: none;
+  font-weight: var(--weight-bold);
+  color: var(--brand-secondary);
+}
+
+.cart-obs__toggle:hover .cart-obs__accion {
+  text-decoration: underline;
+}
+
+.cart-obs__panel {
+  position: relative;
+  margin-top: 0.55rem;
+}
+
+.cart-obs__panel.oculto {
+  display: none;
+}
+
+.cart-obs__input {
+  width: 100%;
+  resize: vertical;
+  min-height: 4.2rem;
+  padding: 0.45rem 0.6rem 1.3rem;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  color: var(--text-body);
+}
+
+.cart-obs__input:focus {
+  border-color: var(--brand);
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.cart-obs__contador {
+  position: absolute;
+  right: 0.6rem;
+  bottom: 0.5rem;
+  font-size: 0.68rem;
+  color: var(--text-subtle);
+  pointer-events: none;
+}
+
 .cart-pay__label {
   font-size: 0.7rem;
   font-weight: var(--weight-bold);

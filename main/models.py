@@ -111,6 +111,8 @@ class Operacion(models.Model):
     # Cotizacion de "Cera Operculo" al momento de crear la operacion, para poder
     # mostrar la equivalencia en kilos de cera "de origen" igual que con la miel
     valor_kilo_cera = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    # Nota opcional de la operacion; se imprime en el remito bajo "Observaciones:"
+    observaciones = models.CharField(max_length=250, blank=True, default="")
 
     # Obligo a Django a nombrar la tabla como "operaciones"
     class Meta:

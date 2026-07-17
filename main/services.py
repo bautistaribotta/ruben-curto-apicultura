@@ -290,8 +290,17 @@ def _parsear_cotizaciones_historicas(datos):
     return resultado
 
 
+def _limpiar_observaciones(observaciones):
+    """Normaliza la observación opcional de una operación: texto plano, sin
+    espacios sobrantes, con tope de 250 caracteres (mismo límite que el modelo)."""
+    texto = str(observaciones or "").strip()
+    if len(texto) > 250:
+        raise ValueError("La observación no puede superar los 250 caracteres.")
+    return texto
+
+
 def crear_operacion(cliente, items, metodo_pago, tipo_operacion, viaje=None, fecha=None,
-                    cotizaciones_historicas=None):
+                    cotizaciones_historicas=None, observaciones=None):
     # Fecha personalizada: permite cargar operaciones viejas. None = hoy.
     fecha_personalizada = _parsear_fecha_operacion(fecha)
 
@@ -334,7 +343,8 @@ def crear_operacion(cliente, items, metodo_pago, tipo_operacion, viaje=None, fec
             fecha=fecha_personalizada or timezone.now(),
             valor_dolar=valor_dolar,
             valor_kilo_miel=valor_miel,
-            valor_kilo_cera=valor_cera
+            valor_kilo_cera=valor_cera,
+            observaciones=_limpiar_observaciones(observaciones),
         )
 
         _aplicar_items(operacion, items, tipo_operacion)
@@ -521,7 +531,8 @@ def _validar_items_congelados(items, detalles_congelados):
     return restantes
 
 
-def editar_operacion(id_operacion, items, metodo_pago, fecha=None, cotizaciones_historicas=None):
+def editar_operacion(id_operacion, items, metodo_pago, fecha=None, cotizaciones_historicas=None,
+                     observaciones=None):
     """
     Reemplaza los ítems de una operación activa por los nuevos (revirtiendo el
     stock viejo y aplicando el nuevo), y actualiza la fecha si cambió.
@@ -564,6 +575,13 @@ def editar_operacion(id_operacion, items, metodo_pago, fecha=None, cotizaciones_
 
         if not operacion.activa:
             raise ValueError("No se puede editar una operación cancelada.")
+
+        # La observación se reemplaza siempre por la del formulario (el campo
+        # llega precargado al editar, así que vacío significa borrarla)
+        texto_observaciones = _limpiar_observaciones(observaciones)
+        if texto_observaciones != operacion.observaciones:
+            operacion.observaciones = texto_observaciones
+            operacion.save(update_fields=["observaciones"])
 
         # Total anterior: se necesita para detectar el pago automático de contado
         monto_anterior = operacion.monto_total
