@@ -17,7 +17,7 @@ from .pdf_services import Remito
 from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo_cliente, editar_cliente,
                        eliminar_cliente, buscar_clientes, get_cotizacion_dolar_oficial, get_cotizaciones, get_total_kilos_granel, get_articulos_granel, actualizar_cotizacion, obtener_datos_cliente,
                        obtener_datos_producto, modificar_stock, crear_operacion, editar_operacion, servicio_cancelar_operacion,
-                       obtener_listado_deudores, filtro_nombre_apellido, crear_chofer, crear_vehiculo, crear_viaje, obtener_choferes_activos,
+                       obtener_listado_deudores, filtro_nombre_apellido, filtro_tokens, crear_chofer, crear_vehiculo, crear_viaje, obtener_choferes_activos,
                        obtener_vehiculos_activos, obtener_viajes, obtener_datos_viaje, editar_viaje, eliminar_viaje, crear_gasto,
                        incluir_asignado,
                        editar_chofer, eliminar_chofer, editar_vehiculo, eliminar_vehiculo,
@@ -164,8 +164,9 @@ def productos(request):
             # Si es solo números, busco por ID (exacto o que contenga)
             productos = productos.filter(id__icontains=q)
         else:
-            # Si no, buscamos por nombre
-            productos = productos.filter(nombre__icontains=q)
+            # Si no, buscamos por nombre (multi-palabra: "cera laminada"
+            # encuentra "Cera Estampada Laminada")
+            productos = productos.filter(filtro_tokens(q, "nombre"))
 
     if categoria_filtrada:
         productos = productos.filter(categoria=categoria_filtrada)
@@ -560,7 +561,7 @@ def nueva_operacion_venta(request, id_cliente):
         if q.isdigit():
             productos = productos.filter(id__icontains=q)
         else:
-            productos = productos.filter(nombre__icontains=q)
+            productos = productos.filter(filtro_tokens(q, "nombre"))
 
     if categoria_filtrada:
         productos = productos.filter(categoria=categoria_filtrada)
@@ -670,7 +671,7 @@ def nueva_operacion_compra(request, id_cliente):
         if q.isdigit():
             productos = productos.filter(id__icontains=q)
         else:
-            productos = productos.filter(nombre__icontains=q)
+            productos = productos.filter(filtro_tokens(q, "nombre"))
 
     if categoria_filtrada:
         productos = productos.filter(categoria=categoria_filtrada)

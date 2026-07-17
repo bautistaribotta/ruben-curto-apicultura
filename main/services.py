@@ -176,23 +176,31 @@ def eliminar_cliente(id_cliente):
     return cliente
 
 
-def filtro_nombre_apellido(q, prefijo=""):
+def filtro_tokens(q, *campos):
     """
-    Arma un Q para buscar por nombre y apellido como si fueran un solo campo:
-    cada palabra del texto tiene que aparecer en el nombre o en el apellido, así
-    "carola diaz" encuentra a Carola Diaz aunque sean columnas separadas (y no
-    importa el orden: "diaz carola" también matchea). Una sola palabra se
-    comporta como antes (matchea nombre o apellido).
-
-    'prefijo' permite reutilizarlo sobre relaciones, por ejemplo "cliente__" o
-    "chofer__". Sin palabras devuelve un Q() vacío (no filtra nada).
+    Arma un Q para buscar por varias palabras sobre uno o más campos: cada
+    palabra del texto tiene que aparecer (icontains) en alguno de los campos, y
+    todas las palabras tienen que estar presentes. Así "cera laminada" encuentra
+    "Cera Estampada Laminada" y el orden no importa. Una sola palabra se comporta
+    como un icontains común. Sin palabras devuelve un Q() vacío (no filtra nada).
     """
-    campo_nombre = f"{prefijo}nombre__icontains"
-    campo_apellido = f"{prefijo}apellido__icontains"
     filtro = Q()
     for palabra in (q or "").split():
-        filtro &= (Q(**{campo_nombre: palabra}) | Q(**{campo_apellido: palabra}))
+        por_palabra = Q()
+        for campo in campos:
+            por_palabra |= Q(**{f"{campo}__icontains": palabra})
+        filtro &= por_palabra
     return filtro
+
+
+def filtro_nombre_apellido(q, prefijo=""):
+    """
+    Caso particular de filtro_tokens para nombre + apellido: "carola diaz"
+    encuentra a Carola Diaz aunque sean columnas separadas y sin importar el
+    orden. 'prefijo' permite reutilizarlo sobre relaciones, por ejemplo
+    "cliente__" o "chofer__".
+    """
+    return filtro_tokens(q, f"{prefijo}nombre", f"{prefijo}apellido")
 
 
 def buscar_clientes(q, limite=10):
