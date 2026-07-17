@@ -176,6 +176,25 @@ def eliminar_cliente(id_cliente):
     return cliente
 
 
+def filtro_nombre_apellido(q, prefijo=""):
+    """
+    Arma un Q para buscar por nombre y apellido como si fueran un solo campo:
+    cada palabra del texto tiene que aparecer en el nombre o en el apellido, así
+    "carola diaz" encuentra a Carola Diaz aunque sean columnas separadas (y no
+    importa el orden: "diaz carola" también matchea). Una sola palabra se
+    comporta como antes (matchea nombre o apellido).
+
+    'prefijo' permite reutilizarlo sobre relaciones, por ejemplo "cliente__" o
+    "chofer__". Sin palabras devuelve un Q() vacío (no filtra nada).
+    """
+    campo_nombre = f"{prefijo}nombre__icontains"
+    campo_apellido = f"{prefijo}apellido__icontains"
+    filtro = Q()
+    for palabra in (q or "").split():
+        filtro &= (Q(**{campo_nombre: palabra}) | Q(**{campo_apellido: palabra}))
+    return filtro
+
+
 def buscar_clientes(q, limite=10):
     """
     Busqueda acotada de clientes activos para el autocompletado del select de cliente
@@ -190,7 +209,7 @@ def buscar_clientes(q, limite=10):
     if q.isdigit():
         clientes = clientes.filter(id=q)
     else:
-        clientes = clientes.filter(Q(nombre__icontains=q) | Q(apellido__icontains=q))
+        clientes = clientes.filter(filtro_nombre_apellido(q))
 
     clientes = clientes.order_by("nombre", "apellido")[:limite]
     return [
@@ -718,12 +737,11 @@ def obtener_listado_deudores(q="", tipo=""):
         operaciones_adeudadas = operaciones_adeudadas.filter(tipo_operacion="compra")
 
     if q:
-        from django.db.models import Q
         if q.isdigit():
             operaciones_adeudadas = operaciones_adeudadas.filter(id__icontains=q)
         else:
             operaciones_adeudadas = operaciones_adeudadas.filter(
-                Q(cliente__nombre__icontains=q) | Q(cliente__apellido__icontains=q)
+                filtro_nombre_apellido(q, "cliente__")
             )
 
     hoy = timezone.localdate()

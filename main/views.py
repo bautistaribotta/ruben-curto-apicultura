@@ -17,7 +17,7 @@ from .pdf_services import Remito
 from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo_cliente, editar_cliente,
                        eliminar_cliente, buscar_clientes, get_cotizacion_dolar_oficial, get_cotizaciones, get_total_kilos_granel, get_articulos_granel, actualizar_cotizacion, obtener_datos_cliente,
                        obtener_datos_producto, modificar_stock, crear_operacion, editar_operacion, servicio_cancelar_operacion,
-                       obtener_listado_deudores, crear_chofer, crear_vehiculo, crear_viaje, obtener_choferes_activos,
+                       obtener_listado_deudores, filtro_nombre_apellido, crear_chofer, crear_vehiculo, crear_viaje, obtener_choferes_activos,
                        obtener_vehiculos_activos, obtener_viajes, obtener_datos_viaje, editar_viaje, eliminar_viaje, crear_gasto,
                        incluir_asignado,
                        editar_chofer, eliminar_chofer, editar_vehiculo, eliminar_vehiculo,
@@ -264,12 +264,8 @@ def clientes(request):
             # Si es solo números, busco por ID (exacto o que contenga)
             clientes_list = clientes_list.filter(id__icontains=q)
         else:
-            # Buscar por nombre o apellido
-            from django.db.models import Q
-
-            clientes_list = clientes_list.filter(
-                Q(nombre__icontains=q) | Q(apellido__icontains=q)
-            )
+            # Buscar por nombre y apellido concatenados ("carola diaz")
+            clientes_list = clientes_list.filter(filtro_nombre_apellido(q))
 
     clientes_list = clientes_list.order_by("nombre")
 
@@ -843,8 +839,7 @@ def viajes(request):
             lista_viajes = lista_viajes.filter(
                 Q(vehiculo__nombre__icontains=q)
                 | Q(vehiculo__patente__icontains=q)
-                | Q(chofer__nombre__icontains=q)
-                | Q(chofer__apellido__icontains=q)
+                | filtro_nombre_apellido(q, "chofer__")
                 | Q(destinos__destino__icontains=q)
             ).distinct()
 
@@ -1107,8 +1102,7 @@ def mercado_libre(request):
             lista_viajes = lista_viajes.filter(
                 Q(vehiculo__nombre__icontains=q)
                 | Q(vehiculo__patente__icontains=q)
-                | Q(chofer__nombre__icontains=q)
-                | Q(chofer__apellido__icontains=q)
+                | filtro_nombre_apellido(q, "chofer__")
                 | Q(destinos__destinos_reparto__icontains=q)
             ).distinct()
 
@@ -1251,8 +1245,7 @@ def viaje_cereales(request):
             lista_viajes = lista_viajes.filter(
                 Q(vehiculo__nombre__icontains=q)
                 | Q(vehiculo__patente__icontains=q)
-                | Q(chofer__nombre__icontains=q)
-                | Q(chofer__apellido__icontains=q)
+                | filtro_nombre_apellido(q, "chofer__")
                 | Q(tipo_cereal__icontains=q)
                 | Q(destinos__destino__icontains=q)
             ).distinct()
