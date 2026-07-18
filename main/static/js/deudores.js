@@ -36,6 +36,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (urlString) {
             url = new URL(urlString, window.location.origin);
+            // Paginacion: el link ya trae los filtros server-side, pero refuerzo el
+            // rango de fechas desde el estado del chip (la fuente de verdad) para que
+            // sobreviva a "Anterior"/"Siguiente" aunque el link llegara sin ellos
+            // (por ej. una plantilla vieja cacheada). El chip vive fuera de la region
+            // que el AJAX reemplaza, asi que su dataset sigue reflejando lo aplicado.
+            const dd = fechas ? fechas.dataset.desde : '';
+            const hh = fechas ? fechas.dataset.hasta : '';
+            if (dd) {
+                url.searchParams.set('desde', dd);
+            } else {
+                url.searchParams.delete('desde');
+            }
+            if (hh) {
+                url.searchParams.set('hasta', hh);
+            } else {
+                url.searchParams.delete('hasta');
+            }
         } else {
             url = new URL(window.location.href);
             if (inputBusqueda) {
