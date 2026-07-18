@@ -4,6 +4,70 @@
   flex-direction: column;
 }
 
+/* --- TARJETAS DE RESUMEN ---
+   Mismo componente que las tarjetas superiores de Deudas (deu-stat), replicado
+   aqui con prefijo propio para no depender de deudores.css. Sin datos por ahora. */
+.meli-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.85rem;
+  margin-bottom: 1.5rem;
+}
+
+.meli-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  /* min-width:0 deja que las columnas 1fr se encojan bajo el ancho del contenido:
+     sin esto un importe largo con white-space:nowrap desborda el grid. */
+  min-width: 0;
+  padding: 1rem 1.15rem;
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.meli-stat__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.meli-stat__icon {
+  width: 1.65rem;
+  height: 1.65rem;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  background-color: var(--honey-tint-10);
+  color: var(--brand-active);
+}
+
+.meli-stat__icon .material-symbols-outlined {
+  font-size: 1.1rem;
+}
+
+.meli-stat__label {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--text-muted);
+  letter-spacing: var(--tracking-wide);
+  padding-top: 0.15rem;
+}
+
+.meli-stat__value {
+  font-size: 1.4rem;
+  line-height: 1.1;
+  font-weight: var(--weight-extra);
+  color: var(--text-strong);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 /* --- BARRA DE HERRAMIENTAS (Buscador + Boton nuevo) --- */
 .barra-herramientas {
   display: flex;
@@ -229,6 +293,10 @@
 
 /* --- RESPONSIVE --- */
 @media (max-width: 1024px) {
+  /* En tablet las cuatro tarjetas pasan a una grilla 2x2 antes de apilarse. */
+  .meli-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
   .barra-herramientas {
     flex-direction: column;
     align-items: stretch;
@@ -647,6 +715,10 @@
 
 /* --- RESPONSIVE PANEL --- */
 @media (max-width: 600px) {
+  /* En moviles chicos las tarjetas se apilan en una sola columna. */
+  .meli-stats {
+    grid-template-columns: 1fr;
+  }
   .grupo-botones-meli {
     grid-template-columns: 1fr;
   }

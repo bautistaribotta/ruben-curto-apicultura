@@ -24,6 +24,83 @@
   --cereal-mani-dot: oklch(63% 0.100 48);
 }
 
+/* --- TARJETAS DE RESUMEN ---
+   Mismo componente que las tarjetas superiores de Deudas (deu-stat), replicado
+   aqui con prefijo propio para no depender de deudores.css. Sin datos por ahora. */
+.vjc-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.85rem;
+  margin-bottom: 1.5rem;
+}
+
+.vjc-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  /* min-width:0 deja que las columnas 1fr se encojan bajo el ancho del contenido:
+     sin esto un importe largo con white-space:nowrap desborda el grid. */
+  min-width: 0;
+  padding: 1rem 1.15rem;
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.vjc-stat__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.vjc-stat__icon {
+  width: 1.65rem;
+  height: 1.65rem;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  background-color: var(--honey-tint-10);
+  color: var(--brand-active);
+}
+
+.vjc-stat__icon .material-symbols-outlined {
+  font-size: 1.1rem;
+}
+
+.vjc-stat__label {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--text-muted);
+  letter-spacing: var(--tracking-wide);
+  padding-top: 0.15rem;
+}
+
+.vjc-stat__value {
+  font-size: 1.4rem;
+  line-height: 1.1;
+  font-weight: var(--weight-extra);
+  color: var(--text-strong);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* En tablet las cuatro tarjetas pasan a una grilla 2x2; en movil se apilan. */
+@media (max-width: 1024px) {
+  .vjc-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .vjc-stats {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* --- Anchos de columna propios de esta tabla (4 columnas).
    Uso el prefijo .contenedor-tabla para ganarle en especificidad a las
    reglas de 5 columnas que define viajes.css para .tabla-viajes. --- */
