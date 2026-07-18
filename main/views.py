@@ -1044,6 +1044,7 @@ def deudores(request):
     total_pesos = sum((d["deuda_pesos"] or 0) for d in filas_tarjetas)
     total_usd_hoy = sum((d["deuda_dolar_actual"] or 0) for d in filas_tarjetas)
     total_miel_hoy = sum((d["kg_miel_actual"] or 0) for d in filas_tarjetas)
+    total_cera_hoy = sum((d["kg_cera_actual"] or 0) for d in filas_tarjetas)
 
     # Texto del chip de fechas: un solo dia (desde == hasta), rango cerrado, o
     # rango abierto con un solo extremo. Se calcula en el server para que el chip
@@ -1079,6 +1080,7 @@ def deudores(request):
         "total_pesos": total_pesos,
         "total_usd_hoy": total_usd_hoy,
         "total_miel_hoy": total_miel_hoy,
+        "total_cera_hoy": total_cera_hoy,
         "total_deudores": len(lista_deudores),
     }
 

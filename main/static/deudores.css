@@ -6,16 +6,20 @@
 /* --- TARJETAS DE RESUMEN --- */
 .deu-stats {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.85rem;
   margin-bottom: 1.5rem;
 }
 
 .deu-stat {
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
-  padding: 1.25rem 1.4rem;
+  gap: 0.6rem;
+  /* min-width:0 deja que las columnas 1fr se encojan por debajo del ancho del
+     contenido; sin esto un importe largo con white-space:nowrap desborda el grid.
+     Necesario ahora que entran cuatro tarjetas en una fila. */
+  min-width: 0;
+  padding: 1rem 1.15rem;
   background-color: var(--surface-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
@@ -30,8 +34,8 @@
 }
 
 .deu-stat__icon {
-  width: 1.85rem;
-  height: 1.85rem;
+  width: 1.65rem;
+  height: 1.65rem;
   flex: none;
   display: inline-flex;
   align-items: center;
@@ -54,7 +58,7 @@
 }
 
 .deu-stat__value {
-  font-size: 1.75rem;
+  font-size: 1.4rem;
   line-height: 1.1;
   font-weight: var(--weight-extra);
   color: var(--text-strong);
@@ -622,8 +626,9 @@
 
 /* --- ADAPTACION PARA MOVILES Y TABLETS --- */
 @media (max-width: 1024px) {
+  /* En tablet las cuatro tarjetas pasan a una grilla 2x2 antes de apilarse. */
   .deu-stats {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
   }
   .barra-herramientas {
     flex-direction: column;
@@ -648,6 +653,10 @@
 }
 
 @media (max-width: 600px) {
+  /* En moviles chicos las tarjetas se apilan en una sola columna. */
+  .deu-stats {
+    grid-template-columns: 1fr;
+  }
   /* Ocultar columnas menos importantes en moviles muy pequenos */
   .columna-ocultable-movil {
     display: none;
