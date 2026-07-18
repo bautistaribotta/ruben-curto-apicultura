@@ -1532,6 +1532,41 @@ def obtener_viajes_reparto():
     )
 
 
+def obtener_resumen_reparto():
+    """Totales para las tarjetas de resumen de la vista de repartos.
+
+    Se calcula sobre TODOS los viajes activos, independiente del buscador y la
+    paginacion. Uso dos aggregate() separados a proposito: sumar valor_viaje y
+    los gastos hijos (detalle_gastos) en la misma query multiplicaria las filas
+    de ViajeReparto por el JOIN a la tabla de gastos y falsearia los totales.
+    Asi son dos queries planas, sin N+1.
+
+    Gastos = combustible + costo del empleado + gastos extra, igual criterio que
+    la ganancia neta por viaje (ver ViajeReparto.ganancia y la vista de detalle).
+    Ganancia = (total + 21%) - gastos, segun lo pedido para esta tarjeta.
+    """
+    cabecera = ViajeReparto.objects.filter(activo=True).aggregate(
+        total=Coalesce(Sum("valor_viaje"), 0),
+        combustible=Coalesce(Sum("gasto_combustible_viaje_reparto"), 0),
+        empleado=Coalesce(Sum("costo_empleado"), 0),
+    )
+    gastos_extra = GastoViajeReparto.objects.filter(
+        viaje_reparto__activo=True
+    ).aggregate(total=Coalesce(Sum("monto"), 0))["total"]
+
+    total = cabecera["total"]
+    gastos = cabecera["combustible"] + cabecera["empleado"] + gastos_extra
+    total_mas_iva = int(round(total * Decimal("1.21")))
+    ganancia = total_mas_iva - gastos
+
+    return {
+        "total": total,
+        "total_mas_iva": total_mas_iva,
+        "gastos": gastos,
+        "ganancia": ganancia,
+    }
+
+
 def obtener_datos_viaje_reparto(id_viaje_reparto):
     # Trae un viaje de reparto activo con sus relaciones listas para la vista de informacion.
     # Precargo tambien los gastos para que la tarjeta de resultado no dispare queries extra.

@@ -25,7 +25,8 @@ from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo
                        crear_viaje_cereal, obtener_viajes_cereales, obtener_datos_viaje_cereal,
                        editar_viaje_cereal, eliminar_viaje_cereal, crear_gasto_viaje_cereal,
                        crear_viaje_reparto, obtener_viajes_reparto, obtener_datos_viaje_reparto,
-                       editar_viaje_reparto, eliminar_viaje_reparto, crear_gasto_viaje_reparto)
+                       editar_viaje_reparto, eliminar_viaje_reparto, crear_gasto_viaje_reparto,
+                       obtener_resumen_reparto)
 
 
 def login(request):
@@ -1157,10 +1158,13 @@ def mercado_libre(request):
         "q": q,
     }
 
-    # Si es una peticion AJAX (buscador/paginacion), devuelvo solo la tabla parcial
+    # Si es una peticion AJAX (buscador/paginacion), devuelvo solo la tabla parcial.
+    # Las tarjetas de resumen viven fuera de la tabla, asi que no recalculo sus
+    # totales en cada tecleo del buscador: solo en la carga completa de la pagina.
     if request.headers.get("x-requested-with") == "XMLHttpRequest":
         return render(request, "tabla_viajes_mercado_libre.html", contexto)
 
+    contexto["resumen"] = obtener_resumen_reparto()
     return render(request, "mercado_libre.html", contexto)
 
 

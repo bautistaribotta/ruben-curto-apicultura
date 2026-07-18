@@ -68,6 +68,16 @@
   white-space: nowrap;
 }
 
+/* El monto se pinta por signo, reutilizando los colores de las tarjetas de
+   Deudas: verde para positivo (cobrar), rojo para negativo (pagar). */
+.meli-stat__value--pos {
+  color: var(--success-500);
+}
+
+.meli-stat__value--neg {
+  color: var(--danger-600);
+}
+
 /* --- BARRA DE HERRAMIENTAS (Buscador + Boton nuevo) --- */
 .barra-herramientas {
   display: flex;
