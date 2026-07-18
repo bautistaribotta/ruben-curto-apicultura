@@ -11,6 +11,7 @@ from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
 from django.db import transaction
 from django.utils import timezone
+from django.utils.dateparse import parse_date
 
 from .models import Cliente, Producto, Operacion, DetalleOperacion, Pago, Cotizaciones, Chofer, Vehiculo, Viaje, ViajeCereal, ViajeReparto
 from .pdf_services import Remito
@@ -1019,7 +1020,17 @@ def deudores(request):
     if tipo not in ("cobros", "pagos"):
         tipo = ""
 
-    lista_deudores = obtener_listado_deudores(q, tipo)
+    # Filtro por rango de fechas de la operacion. Las fechas llegan en ISO
+    # (yyyy-mm-dd) desde el <input type="date">; parse_date devuelve None si el
+    # valor es invalido, asi que un parametro roto simplemente se ignora. El modo
+    # "un solo dia" del popover manda desde == hasta.
+    desde = parse_date(request.GET.get("desde", ""))
+    hasta = parse_date(request.GET.get("hasta", ""))
+    # Si el usuario invierte el rango, lo normalizo para no devolver un listado vacio.
+    if desde and hasta and desde > hasta:
+        desde, hasta = hasta, desde
+
+    lista_deudores = obtener_listado_deudores(q, tipo, desde, hasta)
 
     # Las tarjetas de resumen muestran un solo lado: por defecto (y con el filtro de
     # cobros) el total a cobrar; con el filtro de pagos activo, el total a pagar.
@@ -1034,6 +1045,20 @@ def deudores(request):
     total_usd_hoy = sum((d["deuda_dolar_actual"] or 0) for d in filas_tarjetas)
     total_miel_hoy = sum((d["kg_miel_actual"] or 0) for d in filas_tarjetas)
 
+    # Texto del chip de fechas: un solo dia (desde == hasta), rango cerrado, o
+    # rango abierto con un solo extremo. Se calcula en el server para que el chip
+    # ya se pinte correcto al cargar, sin depender del JS.
+    if desde and hasta and desde == hasta:
+        fecha_label = desde.strftime("%d/%m/%Y")
+    elif desde and hasta:
+        fecha_label = f"{desde.strftime('%d/%m')} – {hasta.strftime('%d/%m/%Y')}"
+    elif desde:
+        fecha_label = f"Desde {desde.strftime('%d/%m/%Y')}"
+    elif hasta:
+        fecha_label = f"Hasta {hasta.strftime('%d/%m/%Y')}"
+    else:
+        fecha_label = "Fechas"
+
     # Las deudas se ordenan siempre de la más antigua a la más nueva
     lista_deudores.sort(key=lambda d: d["dias"], reverse=True)
 
@@ -1045,6 +1070,11 @@ def deudores(request):
         "deudores": pagina_obj,
         "q": q,
         "tipo": tipo,
+        # Fechas en ISO para rellenar los <input type="date"> y armar los links de
+        # paginacion; vacio si no hay filtro activo.
+        "desde": desde.isoformat() if desde else "",
+        "hasta": hasta.isoformat() if hasta else "",
+        "fecha_label": fecha_label,
         "modo": modo,
         "total_pesos": total_pesos,
         "total_usd_hoy": total_usd_hoy,

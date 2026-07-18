@@ -692,7 +692,7 @@ def _iniciales(nombre, apellido=None):
     return nombre[:2].upper()
 
 
-def obtener_listado_deudores(q="", tipo=""):
+def obtener_listado_deudores(q="", tipo="", desde=None, hasta=None):
     dolar_actual_data = get_cotizacion_dolar_oficial()
     dolar_actual = Decimal(str(dolar_actual_data.get("venta") or 1))  # Prevención división por 0 si falla la API
 
@@ -743,6 +743,20 @@ def obtener_listado_deudores(q="", tipo=""):
         operaciones_adeudadas = operaciones_adeudadas.filter(tipo_operacion="venta")
     elif tipo == "pagos":
         operaciones_adeudadas = operaciones_adeudadas.filter(tipo_operacion="compra")
+
+    # Filtro por fecha de la operacion. 'fecha' es un DateTimeField, asi que en vez
+    # del lookup __date (que en MySQL usa CONVERT_TZ para pasar de UTC a la zona
+    # local antes de extraer la fecha, y devuelve NULL -> descarta todo- si el
+    # servidor no tiene cargadas las tablas de zona horaria) comparo contra los
+    # limites del dia como datetimes aware: el inicio del dia 'desde' y el fin del
+    # dia 'hasta', en la zona horaria local. El caso "un solo dia" llega como
+    # desde == hasta, asi que no necesita rama aparte.
+    if desde:
+        inicio = timezone.make_aware(datetime.combine(desde, time.min))
+        operaciones_adeudadas = operaciones_adeudadas.filter(fecha__gte=inicio)
+    if hasta:
+        fin = timezone.make_aware(datetime.combine(hasta, time.max))
+        operaciones_adeudadas = operaciones_adeudadas.filter(fecha__lte=fin)
 
     if q:
         if q.isdigit():

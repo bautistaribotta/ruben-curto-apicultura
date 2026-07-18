@@ -222,21 +222,212 @@
   color: var(--color-blanco);
 }
 
-/* Indicador de orden: informativo, no interactivo. Se lee como una nota tenue,
-   no como un chip clickeable, porque el orden por antiguedad es fijo. */
-.deu-orden {
+/* --- Filtro por fecha (chip + popover) ---------------------------------------
+   El chip "Fechas" reutiliza .prod-chip (mismo lenguaje que los chips de tipo).
+   Al abrirse despliega un popover flotante que alterna entre "un dia" y "rango".
+   El estado activo hereda el pino de .prod-chip.is-active. */
+.deu-fechas {
+  position: relative;
   display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: var(--text-xs);
-  font-weight: var(--weight-semibold);
-  color: var(--text-muted);
+}
+
+.deu-fechas__trigger {
+  /* La flecha/label puede crecer; evita que el texto largo del rango lo desborde */
+  max-width: 15rem;
+}
+
+.deu-fechas__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.deu-orden .material-symbols-outlined {
-  font-size: 1.05rem;
-  color: var(--text-subtle);
+/* La "x" para limpiar vive dentro del chip activo; es un target propio, con su
+   propio hover, sin disparar la apertura del popover (lo frena el JS). */
+.deu-fechas__clear {
+  font-size: 1rem;
+  margin-left: 0.1rem;
+  margin-right: -0.2rem;
+  border-radius: var(--radius-pill);
+  opacity: 0.8;
+  transition: opacity var(--dur-fast) var(--ease-standard),
+              background-color var(--dur-fast) var(--ease-standard);
+}
+
+.deu-fechas__clear:hover {
+  opacity: 1;
+  background-color: oklch(100% 0 0 / 0.18);
+}
+
+/* Popover: tarjeta flotante anclada bajo el chip, alineada a su borde derecho.
+   El display:flex de esta clase (regla de autor) le gana a la regla del user-agent
+   [hidden]{display:none} por igual especificidad, asi que el atributo hidden se
+   ignoraria y el popover quedaria siempre visible. Lo restauro explicitamente. */
+.deu-fechas__pop[hidden] {
+  display: none;
+}
+
+.deu-fechas__pop {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  z-index: 30;
+  width: 17rem;
+  max-width: calc(100vw - 2rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 0.9rem;
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  text-align: left;
+}
+
+.deu-fechas__pop:not([hidden]) {
+  animation: deu-pop-in var(--dur-fast) var(--ease-standard);
+  transform-origin: top right;
+}
+
+@keyframes deu-pop-in {
+  from { opacity: 0; transform: translateY(-0.25rem) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .deu-fechas__pop:not([hidden]) {
+    animation: none;
+  }
+}
+
+/* Control segmentado (un dia / rango): pista hundida con el segmento activo
+   levantado sobre una tarjeta clara, al estilo de un toggle iOS. */
+.deu-seg {
+  display: flex;
+  gap: 0.2rem;
+  padding: 0.2rem;
+  background-color: var(--surface-sunken);
+  border-radius: var(--radius-md);
+}
+
+.deu-seg__opt {
+  flex: 1;
+  padding: 0.35rem 0.5rem;
+  border: none;
+  border-radius: calc(var(--radius-md) - 0.15rem);
+  background-color: transparent;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  transition: background-color var(--dur-normal) var(--ease-standard),
+              color var(--dur-normal) var(--ease-standard),
+              box-shadow var(--dur-normal) var(--ease-standard);
+}
+
+.deu-seg__opt:hover:not(.is-active) {
+  color: var(--text-body);
+}
+
+.deu-seg__opt.is-active {
+  background-color: var(--surface-card);
+  color: var(--text-strong);
+  box-shadow: var(--shadow-xs);
+}
+
+/* Paneles de campos: "un dia" muestra un input, "rango" dos. Mismo caso que el
+   popover: el display:flex de la clase le gana al [hidden] del user-agent, asi que
+   restauro el ocultamiento explicitamente para que el JS pueda alternar paneles. */
+.deu-fechas__panel[hidden] {
+  display: none;
+}
+
+.deu-fechas__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.deu-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.deu-campo__lbl {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--text-muted);
+  letter-spacing: var(--tracking-wide);
+}
+
+.deu-campo__input {
+  width: 100%;
+  padding: 0.5rem 0.7rem;
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  color: var(--text-body);
+  outline: none;
+  transition: border-color var(--dur-normal) var(--ease-standard),
+              box-shadow var(--dur-normal) var(--ease-standard);
+}
+
+.deu-campo__input:focus {
+  border-color: var(--brand);
+  box-shadow: var(--ring);
+}
+
+/* Acciones del popover: limpiar (fantasma) a la izquierda, aplicar (pino) a la
+   derecha, el mismo pino del estado activo. */
+.deu-fechas__acciones {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.15rem;
+}
+
+.deu-fechas__btn {
+  padding: 0.45rem 0.9rem;
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  transition: background-color var(--dur-normal) var(--ease-standard),
+              color var(--dur-normal) var(--ease-standard),
+              border-color var(--dur-normal) var(--ease-standard);
+}
+
+.deu-fechas__btn--ghost {
+  border: 1px solid transparent;
+  background-color: transparent;
+  color: var(--text-muted);
+}
+
+.deu-fechas__btn--ghost:hover {
+  background-color: var(--surface-hover);
+  color: var(--text-body);
+}
+
+.deu-fechas__btn--aplicar {
+  border: 1px solid var(--brand-secondary);
+  background-color: var(--brand-secondary);
+  color: var(--text-on-inverse);
+}
+
+.deu-fechas__btn--aplicar:hover {
+  filter: brightness(1.08);
+}
+
+.deu-fechas__btn:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
 }
 
 /* --- CONTENEDOR PRINCIPAL TABLA --- */
