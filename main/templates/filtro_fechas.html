@@ -1,0 +1,51 @@
+{% comment %}
+  Filtro de fecha reutilizable (chip + popover). Reciclado del filtro de Deudas.
+  Espera en el contexto: desde / hasta (ISO, vacio si no hay filtro) y fecha_label.
+
+  El estado APLICADO viaja en data-desde/data-hasta del contenedor #filtro-fechas;
+  los inputs del popover son solo el borrador hasta tocar "Aplicar". El JS
+  (filtro_fechas.js) administra el popover y dispara el evento 'filtrofechas:cambio'
+  en document al aplicar o limpiar, que cada vista engancha a su propia busqueda AJAX.
+{% endcomment %}
+<div class="ff" id="filtro-fechas" data-desde="{{ desde }}" data-hasta="{{ hasta }}">
+  <button type="button"
+          class="ff-trigger {% if desde or hasta %}is-active{% endif %}"
+          id="filtro-fechas-trigger" aria-haspopup="dialog" aria-expanded="false">
+    <span class="material-symbols-outlined">calendar_month</span>
+    <span class="ff-trigger__label" id="filtro-fechas-label">{{ fecha_label|default:"Fechas" }}</span>
+    {% if desde or hasta %}
+      <span class="material-symbols-outlined ff-clear" id="filtro-fechas-clear"
+            role="button" tabindex="0" aria-label="Quitar filtro de fechas">close</span>
+    {% endif %}
+  </button>
+
+  <div class="ff-pop" id="filtro-fechas-pop" role="dialog" aria-label="Filtrar por fecha" hidden>
+    <div class="ff-seg" role="tablist" aria-label="Tipo de filtro">
+      <button type="button" class="ff-seg__opt is-active" data-modo="dia" role="tab">Un día</button>
+      <button type="button" class="ff-seg__opt" data-modo="rango" role="tab">Rango</button>
+    </div>
+
+    <div class="ff-panel" data-panel="dia">
+      <label class="ff-campo">
+        <span class="ff-campo__lbl">Fecha</span>
+        <input type="date" class="ff-campo__input" id="filtro-fechas-dia">
+      </label>
+    </div>
+
+    <div class="ff-panel" data-panel="rango" hidden>
+      <label class="ff-campo">
+        <span class="ff-campo__lbl">Desde</span>
+        <input type="date" class="ff-campo__input" id="filtro-fechas-desde">
+      </label>
+      <label class="ff-campo">
+        <span class="ff-campo__lbl">Hasta</span>
+        <input type="date" class="ff-campo__input" id="filtro-fechas-hasta">
+      </label>
+    </div>
+
+    <div class="ff-acciones">
+      <button type="button" class="ff-btn ff-btn--aplicar" id="filtro-fechas-aplicar">Aplicar</button>
+      <button type="button" class="ff-btn ff-btn--ghost" id="filtro-fechas-limpiar">Limpiar</button>
+    </div>
+  </div>
+</div>

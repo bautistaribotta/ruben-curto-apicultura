@@ -56,7 +56,7 @@
   </div>
   <div class="paginacion-botones">
     {% if page_obj.has_previous %}
-      <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}">
+      <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if desde %}&desde={{ desde }}{% endif %}{% if hasta %}&hasta={{ hasta }}{% endif %}">
         <button class="boton-paginacion">Anterior</button>
       </a>
     {% else %}
@@ -64,7 +64,7 @@
     {% endif %}
 
     {% if page_obj.has_next %}
-      <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}">
+      <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if desde %}&desde={{ desde }}{% endif %}{% if hasta %}&hasta={{ hasta }}{% endif %}">
         <button class="boton-paginacion">Siguiente</button>
       </a>
     {% else %}

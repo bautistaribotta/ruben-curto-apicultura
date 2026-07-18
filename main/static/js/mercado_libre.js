@@ -8,6 +8,19 @@
 
 const inputBusquedaMeli = document.getElementById('buscador-viajes-meli');
 const contenedorTablaMeli = document.getElementById('contenedor-tabla-viajes-meli');
+const filtroFechasMeli = document.getElementById('filtro-fechas');
+
+/**
+ * Vuelca el rango de fechas aplicado (data-* del chip, fuente de verdad) en la
+ * URL. Se llama tanto en la busqueda normal como en la paginacion para que el
+ * filtro sobreviva a "Anterior"/"Siguiente".
+ */
+const aplicarFechasMeli = (url) => {
+  const dd = filtroFechasMeli ? filtroFechasMeli.dataset.desde : '';
+  const hh = filtroFechasMeli ? filtroFechasMeli.dataset.hasta : '';
+  if (dd) url.searchParams.set('desde', dd); else url.searchParams.delete('desde');
+  if (hh) url.searchParams.set('hasta', hh); else url.searchParams.delete('hasta');
+};
 
 /**
  * Busca viajes de reparto aplicando el texto mediante AJAX.
@@ -25,6 +38,8 @@ const buscarMeli = (urlString = null) => {
     url.searchParams.set('q', inputBusquedaMeli.value);
     url.searchParams.delete('page');
   }
+
+  aplicarFechasMeli(url);
 
   fetch(url, {
     headers: {
@@ -56,5 +71,8 @@ const vincularPaginacionMeli = () => {
 };
 
 if (inputBusquedaMeli) inputBusquedaMeli.addEventListener('input', () => buscarMeli());
+
+// El filtro de fecha avisa por evento; recargo la tabla con el rango aplicado.
+document.addEventListener('filtrofechas:cambio', () => buscarMeli());
 
 vincularPaginacionMeli();

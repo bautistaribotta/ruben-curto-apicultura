@@ -1,0 +1,240 @@
+/* ============================================================
+   Filtro de fecha reutilizable (chip + popover).
+   Reciclado del filtro de Deudas, pero autocontenido: no depende de .prod-chip
+   ni de deudores.css, asi funciona igual en las tres vistas de viajes (la de
+   repartos no carga viajes.css/productos.css). Usa solo tokens globales.
+   ============================================================ */
+.ff {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+}
+
+/* Chip disparador: mismo lenguaje que los chips de la app (.prod-chip),
+   replicado aca para no depender de esa hoja. Activo = pino. */
+.ff-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  /* La etiqueta puede crecer (un rango largo); acoto para que no desborde. */
+  max-width: 15rem;
+  padding: 0.625rem 0.9rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-default);
+  background-color: var(--surface-card);
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color var(--dur-normal) var(--ease-standard),
+              color var(--dur-normal) var(--ease-standard),
+              border-color var(--dur-normal) var(--ease-standard);
+}
+
+.ff-trigger:hover {
+  background-color: var(--surface-hover);
+  color: var(--text-body);
+}
+
+.ff-trigger .material-symbols-outlined {
+  font-size: 1.15rem;
+}
+
+.ff-trigger.is-active {
+  background-color: var(--brand-secondary);
+  color: var(--text-on-inverse);
+  border-color: var(--brand-secondary);
+}
+
+.ff-trigger__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* La "x" para limpiar vive dentro del chip activo; target propio con su hover,
+   sin disparar la apertura del popover (lo frena el JS). */
+.ff-clear {
+  font-size: 1rem;
+  margin-left: 0.1rem;
+  margin-right: -0.2rem;
+  border-radius: var(--radius-pill);
+  opacity: 0.8;
+  transition: opacity var(--dur-fast) var(--ease-standard),
+              background-color var(--dur-fast) var(--ease-standard);
+}
+
+.ff-clear:hover {
+  opacity: 1;
+  background-color: oklch(100% 0 0 / 0.18);
+}
+
+/* Popover: tarjeta flotante anclada bajo el chip, alineada a su borde derecho.
+   El display:flex de esta clase le gana al [hidden] del user-agent por igual
+   especificidad; restauro el ocultamiento explicito para que el JS lo alterne. */
+.ff-pop[hidden] {
+  display: none;
+}
+
+.ff-pop {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  z-index: 30;
+  width: 17rem;
+  max-width: calc(100vw - 2rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 0.9rem;
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  text-align: left;
+}
+
+.ff-pop:not([hidden]) {
+  animation: ff-pop-in var(--dur-fast) var(--ease-standard);
+  transform-origin: top right;
+}
+
+@keyframes ff-pop-in {
+  from { opacity: 0; transform: translateY(-0.25rem) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ff-pop:not([hidden]) {
+    animation: none;
+  }
+}
+
+/* Control segmentado (un dia / rango): pista hundida con el segmento activo
+   levantado sobre una tarjeta clara, al estilo de un toggle. */
+.ff-seg {
+  display: flex;
+  gap: 0.2rem;
+  padding: 0.2rem;
+  background-color: var(--surface-sunken);
+  border-radius: var(--radius-md);
+}
+
+.ff-seg__opt {
+  flex: 1;
+  padding: 0.35rem 0.5rem;
+  border: none;
+  border-radius: calc(var(--radius-md) - 0.15rem);
+  background-color: transparent;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  transition: background-color var(--dur-normal) var(--ease-standard),
+              color var(--dur-normal) var(--ease-standard),
+              box-shadow var(--dur-normal) var(--ease-standard);
+}
+
+.ff-seg__opt:hover:not(.is-active) {
+  color: var(--text-body);
+}
+
+.ff-seg__opt.is-active {
+  background-color: var(--surface-card);
+  color: var(--text-strong);
+  box-shadow: var(--shadow-xs);
+}
+
+/* Paneles de campos: "un dia" muestra un input, "rango" dos. Mismo caso del
+   [hidden]: restauro el ocultamiento explicito para que el JS alterne paneles. */
+.ff-panel[hidden] {
+  display: none;
+}
+
+.ff-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.ff-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.ff-campo__lbl {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--text-muted);
+  letter-spacing: var(--tracking-wide);
+}
+
+.ff-campo__input {
+  width: 100%;
+  padding: 0.5rem 0.7rem;
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  color: var(--text-body);
+  outline: none;
+  transition: border-color var(--dur-normal) var(--ease-standard),
+              box-shadow var(--dur-normal) var(--ease-standard);
+}
+
+.ff-campo__input:focus {
+  border-color: var(--brand);
+  box-shadow: var(--ring);
+}
+
+/* Acciones del popover: aplicar (pino) y limpiar (fantasma). */
+.ff-acciones {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.15rem;
+}
+
+.ff-btn {
+  padding: 0.45rem 0.9rem;
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  transition: background-color var(--dur-normal) var(--ease-standard),
+              color var(--dur-normal) var(--ease-standard),
+              border-color var(--dur-normal) var(--ease-standard);
+}
+
+.ff-btn--ghost {
+  border: 1px solid transparent;
+  background-color: transparent;
+  color: var(--text-muted);
+}
+
+.ff-btn--ghost:hover {
+  background-color: var(--surface-hover);
+  color: var(--text-body);
+}
+
+.ff-btn--aplicar {
+  border: 1px solid var(--brand-secondary);
+  background-color: var(--brand-secondary);
+  color: var(--text-on-inverse);
+}
+
+.ff-btn--aplicar:hover {
+  filter: brightness(1.08);
+}
+
+.ff-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}

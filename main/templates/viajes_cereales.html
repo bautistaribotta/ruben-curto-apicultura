@@ -8,6 +8,7 @@
 {% block links %}
 <link rel="stylesheet" href="{% static 'viajes.css' %}">
 <link rel="stylesheet" href="{% static 'viajes_cereales.css' %}">
+<link rel="stylesheet" href="{% static 'filtro_fechas.css' %}">
 <link rel="stylesheet" href="{% static 'autocompletado_ciudades.css' %}">
 {% endblock %}
 
@@ -61,12 +62,13 @@
         <input type="text" id="buscar-viaje-cereal" class="input-busqueda"
                placeholder="Buscar por chofer, vehículo, cereal o destino" value="{{ q|default:'' }}">
       </div>
+      {% include 'filtro_fechas.html' %}
     </div>
 
     <div class="grupo-botones">
       <a class="boton-nuevo secundario" id="btn-gestionar-flota" href="{% url 'flota' %}?origen=cereales">
         <span class="material-symbols-outlined">groups</span>
-        <span class="texto-boton">Choferes y Vehículos</span>
+        <span class="texto-boton">Flota</span>
       </a>
       <button class="boton-nuevo" id="btn-nuevo-acopio" onclick="abrirSlideOver('slide-over-acopio')">
         <span class="material-symbols-outlined">add</span>
@@ -290,6 +292,7 @@
 {% block codigo-javascript %}
 <script src="{% static 'js/autocompletado_ciudades.js' %}"></script>
 <script src="{% static 'js/autocompletado_clientes.js' %}"></script>
+<script src="{% static 'js/filtro_fechas.js' %}"></script>
 <script src="{% static 'js/viajes_cereales.js' %}"></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {

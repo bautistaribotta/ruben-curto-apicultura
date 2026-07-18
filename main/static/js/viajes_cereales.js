@@ -8,6 +8,18 @@
 
 const inputBusqueda = document.getElementById('buscar-viaje-cereal');
 const contenedorTabla = document.getElementById('tabla-viajes-cereales-container');
+const filtroFechasCereal = document.getElementById('filtro-fechas');
+
+/**
+ * Vuelca el rango de fechas aplicado (data-* del chip) en la URL, tanto en la
+ * busqueda como en la paginacion, para que el filtro sobreviva al paginar.
+ */
+const aplicarFechasCereal = (url) => {
+  const dd = filtroFechasCereal ? filtroFechasCereal.dataset.desde : '';
+  const hh = filtroFechasCereal ? filtroFechasCereal.dataset.hasta : '';
+  if (dd) url.searchParams.set('desde', dd); else url.searchParams.delete('desde');
+  if (hh) url.searchParams.set('hasta', hh); else url.searchParams.delete('hasta');
+};
 
 /**
  * Busca viajes de cereales aplicando el texto ingresado mediante AJAX.
@@ -26,6 +38,8 @@ const buscar = (urlString = null) => {
     url.searchParams.set('q', q);
     url.searchParams.delete('page');
   }
+
+  aplicarFechasCereal(url);
 
   fetch(url, {
     headers: {
@@ -57,5 +71,8 @@ const vincularPaginacion = () => {
 };
 
 if (inputBusqueda) inputBusqueda.addEventListener('input', () => buscar());
+
+// El filtro de fecha avisa por evento; recargo la tabla con el rango aplicado.
+document.addEventListener('filtrofechas:cambio', () => buscar());
 
 vincularPaginacion();

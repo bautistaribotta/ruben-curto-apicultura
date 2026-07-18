@@ -8,6 +8,7 @@
 
 {% block links %}
 <link rel="stylesheet" href="{% static 'mercado_libre.css' %}">
+<link rel="stylesheet" href="{% static 'filtro_fechas.css' %}">
 <link rel="stylesheet" href="{% static 'autocompletado_ciudades.css' %}">
 {% endblock %}
 
@@ -61,12 +62,13 @@
         <span class="material-symbols-outlined icono-busqueda">search</span>
         <input type="text" id="buscador-viajes-meli" class="input-busqueda" placeholder="Busca un viaje por vehiculo, chofer o destino" value="{{ q|default:'' }}">
       </div>
+      {% include 'filtro_fechas.html' %}
     </div>
 
     <div class="grupo-botones-meli">
       <a id="btn-gestionar-flota-meli" class="boton-nuevo secundario" href="{% url 'flota' %}?origen=reparto">
         <span class="material-symbols-outlined">groups</span>
-        Choferes y Vehículos
+        Flota
       </a>
       <button id="nuevo-viaje-meli" class="boton-nuevo" onclick="abrirSlideOver('slide-over-reparto')">
         <span class="material-symbols-outlined">local_shipping</span>
@@ -261,6 +263,7 @@
 
 {% block codigo-javascript %}
 <script src="{% static 'js/autocompletado_ciudades.js' %}"></script>
+<script src="{% static 'js/filtro_fechas.js' %}"></script>
 <script src="{% static 'js/mercado_libre.js' %}"></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {

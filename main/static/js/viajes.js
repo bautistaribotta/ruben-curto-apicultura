@@ -7,6 +7,18 @@
 const inputBusqueda = document.getElementById('buscar-viaje');
 const filtroEstado = document.getElementById('filtro-estado');
 const contenedorTabla = document.getElementById('tabla-viajes-container');
+const filtroFechasViaje = document.getElementById('filtro-fechas');
+
+/**
+ * Vuelca el rango de fechas aplicado (data-* del chip) en la URL, tanto en la
+ * busqueda como en la paginacion, para que el filtro sobreviva al paginar.
+ */
+const aplicarFechasViaje = (url) => {
+  const dd = filtroFechasViaje ? filtroFechasViaje.dataset.desde : '';
+  const hh = filtroFechasViaje ? filtroFechasViaje.dataset.hasta : '';
+  if (dd) url.searchParams.set('desde', dd); else url.searchParams.delete('desde');
+  if (hh) url.searchParams.set('hasta', hh); else url.searchParams.delete('hasta');
+};
 
 /**
  * Busca viajes aplicando texto y filtro de estado mediante AJAX, sin recargar
@@ -32,6 +44,8 @@ const buscar = (urlString = null) => {
     }
     url.searchParams.delete('page');
   }
+
+  aplicarFechasViaje(url);
 
   fetch(url, {
     headers: {
@@ -63,6 +77,9 @@ const vincularPaginacion = () => {
 };
 
 if (inputBusqueda) inputBusqueda.addEventListener('input', () => buscar());
+
+// El filtro de fecha avisa por evento; recargo la tabla con el rango aplicado.
+document.addEventListener('filtrofechas:cambio', () => buscar());
 
 // Chips de estado
 const chipsEstado = document.getElementById('chips-estado');

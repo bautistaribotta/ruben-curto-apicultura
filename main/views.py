@@ -29,6 +29,39 @@ from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo
                        obtener_resumen_reparto)
 
 
+def _rango_fechas(request):
+    """Lee y normaliza el rango de fechas del filtro (chip + popover) reutilizado
+    en las vistas de viajes. Reciclado de la logica del filtro de Deudas.
+
+    Devuelve (desde, hasta, ctx) donde desde/hasta son date o None (ya listos para
+    filtrar el queryset) y ctx trae desde/hasta en ISO y fecha_label para la
+    plantilla (rellenan el popover y pintan el chip ya al cargar la pagina).
+    """
+    desde = parse_date(request.GET.get("desde", ""))
+    hasta = parse_date(request.GET.get("hasta", ""))
+    # Si el usuario invierte el rango, lo normalizo para no devolver un listado vacio.
+    if desde and hasta and desde > hasta:
+        desde, hasta = hasta, desde
+
+    if desde and hasta and desde == hasta:
+        fecha_label = desde.strftime("%d/%m/%Y")
+    elif desde and hasta:
+        fecha_label = f"{desde.strftime('%d/%m')} – {hasta.strftime('%d/%m/%Y')}"
+    elif desde:
+        fecha_label = f"Desde {desde.strftime('%d/%m/%Y')}"
+    elif hasta:
+        fecha_label = f"Hasta {hasta.strftime('%d/%m/%Y')}"
+    else:
+        fecha_label = "Fechas"
+
+    ctx = {
+        "desde": desde.isoformat() if desde else "",
+        "hasta": hasta.isoformat() if hasta else "",
+        "fecha_label": fecha_label,
+    }
+    return desde, hasta, ctx
+
+
 def login(request):
     if request.method == "POST":
         usuario = request.POST.get("user")
@@ -859,6 +892,14 @@ def viajes(request):
     elif estado == "En curso":
         lista_viajes = lista_viajes.filter(Q(fecha_vuelta__isnull=True) | Q(fecha_vuelta__gte=hoy))
 
+    # Filtro por rango de fechas (chip + popover). Los viajes miel/cera tienen dos
+    # fechas; se filtra por la de inicio (la salida), que siempre existe.
+    desde, hasta, ctx_fechas = _rango_fechas(request)
+    if desde:
+        lista_viajes = lista_viajes.filter(fecha_inicio__gte=desde)
+    if hasta:
+        lista_viajes = lista_viajes.filter(fecha_inicio__lte=hasta)
+
     paginator = Paginator(lista_viajes, 5)
     pagina_numero = request.GET.get("page")
     page_obj = paginator.get_page(pagina_numero)
@@ -872,6 +913,7 @@ def viajes(request):
         "count_total": count_total,
         "count_en_curso": count_en_curso,
         "count_finalizado": count_finalizado,
+        **ctx_fechas,
     }
 
     # Si es una petición AJAX (buscador/chips/paginación), devuelvo solo la tabla parcial
@@ -1146,6 +1188,13 @@ def mercado_libre(request):
                 | Q(destinos__destinos_reparto__icontains=q)
             ).distinct()
 
+    # Filtro por rango de fechas (chip + popover), por la fecha del reparto.
+    desde, hasta, ctx_fechas = _rango_fechas(request)
+    if desde:
+        lista_viajes = lista_viajes.filter(fecha_viaje_reparto__gte=desde)
+    if hasta:
+        lista_viajes = lista_viajes.filter(fecha_viaje_reparto__lte=hasta)
+
     # Cargo de a 5 viajes
     paginator = Paginator(lista_viajes, 5)
     pagina_numero = request.GET.get("page")
@@ -1156,6 +1205,7 @@ def mercado_libre(request):
         "choferes": obtener_choferes_activos(),
         "vehiculos": obtener_vehiculos_activos(),
         "q": q,
+        **ctx_fechas,
     }
 
     # Si es una peticion AJAX (buscador/paginacion), devuelvo solo la tabla parcial.
@@ -1293,6 +1343,13 @@ def viaje_cereales(request):
                 | Q(destinos__destino__icontains=q)
             ).distinct()
 
+    # Filtro por rango de fechas (chip + popover), por la fecha del viaje.
+    desde, hasta, ctx_fechas = _rango_fechas(request)
+    if desde:
+        lista_viajes = lista_viajes.filter(fecha_viaje_cereal__gte=desde)
+    if hasta:
+        lista_viajes = lista_viajes.filter(fecha_viaje_cereal__lte=hasta)
+
     # Cargo de a 5 viajes
     paginator = Paginator(lista_viajes, 5)
     pagina_numero = request.GET.get("page")
@@ -1304,6 +1361,7 @@ def viaje_cereales(request):
         "vehiculos": obtener_vehiculos_activos(),
         "cereales": ViajeCereal.cereales,
         "q": q,
+        **ctx_fechas,
     }
 
     # Si es una peticion AJAX (buscador/chips/paginacion), devuelvo solo la tabla parcial
