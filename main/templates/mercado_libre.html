@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load static_version %}
 {% load humanize %}
 
 {% block nombre-pestaña %}
@@ -7,9 +8,9 @@
 {% endblock %}
 
 {% block links %}
-<link rel="stylesheet" href="{% static 'mercado_libre.css' %}">
-<link rel="stylesheet" href="{% static 'filtro_fechas.css' %}">
-<link rel="stylesheet" href="{% static 'autocompletado_ciudades.css' %}">
+<link rel="stylesheet" href="{% static_v 'mercado_libre.css' %}">
+<link rel="stylesheet" href="{% static_v 'filtro_fechas.css' %}">
+<link rel="stylesheet" href="{% static_v 'autocompletado_ciudades.css' %}">
 {% endblock %}
 
 {% block cabecera %}
@@ -262,9 +263,9 @@
 {% endblock %}
 
 {% block codigo-javascript %}
-<script src="{% static 'js/autocompletado_ciudades.js' %}"></script>
-<script src="{% static 'js/filtro_fechas.js' %}"></script>
-<script src="{% static 'js/mercado_libre.js' %}"></script>
+<script src="{% static_v 'js/autocompletado_ciudades.js' %}"></script>
+<script src="{% static_v 'js/filtro_fechas.js' %}"></script>
+<script src="{% static_v 'js/mercado_libre.js' %}"></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     // Autocompletar la fecha del reparto con la fecha actual al cargar la pagina

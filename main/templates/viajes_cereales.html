@@ -1,15 +1,16 @@
 {% extends "base.html" %}
 {% load static %}
+{% load static_version %}
 
 {% block nombre-pestaña %}
 <title>Viajes de cereales</title>
 {% endblock %}
 
 {% block links %}
-<link rel="stylesheet" href="{% static 'viajes.css' %}">
-<link rel="stylesheet" href="{% static 'viajes_cereales.css' %}">
-<link rel="stylesheet" href="{% static 'filtro_fechas.css' %}">
-<link rel="stylesheet" href="{% static 'autocompletado_ciudades.css' %}">
+<link rel="stylesheet" href="{% static_v 'viajes.css' %}">
+<link rel="stylesheet" href="{% static_v 'viajes_cereales.css' %}">
+<link rel="stylesheet" href="{% static_v 'filtro_fechas.css' %}">
+<link rel="stylesheet" href="{% static_v 'autocompletado_ciudades.css' %}">
 {% endblock %}
 
 {% block cabecera %}
@@ -290,10 +291,10 @@
 {% endblock %}
 
 {% block codigo-javascript %}
-<script src="{% static 'js/autocompletado_ciudades.js' %}"></script>
-<script src="{% static 'js/autocompletado_clientes.js' %}"></script>
-<script src="{% static 'js/filtro_fechas.js' %}"></script>
-<script src="{% static 'js/viajes_cereales.js' %}"></script>
+<script src="{% static_v 'js/autocompletado_ciudades.js' %}"></script>
+<script src="{% static_v 'js/autocompletado_clientes.js' %}"></script>
+<script src="{% static_v 'js/filtro_fechas.js' %}"></script>
+<script src="{% static_v 'js/viajes_cereales.js' %}"></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     // Autocompletar la fecha del viaje con la fecha actual al cargar la pagina
