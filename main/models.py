@@ -102,16 +102,13 @@ class Operacion(models.Model):
     viaje = models.ForeignKey("Viaje", on_delete=models.SET_NULL, null=True,
                               blank=True, related_name="operaciones", db_column="id_viaje")
     cliente = models.ForeignKey(Cliente, on_delete=models.PROTECT, db_column="id_cliente")
-    # default (y no auto_now_add) para poder cargar operaciones viejas con fecha propia
+    # default y no auto_now_add para poder cargar operaciones viejas con fecha propia
     fecha = models.DateTimeField(default=timezone.now)
     activa = models.BooleanField(default=True)
     tipo_operacion = models.CharField(max_length=10, choices=TIPO_OPERACION)
     valor_dolar = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     valor_kilo_miel = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    # Cotizacion de "Cera Operculo" al momento de crear la operacion, para poder
-    # mostrar la equivalencia en kilos de cera "de origen" igual que con la miel
     valor_kilo_cera = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    # Nota opcional de la operacion; se imprime en el remito bajo "Observaciones:"
     observaciones = models.CharField(max_length=250, blank=True, default="")
 
     # Obligo a Django a nombrar la tabla como "operaciones"
