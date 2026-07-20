@@ -1,0 +1,38 @@
+{% load humanize %}
+{% comment %}
+  humanize: app built-in de Django con filtros para numeros/fechas legibles.
+  Cargo el filtro intcomma, que le agrega separador de miles al monto
+  (28969488 -> 28.969.488); sin el, el numero sale pegado e ilegible.
+
+  Tarjetas de resumen de repartos. Se incluyen tanto en la pagina completa como
+  en la respuesta AJAX, asi los totales se recalculan con cada cambio de filtro.
+  Esperan 'resumen' en el contexto (ver obtener_resumen_reparto).
+{% endcomment %}
+<article class="meli-stat">
+  <div class="meli-stat__head">
+    <span class="meli-stat__label">Total</span>
+    <span class="meli-stat__icon"><span class="material-symbols-outlined">payments</span></span>
+  </div>
+  <span class="meli-stat__value {% if resumen.total < 0 %}meli-stat__value--neg{% else %}meli-stat__value--pos{% endif %}">${{ resumen.total|intcomma }}</span>
+</article>
+<article class="meli-stat">
+  <div class="meli-stat__head">
+    <span class="meli-stat__label">Total + 21%</span>
+    <span class="meli-stat__icon"><span class="material-symbols-outlined">receipt_long</span></span>
+  </div>
+  <span class="meli-stat__value {% if resumen.total_mas_iva < 0 %}meli-stat__value--neg{% else %}meli-stat__value--pos{% endif %}">${{ resumen.total_mas_iva|intcomma }}</span>
+</article>
+<article class="meli-stat">
+  <div class="meli-stat__head">
+    <span class="meli-stat__label">Gastos</span>
+    <span class="meli-stat__icon"><span class="material-symbols-outlined">trending_down</span></span>
+  </div>
+  <span class="meli-stat__value {% if resumen.gastos < 0 %}meli-stat__value--neg{% else %}meli-stat__value--pos{% endif %}">${{ resumen.gastos|intcomma }}</span>
+</article>
+<article class="meli-stat">
+  <div class="meli-stat__head">
+    <span class="meli-stat__label">Ganancia</span>
+    <span class="meli-stat__icon"><span class="material-symbols-outlined">trending_up</span></span>
+  </div>
+  <span class="meli-stat__value {% if resumen.ganancia < 0 %}meli-stat__value--neg{% else %}meli-stat__value--pos{% endif %}">${{ resumen.ganancia|intcomma }}</span>
+</article>

@@ -88,6 +88,16 @@
   white-space: nowrap;
 }
 
+/* El monto se pinta por signo, reutilizando los colores de las tarjetas de
+   Deudas: verde para positivo, rojo para negativo. */
+.vjc-stat__value--pos {
+  color: var(--success-500);
+}
+
+.vjc-stat__value--neg {
+  color: var(--danger-600);
+}
+
 /* En tablet las cuatro tarjetas pasan a una grilla 2x2; en movil se apilan. */
 @media (max-width: 1024px) {
   .vjc-stats {

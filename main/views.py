@@ -24,6 +24,7 @@ from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo
                        editar_chofer, eliminar_chofer, editar_vehiculo, eliminar_vehiculo,
                        crear_viaje_cereal, obtener_viajes_cereales, obtener_datos_viaje_cereal,
                        editar_viaje_cereal, eliminar_viaje_cereal, crear_gasto_viaje_cereal,
+                       obtener_resumen_cereal,
                        crear_viaje_reparto, obtener_viajes_reparto, obtener_datos_viaje_reparto,
                        editar_viaje_reparto, eliminar_viaje_reparto, crear_gasto_viaje_reparto,
                        obtener_resumen_reparto)
@@ -1205,16 +1206,18 @@ def mercado_libre(request):
         "choferes": obtener_choferes_activos(),
         "vehiculos": obtener_vehiculos_activos(),
         "q": q,
+        # Las tarjetas reflejan los mismos filtros que la tabla: calculo el resumen
+        # sobre el listado ya filtrado (antes de paginar), no sobre todos los viajes.
+        "resumen": obtener_resumen_reparto(lista_viajes),
         **ctx_fechas,
     }
 
-    # Si es una peticion AJAX (buscador/paginacion), devuelvo solo la tabla parcial.
-    # Las tarjetas de resumen viven fuera de la tabla, asi que no recalculo sus
-    # totales en cada tecleo del buscador: solo en la carga completa de la pagina.
+    # Si es una peticion AJAX (buscador/fecha/paginacion), devuelvo el fragmento que
+    # refresca tanto las tarjetas de resumen como la tabla (mercado_libre.js reemplaza
+    # cada region por su id).
     if request.headers.get("x-requested-with") == "XMLHttpRequest":
-        return render(request, "tabla_viajes_mercado_libre.html", contexto)
+        return render(request, "mercado_libre_ajax.html", contexto)
 
-    contexto["resumen"] = obtener_resumen_reparto()
     return render(request, "mercado_libre.html", contexto)
 
 
@@ -1361,12 +1364,17 @@ def viaje_cereales(request):
         "vehiculos": obtener_vehiculos_activos(),
         "cereales": ViajeCereal.cereales,
         "q": q,
+        # Las tarjetas reflejan los mismos filtros que la tabla: calculo el resumen
+        # sobre el listado ya filtrado (antes de paginar), no sobre todos los viajes.
+        "resumen": obtener_resumen_cereal(lista_viajes),
         **ctx_fechas,
     }
 
-    # Si es una peticion AJAX (buscador/chips/paginacion), devuelvo solo la tabla parcial
+    # Si es una peticion AJAX (buscador/fecha/paginacion), devuelvo el fragmento que
+    # refresca tanto las tarjetas de resumen como la tabla (viajes_cereales.js
+    # reemplaza cada region por su id).
     if request.headers.get("x-requested-with") == "XMLHttpRequest":
-        return render(request, "tabla_viajes_cereales.html", contexto)
+        return render(request, "viajes_cereales_ajax.html", contexto)
 
     return render(request, "viajes_cereales.html", contexto)
 

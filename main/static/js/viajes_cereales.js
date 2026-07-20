@@ -48,7 +48,23 @@ const buscar = (urlString = null) => {
   })
     .then((response) => response.text())
     .then((html) => {
-      contenedorTabla.innerHTML = html;
+      // La respuesta trae dos regiones (tarjetas de resumen y tabla). Las parseo
+      // y reemplazo cada una por su id, para que las tarjetas reflejen el filtro
+      // aplicado sin recargar la pagina.
+      const fragmento = document.createElement('div');
+      fragmento.innerHTML = html;
+
+      const nuevasTarjetas = fragmento.querySelector('#vjc-stats-region');
+      const nuevaTabla = fragmento.querySelector('#vjc-tabla-region');
+      const tarjetas = document.getElementById('vjc-stats-region');
+
+      if (nuevasTarjetas && tarjetas) {
+        tarjetas.innerHTML = nuevasTarjetas.innerHTML;
+      }
+      if (nuevaTabla && contenedorTabla) {
+        contenedorTabla.innerHTML = nuevaTabla.innerHTML;
+      }
+
       window.history.pushState({}, '', url);
       vincularPaginacion();
     })

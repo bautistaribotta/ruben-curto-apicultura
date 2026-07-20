@@ -48,7 +48,23 @@ const buscarMeli = (urlString = null) => {
   })
     .then((response) => response.text())
     .then((html) => {
-      contenedorTablaMeli.innerHTML = html;
+      // La respuesta trae dos regiones (tarjetas de resumen y tabla). Las parseo
+      // y reemplazo cada una por su id, para que las tarjetas reflejen el filtro
+      // aplicado sin recargar la pagina.
+      const fragmento = document.createElement('div');
+      fragmento.innerHTML = html;
+
+      const nuevasTarjetas = fragmento.querySelector('#meli-stats-region');
+      const nuevaTabla = fragmento.querySelector('#meli-tabla-region');
+      const tarjetas = document.getElementById('meli-stats-region');
+
+      if (nuevasTarjetas && tarjetas) {
+        tarjetas.innerHTML = nuevasTarjetas.innerHTML;
+      }
+      if (nuevaTabla && contenedorTablaMeli) {
+        contenedorTablaMeli.innerHTML = nuevaTabla.innerHTML;
+      }
+
       window.history.pushState({}, '', url);
       vincularPaginacionMeli();
     })

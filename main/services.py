@@ -7,7 +7,7 @@ from decimal import Decimal, InvalidOperation
 from django.shortcuts import get_object_or_404
 from django.http import Http404
 from django.db import transaction
-from django.db.models import Sum, F, Value, Count, Q
+from django.db.models import Sum, F, Value, Count, Q, Subquery, OuterRef
 from django.db.models.functions import Coalesce
 from django.core.cache import cache
 from .models import (Producto, Cliente, Operacion, DetalleOperacion, Pago, Cotizaciones, Chofer, Vehiculo, Viaje,
@@ -1353,6 +1353,68 @@ def obtener_viajes_cereales():
     )
 
 
+def obtener_resumen_cereal(viajes):
+    """Totales para las tarjetas de resumen de la vista de viajes de cereal.
+
+    'viajes' es el listado ya filtrado (texto, fecha), de modo que las tarjetas
+    reflejan los mismos filtros que la tabla. Se calcula sobre todo ese conjunto,
+    no solo la pagina visible.
+
+    Total   = suma de (toneladas * precio_tonelada) de cada viaje (total_bruto).
+    Gastos  = suma de los gastos de cada viaje MAS el pago al chofer de cada uno.
+    Ganancia = (total + 21%) - gastos.
+
+    El pago al chofer no es un aggregate plano: depende del subtotal por viaje
+    (bruto - gastos de ese viaje) con un tope en 0 (si los gastos superan al
+    bruto el chofer no aporta plata). Por eso anoto los gastos de cada viaje con
+    UNA sola subconsulta correlacionada y recorro el resultado en Python: es una
+    unica query y evita el N+1 (no dispara un aggregate por viaje como haria la
+    property total_gastos del modelo).
+
+    Re-scopeo por pk: 'viajes' puede venir con un JOIN a los destinos y
+    .distinct() (filtro por texto), que duplicaria filas al recorrerlas. Filtrar
+    por pk__in parte de una base limpia con una fila por viaje.
+    """
+    gastos_por_viaje = Subquery(
+        GastoViajeCereal.objects
+        .filter(viaje_cereal=OuterRef("pk"))
+        .values("viaje_cereal")
+        .annotate(total=Sum("monto"))
+        .values("total")
+    )
+    viajes = (
+        ViajeCereal.objects.filter(pk__in=viajes.values("pk"))
+        .annotate(
+            _bruto=F("toneladas") * F("precio_tonelada"),
+            _gastos=Coalesce(gastos_por_viaje, Value(0)),
+        )
+        .values("_bruto", "_gastos", "porcentaje_chofer")
+    )
+
+    total = Decimal(0)
+    gastos = Decimal(0)
+    for v in viajes:
+        bruto = v["_bruto"] or Decimal(0)
+        gastos_viaje = v["_gastos"] or 0
+        subtotal = bruto - gastos_viaje
+        base = subtotal if subtotal > 0 else Decimal(0)
+        pago_chofer = base * v["porcentaje_chofer"] / 100
+        total += bruto
+        gastos += gastos_viaje + pago_chofer
+
+    total = int(round(total))
+    gastos = int(round(gastos))
+    total_mas_iva = int(round(total * Decimal("1.21")))
+    ganancia = total_mas_iva - gastos
+
+    return {
+        "total": total,
+        "total_mas_iva": total_mas_iva,
+        "gastos": gastos,
+        "ganancia": ganancia,
+    }
+
+
 def obtener_datos_viaje_cereal(id_viaje_cereal):
     # Trae un viaje de cereal activo con sus relaciones listas para la vista de informacion.
     # Precargo tambien los gastos para que la tarjeta de calculo no dispare queries extra.
@@ -1532,26 +1594,35 @@ def obtener_viajes_reparto():
     )
 
 
-def obtener_resumen_reparto():
+def obtener_resumen_reparto(viajes):
     """Totales para las tarjetas de resumen de la vista de repartos.
 
-    Se calcula sobre TODOS los viajes activos, independiente del buscador y la
-    paginacion. Uso dos aggregate() separados a proposito: sumar valor_viaje y
-    los gastos hijos (detalle_gastos) en la misma query multiplicaria las filas
-    de ViajeReparto por el JOIN a la tabla de gastos y falsearia los totales.
-    Asi son dos queries planas, sin N+1.
+    'viajes' es el listado ya filtrado (texto, fecha), de modo que las tarjetas
+    reflejan los mismos filtros que la tabla. Se calcula sobre todo ese conjunto,
+    no solo la pagina visible.
+
+    Re-scopeo por pk a una base limpia: 'viajes' puede venir con un JOIN a los
+    destinos y .distinct() (filtro por texto), que en un aggregate multiplicaria
+    las filas y falsearia los totales. Filtrar por pk__in evita ese fanout.
+
+    Uso dos aggregate() separados a proposito: sumar valor_viaje y los gastos
+    hijos (detalle_gastos) en la misma query volveria a multiplicar filas por el
+    JOIN a la tabla de gastos. Asi son dos queries planas, sin N+1.
 
     Gastos = combustible + costo del empleado + gastos extra, igual criterio que
     la ganancia neta por viaje (ver ViajeReparto.ganancia y la vista de detalle).
     Ganancia = (total + 21%) - gastos, segun lo pedido para esta tarjeta.
     """
-    cabecera = ViajeReparto.objects.filter(activo=True).aggregate(
+    ids = viajes.values("pk")
+    base = ViajeReparto.objects.filter(pk__in=ids)
+
+    cabecera = base.aggregate(
         total=Coalesce(Sum("valor_viaje"), 0),
         combustible=Coalesce(Sum("gasto_combustible_viaje_reparto"), 0),
         empleado=Coalesce(Sum("costo_empleado"), 0),
     )
     gastos_extra = GastoViajeReparto.objects.filter(
-        viaje_reparto__activo=True
+        viaje_reparto__in=ids
     ).aggregate(total=Coalesce(Sum("monto"), 0))["total"]
 
     total = cabecera["total"]

@@ -1,0 +1,6 @@
+{% comment %}
+  Respuesta AJAX del listado de repartos: refresca las tarjetas de resumen y la tabla.
+  mercado_libre.js parsea este fragmento y reemplaza cada region por su id.
+{% endcomment %}
+<div id="meli-stats-region">{% include "tarjetas_reparto.html" %}</div>
+<div id="meli-tabla-region">{% include "tabla_viajes_mercado_libre.html" %}</div>
