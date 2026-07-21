@@ -99,6 +99,32 @@
         </li>
         {% endif %}
       </ul>
+
+      {% comment %}
+        Navegar recarga la pagina entera, asi que el <ul> nace de cero y el scroll
+        vuelve a arriba: si el item activo estaba abajo de todo, queda fuera de
+        vista justo despues de clickearlo. Lo reposiciono sobre el item activo.
+
+        Va inline y pegado al <ul> a proposito: corre apenas se parsea la lista,
+        antes del primer pintado, asi no se ve el salto. Toco solo scrollTop de la
+        lista (y no scrollIntoView) para no arrastrar ningun otro contenedor: en
+        mobile la barra vive en left:-320px y scrollIntoView querria traerla a
+        cuadro moviendo el documento.
+      {% endcomment %}
+      <script>
+        (function () {
+          var lista = document.getElementById('menu-navegacion');
+          var activo = lista && lista.querySelector('.item-menu.activo');
+          if (!activo) return;
+          var item = activo.getBoundingClientRect();
+          var caja = lista.getBoundingClientRect();
+          if (item.bottom > caja.bottom) {
+            lista.scrollTop += item.bottom - caja.bottom;
+          } else if (item.top < caja.top) {
+            lista.scrollTop -= caja.top - item.top;
+          }
+        })();
+      </script>
     </nav>
 
     <!-- BARRA SUPERIOR MÓVIL -->

@@ -208,6 +208,8 @@ body {
   align-items: center;
   gap: 8px;
   margin-bottom: 2rem;
+  /* Ancla de marca: queda fijo arriba y no se comprime cuando el menu scrollea */
+  flex: none;
 }
 
 #logo-principal-sidebar {
@@ -231,11 +233,28 @@ body {
   opacity: 0.65;
 }
 
+/* La lista toma el alto sobrante y scrollea sola, como ya hace #contenido-principal.
+   Scrollea solo el <ul>: si scrollease la barra entera se iria el logo de pantalla.
+   min-height:0 es imprescindible: en un flex en columna los hijos arrancan con
+   min-height:auto y se niegan a achicarse por debajo de su contenido, asi que sin
+   esto el overflow no llega a activarse nunca. */
 #menu-navegacion {
   list-style: none;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  /* El ::before del item activo sobresale 1.5rem a la izquierda para apoyarse en el
+     borde de la barra, y overflow recorta al borde del padding box. Corro la lista
+     hasta ese borde y devuelvo el espacio como padding para que el indicador quede
+     adentro del area visible; los items no se mueven. */
+  margin-left: -1.5rem;
+  padding-left: 1.5rem;
+  /* Barra de scroll discreta sobre el pino, en vez de la clara del sistema */
+  scrollbar-width: thin;
+  scrollbar-color: var(--blanco-transparente-6) transparent;
 }
 
 .item-menu {
