@@ -253,6 +253,19 @@
   color: var(--danger-600);
 }
 
+/* El chip "Saldo" es el estado por defecto: neutro, sin direccion de dinero. La
+   balanza (icono) refuerza la idea de neto. Inactivo lleva el icono en gris; activo
+   toma un slate neutro para no confundirse con el verde de cobros ni el rojo de pagos. */
+.prod-chip--saldo:not(.is-active) .material-symbols-outlined {
+  color: var(--slate-500);
+}
+
+.prod-chip--saldo.is-active {
+  background-color: var(--slate-700);
+  border-color: var(--slate-700);
+  color: var(--color-blanco);
+}
+
 /* El estado activo toma el mismo color que los montos que filtra en la tabla. */
 .prod-chip--cobros.is-active {
   background-color: var(--success-500);

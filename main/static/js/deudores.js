@@ -146,15 +146,15 @@ document.addEventListener('DOMContentLoaded', () => {
         inputBusqueda.addEventListener('input', () => buscar());
     }
 
-    // Chips de tipo (cobros/pagos): seleccion unica o ninguna. Si clickeo el que
-    // ya esta activo, lo apago y vuelvo a "todas"; si no, activo ese y apago el otro.
+    // Chips de tipo (saldo/cobros/pagos): seleccion unica, siempre hay uno activo.
+    // "Saldo" (data-tipo vacio) es el estado por defecto y el que se muestra al buscar
+    // un cliente; las tarjetas muestran el neto a cobrar − a pagar. Clickear el que ya
+    // esta activo no hace nada, igual que el segmentado de valuacion.
     chipsTipo.forEach((chip) => {
         chip.addEventListener('click', () => {
-            const yaActivo = chip.classList.contains('is-active');
+            if (chip.classList.contains('is-active')) return;
             chipsTipo.forEach((c) => c.classList.remove('is-active'));
-            if (!yaActivo) {
-                chip.classList.add('is-active');
-            }
+            chip.classList.add('is-active');
             buscar();
         });
     });

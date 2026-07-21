@@ -49,7 +49,12 @@
         </div>
       </div>
       <div class="barra-herramientas__right">
-        <div class="prod-chips prod-chips--tipo" id="chips-tipo" role="group" aria-label="Filtrar por cobros o pagos">
+        <div class="prod-chips prod-chips--tipo" id="chips-tipo" role="group" aria-label="Ver el saldo, los cobros o los pagos">
+          <button type="button" class="prod-chip prod-chip--saldo {% if tipo != 'cobros' and tipo != 'pagos' %}is-active{% endif %}" data-tipo=""
+                  title="Saldo neto: lo que hay por cobrar menos lo que hay por pagar. Es la vista por defecto.">
+            <span class="material-symbols-outlined">balance</span>
+            Saldo
+          </button>
           <button type="button" class="prod-chip prod-chip--cobros {% if tipo == 'cobros' %}is-active{% endif %}" data-tipo="cobros">
             <span class="material-symbols-outlined">arrow_upward</span>
             Cobrar

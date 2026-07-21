@@ -1,23 +1,27 @@
 {% comment %}
-Tarjetas de resumen. Muestran un solo lado segun 'modo': 'cobrar' o 'pagar'.
-   Las tres equivalencias se valuan segun 'valuacion': 'hoy' (cotizacion actual) u
-   'origen' (la del dia de la operacion). El pie de cada tarjeta declara esa base;
-   el total en pesos no cambia con el interruptor porque es nominal
+Tarjetas de resumen. Muestran uno de tres modos segun 'modo':
+  - 'saldo' (por defecto, sin filtro de tipo, tambien al buscar un cliente): el neto
+    = total a cobrar − total a pagar. El signo y el color de cada cifra lo dicen.
+  - 'cobrar': solo el total a cobrar (verde).
+  - 'pagar': solo el total a pagar (rojo).
+Las tres equivalencias se valuan segun 'valuacion': 'hoy' (cotizacion actual) u
+'origen' (la del dia de la operacion). El pie de cada tarjeta declara esa base; el
+total en pesos no cambia con el interruptor porque es nominal.
 {% endcomment %}
 <article class="deu-stat">
   <div class="deu-stat__head">
-    <span class="deu-stat__label">{% if modo == 'pagar' %}Total por pagar{% else %}Total por cobrar{% endif %}</span>
-    <span class="deu-stat__icon"><span class="material-symbols-outlined">account_balance_wallet</span></span>
+    <span class="deu-stat__label">{% if modo == 'saldo' %}Saldo{% elif modo == 'pagar' %}Total por pagar{% else %}Total por cobrar{% endif %}</span>
+    <span class="deu-stat__icon"><span class="material-symbols-outlined">{% if modo == 'saldo' %}balance{% else %}account_balance_wallet{% endif %}</span></span>
   </div>
-  <span class="deu-stat__value {% if modo == 'pagar' %}deu-stat__value--pagar{% else %}deu-stat__value--cobrar{% endif %}">$ {{ total_pesos|floatformat:"-2g" }}</span>
-  <span class="deu-stat__base">Valor nominal</span>
+  {% include "deu_stat_valor.html" with valor=total_pesos modo=modo prefijo="$ " %}
+  <span class="deu-stat__base">{% if modo == 'saldo' %}A cobrar − a pagar{% else %}Valor nominal{% endif %}</span>
 </article>
 <article class="deu-stat">
   <div class="deu-stat__head">
     <span class="deu-stat__label">En dólares</span>
     <span class="deu-stat__icon"><span class="material-symbols-outlined">attach_money</span></span>
   </div>
-  <span class="deu-stat__value {% if modo == 'pagar' %}deu-stat__value--pagar{% else %}deu-stat__value--cobrar{% endif %}">US$ {{ total_usd|floatformat:"-2g" }}</span>
+  {% include "deu_stat_valor.html" with valor=total_usd modo=modo prefijo="US$ " %}
   <span class="deu-stat__base">{% if valuacion == 'origen' %}Cotización de la operación{% else %}Cotización de hoy{% endif %}</span>
 </article>
 <article class="deu-stat">
@@ -25,7 +29,7 @@ Tarjetas de resumen. Muestran un solo lado segun 'modo': 'cobrar' o 'pagar'.
     <span class="deu-stat__label">En miel</span>
     <span class="deu-stat__icon"><span class="material-symbols-outlined">water_drop</span></span>
   </div>
-  <span class="deu-stat__value {% if modo == 'pagar' %}deu-stat__value--pagar{% else %}deu-stat__value--cobrar{% endif %}">{{ total_miel|floatformat:"-2g" }} <small>kg miel</small></span>
+  {% include "deu_stat_valor.html" with valor=total_miel modo=modo unidad="kg miel" %}
   <span class="deu-stat__base">{% if valuacion == 'origen' %}Cotización de la operación{% else %}Cotización de hoy{% endif %}</span>
 </article>
 <article class="deu-stat">
@@ -33,6 +37,6 @@ Tarjetas de resumen. Muestran un solo lado segun 'modo': 'cobrar' o 'pagar'.
     <span class="deu-stat__label">En cera</span>
     <span class="deu-stat__icon"><span class="material-symbols-outlined">hexagon</span></span>
   </div>
-  <span class="deu-stat__value {% if modo == 'pagar' %}deu-stat__value--pagar{% else %}deu-stat__value--cobrar{% endif %}">{{ total_cera|floatformat:"-2g" }} <small>kg cera</small></span>
+  {% include "deu_stat_valor.html" with valor=total_cera modo=modo unidad="kg cera" %}
   <span class="deu-stat__base">{% if valuacion == 'origen' %}Cotización de la operación{% else %}Cotización de hoy{% endif %}</span>
 </article>

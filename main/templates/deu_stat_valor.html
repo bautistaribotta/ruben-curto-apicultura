@@ -1,0 +1,9 @@
+{% comment %}
+Cifra de una tarjeta de resumen de deudas.
+  - modo saldo: el color y el signo salen del signo de `valor` (verde con + si esta
+    a favor, rojo con − si en contra, neutro si es 0). Se muestra la magnitud: el
+    filtro cut quita el "-" nativo del floatformat porque el signo lo pinta el glifo.
+  - modo cobrar/pagar: color fijo (verde / rojo) y `valor` ya viene positivo.
+Params: valor, modo, prefijo (ej "$ " o "US$ "), unidad (ej "kg miel").
+{% endcomment %}
+<span class="deu-stat__value{% if modo == 'saldo' %}{% if valor < 0 %} deu-stat__value--pagar{% elif valor > 0 %} deu-stat__value--cobrar{% endif %}{% elif modo == 'pagar' %} deu-stat__value--pagar{% else %} deu-stat__value--cobrar{% endif %}">{% if modo == 'saldo' %}{% if valor < 0 %}−{% elif valor > 0 %}+{% endif %}{% endif %}{{ prefijo }}{{ valor|floatformat:"-2g"|cut:"-" }}{% if unidad %} <small>{{ unidad }}</small>{% endif %}</span>

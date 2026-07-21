@@ -1083,16 +1083,20 @@ def deudores(request):
 
     lista_deudores = obtener_listado_deudores(q, tipo, desde, hasta)
 
-    # Las tarjetas de resumen muestran un solo lado: por defecto (y con el filtro de
-    # cobros) el total a cobrar; con el filtro de pagos activo, el total a pagar.
-    # Por eso los totales se calculan sobre el subconjunto del tipo correspondiente,
-    # aunque la tabla sin filtro muestre ambos.
-    modo = "pagar" if tipo == "pagos" else "cobrar"
-    tipo_op_tarjetas = "compra" if modo == "pagar" else "venta"
-    filas_tarjetas = [d for d in lista_deudores if d["tipo_operacion"] == tipo_op_tarjetas]
+    # Modo de las tarjetas de resumen segun el filtro de tipo:
+    #   - sin filtro (por defecto, tambien al buscar un cliente): "saldo", el neto
+    #     entre lo que hay por cobrar (ventas impagas) y lo que hay por pagar (compras
+    #     impagas). Positivo = a favor (nos deben); negativo = en contra (debemos).
+    #   - filtro cobros: "cobrar", solo el total por cobrar.
+    #   - filtro pagos:  "pagar", solo el total por pagar.
+    if tipo == "cobros":
+        modo = "cobrar"
+    elif tipo == "pagos":
+        modo = "pagar"
+    else:
+        modo = "saldo"
 
-    # Totales sobre el listado completo (no solo la página) para las tarjetas de resumen.
-    # Las equivalencias suman la columna de la valuacion elegida. Una operacion sin
+    # Cada equivalencia suma la columna de la valuacion elegida. Una operacion sin
     # cotizacion de origen guardada cae a su valor actual: aporta lo mismo a ambos
     # totales en vez de desaparecer del total origen y desbalancear la comparacion.
     def _valor_equivalencia(fila, campo):
@@ -1100,10 +1104,29 @@ def deudores(request):
             return fila[f"{campo}_historico"]
         return fila[f"{campo}_actual"] or 0
 
-    total_pesos = sum((d["deuda_pesos"] or 0) for d in filas_tarjetas)
-    total_usd = sum(_valor_equivalencia(d, "deuda_dolar") for d in filas_tarjetas)
-    total_miel = sum(_valor_equivalencia(d, "kg_miel") for d in filas_tarjetas)
-    total_cera = sum(_valor_equivalencia(d, "kg_cera") for d in filas_tarjetas)
+    def _total_pesos(filas):
+        return sum((d["deuda_pesos"] or 0) for d in filas)
+
+    def _total_equiv(filas, campo):
+        return sum(_valor_equivalencia(d, campo) for d in filas)
+
+    # Totales sobre el listado completo (no solo la pagina) para las tarjetas. En saldo
+    # el neto se arma campo por campo: las ventas suman (nos deben) y las compras restan
+    # (debemos); asi cada equivalencia queda con su propio signo.
+    ventas = [d for d in lista_deudores if d["tipo_operacion"] == "venta"]
+    compras = [d for d in lista_deudores if d["tipo_operacion"] == "compra"]
+
+    if modo == "saldo":
+        total_pesos = _total_pesos(ventas) - _total_pesos(compras)
+        total_usd = _total_equiv(ventas, "deuda_dolar") - _total_equiv(compras, "deuda_dolar")
+        total_miel = _total_equiv(ventas, "kg_miel") - _total_equiv(compras, "kg_miel")
+        total_cera = _total_equiv(ventas, "kg_cera") - _total_equiv(compras, "kg_cera")
+    else:
+        filas_tarjetas = ventas if modo == "cobrar" else compras
+        total_pesos = _total_pesos(filas_tarjetas)
+        total_usd = _total_equiv(filas_tarjetas, "deuda_dolar")
+        total_miel = _total_equiv(filas_tarjetas, "kg_miel")
+        total_cera = _total_equiv(filas_tarjetas, "kg_cera")
 
     # Texto del chip de fechas: un solo dia (desde == hasta), rango cerrado, o
     # rango abierto con un solo extremo. Se calcula en el server para que el chip
