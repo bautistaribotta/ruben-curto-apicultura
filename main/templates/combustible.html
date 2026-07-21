@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block nombre-pestaña %}
+  <title> Combustible </title>
+{% endblock %}
+
+{% block cabecera %}
+  <div id="titulos-cabecera">
+    <h2> Combustible </h2>
+    <p> Controla las cargas, deudas y gastos de combustible </p>
+  </div>
+{% endblock %}
+
+{% block area-trabajo %}
+  <section id="area-trabajo">
+    <div class="en-obra">
+      <span class="en-obra__icono material-symbols-outlined">construction</span>
+      <h3 class="en-obra__titulo">Estoy trabajando en esto cabezon</h3>
+      <p class="en-obra__detalle">Acá vas a poder registrar las cargas de combustible y ver cuánto gasta cada vehículo.</p>
+    </div>
+  </section>
+{% endblock %}

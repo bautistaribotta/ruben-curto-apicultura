@@ -947,6 +947,56 @@ tbody tr.fila-vacia:active {
   max-width: 320px;
 }
 
+/* --- SECCION EN CONSTRUCCION --- */
+/* Cartel de las secciones que todavia no tienen contenido. El borde punteado es
+   lo que la separa de una tarjeta real: marca que el espacio esta reservado, no
+   que la consulta no trajo datos (ese caso ya lo cubre .estado-vacio). */
+.en-obra {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.4rem;
+  padding: 4rem 1.5rem;
+  background-color: var(--surface-card);
+  border: 1px dashed var(--border-default);
+  border-radius: var(--radius-lg);
+}
+
+/* Selector de elemento + clase (igual que .estado-vacio) para ganarle a la regla
+   .material-symbols-outlined de fonts.css, que se carga despues de esta hoja y con
+   la misma especificidad impone display:inline-block y font-size:24px. Sin esto el
+   glifo no se centra dentro del circulo. */
+.en-obra span.en-obra__icono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 3.5rem;
+  height: 3.5rem;
+  margin-bottom: 0.6rem;
+  border-radius: var(--radius-pill);
+  background-color: var(--surface-sunken);
+  color: var(--sand-500);
+  font-size: 1.75rem;
+  line-height: 1;
+}
+
+.en-obra__titulo {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  color: var(--text-strong);
+}
+
+.en-obra__detalle {
+  margin: 0;
+  max-width: 34ch;
+  font-size: var(--text-sm);
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
 /* --- PAGINACION UNIFICADA --- */
 .paginacion {
   padding: 0.9rem 1.5rem;

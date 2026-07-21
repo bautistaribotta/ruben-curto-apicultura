@@ -1151,6 +1151,19 @@ def deudores(request):
     return render(request, "deudores.html", contexto)
 
 
+# Secciones en construccion: por ahora solo la cabecera y el cartel de aviso.
+# Mismo criterio de acceso que Deudas (solo staff), asi el dia que tengan
+# contenido real no hay que rever los permisos.
+@staff_member_required(login_url="inicio")
+def alquileres(request):
+    return render(request, "alquileres.html")
+
+
+@staff_member_required(login_url="inicio")
+def combustible(request):
+    return render(request, "combustible.html")
+
+
 @login_required
 def mercado_libre(request):
     if request.method == "POST":

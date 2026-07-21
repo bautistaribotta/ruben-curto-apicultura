@@ -85,6 +85,18 @@
             Deudas
           </a>
         </li>
+        <li>
+          <a href="{% url 'alquileres' %}" class="item-menu {% if request.resolver_match.url_name == 'alquileres' %} activo {% endif %}">
+            <span class="material-symbols-outlined">key</span>
+            Alquileres
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'combustible' %}" class="item-menu {% if request.resolver_match.url_name == 'combustible' %} activo {% endif %}">
+            <span class="material-symbols-outlined">local_gas_station</span>
+            Combustible
+          </a>
+        </li>
         {% endif %}
       </ul>
     </nav>
