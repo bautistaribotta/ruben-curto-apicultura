@@ -1092,13 +1092,18 @@ def deudores(request):
     filas_tarjetas = [d for d in lista_deudores if d["tipo_operacion"] == tipo_op_tarjetas]
 
     # Totales sobre el listado completo (no solo la página) para las tarjetas de resumen.
-    # Las equivalencias suman la columna que corresponda a la valuacion elegida; las
-    # operaciones sin cotizacion guardada aportan 0 (el servicio las deja en None).
-    sufijo = "actual" if valuacion == "hoy" else "historico"
+    # Las equivalencias suman la columna de la valuacion elegida. Una operacion sin
+    # cotizacion de origen guardada cae a su valor actual: aporta lo mismo a ambos
+    # totales en vez de desaparecer del total origen y desbalancear la comparacion.
+    def _valor_equivalencia(fila, campo):
+        if valuacion == "origen" and fila[f"{campo}_historico"] is not None:
+            return fila[f"{campo}_historico"]
+        return fila[f"{campo}_actual"] or 0
+
     total_pesos = sum((d["deuda_pesos"] or 0) for d in filas_tarjetas)
-    total_usd = sum((d[f"deuda_dolar_{sufijo}"] or 0) for d in filas_tarjetas)
-    total_miel = sum((d[f"kg_miel_{sufijo}"] or 0) for d in filas_tarjetas)
-    total_cera = sum((d[f"kg_cera_{sufijo}"] or 0) for d in filas_tarjetas)
+    total_usd = sum(_valor_equivalencia(d, "deuda_dolar") for d in filas_tarjetas)
+    total_miel = sum(_valor_equivalencia(d, "kg_miel") for d in filas_tarjetas)
+    total_cera = sum(_valor_equivalencia(d, "kg_cera") for d in filas_tarjetas)
 
     # Texto del chip de fechas: un solo dia (desde == hasta), rango cerrado, o
     # rango abierto con un solo extremo. Se calcula en el server para que el chip

@@ -693,8 +693,15 @@ def _iniciales(nombre, apellido=None):
 
 
 def obtener_listado_deudores(q="", tipo="", desde=None, hasta=None):
+    # Si la API del dolar falla, la equivalencia queda en None (la fila muestra "-"
+    # y no aporta al total), igual que miel y cera. Antes caia a 1 y la columna
+    # "hoy" terminaba mostrando los pesos como si fueran dolares.
     dolar_actual_data = get_cotizacion_dolar_oficial()
-    dolar_actual = Decimal(str(dolar_actual_data.get("venta") or 1))  # Prevención división por 0 si falla la API
+    venta_dolar = dolar_actual_data.get("venta")
+    try:
+        dolar_actual = Decimal(str(venta_dolar)) if venta_dolar else None
+    except InvalidOperation:
+        dolar_actual = None
 
     miel_actual_data = get_cotizacion_miel_50mm()
     try:
