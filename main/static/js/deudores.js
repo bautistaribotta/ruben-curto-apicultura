@@ -3,6 +3,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const inputBusqueda = document.getElementById('buscar-deudor');
     const contenedorTabla = document.getElementById('tabla-deudores-container');
     const chipsTipo = document.querySelectorAll('#chips-tipo .prod-chip');
+    const optsValuacion = document.querySelectorAll('#deu-valuacion .deu-seg__opt');
+
+    // Base de valuacion elegida en el segmentado ('hoy' u 'origen'). Solo cambia las
+    // tarjetas de resumen; la tabla muestra ambas columnas siempre.
+    const valuacionActiva = () => {
+        const activo = document.querySelector('#deu-valuacion .deu-seg__opt.is-active');
+        return activo ? activo.dataset.valuacion : 'hoy';
+    };
 
     // --- Filtro por fecha (chip + popover) ---
     // El contenedor guarda el estado APLICADO (desde/hasta en ISO) en sus data-*.
@@ -53,6 +61,9 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 url.searchParams.delete('hasta');
             }
+            // Mismo refuerzo para la valuacion: el segmentado vive fuera de la region
+            // que reemplaza el AJAX, asi que su estado sigue siendo la fuente de verdad.
+            url.searchParams.set('valuacion', valuacionActiva());
         } else {
             url = new URL(window.location.href);
             if (inputBusqueda) {
@@ -77,6 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 url.searchParams.delete('hasta');
             }
+            url.searchParams.set('valuacion', valuacionActiva());
             url.searchParams.delete('page');
         }
 
@@ -143,6 +155,20 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!yaActivo) {
                 chip.classList.add('is-active');
             }
+            buscar();
+        });
+    });
+
+    // Segmentado de valuacion: seleccion unica, siempre hay una activa. Clickear la
+    // que ya esta activa no hace nada (a diferencia de los chips, no se puede apagar).
+    optsValuacion.forEach((opt) => {
+        opt.addEventListener('click', () => {
+            if (opt.classList.contains('is-active')) return;
+            optsValuacion.forEach((o) => {
+                const activo = o === opt;
+                o.classList.toggle('is-active', activo);
+                o.setAttribute('aria-pressed', String(activo));
+            });
             buscar();
         });
     });

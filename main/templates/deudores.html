@@ -20,9 +20,24 @@
   <!-- ÁREA DE TRABAJO -->
   <section id="area-trabajo">
 
-    <!-- Tarjetas de resumen (se refrescan por AJAX al cambiar el filtro de tipo) -->
-    <div class="deu-stats" id="deu-stats-region">
-      {% include "deu_stats.html" %}
+    {% comment %}
+      Tarjetas de resumen (se refrescan por AJAX al cambiar el filtro de tipo).
+      El interruptor de valuacion vive FUERA de la region que reemplaza el AJAX, igual
+      que los chips: asi conserva sus listeners y su estado entre refrescos.
+    {% endcomment %}
+    <div class="deu-resumen">
+      <div class="deu-resumen__head">
+        <span class="deu-resumen__label">Valuación de las equivalencias</span>
+        <div class="deu-seg deu-seg--valuacion" id="deu-valuacion" role="group" aria-label="Valuar las equivalencias a hoy o al origen">
+          <button type="button" class="deu-seg__opt {% if valuacion != 'origen' %}is-active{% endif %}"
+                  data-valuacion="hoy" aria-pressed="{% if valuacion != 'origen' %}true{% else %}false{% endif %}">Hoy</button>
+          <button type="button" class="deu-seg__opt {% if valuacion == 'origen' %}is-active{% endif %}"
+                  data-valuacion="origen" aria-pressed="{% if valuacion == 'origen' %}true{% else %}false{% endif %}">Origen</button>
+        </div>
+      </div>
+      <div class="deu-stats" id="deu-stats-region">
+        {% include "deu_stats.html" %}
+      </div>
     </div>
 
     <!-- Controles Superiores: Buscador -->

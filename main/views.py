@@ -1074,6 +1074,13 @@ def deudores(request):
     if desde and hasta and desde > hasta:
         desde, hasta = hasta, desde
 
+    # Base de valuacion de las equivalencias en las tarjetas: 'hoy' (cotizacion
+    # actual) u 'origen' (la cotizacion guardada al crear cada operacion). No afecta
+    # a la tabla, que sigue mostrando ambas, ni al total en pesos, que es nominal.
+    valuacion = request.GET.get("valuacion", "")
+    if valuacion != "origen":
+        valuacion = "hoy"
+
     lista_deudores = obtener_listado_deudores(q, tipo, desde, hasta)
 
     # Las tarjetas de resumen muestran un solo lado: por defecto (y con el filtro de
@@ -1084,11 +1091,14 @@ def deudores(request):
     tipo_op_tarjetas = "compra" if modo == "pagar" else "venta"
     filas_tarjetas = [d for d in lista_deudores if d["tipo_operacion"] == tipo_op_tarjetas]
 
-    # Totales sobre el listado completo (no solo la página) para las tarjetas de resumen
+    # Totales sobre el listado completo (no solo la página) para las tarjetas de resumen.
+    # Las equivalencias suman la columna que corresponda a la valuacion elegida; las
+    # operaciones sin cotizacion guardada aportan 0 (el servicio las deja en None).
+    sufijo = "actual" if valuacion == "hoy" else "historico"
     total_pesos = sum((d["deuda_pesos"] or 0) for d in filas_tarjetas)
-    total_usd_hoy = sum((d["deuda_dolar_actual"] or 0) for d in filas_tarjetas)
-    total_miel_hoy = sum((d["kg_miel_actual"] or 0) for d in filas_tarjetas)
-    total_cera_hoy = sum((d["kg_cera_actual"] or 0) for d in filas_tarjetas)
+    total_usd = sum((d[f"deuda_dolar_{sufijo}"] or 0) for d in filas_tarjetas)
+    total_miel = sum((d[f"kg_miel_{sufijo}"] or 0) for d in filas_tarjetas)
+    total_cera = sum((d[f"kg_cera_{sufijo}"] or 0) for d in filas_tarjetas)
 
     # Texto del chip de fechas: un solo dia (desde == hasta), rango cerrado, o
     # rango abierto con un solo extremo. Se calcula en el server para que el chip
@@ -1121,10 +1131,11 @@ def deudores(request):
         "hasta": hasta.isoformat() if hasta else "",
         "fecha_label": fecha_label,
         "modo": modo,
+        "valuacion": valuacion,
         "total_pesos": total_pesos,
-        "total_usd_hoy": total_usd_hoy,
-        "total_miel_hoy": total_miel_hoy,
-        "total_cera_hoy": total_cera_hoy,
+        "total_usd": total_usd,
+        "total_miel": total_miel,
+        "total_cera": total_cera,
         "total_deudores": len(lista_deudores),
     }
 

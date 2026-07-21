@@ -1,29 +1,38 @@
-{# Tarjetas de resumen. Muestran un solo lado segun 'modo': 'cobrar' o 'pagar'. #}
+{% comment %}
+Tarjetas de resumen. Muestran un solo lado segun 'modo': 'cobrar' o 'pagar'.
+   Las tres equivalencias se valuan segun 'valuacion': 'hoy' (cotizacion actual) u
+   'origen' (la del dia de la operacion). El pie de cada tarjeta declara esa base;
+   el total en pesos no cambia con el interruptor porque es nominal
+{% endcomment %}
 <article class="deu-stat">
   <div class="deu-stat__head">
     <span class="deu-stat__label">{% if modo == 'pagar' %}Total por pagar{% else %}Total por cobrar{% endif %}</span>
     <span class="deu-stat__icon"><span class="material-symbols-outlined">account_balance_wallet</span></span>
   </div>
   <span class="deu-stat__value {% if modo == 'pagar' %}deu-stat__value--pagar{% else %}deu-stat__value--cobrar{% endif %}">$ {{ total_pesos|floatformat:"-2g" }}</span>
+  <span class="deu-stat__base">Valor nominal</span>
 </article>
 <article class="deu-stat">
   <div class="deu-stat__head">
-    <span class="deu-stat__label">En dólares (hoy)</span>
+    <span class="deu-stat__label">En dólares</span>
     <span class="deu-stat__icon"><span class="material-symbols-outlined">attach_money</span></span>
   </div>
-  <span class="deu-stat__value {% if modo == 'pagar' %}deu-stat__value--pagar{% else %}deu-stat__value--cobrar{% endif %}">US$ {{ total_usd_hoy|floatformat:"-2g" }}</span>
+  <span class="deu-stat__value {% if modo == 'pagar' %}deu-stat__value--pagar{% else %}deu-stat__value--cobrar{% endif %}">US$ {{ total_usd|floatformat:"-2g" }}</span>
+  <span class="deu-stat__base">{% if valuacion == 'origen' %}Cotización de la operación{% else %}Cotización de hoy{% endif %}</span>
 </article>
 <article class="deu-stat">
   <div class="deu-stat__head">
-    <span class="deu-stat__label">En miel (hoy)</span>
+    <span class="deu-stat__label">En miel</span>
     <span class="deu-stat__icon"><span class="material-symbols-outlined">water_drop</span></span>
   </div>
-  <span class="deu-stat__value {% if modo == 'pagar' %}deu-stat__value--pagar{% else %}deu-stat__value--cobrar{% endif %}">{{ total_miel_hoy|floatformat:"-2g" }} <small>kg miel</small></span>
+  <span class="deu-stat__value {% if modo == 'pagar' %}deu-stat__value--pagar{% else %}deu-stat__value--cobrar{% endif %}">{{ total_miel|floatformat:"-2g" }} <small>kg miel</small></span>
+  <span class="deu-stat__base">{% if valuacion == 'origen' %}Cotización de la operación{% else %}Cotización de hoy{% endif %}</span>
 </article>
 <article class="deu-stat">
   <div class="deu-stat__head">
-    <span class="deu-stat__label">En cera (hoy)</span>
+    <span class="deu-stat__label">En cera</span>
     <span class="deu-stat__icon"><span class="material-symbols-outlined">hexagon</span></span>
   </div>
-  <span class="deu-stat__value {% if modo == 'pagar' %}deu-stat__value--pagar{% else %}deu-stat__value--cobrar{% endif %}">{{ total_cera_hoy|floatformat:"-2g" }} <small>kg cera</small></span>
+  <span class="deu-stat__value {% if modo == 'pagar' %}deu-stat__value--pagar{% else %}deu-stat__value--cobrar{% endif %}">{{ total_cera|floatformat:"-2g" }} <small>kg cera</small></span>
+  <span class="deu-stat__base">{% if valuacion == 'origen' %}Cotización de la operación{% else %}Cotización de hoy{% endif %}</span>
 </article>
