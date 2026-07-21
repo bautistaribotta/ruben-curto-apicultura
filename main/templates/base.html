@@ -1,4 +1,5 @@
 {% load static %}
+{% load static_version %}
 <!DOCTYPE html>
 <html lang="es">
   <head>
@@ -13,13 +14,17 @@
 
     {% endblock %}
 
-    <link rel="stylesheet" href="{% static 'base.css' %}">
-    <script src="{% static 'js/notifications.js' %}"></script>
-    <script src="{% static 'js/paneles.js' %}"></script>
-    
+    {% comment %}
+      static_v en los estaticos compartidos: son los que mas se editan y, sin la
+      version, el navegador reusa la copia cacheada hasta un Ctrl+F5.
+    {% endcomment %}
+    <link rel="stylesheet" href="{% static_v 'base.css' %}">
+    <script src="{% static_v 'js/notifications.js' %}"></script>
+    <script src="{% static_v 'js/paneles.js' %}"></script>
+
     <link rel="icon" type="image/svg+xml" href="{% static 'icons/abeja_southern_honey_group.svg' %}">
 
-    <link rel="stylesheet" href="{% static 'fonts.css' %}">
+    <link rel="stylesheet" href="{% static_v 'fonts.css' %}">
   </head>
 
   <body>

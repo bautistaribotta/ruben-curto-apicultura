@@ -1,4 +1,6 @@
-{# Respuesta AJAX del listado de deudas: refresca las tarjetas de resumen y la tabla.
-   deudores.js parsea este fragmento y reemplaza cada region por su id. #}
+{% comment %}
+  Respuesta AJAX del listado de deudas: refresca las tarjetas de resumen y la tabla.
+  deudores.js parsea este fragmento y reemplaza cada region por su id.
+{% endcomment %}
 <div id="deu-stats-region">{% include "deu_stats.html" %}</div>
 <div id="tabla-deudores-region">{% include "tabla_deudores.html" %}</div>
