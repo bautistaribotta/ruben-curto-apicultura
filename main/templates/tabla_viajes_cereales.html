@@ -1,6 +1,7 @@
 <table class="tabla-viajes tabla-cereales">
   <thead>
     <tr>
+      <th class="pago-col">Pago</th>
       <th class="alineado-izq">Fecha</th>
       <th class="alineado-izq">Vehículo</th>
       <th class="alineado-izq">Chofer</th>
@@ -10,6 +11,20 @@
   <tbody>
     {% for viaje in page_obj %}
     <tr class="fila-viaje" onclick="window.location.href='{% url 'informacion_viaje_cereal' viaje.id %}'">
+      {% comment %}
+        La celda corta el click para que marcar el cobro no navegue al detalle.
+        Sin permiso de cobro la casilla queda deshabilitada, solo de lectura.
+      {% endcomment %}
+      <td class="pago-celda" onclick="event.stopPropagation()">
+        <input
+          type="checkbox"
+          class="pago-check"
+          data-pago-url="{% url 'marcar_pago_cereal' viaje.id %}"
+          data-pago-entidad="Viaje"
+          aria-label="Pago del viaje de cereal #{{ viaje.id }}"
+          {% if viaje.pagado %}checked{% endif %}
+          {% if not user.is_staff %}disabled title="Solo el personal administrativo registra los cobros"{% endif %}>
+      </td>
       <td>
         <span class="vjc-fecha">
           <span class="material-symbols-outlined">event</span>
@@ -39,7 +54,7 @@
     </tr>
     {% empty %}
     <tr class="fila-vacia">
-      <td colspan="4" class="celda-vacia">
+      <td colspan="5" class="celda-vacia">
         <span class="material-symbols-outlined">agriculture</span>
         No se encontraron viajes de cereales con esos filtros.
       </td>

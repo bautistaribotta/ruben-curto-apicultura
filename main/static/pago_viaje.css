@@ -1,0 +1,173 @@
+/* =============================================================================
+   ESTADO DE PAGO DE LOS VIAJES (reparto y cereal)
+   Componente compartido por las cuatro vistas que tocan el cobro:
+   - la casilla de la primera columna de las dos tablas
+   - la fila con interruptor de los slide-over de alta y edicion
+
+   Los nombres van prefijados con "pago-" a proposito: .switch / .slider ya estan
+   definidos en clientes.css, informacion_cliente.css y operaciones_compartido.css,
+   y esta hoja convive con la ultima en las vistas de informacion.
+   ============================================================================= */
+
+/* --- COLUMNA DE PAGO EN LAS TABLAS --- */
+/* Angosta y centrada: la casilla es el unico contenido, no necesita mas aire. */
+.pago-col {
+  width: 5rem;
+  text-align: center;
+}
+
+.pago-celda {
+  text-align: center;
+  /* Anula el cursor de mano que la fila entera hereda de .fila-viaje/.fila-tabla:
+     esta celda no navega al detalle, solo registra el cobro. */
+  cursor: default;
+}
+
+/* --- CASILLA --- */
+/* Es el <input> real con appearance:none, no un span decorativo: asi conserva el
+   foco, el teclado y el estado nativo sin markup extra. */
+.pago-check {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0;
+  display: inline-block;
+  vertical-align: middle;
+  position: relative;
+  border: 1.5px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  background-color: var(--surface-card);
+  cursor: pointer;
+  transition: background-color var(--dur-normal) var(--ease-standard),
+              border-color var(--dur-normal) var(--ease-standard);
+}
+
+.pago-check:hover:not(:disabled) {
+  border-color: var(--brand-secondary);
+}
+
+.pago-check:checked {
+  background-color: var(--brand-secondary);
+  border-color: var(--brand-secondary);
+}
+
+/* Tilde dibujado con dos bordes rotados: sin iconos ni imagenes de por medio */
+.pago-check:checked::after {
+  content: "";
+  position: absolute;
+  top: 1px;
+  left: 5px;
+  width: 5px;
+  height: 9px;
+  border: solid var(--sand-50);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* El anillo de foco es miel, como en el resto del sistema */
+.pago-check:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--honey-tint-20);
+}
+
+/* Lectura para quien no registra cobros */
+.pago-check:disabled {
+  cursor: default;
+  opacity: 0.55;
+  background-color: var(--surface-sunken);
+}
+
+.pago-check:disabled:checked {
+  background-color: var(--brand-secondary);
+}
+
+/* El estado de pago en las vistas de informacion no tiene estilos propios: es una
+   fila mas de "Datos generales" (.vd-data__row de informacion_viaje.css), con la
+   fecha del cobro en el mismo chip .vd-pat que usa la patente del vehiculo. */
+
+/* --- FILA CON INTERRUPTOR (slide-over de alta y edicion) --- */
+.pago-fila {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  background-color: var(--surface-sunken);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.pago-fila__texto {
+  display: flex;
+  flex-direction: column;
+}
+
+.pago-fila__titulo {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--text-strong);
+}
+
+.pago-fila__sub {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+.pago-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  flex: none;
+}
+
+.pago-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.pago-switch__slider {
+  position: absolute;
+  inset: 0;
+  cursor: pointer;
+  background-color: var(--border-default);
+  border-radius: var(--radius-pill);
+  transition: background-color var(--dur-normal) var(--ease-standard);
+}
+
+.pago-switch__slider::before {
+  content: "";
+  position: absolute;
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: var(--color-blanco);
+  box-shadow: var(--shadow-sm);
+  border-radius: 50%;
+  transition: transform var(--dur-normal) var(--ease-standard);
+}
+
+.pago-switch input:checked + .pago-switch__slider {
+  background-color: var(--brand-secondary);
+}
+
+.pago-switch input:checked + .pago-switch__slider::before {
+  transform: translateX(20px);
+}
+
+.pago-switch input:focus-visible + .pago-switch__slider {
+  box-shadow: 0 0 0 3px var(--honey-tint-20);
+}
+
+/* Quien prefiere menos movimiento ve el cambio de estado igual, sin transiciones */
+@media (prefers-reduced-motion: reduce) {
+  .pago-check,
+  .pago-switch__slider,
+  .pago-switch__slider::before {
+    transition: none;
+  }
+}

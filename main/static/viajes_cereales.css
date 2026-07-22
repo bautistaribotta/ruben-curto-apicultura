@@ -111,26 +111,32 @@
   }
 }
 
-/* --- Anchos de columna propios de esta tabla (4 columnas).
+/* --- Anchos de columna propios de esta tabla (5 columnas).
    Uso el prefijo .contenedor-tabla para ganarle en especificidad a las
-   reglas de 5 columnas que define viajes.css para .tabla-viajes. --- */
+   reglas que define viajes.css para .tabla-viajes. La primera columna tambien
+   necesita su regla aca: .pago-col sola pierde contra el nth-child de viajes.css. --- */
 .contenedor-tabla .tabla-cereales th:nth-child(1) {
-  width: 20%;
+  width: 5rem;
+}
+
+/* Pago */
+.contenedor-tabla .tabla-cereales th:nth-child(2) {
+  width: 18%;
 }
 
 /* Fecha */
-.contenedor-tabla .tabla-cereales th:nth-child(2) {
-  width: 32%;
-}
-
-/* Vehiculo */
 .contenedor-tabla .tabla-cereales th:nth-child(3) {
   width: 30%;
 }
 
-/* Chofer */
+/* Vehiculo */
 .contenedor-tabla .tabla-cereales th:nth-child(4) {
-  width: 18%;
+  width: 28%;
+}
+
+/* Chofer */
+.contenedor-tabla .tabla-cereales th:nth-child(5) {
+  width: 17%;
 }
 
 /* Cereal */

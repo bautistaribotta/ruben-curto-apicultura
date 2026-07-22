@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="{% static 'informacion_operacion.css' %}">
 <link rel="stylesheet" href="{% static 'informacion_viaje.css' %}">
 <link rel="stylesheet" href="{% static 'informacion_viaje_reparto.css' %}">
+<link rel="stylesheet" href="{% static 'pago_viaje.css' %}">
 {% endblock %}
 
 {% block top-header %}
@@ -86,6 +87,19 @@
           <div class="vd-data__meta">
             <div class="vd-data__label">Chofer</div>
             <div class="vd-data__value">{% if viaje_reparto.chofer %}{{ viaje_reparto.chofer.nombre }} {{ viaje_reparto.chofer.apellido }}{% else %}Chofer no especificado{% endif %}</div>
+          </div>
+        </div>
+        <div class="vd-data__row">
+          <span class="vd-data__ico"><span class="material-symbols-outlined">{% if viaje_reparto.pagado %}paid{% else %}schedule{% endif %}</span></span>
+          <div class="vd-data__meta">
+            <div class="vd-data__label">Estado de pago</div>
+            <div class="vd-data__value">
+              {% if viaje_reparto.pagado %}
+                Pagado{% if viaje_reparto.fecha_pago %}<span class="vd-pat">{{ viaje_reparto.fecha_pago|date:"d/m/Y H:i" }} hs</span>{% endif %}
+              {% else %}
+                Pendiente de cobro
+              {% endif %}
+            </div>
           </div>
         </div>
       </div>
@@ -408,6 +422,20 @@
               <span class="mensaje-error">Por favor, ingrese un monto valido.</span>
             </div>
           </div>
+
+          {% if user.is_staff %}
+          <div class="pago-fila">
+            <div class="pago-fila__texto">
+              <span class="pago-fila__titulo">Reparto pagado</span>
+              <span class="pago-fila__sub">Activalo cuando el cobro ya entró. El cobro es total, no hay pagos parciales.</span>
+            </div>
+            <label class="pago-switch">
+              <input type="checkbox" id="pagado-reparto-editar" name="pagado"
+                     {% if viaje_reparto.pagado %}checked{% endif %}>
+              <span class="pago-switch__slider"></span>
+            </label>
+          </div>
+          {% endif %}
         </section>
 
         <!-- Seccion 4: Fecha -->

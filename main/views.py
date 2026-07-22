@@ -24,10 +24,23 @@ from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo
                        editar_chofer, eliminar_chofer, editar_vehiculo, eliminar_vehiculo,
                        crear_viaje_cereal, obtener_viajes_cereales, obtener_datos_viaje_cereal,
                        editar_viaje_cereal, eliminar_viaje_cereal, crear_gasto_viaje_cereal,
-                       obtener_resumen_cereal,
+                       obtener_resumen_cereal, marcar_pago_viaje_cereal,
                        crear_viaje_reparto, obtener_viajes_reparto, obtener_datos_viaje_reparto,
                        editar_viaje_reparto, eliminar_viaje_reparto, crear_gasto_viaje_reparto,
-                       obtener_resumen_reparto)
+                       obtener_resumen_reparto, marcar_pago_viaje_reparto)
+
+
+def _pagado_del_formulario(request):
+    """Lee la casilla de cobro de los slide-over de viajes (reparto y cereal).
+
+    El estado de pago lo maneja solo el staff, asi que para el resto devuelvo None:
+    los servicios de edicion interpretan ese None como "no toques el campo" y el
+    viaje conserva el estado que ya tenia en vez de volver a impago.
+    """
+    if not request.user.is_staff:
+        return None
+    # Un checkbox sin marcar directamente no viaja en el POST: la ausencia es "no pagado"
+    return request.POST.get("pagado") is not None
 
 
 def _rango_fechas(request):
@@ -1211,7 +1224,8 @@ def mercado_libre(request):
 
                 # 3. Delegacion al servicio (reglas de negocio y validacion)
                 crear_viaje_reparto(id_chofer, id_vehiculo, gasto_combustible, costo_empleado,
-                                    valor_viaje, fecha_viaje_reparto, destinos)
+                                    valor_viaje, fecha_viaje_reparto, destinos,
+                                    pagado=bool(_pagado_del_formulario(request)))
                 messages.success(request, "Viaje de reparto registrado exitosamente.")
 
         except ValueError as e:
@@ -1308,6 +1322,7 @@ def informacion_viaje_reparto(request, id_viaje_reparto):
                     valor_viaje=valor_viaje,
                     fecha_viaje_reparto=fecha_viaje_reparto,
                     destinos=destinos,
+                    pagado=_pagado_del_formulario(request),
                 )
                 messages.success(request, "Viaje de reparto modificado exitosamente.")
             except ValueError as e:
@@ -1341,6 +1356,23 @@ def informacion_viaje_reparto(request, id_viaje_reparto):
 
 
 @login_required
+def marcar_pago_reparto_ajax(request, id_viaje_reparto):
+    """Casilla de cobro de la tabla de repartos: alterna 'pagado' sin recargar.
+
+    Solo staff, con el mismo criterio que el resto de la plata en esta seccion: la
+    tarjeta de resultado del reparto ya vive detras de user.is_staff.
+    """
+    if request.method != "POST":
+        return JsonResponse({"error": "Método no permitido"}, status=405)
+
+    if not request.user.is_staff:
+        return JsonResponse({"error": "No tenés permiso para cambiar el estado de pago."}, status=403)
+
+    viaje_reparto = marcar_pago_viaje_reparto(id_viaje_reparto, request.POST.get("pagado") == "1")
+    return JsonResponse({"ok": True, "pagado": viaje_reparto.pagado})
+
+
+@login_required
 def viaje_cereales(request):
     if request.method == "POST":
         accion = request.POST.get("accion")
@@ -1368,7 +1400,8 @@ def viaje_cereales(request):
 
                 # 3. Delegacion al servicio (reglas de negocio y validacion con regex)
                 crear_viaje_cereal(id_cliente, id_chofer, id_vehiculo, tipo_cereal, codigo_trazabilidad,
-                                   toneladas, precio_tonelada, porcentaje_chofer, fecha_viaje_cereal, destinos)
+                                   toneladas, precio_tonelada, porcentaje_chofer, fecha_viaje_cereal, destinos,
+                                   pagado=bool(_pagado_del_formulario(request)))
                 messages.success(request, "Viaje de cereal registrado exitosamente.")
 
         except ValueError as e:
@@ -1472,6 +1505,7 @@ def informacion_viaje_cereal(request, id_viaje_cereal):
                     porcentaje_chofer=porcentaje_chofer,
                     fecha_viaje_cereal=fecha_viaje_cereal,
                     destinos=destinos,
+                    pagado=_pagado_del_formulario(request),
                 )
                 messages.success(request, "Viaje de cereal modificado exitosamente.")
             except ValueError as e:
@@ -1503,6 +1537,22 @@ def informacion_viaje_cereal(request, id_viaje_cereal):
         "cereales": ViajeCereal.cereales,
     }
     return render(request, "informacion_viaje_cereal.html", contexto)
+
+
+@login_required
+def marcar_pago_cereal_ajax(request, id_viaje_cereal):
+    """Casilla de cobro de la tabla de cereales: alterna 'pagado' sin recargar.
+
+    Mismo criterio que en repartos: solo staff, porque es informacion de cobro.
+    """
+    if request.method != "POST":
+        return JsonResponse({"error": "Método no permitido"}, status=405)
+
+    if not request.user.is_staff:
+        return JsonResponse({"error": "No tenés permiso para cambiar el estado de pago."}, status=403)
+
+    viaje_cereal = marcar_pago_viaje_cereal(id_viaje_cereal, request.POST.get("pagado") == "1")
+    return JsonResponse({"ok": True, "pagado": viaje_cereal.pagado})
 
 
 def cerrar_sesion(request):

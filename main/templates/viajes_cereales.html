@@ -11,6 +11,7 @@
 <link rel="stylesheet" href="{% static_v 'viajes_cereales.css' %}">
 <link rel="stylesheet" href="{% static_v 'filtro_fechas.css' %}">
 <link rel="stylesheet" href="{% static_v 'autocompletado_ciudades.css' %}">
+<link rel="stylesheet" href="{% static_v 'pago_viaje.css' %}">
 {% endblock %}
 
 {% block cabecera %}
@@ -204,6 +205,19 @@
               step="1">
             <span class="mensaje-error">Debe ser un número entre 1 y 100.</span>
           </div>
+
+          {% if user.is_staff %}
+          <div class="pago-fila">
+            <div class="pago-fila__texto">
+              <span class="pago-fila__titulo">Viaje pagado</span>
+              <span class="pago-fila__sub">Activalo cuando el cobro ya entró. El cobro es total, no hay pagos parciales.</span>
+            </div>
+            <label class="pago-switch">
+              <input type="checkbox" id="pagado-acopio" name="pagado">
+              <span class="pago-switch__slider"></span>
+            </label>
+          </div>
+          {% endif %}
         </section>
 
         <!-- Seccion 3: Recorrido -->
@@ -269,6 +283,7 @@
 <script src="{% static_v 'js/autocompletado_clientes.js' %}"></script>
 <script src="{% static_v 'js/filtro_fechas.js' %}"></script>
 <script src="{% static_v 'js/viajes_cereales.js' %}"></script>
+<script src="{% static_v 'js/pago_viaje.js' %}"></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     // Autocompletar la fecha del viaje con la fecha actual al cargar la pagina

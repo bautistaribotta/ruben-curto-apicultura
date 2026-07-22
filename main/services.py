@@ -15,6 +15,26 @@ from .models import (Producto, Cliente, Operacion, DetalleOperacion, Pago, Cotiz
                      ViajeReparto, DetalleViajeReparto, GastoViajeReparto)
 
 
+def _aplicar_estado_pago(viaje, pagado):
+    """Sincroniza el estado de cobro de un viaje con su fecha de pago.
+
+    Lo usan por igual los viajes de reparto y los de cereal: ambos tienen los
+    campos 'pagado' y 'fecha_pago'. Reglas:
+    - pasa de impago a pagado -> sella el momento del cobro
+    - ya estaba pagado        -> conserva la fecha original, no la refresca
+    - vuelve a impago         -> limpia la fecha, para no mostrar una que ya no aplica
+
+    No guarda: deja el objeto listo y que lo persista quien lo llamo.
+    """
+    pagado = bool(pagado)
+    if pagado and not viaje.pagado:
+        viaje.fecha_pago = timezone.now()
+    elif not pagado:
+        viaje.fecha_pago = None
+    viaje.pagado = pagado
+    return viaje
+
+
 # --- Validadores REGEX ---
 REGEX_TEXTO_BASICO = re.compile(r"^[a-zA-ZÁÉÍÓÚáéíóúñÑ\s]+$")
 REGEX_TEXTO_NUMEROS = re.compile(r"^[a-zA-ZÁÉÍÓÚáéíóúñÑ\s\d]+$")
@@ -1318,10 +1338,14 @@ def _validar_viaje_cereal(id_cliente, id_chofer, id_vehiculo, tipo_cereal, codig
 
 
 def crear_viaje_cereal(id_cliente, id_chofer, id_vehiculo, tipo_cereal, codigo_trazabilidad,
-                       toneladas, precio_tonelada, porcentaje_chofer, fecha_viaje_cereal, destinos):
+                       toneladas, precio_tonelada, porcentaje_chofer, fecha_viaje_cereal, destinos,
+                       pagado=False):
     """
     Crea un viaje de cereal (maestro) y sus destinos asociados (detalle) en una
     transaccion atomica. 'destinos' es una lista de strings.
+
+    'pagado' es el cobro del flete: la empresa no acepta pagos parciales, asi que
+    alcanza con el booleano (o esta cobrado o no lo esta). Por defecto nace impago.
     """
     codigo, toneladas_val, precio_val, porcentaje_val, destinos_limpios = _validar_viaje_cereal(
         id_cliente, id_chofer, id_vehiculo, tipo_cereal, codigo_trazabilidad,
@@ -1339,6 +1363,9 @@ def crear_viaje_cereal(id_cliente, id_chofer, id_vehiculo, tipo_cereal, codigo_t
             precio_tonelada=precio_val,
             porcentaje_chofer=porcentaje_val,
             fecha_viaje_cereal=fecha_viaje_cereal,
+            pagado=bool(pagado),
+            # Si nace cobrado, el momento del cobro es el del alta
+            fecha_pago=timezone.now() if pagado else None,
         )
 
         for destino_nombre in destinos_limpios:
@@ -1434,7 +1461,10 @@ def obtener_datos_viaje_cereal(id_viaje_cereal):
 
 
 def editar_viaje_cereal(id_viaje_cereal, id_cliente, id_chofer, id_vehiculo, tipo_cereal, codigo_trazabilidad,
-                        toneladas, precio_tonelada, porcentaje_chofer, fecha_viaje_cereal, destinos):
+                        toneladas, precio_tonelada, porcentaje_chofer, fecha_viaje_cereal, destinos,
+                        pagado=None):
+    # 'pagado' llega en None cuando quien edita no puede tocar el cobro (no staff):
+    # en ese caso el estado de pago queda como estaba, no se pisa con un False.
     codigo, toneladas_val, precio_val, porcentaje_val, destinos_limpios = _validar_viaje_cereal(
         id_cliente, id_chofer, id_vehiculo, tipo_cereal, codigo_trazabilidad,
         toneladas, precio_tonelada, porcentaje_chofer, fecha_viaje_cereal, destinos
@@ -1452,6 +1482,8 @@ def editar_viaje_cereal(id_viaje_cereal, id_cliente, id_chofer, id_vehiculo, tip
         viaje_cereal.precio_tonelada = precio_val
         viaje_cereal.porcentaje_chofer = porcentaje_val
         viaje_cereal.fecha_viaje_cereal = fecha_viaje_cereal
+        if pagado is not None:
+            _aplicar_estado_pago(viaje_cereal, pagado)
         viaje_cereal.save()
 
         # Reemplazo los destinos (mismo patron que editar_viaje)
@@ -1462,6 +1494,18 @@ def editar_viaje_cereal(id_viaje_cereal, id_cliente, id_chofer, id_vehiculo, tip
                 destino=destino_nombre
             )
 
+    return viaje_cereal
+
+
+def marcar_pago_viaje_cereal(id_viaje_cereal, pagado):
+    """Marca (o desmarca) el cobro de un viaje de cereal.
+
+    Es el servicio detras de la casilla de la tabla: solo toca 'pagado', por eso
+    guardo con update_fields y no arrastro el resto de la fila.
+    """
+    viaje_cereal = get_object_or_404(ViajeCereal, id=id_viaje_cereal, activo=True)
+    _aplicar_estado_pago(viaje_cereal, pagado)
+    viaje_cereal.save(update_fields=["pagado", "fecha_pago"])
     return viaje_cereal
 
 
@@ -1562,10 +1606,13 @@ def _validar_viaje_reparto(id_chofer, id_vehiculo, gasto_combustible,
 
 
 def crear_viaje_reparto(id_chofer, id_vehiculo, gasto_combustible, costo_empleado,
-                        valor_viaje, fecha_viaje_reparto, destinos):
+                        valor_viaje, fecha_viaje_reparto, destinos, pagado=False):
     """
     Crea un viaje de reparto (maestro) y sus destinos asociados (detalle) en una
     transaccion atomica. 'destinos' es una lista de strings.
+
+    'pagado' es el cobro del reparto: la empresa no acepta pagos parciales, asi que
+    alcanza con el booleano (o esta cobrado o no lo esta). Por defecto nace impago.
     """
     gasto_val, costo_val, valor_val, destinos_limpios = _validar_viaje_reparto(
         id_chofer, id_vehiculo, gasto_combustible, costo_empleado,
@@ -1580,6 +1627,9 @@ def crear_viaje_reparto(id_chofer, id_vehiculo, gasto_combustible, costo_emplead
             costo_empleado=costo_val,
             valor_viaje=valor_val,
             fecha_viaje_reparto=fecha_viaje_reparto,
+            pagado=bool(pagado),
+            # Si nace cobrado, el momento del cobro es el del alta
+            fecha_pago=timezone.now() if pagado else None,
         )
 
         for destino_nombre in destinos_limpios:
@@ -1684,7 +1734,9 @@ def crear_gasto_viaje_reparto(id_viaje_reparto, tipo_gasto, monto):
 
 
 def editar_viaje_reparto(id_viaje_reparto, id_chofer, id_vehiculo, gasto_combustible,
-                         costo_empleado, valor_viaje, fecha_viaje_reparto, destinos):
+                         costo_empleado, valor_viaje, fecha_viaje_reparto, destinos, pagado=None):
+    # 'pagado' llega en None cuando quien edita no puede tocar el cobro (no staff):
+    # en ese caso el estado de pago queda como estaba, no se pisa con un False.
     gasto_val, costo_val, valor_val, destinos_limpios = _validar_viaje_reparto(
         id_chofer, id_vehiculo, gasto_combustible, costo_empleado,
         valor_viaje, fecha_viaje_reparto, destinos
@@ -1699,6 +1751,8 @@ def editar_viaje_reparto(id_viaje_reparto, id_chofer, id_vehiculo, gasto_combust
         viaje_reparto.costo_empleado = costo_val
         viaje_reparto.valor_viaje = valor_val
         viaje_reparto.fecha_viaje_reparto = fecha_viaje_reparto
+        if pagado is not None:
+            _aplicar_estado_pago(viaje_reparto, pagado)
         viaje_reparto.save()
 
         # Reemplazo los destinos (mismo patron que editar_viaje_cereal)
@@ -1709,6 +1763,18 @@ def editar_viaje_reparto(id_viaje_reparto, id_chofer, id_vehiculo, gasto_combust
                 destinos_reparto=destino_nombre
             )
 
+    return viaje_reparto
+
+
+def marcar_pago_viaje_reparto(id_viaje_reparto, pagado):
+    """Marca (o desmarca) el cobro de un viaje de reparto.
+
+    Mismo criterio que marcar_pago_viaje_cereal: solo toca 'pagado' y guarda con
+    update_fields, porque es la accion de la casilla de la tabla.
+    """
+    viaje_reparto = get_object_or_404(ViajeReparto, id=id_viaje_reparto, activo=True)
+    _aplicar_estado_pago(viaje_reparto, pagado)
+    viaje_reparto.save(update_fields=["pagado", "fecha_pago"])
     return viaje_reparto
 
 

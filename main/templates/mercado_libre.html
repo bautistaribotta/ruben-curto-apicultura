@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="{% static_v 'mercado_libre.css' %}">
 <link rel="stylesheet" href="{% static_v 'filtro_fechas.css' %}">
 <link rel="stylesheet" href="{% static_v 'autocompletado_ciudades.css' %}">
+<link rel="stylesheet" href="{% static_v 'pago_viaje.css' %}">
 {% endblock %}
 
 {% block cabecera %}
@@ -204,6 +205,19 @@
               <span class="mensaje-error">Por favor, ingrese un monto valido.</span>
             </div>
           </div>
+
+          {% if user.is_staff %}
+          <div class="pago-fila">
+            <div class="pago-fila__texto">
+              <span class="pago-fila__titulo">Reparto pagado</span>
+              <span class="pago-fila__sub">Activalo cuando el cobro ya entró. El cobro es total, no hay pagos parciales.</span>
+            </div>
+            <label class="pago-switch">
+              <input type="checkbox" id="pagado-reparto" name="pagado">
+              <span class="pago-switch__slider"></span>
+            </label>
+          </div>
+          {% endif %}
         </section>
 
         <!-- Seccion 4: Fecha -->
@@ -239,6 +253,7 @@
 <script src="{% static_v 'js/autocompletado_ciudades.js' %}"></script>
 <script src="{% static_v 'js/filtro_fechas.js' %}"></script>
 <script src="{% static_v 'js/mercado_libre.js' %}"></script>
+<script src="{% static_v 'js/pago_viaje.js' %}"></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     // Autocompletar la fecha del reparto con la fecha actual al cargar la pagina

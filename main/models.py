@@ -373,6 +373,11 @@ class ViajeReparto(models.Model):
     costo_empleado = models.PositiveIntegerField(default=0)
     valor_viaje = models.PositiveIntegerField(default=0)
     activo = models.BooleanField(default=True)
+    pagado = models.BooleanField(default=False)
+    # Momento en que se registro el cobro. Queda en None mientras el viaje esta
+    # impago y se limpia si el cobro se da de baja, asi nunca muestra una fecha
+    # que no corresponde al estado actual.
+    fecha_pago = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         db_table = "viaje_reparto"
@@ -441,6 +446,11 @@ class ViajeCereal(models.Model):
     precio_tonelada = models.PositiveIntegerField(default=0)
     porcentaje_chofer = models.PositiveIntegerField(default=0)
     activo = models.BooleanField(default=True)
+    pagado = models.BooleanField(default=False)
+    # Momento en que se registro el cobro. Queda en None mientras el viaje esta
+    # impago y se limpia si el cobro se da de baja, asi nunca muestra una fecha
+    # que no corresponde al estado actual.
+    fecha_pago = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         db_table = "viaje_cereal"

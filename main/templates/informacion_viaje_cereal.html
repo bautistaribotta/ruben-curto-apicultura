@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="{% static 'informacion_viaje.css' %}">
 <link rel="stylesheet" href="{% static 'viajes_cereales.css' %}">
 <link rel="stylesheet" href="{% static 'informacion_viaje_cereal.css' %}">
+<link rel="stylesheet" href="{% static 'pago_viaje.css' %}">
 {% endblock %}
 
 {% block top-header %}
@@ -91,6 +92,19 @@
           <div class="vd-data__meta">
             <div class="vd-data__label">Chofer</div>
             <div class="vd-data__value">{% if viaje_cereal.chofer %}{{ viaje_cereal.chofer.nombre }} {{ viaje_cereal.chofer.apellido }}{% else %}Chofer no especificado{% endif %}</div>
+          </div>
+        </div>
+        <div class="vd-data__row">
+          <span class="vd-data__ico"><span class="material-symbols-outlined">{% if viaje_cereal.pagado %}paid{% else %}schedule{% endif %}</span></span>
+          <div class="vd-data__meta">
+            <div class="vd-data__label">Estado de pago</div>
+            <div class="vd-data__value">
+              {% if viaje_cereal.pagado %}
+                Pagado{% if viaje_cereal.fecha_pago %}<span class="vd-pat">{{ viaje_cereal.fecha_pago|date:"d/m/Y H:i" }} hs</span>{% endif %}
+              {% else %}
+                Pendiente de cobro
+              {% endif %}
+            </div>
           </div>
         </div>
         <!-- Datos de la carga -->
@@ -427,6 +441,20 @@
               value="{% if viaje_cereal.porcentaje_chofer %}{{ viaje_cereal.porcentaje_chofer }}{% endif %}">
             <span class="mensaje-error">Debe ser un numero entre 1 y 100.</span>
           </div>
+
+          {% if user.is_staff %}
+          <div class="pago-fila">
+            <div class="pago-fila__texto">
+              <span class="pago-fila__titulo">Viaje pagado</span>
+              <span class="pago-fila__sub">Activalo cuando el cobro ya entró. El cobro es total, no hay pagos parciales.</span>
+            </div>
+            <label class="pago-switch">
+              <input type="checkbox" id="pagado-cereal" name="pagado"
+                     {% if viaje_cereal.pagado %}checked{% endif %}>
+              <span class="pago-switch__slider"></span>
+            </label>
+          </div>
+          {% endif %}
         </section>
 
         <!-- Seccion 3: Recorrido -->

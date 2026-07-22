@@ -2,6 +2,7 @@
 <table id="tabla-viajes-meli">
   <thead id="cabecera-tabla">
     <tr>
+      <th class="pago-col">Pago</th>
       <th>Fecha</th>
       <th>Vehículo</th>
       <th>Chofer</th>
@@ -11,6 +12,20 @@
   <tbody>
     {% for viaje in page_obj %}
     <tr class="fila-tabla" onclick="window.location.href='{% url 'informacion_viaje_reparto' viaje.id %}'">
+      {% comment %}
+        La celda corta el click para que marcar el cobro no navegue al detalle.
+        Sin permiso de cobro la casilla queda deshabilitada, solo de lectura.
+      {% endcomment %}
+      <td class="pago-celda" onclick="event.stopPropagation()">
+        <input
+          type="checkbox"
+          class="pago-check"
+          data-pago-url="{% url 'marcar_pago_reparto' viaje.id %}"
+          data-pago-entidad="Reparto"
+          aria-label="Pago del reparto #{{ viaje.id }}"
+          {% if viaje.pagado %}checked{% endif %}
+          {% if not user.is_staff %}disabled title="Solo el personal administrativo registra los cobros"{% endif %}>
+      </td>
       <td>
         <span class="meli-fecha">
           <span class="material-symbols-outlined">calendar_today</span>
@@ -48,7 +63,7 @@
     </tr>
     {% empty %}
     <tr class="fila-vacia">
-      <td colspan="4" class="celda-vacia">
+      <td colspan="5" class="celda-vacia">
         <span class="material-symbols-outlined">local_shipping</span>
         {% if q %}
         No se encontraron repartos con esos filtros.
