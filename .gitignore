@@ -7,8 +7,8 @@ __pycache__/
 *.pyc
 db.sqlite3
 .agents/rules/explicaciones.md
-CLAUDE.md
-GEMINI.md
+claude.md
+gemini.md
 .agents/skills/
 skills-lock.json
 .claude/
