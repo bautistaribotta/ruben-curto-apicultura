@@ -140,21 +140,7 @@
 }
 
 /* Cereal */
-/* --- Celda Fecha: icono + fecha (una sola fecha de viaje) --- */
-.vjc-fecha {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-body);
-  white-space: nowrap;
-  font-weight: var(--weight-semibold);
-}
-
-.vjc-fecha .material-symbols-outlined {
-  font-size: 1.05rem;
-  color: var(--sand-400);
-}
+/* La celda de fecha usa .celda-fecha, el componente unificado de base.css */
 
 /* --- Pildora de tipo de cereal --- */
 .cereal-pill {

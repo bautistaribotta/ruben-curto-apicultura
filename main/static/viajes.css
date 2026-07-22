@@ -322,24 +322,8 @@
 }
 
 /* --- Celda Periodo --- */
-.vje-fechas {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-body);
-  white-space: nowrap;
-}
-
-.vje-fechas .material-symbols-outlined {
-  font-size: 1.05rem;
-  color: var(--sand-400);
-}
-
-.vje-fechas__open {
-  color: var(--text-subtle);
-  font-weight: var(--weight-medium);
-}
+/* La celda de fecha (y su variante "sin definir") usan .celda-fecha y
+   .celda-fecha__pendiente, el componente unificado de base.css */
 
 /* --- Badge de estado --- */
 .vje-badge {

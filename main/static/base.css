@@ -833,6 +833,34 @@ body {
   white-space: nowrap;
 }
 
+/* --- CELDA DE FECHA UNIFICADA PARA TODAS LAS TABLAS --- */
+/* Toma el tratamiento de la tabla de cereales: numeros tabulares para que los
+   digitos queden en columna de una fila a la otra, semibold para que la fecha
+   pese mas que el resto de la celda, y el icono en un tono apagado para que
+   acompañe sin competir. Sirve tanto para una fecha suelta (cereales, repartos)
+   como para un rango con flecha en el medio (miel/cera). */
+.celda-fecha {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--weight-semibold);
+  color: var(--text-body);
+  white-space: nowrap;
+}
+
+.celda-fecha .material-symbols-outlined {
+  font-size: 1.05rem;
+  color: var(--sand-400);
+}
+
+/* Fecha todavia sin definir (ej: el regreso de un viaje en curso): no es un
+   dato, asi que baja de tono y pierde el peso del resto de la celda. */
+.celda-fecha__pendiente {
+  color: var(--text-subtle);
+  font-weight: var(--weight-medium);
+}
+
 /* --- AVATAR DE INICIALES UNIFICADO --- */
 /* Dos variantes semanticas: chofer (paleta miel, como la tabla de viajes)
    y cliente (paleta pino, como la tabla de clientes). */

@@ -47,10 +47,10 @@
         {% endif %}
       </td>
       <td>
-        <span class="vje-fechas">
+        <span class="celda-fecha">
           {{ viaje.fecha_inicio|date:"d/m/y" }}
           <span class="material-symbols-outlined">arrow_forward</span>
-          {% if viaje.fecha_vuelta %}{{ viaje.fecha_vuelta|date:"d/m/y" }}{% else %}<span class="vje-fechas__open">No definido</span>{% endif %}
+          {% if viaje.fecha_vuelta %}{{ viaje.fecha_vuelta|date:"d/m/y" }}{% else %}<span class="celda-fecha__pendiente">No definido</span>{% endif %}
         </span>
       </td>
     </tr>

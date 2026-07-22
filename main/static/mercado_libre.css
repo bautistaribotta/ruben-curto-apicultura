@@ -189,19 +189,7 @@
 }
 
 /* --- Celda Fecha --- */
-.meli-fecha {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-body);
-  white-space: nowrap;
-}
-
-.meli-fecha .material-symbols-outlined {
-  font-size: 1.05rem;
-  color: var(--sand-400);
-}
+/* La celda de fecha usa .celda-fecha, el componente unificado de base.css */
 
 /* --- Celda Destinos --- */
 .meli-dest {
