@@ -13,7 +13,11 @@ total en pesos no cambia con el interruptor porque es nominal.
     <span class="deu-stat__label">{% if modo == 'saldo' %}Saldo{% elif modo == 'pagar' %}Total por pagar{% else %}Total por cobrar{% endif %}</span>
     <span class="deu-stat__icon"><span class="material-symbols-outlined">{% if modo == 'saldo' %}balance{% else %}account_balance_wallet{% endif %}</span></span>
   </div>
-  {% include "deu_stat_valor.html" with valor=total_pesos modo=modo prefijo="$ " %}
+  {% comment %}
+    Los pesos van siempre en entero: es la cifra mas grande de las cuatro y los
+    centavos no aportan nada al leer un saldo de un vistazo.
+  {% endcomment %}
+  {% include "deu_stat_valor.html" with valor=total_pesos modo=modo prefijo="$ " formato="0g" %}
   <span class="deu-stat__base">{% if modo == 'saldo' %}A cobrar − a pagar{% else %}Valor nominal{% endif %}</span>
 </article>
 <article class="deu-stat">
@@ -21,7 +25,7 @@ total en pesos no cambia con el interruptor porque es nominal.
     <span class="deu-stat__label">En dólares</span>
     <span class="deu-stat__icon"><span class="material-symbols-outlined">attach_money</span></span>
   </div>
-  {% include "deu_stat_valor.html" with valor=total_usd modo=modo prefijo="US$ " %}
+  {% include "deu_stat_valor.html" with valor=total_usd modo=modo prefijo="US$ " formato="-2g" %}
   <span class="deu-stat__base">{% if valuacion == 'origen' %}Cotización de la operación{% else %}Cotización de hoy{% endif %}</span>
 </article>
 <article class="deu-stat">
@@ -29,7 +33,7 @@ total en pesos no cambia con el interruptor porque es nominal.
     <span class="deu-stat__label">En miel</span>
     <span class="deu-stat__icon"><span class="material-symbols-outlined">water_drop</span></span>
   </div>
-  {% include "deu_stat_valor.html" with valor=total_miel modo=modo unidad="kg miel" %}
+  {% include "deu_stat_valor.html" with valor=total_miel modo=modo unidad="kg miel" formato="-2g" %}
   <span class="deu-stat__base">{% if valuacion == 'origen' %}Cotización de la operación{% else %}Cotización de hoy{% endif %}</span>
 </article>
 <article class="deu-stat">
@@ -37,6 +41,6 @@ total en pesos no cambia con el interruptor porque es nominal.
     <span class="deu-stat__label">En cera</span>
     <span class="deu-stat__icon"><span class="material-symbols-outlined">hexagon</span></span>
   </div>
-  {% include "deu_stat_valor.html" with valor=total_cera modo=modo unidad="kg cera" %}
+  {% include "deu_stat_valor.html" with valor=total_cera modo=modo unidad="kg cera" formato="-2g" %}
   <span class="deu-stat__base">{% if valuacion == 'origen' %}Cotización de la operación{% else %}Cotización de hoy{% endif %}</span>
 </article>
