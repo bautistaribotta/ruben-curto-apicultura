@@ -117,6 +117,20 @@
   border-bottom: none;
 }
 
+/* --- Celda enlazada: toda la celda navega al perfil del empleado --- */
+.td-enlace {
+  padding: 0 !important;
+}
+
+.enlace-fila {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 1rem 1.5rem;
+  color: inherit;
+  text-decoration: none;
+}
+
 /* --- Celda Empleado: avatar con iniciales + nombre + id --- */
 .emp-empleado {
   display: flex;

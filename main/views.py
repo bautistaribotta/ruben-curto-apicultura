@@ -168,6 +168,13 @@ def empleados(request):
 
 
 @staff_member_required
+def informacion_empleado(request, id_empleado):
+    empleado = get_object_or_404(Empleado, id=id_empleado, activo=True)
+    contexto = {"empleado": empleado}
+    return render(request, "informacion_empleado.html", contexto)
+
+
+@staff_member_required
 def obtener_empleado_json(request, id_empleado):
     datos = obtener_datos_empleado(id_empleado)
 

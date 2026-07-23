@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% load static %}
+{% load static_version %}
+
+{% block nombre-pestaña %}
+  <title> Información Empleado </title>
+{% endblock %}
+
+{% block links %}
+  <link rel="stylesheet" href="{% static_v 'informacion_empleado.css' %}">
+{% endblock %}
+
+{% block area-trabajo %}
+  <div id="espacio-trabajo-empleado">
+
+    <a href="{% url 'empleados' %}" class="boton-volver">
+      <span class="material-symbols-outlined">arrow_back</span>
+      Volver a Empleados
+    </a>
+
+    <!-- Cabecera del perfil: avatar + nombre completo -->
+    <div class="cabecera-empleado">
+      <span class="avatar-empleado-perfil">{{ empleado.nombre|first|upper }}{{ empleado.apellido|first|upper }}</span>
+      <h2 class="nombre-empleado-titulo">{{ empleado.nombre }} {{ empleado.apellido }}</h2>
+    </div>
+
+    <!-- Datos personales -->
+    <div class="seccion-info-header">
+      <h4><span class="material-symbols-outlined">badge</span> Información Personal</h4>
+    </div>
+
+    <div class="tarjeta-empleado">
+      <div class="campo-empleado">
+        <label>Nombre</label>
+        <p class="valor-empleado">{{ empleado.nombre }}</p>
+      </div>
+      <div class="campo-empleado">
+        <label>Apellido</label>
+        <p class="valor-empleado">{{ empleado.apellido }}</p>
+      </div>
+    </div>
+
+  </div>
+{% endblock %}

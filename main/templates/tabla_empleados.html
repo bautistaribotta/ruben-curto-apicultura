@@ -8,18 +8,22 @@
   </thead>
   <tbody>
     {% for empleado in empleados %}
-      <tr class="fila-empleado">
-        <td>
-          <div class="emp-empleado">
-            <span class="avatar-iniciales avatar-iniciales--empleado">{{ empleado.nombre|first|upper }}{{ empleado.apellido|first|upper }}</span>
-            <div>
-              <div class="empleado-nombre"> {{ empleado.nombre }} {{ empleado.apellido }} </div>
-              <div class="empleado-id"> ID: {{ empleado.id }} </div>
+      <tr class="fila-empleado" data-id="{{ empleado.id }}">
+        <td class="td-enlace">
+          <a href="{% url 'informacion_empleado' empleado.id %}" class="enlace-fila">
+            <div class="emp-empleado">
+              <span class="avatar-iniciales avatar-iniciales--empleado">{{ empleado.nombre|first|upper }}{{ empleado.apellido|first|upper }}</span>
+              <div>
+                <div class="empleado-nombre"> {{ empleado.nombre }} {{ empleado.apellido }} </div>
+                <div class="empleado-id"> ID: {{ empleado.id }} </div>
+              </div>
             </div>
-          </div>
+          </a>
         </td>
-        <td class="texto-derecha">
-          <span class="empleado-saldo">$ {{ empleado.saldo|floatformat:2 }}</span>
+        <td class="texto-derecha td-enlace">
+          <a href="{% url 'informacion_empleado' empleado.id %}" class="enlace-fila">
+            <span class="empleado-saldo">$ {{ empleado.saldo|floatformat:2 }}</span>
+          </a>
         </td>
         <td>
           <div class="acciones-tabla">
