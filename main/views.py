@@ -114,6 +114,11 @@ def inicio(request):
 
 
 @login_required
+def empleados(request):
+    return render(request, "empleados.html")
+
+
+@login_required
 @ensure_csrf_cookie
 def actualizar_cotizacion_ajax(request):
     if request.method == "POST":
