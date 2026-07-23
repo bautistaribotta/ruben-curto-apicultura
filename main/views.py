@@ -13,15 +13,15 @@ from django.db import transaction
 from django.utils import timezone
 from django.utils.dateparse import parse_date
 
-from .models import Cliente, Producto, Operacion, DetalleOperacion, Pago, Cotizaciones, Chofer, Vehiculo, Viaje, ViajeCereal, ViajeReparto
+from .models import Cliente, Producto, Operacion, DetalleOperacion, Pago, Cotizaciones, Empleado, Vehiculo, Viaje, ViajeCereal, ViajeReparto
 from .pdf_services import Remito
 from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo_cliente, editar_cliente,
                        eliminar_cliente, buscar_clientes, get_cotizacion_dolar_oficial, get_cotizaciones, get_total_kilos_granel, get_articulos_granel, actualizar_cotizacion, obtener_datos_cliente,
                        obtener_datos_producto, modificar_stock, crear_operacion, editar_operacion, servicio_cancelar_operacion,
-                       obtener_listado_deudores, _iniciales, filtro_nombre_apellido, filtro_tokens, crear_chofer, crear_vehiculo, crear_viaje, obtener_choferes_activos,
+                       obtener_listado_deudores, _iniciales, filtro_nombre_apellido, filtro_tokens, crear_empleado, crear_vehiculo, crear_viaje, obtener_empleados_activos,
                        obtener_vehiculos_activos, obtener_viajes, obtener_datos_viaje, editar_viaje, eliminar_viaje, crear_gasto,
                        incluir_asignado,
-                       editar_chofer, eliminar_chofer, editar_vehiculo, eliminar_vehiculo,
+                       editar_empleado, eliminar_empleado, editar_vehiculo, eliminar_vehiculo,
                        crear_viaje_cereal, obtener_viajes_cereales, obtener_datos_viaje_cereal,
                        editar_viaje_cereal, eliminar_viaje_cereal, crear_gasto_viaje_cereal,
                        obtener_resumen_cereal, marcar_pago_viaje_cereal,
@@ -113,7 +113,7 @@ def inicio(request):
     return render(request, "inicio.html", contexto)
 
 
-@login_required
+@staff_member_required
 def empleados(request):
     return render(request, "empleados.html")
 
@@ -837,7 +837,7 @@ def viajes(request):
         try:
             if accion == "nuevo_viaje":
                 # 1. Extracción de datos
-                id_chofer = request.POST.get("id_chofer")
+                id_empleado = request.POST.get("id_empleado")
                 id_vehiculo = request.POST.get("id_vehiculo")
                 destinos = request.POST.getlist("destino")
                 inicio_caja = request.POST.get("inicio_caja")
@@ -845,21 +845,21 @@ def viajes(request):
                 fecha_regreso_viaje = request.POST.get("fecha_regreso_viaje") or None
 
                 # 2. Validación de presencia requerida por el backend (lo esencial)
-                if not all([id_chofer, id_vehiculo, fecha_inicio_viaje]) or not destinos:
+                if not all([id_empleado, id_vehiculo, fecha_inicio_viaje]) or not destinos:
                     messages.error(request, "Faltan datos obligatorios para crear el viaje.")
                     return redirect("viajes")
 
                 # 3. Delegación al servicio (donde apliqué las reglas del negocio)
-                crear_viaje(id_chofer, id_vehiculo, destinos, inicio_caja, fecha_inicio_viaje, fecha_regreso_viaje)
+                crear_viaje(id_empleado, id_vehiculo, destinos, inicio_caja, fecha_inicio_viaje, fecha_regreso_viaje)
                 messages.success(request, "Viaje registrado exitosamente.")
 
-            elif accion == "nuevo_chofer":
-                nombre_chofer = request.POST.get("nombre_chofer", "")
-                apellido_chofer = request.POST.get("apellido_chofer", "")
+            elif accion == "nuevo_empleado":
+                nombre_empleado = request.POST.get("nombre_empleado", "")
+                apellido_empleado = request.POST.get("apellido_empleado", "")
                 
                 # Delegación al servicio
-                crear_chofer(nombre_chofer, apellido_chofer)
-                messages.success(request, "Chofer registrado exitosamente.")
+                crear_empleado(nombre_empleado, apellido_empleado)
+                messages.success(request, "Empleado registrado exitosamente.")
 
             elif accion == "nuevo_vehiculo":
                 nombre_vehiculo = request.POST.get("nombre_vehiculo", "")
@@ -893,7 +893,7 @@ def viajes(request):
 
     lista_viajes = base_viajes
 
-    # Búsqueda por vehículo, chofer, destino o ID
+    # Búsqueda por vehículo, empleado, destino o ID
     q = request.GET.get("q", "")
     if q:
         if q.isdigit():
@@ -902,7 +902,7 @@ def viajes(request):
             lista_viajes = lista_viajes.filter(
                 Q(vehiculo__nombre__icontains=q)
                 | Q(vehiculo__patente__icontains=q)
-                | filtro_nombre_apellido(q, "chofer__")
+                | filtro_nombre_apellido(q, "empleado__")
                 | Q(destinos__destino__icontains=q)
             ).distinct()
 
@@ -927,7 +927,7 @@ def viajes(request):
 
     contexto = {
         "page_obj": page_obj,
-        "choferes": obtener_choferes_activos(),
+        "empleados": obtener_empleados_activos(),
         "vehiculos": obtener_vehiculos_activos(),
         "q": q,
         "estado": estado,
@@ -950,18 +950,18 @@ def flota(request):
         accion = request.POST.get("accion")
 
         try:
-            if accion == "nuevo_chofer":
-                crear_chofer(request.POST.get("nombre_chofer", ""), request.POST.get("apellido_chofer", ""))
-                messages.success(request, "Chofer registrado exitosamente.")
+            if accion == "nuevo_empleado":
+                crear_empleado(request.POST.get("nombre_empleado", ""), request.POST.get("apellido_empleado", ""))
+                messages.success(request, "Empleado registrado exitosamente.")
 
-            elif accion == "editar_chofer":
-                editar_chofer(request.POST.get("id_chofer"), request.POST.get("nombre_chofer", ""),
-                              request.POST.get("apellido_chofer", ""), True)
-                messages.success(request, "Chofer actualizado correctamente.")
+            elif accion == "editar_empleado":
+                editar_empleado(request.POST.get("id_empleado"), request.POST.get("nombre_empleado", ""),
+                              request.POST.get("apellido_empleado", ""), True)
+                messages.success(request, "Empleado actualizado correctamente.")
 
-            elif accion == "eliminar_chofer":
-                eliminar_chofer(request.POST.get("id_chofer"))
-                messages.success(request, "Chofer eliminado correctamente.")
+            elif accion == "eliminar_empleado":
+                eliminar_empleado(request.POST.get("id_empleado"))
+                messages.success(request, "Empleado eliminado correctamente.")
 
             elif accion == "nuevo_vehiculo":
                 crear_vehiculo(request.POST.get("nombre_vehiculo", ""), request.POST.get("patente_vehiculo", ""))
@@ -991,7 +991,7 @@ def flota(request):
         return redirect(url_flota)
 
     contexto = {
-        "choferes": obtener_choferes_activos(),
+        "empleados": obtener_empleados_activos(),
         "vehiculos": obtener_vehiculos_activos(),
         "pestaña": "viajes",
     }
@@ -1014,7 +1014,7 @@ def informacion_viaje(request, id_viaje):
                 return redirect("informacion_viaje", id_viaje=id_viaje)
         
         elif accion == "editar_viaje":
-            id_chofer = request.POST.get("id_chofer")
+            id_empleado = request.POST.get("id_empleado")
             id_vehiculo = request.POST.get("id_vehiculo")
             inicio_caja = request.POST.get("inicio_caja", 0)
             fecha_inicio = request.POST.get("fecha_inicio_viaje")
@@ -1024,7 +1024,7 @@ def informacion_viaje(request, id_viaje):
             try:
                 editar_viaje(
                     id_viaje=id_viaje,
-                    id_chofer=id_chofer,
+                    id_empleado=id_empleado,
                     id_vehiculo=id_vehiculo,
                     destinos=destinos,
                     inicio_caja=inicio_caja,
@@ -1078,7 +1078,7 @@ def informacion_viaje(request, id_viaje):
     contexto = {
         'viaje': viaje,
         'pestaña': 'viajes',
-        'choferes': incluir_asignado(obtener_choferes_activos(), viaje.chofer),
+        'empleados': incluir_asignado(obtener_empleados_activos(), viaje.empleado),
         'vehiculos': incluir_asignado(obtener_vehiculos_activos(), viaje.vehiculo),
         'operaciones': operaciones_viaje,
         'clientes_items': clientes_items,
@@ -1356,7 +1356,7 @@ def mercado_libre(request):
         try:
             if accion == "nuevo_viaje_reparto":
                 # 1. Extraccion de datos del formulario
-                id_chofer = request.POST.get("id_chofer")
+                id_empleado = request.POST.get("id_empleado")
                 id_vehiculo = request.POST.get("id_vehiculo")
                 gasto_combustible = request.POST.get("gasto_combustible_viaje_reparto")
                 costo_empleado = request.POST.get("costo_empleado")
@@ -1365,13 +1365,13 @@ def mercado_libre(request):
                 id_destino = request.POST.get("id_destino")
 
                 # 2. Validacion de presencia de lo obligatorio (lo esencial en la vista)
-                if not all([id_chofer, id_vehiculo, gasto_combustible, costo_empleado,
+                if not all([id_empleado, id_vehiculo, gasto_combustible, costo_empleado,
                             valor_viaje, fecha_viaje_reparto, id_destino]):
                     messages.error(request, "Faltan datos obligatorios para crear el viaje de reparto.")
                     return redirect("mercado_libre")
 
                 # 3. Delegacion al servicio (reglas de negocio y validacion)
-                crear_viaje_reparto(id_chofer, id_vehiculo, gasto_combustible, costo_empleado,
+                crear_viaje_reparto(id_empleado, id_vehiculo, gasto_combustible, costo_empleado,
                                     valor_viaje, fecha_viaje_reparto, id_destino,
                                     pagado=bool(_pagado_del_formulario(request)))
                 messages.success(request, "Viaje de reparto registrado exitosamente.")
@@ -1390,7 +1390,7 @@ def mercado_libre(request):
     # Base de viajes de reparto activos
     lista_viajes = obtener_viajes_reparto()
 
-    # Busqueda por vehiculo, chofer, destino o ID
+    # Busqueda por vehiculo, empleado, destino o ID
     q = request.GET.get("q", "")
     if q:
         if q.isdigit():
@@ -1399,7 +1399,7 @@ def mercado_libre(request):
             lista_viajes = lista_viajes.filter(
                 Q(vehiculo__nombre__icontains=q)
                 | Q(vehiculo__patente__icontains=q)
-                | filtro_nombre_apellido(q, "chofer__")
+                | filtro_nombre_apellido(q, "empleado__")
                 | Q(destino__localidad_destino__icontains=q)
             ).distinct()
 
@@ -1417,7 +1417,7 @@ def mercado_libre(request):
 
     contexto = {
         "page_obj": page_obj,
-        "choferes": obtener_choferes_activos(),
+        "empleados": obtener_empleados_activos(),
         "vehiculos": obtener_vehiculos_activos(),
         # Catalogo de localidades: el alta de un reparto elige de aca, no escribe a mano
         "destinos": obtener_destinos_reparto(),
@@ -1454,7 +1454,7 @@ def informacion_viaje_reparto(request, id_viaje_reparto):
                 return redirect("informacion_viaje_reparto", id_viaje_reparto=id_viaje_reparto)
 
         elif accion == "editar_viaje_reparto":
-            id_chofer = request.POST.get("id_chofer")
+            id_empleado = request.POST.get("id_empleado")
             id_vehiculo = request.POST.get("id_vehiculo")
             gasto_combustible = request.POST.get("gasto_combustible_viaje_reparto")
             costo_empleado = request.POST.get("costo_empleado")
@@ -1465,7 +1465,7 @@ def informacion_viaje_reparto(request, id_viaje_reparto):
             try:
                 editar_viaje_reparto(
                     id_viaje_reparto=id_viaje_reparto,
-                    id_chofer=id_chofer,
+                    id_empleado=id_empleado,
                     id_vehiculo=id_vehiculo,
                     gasto_combustible=gasto_combustible,
                     costo_empleado=costo_empleado,
@@ -1499,7 +1499,7 @@ def informacion_viaje_reparto(request, id_viaje_reparto):
     contexto = {
         "viaje_reparto": viaje_reparto,
         "pestaña": "viajes",
-        "choferes": incluir_asignado(obtener_choferes_activos(), viaje_reparto.chofer),
+        "empleados": incluir_asignado(obtener_empleados_activos(), viaje_reparto.empleado),
         "vehiculos": incluir_asignado(obtener_vehiculos_activos(), viaje_reparto.vehiculo),
         # Incluyo el destino del viaje aunque este dado de baja, para que al editar
         # siga preseleccionado en vez de obligar a elegir otra localidad.
@@ -1583,26 +1583,26 @@ def viaje_cereales(request):
             if accion == "nuevo_viaje_cereal":
                 # 1. Extraccion de datos del formulario
                 id_cliente = request.POST.get("id_cliente")
-                id_chofer = request.POST.get("id_chofer")
+                id_empleado = request.POST.get("id_empleado")
                 id_vehiculo = request.POST.get("id_vehiculo")
                 tipo_cereal = request.POST.get("tipo_cereal")
                 codigo_trazabilidad = request.POST.get("codigo_trazabilidad")
                 toneladas = request.POST.get("toneladas")
                 precio_tonelada = request.POST.get("precio_tonelada")
                 # El porcentaje es opcional: si llega vacio lo paso como None
-                porcentaje_chofer = request.POST.get("porcentaje_chofer") or None
+                porcentaje_empleado = request.POST.get("porcentaje_empleado") or None
                 fecha_viaje_cereal = request.POST.get("fecha_viaje_cereal")
                 destinos = request.POST.getlist("destino")
 
                 # 2. Validacion de presencia de lo obligatorio (lo esencial en la vista)
-                if not all([id_cliente, id_chofer, id_vehiculo, tipo_cereal, codigo_trazabilidad,
+                if not all([id_cliente, id_empleado, id_vehiculo, tipo_cereal, codigo_trazabilidad,
                             toneladas, precio_tonelada, fecha_viaje_cereal]) or not destinos:
                     messages.error(request, "Faltan datos obligatorios para crear el viaje de cereal.")
                     return redirect("viajes_cereales")
 
                 # 3. Delegacion al servicio (reglas de negocio y validacion con regex)
-                crear_viaje_cereal(id_cliente, id_chofer, id_vehiculo, tipo_cereal, codigo_trazabilidad,
-                                   toneladas, precio_tonelada, porcentaje_chofer, fecha_viaje_cereal, destinos,
+                crear_viaje_cereal(id_cliente, id_empleado, id_vehiculo, tipo_cereal, codigo_trazabilidad,
+                                   toneladas, precio_tonelada, porcentaje_empleado, fecha_viaje_cereal, destinos,
                                    pagado=bool(_pagado_del_formulario(request)))
                 messages.success(request, "Viaje de cereal registrado exitosamente.")
 
@@ -1619,7 +1619,7 @@ def viaje_cereales(request):
 
     lista_viajes = obtener_viajes_cereales()
 
-    # Busqueda por vehiculo, chofer, tipo de cereal, destino o ID
+    # Busqueda por vehiculo, empleado, tipo de cereal, destino o ID
     q = request.GET.get("q", "")
     if q:
         if q.isdigit():
@@ -1628,7 +1628,7 @@ def viaje_cereales(request):
             lista_viajes = lista_viajes.filter(
                 Q(vehiculo__nombre__icontains=q)
                 | Q(vehiculo__patente__icontains=q)
-                | filtro_nombre_apellido(q, "chofer__")
+                | filtro_nombre_apellido(q, "empleado__")
                 | Q(tipo_cereal__icontains=q)
                 | Q(destinos__destino__icontains=q)
             ).distinct()
@@ -1647,7 +1647,7 @@ def viaje_cereales(request):
 
     contexto = {
         "page_obj": page_obj,
-        "choferes": obtener_choferes_activos(),
+        "empleados": obtener_empleados_activos(),
         "vehiculos": obtener_vehiculos_activos(),
         "cereales": ViajeCereal.cereales,
         "q": q,
@@ -1684,13 +1684,13 @@ def informacion_viaje_cereal(request, id_viaje_cereal):
 
         elif accion == "editar_viaje_cereal":
             id_cliente = request.POST.get("id_cliente")
-            id_chofer = request.POST.get("id_chofer")
+            id_empleado = request.POST.get("id_empleado")
             id_vehiculo = request.POST.get("id_vehiculo")
             tipo_cereal = request.POST.get("tipo_cereal")
             codigo_trazabilidad = request.POST.get("codigo_trazabilidad")
             toneladas = request.POST.get("toneladas")
             precio_tonelada = request.POST.get("precio_tonelada")
-            porcentaje_chofer = request.POST.get("porcentaje_chofer") or None
+            porcentaje_empleado = request.POST.get("porcentaje_empleado") or None
             fecha_viaje_cereal = request.POST.get("fecha_viaje_cereal")
             destinos = request.POST.getlist("destino")
 
@@ -1698,13 +1698,13 @@ def informacion_viaje_cereal(request, id_viaje_cereal):
                 editar_viaje_cereal(
                     id_viaje_cereal=id_viaje_cereal,
                     id_cliente=id_cliente,
-                    id_chofer=id_chofer,
+                    id_empleado=id_empleado,
                     id_vehiculo=id_vehiculo,
                     tipo_cereal=tipo_cereal,
                     codigo_trazabilidad=codigo_trazabilidad,
                     toneladas=toneladas,
                     precio_tonelada=precio_tonelada,
-                    porcentaje_chofer=porcentaje_chofer,
+                    porcentaje_empleado=porcentaje_empleado,
                     fecha_viaje_cereal=fecha_viaje_cereal,
                     destinos=destinos,
                     pagado=_pagado_del_formulario(request),
@@ -1734,7 +1734,7 @@ def informacion_viaje_cereal(request, id_viaje_cereal):
     contexto = {
         "viaje_cereal": viaje_cereal,
         "pestaña": "viajes",
-        "choferes": incluir_asignado(obtener_choferes_activos(), viaje_cereal.chofer),
+        "empleados": incluir_asignado(obtener_empleados_activos(), viaje_cereal.empleado),
         "vehiculos": incluir_asignado(obtener_vehiculos_activos(), viaje_cereal.vehiculo),
         "cereales": ViajeCereal.cereales,
     }

@@ -6,7 +6,7 @@
    Usa la paleta original (slate / stone / brand-olive).
    ============================================================ */
 /* --- PANEL LATERAL (SLIDE-OVER) --- */
-#slide-over-chofer,
+#slide-over-empleado,
 #slide-over-viaje,
 #slide-over-vehiculo {
   position: fixed;
@@ -21,7 +21,7 @@
   transition: visibility 0.3s;
 }
 
-#slide-over-chofer.slide-over-abierto,
+#slide-over-empleado.slide-over-abierto,
 #slide-over-viaje.slide-over-abierto,
 #slide-over-vehiculo.slide-over-abierto {
   visibility: visible;
@@ -40,7 +40,7 @@
   transition: opacity 0.3s ease-in-out;
 }
 
-#slide-over-chofer.slide-over-abierto #slide-over-fondo,
+#slide-over-empleado.slide-over-abierto #slide-over-fondo,
 #slide-over-viaje.slide-over-abierto #slide-over-fondo,
 #slide-over-vehiculo.slide-over-abierto #slide-over-fondo {
   opacity: 1;
@@ -64,14 +64,14 @@
 }
 
 #form-viaje,
-#form-chofer,
+#form-empleado,
 #form-vehiculo {
   height: 100%;
   display: flex;
   flex-direction: column;
 }
 
-#slide-over-chofer.slide-over-abierto #slide-over-panel,
+#slide-over-empleado.slide-over-abierto #slide-over-panel,
 #slide-over-viaje.slide-over-abierto #slide-over-panel,
 #slide-over-vehiculo.slide-over-abierto #slide-over-panel {
   transform: translateX(0);

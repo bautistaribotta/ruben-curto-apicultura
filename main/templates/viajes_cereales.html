@@ -17,7 +17,7 @@
 {% block cabecera %}
 <div id="titulos-cabecera">
   <h2>Viajes de cereales</h2>
-  <p>Seguí los viajes de transporte de cereales, sus choferes y la flota disponible</p>
+  <p>Seguí los viajes de transporte de cereales, sus empleados y la flota disponible</p>
 </div>
 {% endblock %}
 
@@ -36,7 +36,7 @@
       <div class="contenedor-input-busqueda">
         <span class="material-symbols-outlined icono-busqueda">search</span>
         <input type="text" id="buscar-viaje-cereal" class="input-busqueda"
-               placeholder="Buscar por chofer, vehículo, cereal o destino" value="{{ q|default:'' }}">
+               placeholder="Buscar por empleado, vehículo, cereal o destino" value="{{ q|default:'' }}">
       </div>
       {% include 'filtro_fechas.html' %}
     </div>
@@ -105,14 +105,14 @@
           </div>
 
           <div class="grupo-input">
-            <label for="chofer-acopio">Chofer</label>
-            <select id="chofer-acopio" name="id_chofer" class="select-estandar" required>
-              <option value="" disabled selected>Seleccione un chofer</option>
-              {% for chofer in choferes %}
-              <option value="{{ chofer.id }}">{{ chofer.nombre }} {{ chofer.apellido }}</option>
+            <label for="empleado-acopio">Empleado</label>
+            <select id="empleado-acopio" name="id_empleado" class="select-estandar" required>
+              <option value="" disabled selected>Seleccione un empleado</option>
+              {% for empleado in empleados %}
+              <option value="{{ empleado.id }}">{{ empleado.nombre }} {{ empleado.apellido }}</option>
               {% endfor %}
             </select>
-            <span class="mensaje-error">Por favor, seleccione un chofer de la lista.</span>
+            <span class="mensaje-error">Por favor, seleccione un empleado de la lista.</span>
           </div>
 
           <div class="grupo-input">
@@ -191,11 +191,11 @@
           </div>
 
           <div class="grupo-input">
-            <label for="porcentaje-acopio">Porcentaje del chofer (%)</label>
+            <label for="porcentaje-acopio">Porcentaje del empleado (%)</label>
             <input
               type="number"
               id="porcentaje-acopio"
-              name="porcentaje_chofer"
+              name="porcentaje_empleado"
               placeholder="Opcional"
               min="1"
               max="100"

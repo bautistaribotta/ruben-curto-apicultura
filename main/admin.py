@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import (
     Cliente, Producto, Operacion, DetalleOperacion, Pago, Cotizaciones,
-    Chofer, Vehiculo, Viaje, DetalleViaje, Gasto,
+    Empleado, PagosEmpleados, Vehiculo, Viaje, DetalleViaje, Gasto,
     ViajeReparto, DetalleViajeReparto, DestinoViajeReparto, ViajeCereal, DetalleViajeCereal,
     GastoViajeCereal,
 )
@@ -10,7 +10,8 @@ admin.site.register(Cliente)
 admin.site.register(Producto)
 admin.site.register(Pago)
 admin.site.register(Cotizaciones)
-admin.site.register(Chofer)
+admin.site.register(Empleado)
+admin.site.register(PagosEmpleados)
 admin.site.register(Vehiculo)
 
 class DetalleOperacionInline(admin.TabularInline):
@@ -32,7 +33,7 @@ class GastoInline(admin.TabularInline):
 @admin.register(Viaje)
 class ViajeAdmin(admin.ModelAdmin):
     inlines = [DetalleViajeInline, GastoInline]
-    list_display = ('id', 'chofer', 'vehiculo', 'fecha_inicio', 'fecha_vuelta')
+    list_display = ('id', 'empleado', 'vehiculo', 'fecha_inicio', 'fecha_vuelta')
 
 @admin.register(Gasto)
 class GastoAdmin(admin.ModelAdmin):
@@ -45,7 +46,7 @@ class DetalleViajeRepartoInline(admin.TabularInline):
 @admin.register(ViajeReparto)
 class ViajeRepartoAdmin(admin.ModelAdmin):
     inlines = [DetalleViajeRepartoInline]
-    list_display = ('id', 'fecha_viaje_reparto', 'chofer', 'vehiculo', 'destino', 'valor_viaje', 'activo')
+    list_display = ('id', 'fecha_viaje_reparto', 'empleado', 'vehiculo', 'destino', 'valor_viaje', 'activo')
 
 @admin.register(DestinoViajeReparto)
 class DestinoViajeRepartoAdmin(admin.ModelAdmin):
@@ -62,7 +63,7 @@ class GastoViajeCerealInline(admin.TabularInline):
 @admin.register(ViajeCereal)
 class ViajeCerealAdmin(admin.ModelAdmin):
     inlines = [DetalleViajeCerealInline, GastoViajeCerealInline]
-    list_display = ('id', 'fecha_viaje_cereal', 'cliente', 'chofer', 'vehiculo', 'tipo_cereal', 'toneladas', 'activo')
+    list_display = ('id', 'fecha_viaje_cereal', 'cliente', 'empleado', 'vehiculo', 'tipo_cereal', 'toneladas', 'activo')
 
 @admin.register(GastoViajeCereal)
 class GastoViajeCerealAdmin(admin.ModelAdmin):

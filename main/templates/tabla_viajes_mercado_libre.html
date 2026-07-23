@@ -5,7 +5,7 @@
       <th class="pago-col">Pago</th>
       <th>Fecha</th>
       <th>Vehículo</th>
-      <th>Chofer</th>
+      <th>Empleado</th>
       <th>Destino</th>
     </tr>
   </thead>
@@ -44,9 +44,9 @@
         </span>
       </td>
       <td>
-        <span class="meli-chofer">
-          <span class="avatar-iniciales avatar-iniciales--chofer">{{ viaje.chofer.nombre|first|upper }}{{ viaje.chofer.apellido|first|upper }}</span>
-          <span class="meli-chofer__name">{{ viaje.chofer.nombre }} {{ viaje.chofer.apellido }}</span>
+        <span class="meli-empleado">
+          <span class="avatar-iniciales avatar-iniciales--empleado">{{ viaje.empleado.nombre|first|upper }}{{ viaje.empleado.apellido|first|upper }}</span>
+          <span class="meli-empleado__name">{{ viaje.empleado.nombre }} {{ viaje.empleado.apellido }}</span>
         </span>
       </td>
       <td>

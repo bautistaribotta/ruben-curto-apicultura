@@ -15,7 +15,7 @@
 {% block cabecera %}
 <div id="titulos-cabecera">
   <h2>Viajes</h2>
-  <p>Seguí el estado de los viajes, sus choferes y la flota disponible</p>
+  <p>Seguí el estado de los viajes, sus empleados y la flota disponible</p>
 </div>
 {% endblock %}
 
@@ -28,7 +28,7 @@
       <div class="grupo-busqueda">
         <div class="contenedor-input-busqueda">
           <span class="material-symbols-outlined icono-busqueda">search</span>
-          <input type="text" id="buscar-viaje" class="input-busqueda" placeholder="Buscar por chofer, vehículo o destino" value="{{ q|default:'' }}">
+          <input type="text" id="buscar-viaje" class="input-busqueda" placeholder="Buscar por empleado, vehículo o destino" value="{{ q|default:'' }}">
         </div>
         {% include 'filtro_fechas.html' %}
       </div>
@@ -97,14 +97,14 @@
             </div>
 
             <div class="grupo-input">
-              <label for="chofer-viaje">Chofer</label>
-              <select id="chofer-viaje" name="id_chofer" class="select-estandar" required>
-                <option value="" disabled selected>Seleccione un chofer</option>
-                {% for chofer in choferes %}
-                <option value="{{ chofer.id }}">{{ chofer.nombre }} {{ chofer.apellido }}</option>
+              <label for="empleado-viaje">Empleado</label>
+              <select id="empleado-viaje" name="id_empleado" class="select-estandar" required>
+                <option value="" disabled selected>Seleccione un empleado</option>
+                {% for empleado in empleados %}
+                <option value="{{ empleado.id }}">{{ empleado.nombre }} {{ empleado.apellido }}</option>
                 {% endfor %}
               </select>
-              <span class="mensaje-error">Por favor, seleccione un chofer de la lista.</span>
+              <span class="mensaje-error">Por favor, seleccione un empleado de la lista.</span>
             </div>
 
             <div class="grupo-input">

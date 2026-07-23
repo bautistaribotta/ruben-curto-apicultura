@@ -4,7 +4,7 @@
       <th class="pago-col">Pago</th>
       <th class="alineado-izq">Fecha</th>
       <th class="alineado-izq">Vehículo</th>
-      <th class="alineado-izq">Chofer</th>
+      <th class="alineado-izq">Empleado</th>
       <th class="alineado-izq">Cereal</th>
     </tr>
   </thead>
@@ -41,9 +41,9 @@
         </div>
       </td>
       <td>
-        <div class="vje-chofer">
-          <span class="avatar-iniciales avatar-iniciales--chofer">{{ viaje.chofer.nombre|first|upper }}{{ viaje.chofer.apellido|first|upper }}</span>
-          <span class="vje-chofer__name">{{ viaje.chofer.nombre }} {{ viaje.chofer.apellido }}</span>
+        <div class="vje-empleado">
+          <span class="avatar-iniciales avatar-iniciales--empleado">{{ viaje.empleado.nombre|first|upper }}{{ viaje.empleado.apellido|first|upper }}</span>
+          <span class="vje-empleado__name">{{ viaje.empleado.nombre }} {{ viaje.empleado.apellido }}</span>
         </div>
       </td>
       <td>

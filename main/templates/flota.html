@@ -3,7 +3,7 @@
 {% load humanize %}
 
 {% block nombre-pestaña %}
-  <title> Choferes y Vehículos </title>
+  <title> Empleados y Vehículos </title>
 {% endblock %}
 
 {% block links %}
@@ -34,11 +34,11 @@
 
   <div class="flota-grid">
 
-    <!-- COLUMNA CHOFERES -->
+    <!-- COLUMNA EMPLEADOS -->
     <section class="flota-columna">
       <div class="flota-columna-header">
-        <h3><span class="material-symbols-outlined">badge</span> Choferes</h3>
-        <button type="button" class="boton-nuevo" onclick="abrirNuevoChofer()">
+        <h3><span class="material-symbols-outlined">badge</span> Empleados</h3>
+        <button type="button" class="boton-nuevo" onclick="abrirNuevoEmpleado()">
           <span class="material-symbols-outlined">person_add</span>
           Nuevo
         </button>
@@ -53,24 +53,24 @@
             </tr>
           </thead>
           <tbody>
-            {% for chofer in choferes %}
+            {% for empleado in empleados %}
             <tr>
-              <td class="celda-flota-nombre">{{ chofer.nombre }} {{ chofer.apellido }}</td>
-              <td class="col-centrada">{{ chofer.total_viajes|intcomma }}</td>
+              <td class="celda-flota-nombre">{{ empleado.nombre }} {{ empleado.apellido }}</td>
+              <td class="col-centrada">{{ empleado.total_viajes|intcomma }}</td>
               <td class="col-acciones">
                 <button type="button" class="boton-accion-flota editar"
-                        title="Editar chofer"
-                        data-id="{{ chofer.id }}"
-                        data-nombre="{{ chofer.nombre }}"
-                        data-apellido="{{ chofer.apellido }}"
-                        onclick="abrirEditarChofer(this)">
+                        title="Editar empleado"
+                        data-id="{{ empleado.id }}"
+                        data-nombre="{{ empleado.nombre }}"
+                        data-apellido="{{ empleado.apellido }}"
+                        onclick="abrirEditarEmpleado(this)">
                   <span class="material-symbols-outlined">edit</span>
                 </button>
                 <button type="button" class="boton-accion-flota eliminar"
-                        title="Eliminar chofer"
-                        data-id="{{ chofer.id }}"
-                        data-nombre="{{ chofer.nombre }} {{ chofer.apellido }}"
-                        onclick="abrirEliminarFlota('chofer', this)">
+                        title="Eliminar empleado"
+                        data-id="{{ empleado.id }}"
+                        data-nombre="{{ empleado.nombre }} {{ empleado.apellido }}"
+                        onclick="abrirEliminarFlota('empleado', this)">
                   <span class="material-symbols-outlined">delete</span>
                 </button>
               </td>
@@ -79,7 +79,7 @@
             <tr class="fila-vacia">
               <td colspan="3" class="celda-vacia">
                 <span class="material-symbols-outlined">person</span>
-                No hay choferes registrados.
+                No hay empleados registrados.
               </td>
             </tr>
             {% endfor %}
@@ -147,25 +147,25 @@
   </div>
 </section>
 
-<!-- SLIDE-OVER CHOFER (alta y edición) -->
-<div id="slide-over-chofer">
-  <div id="slide-over-fondo" onclick="cerrarSlideOver('slide-over-chofer')"></div>
+<!-- SLIDE-OVER EMPLEADO (alta y edición) -->
+<div id="slide-over-empleado">
+  <div id="slide-over-fondo" onclick="cerrarSlideOver('slide-over-empleado')"></div>
   <div id="slide-over-panel">
-    <form id="form-chofer" method="post" autocomplete="off">
+    <form id="form-empleado" method="post" autocomplete="off">
       {% csrf_token %}
-      <input type="hidden" name="accion" id="accion-chofer" value="nuevo_chofer">
-      <input type="hidden" name="id_chofer" id="id-chofer-input">
+      <input type="hidden" name="accion" id="accion-empleado" value="nuevo_empleado">
+      <input type="hidden" name="id_empleado" id="id-empleado-input">
       <header class="panel-cabecera">
         <div class="panel-titulo-fila">
           <div class="icono-contenedor">
             <span class="material-symbols-outlined">badge</span>
           </div>
           <div class="texto-cabecera">
-            <h3 id="titulo-chofer">Nuevo Chofer</h3>
-            <p>Ingrese los datos del chofer</p>
+            <h3 id="titulo-empleado">Nuevo Empleado</h3>
+            <p>Ingrese los datos del empleado</p>
           </div>
         </div>
-        <button type="button" class="boton-cerrar" onclick="cerrarSlideOver('slide-over-chofer')">
+        <button type="button" class="boton-cerrar" onclick="cerrarSlideOver('slide-over-empleado')">
           <span class="material-symbols-outlined">close</span>
         </button>
       </header>
@@ -173,25 +173,25 @@
         <section class="seccion-bloque">
           <div class="subtitulo-formulario">
             <span class="material-symbols-outlined">badge</span>
-            <h4>Información del chofer</h4>
+            <h4>Información del empleado</h4>
           </div>
           <div class="grupo-input">
-            <label for="nombre-chofer">Nombre</label>
-            <input type="text" id="nombre-chofer" name="nombre_chofer" placeholder="Ej: Juan"
+            <label for="nombre-empleado">Nombre</label>
+            <input type="text" id="nombre-empleado" name="nombre_empleado" placeholder="Ej: Juan"
                    required minlength="3" maxlength="25" pattern="[a-zA-ZÁÉÍÓÚáéíóúñÑ\s]{3,}">
             <span class="mensaje-error">Mínimo 3 letras, sin números ni símbolos</span>
           </div>
           <div class="grupo-input">
-            <label for="apellido-chofer">Apellido</label>
-            <input type="text" id="apellido-chofer" name="apellido_chofer" placeholder="Ej: Perez"
+            <label for="apellido-empleado">Apellido</label>
+            <input type="text" id="apellido-empleado" name="apellido_empleado" placeholder="Ej: Perez"
                    required minlength="3" maxlength="25" pattern="[a-zA-ZÁÉÍÓÚáéíóúñÑ\s]{3,}">
             <span class="mensaje-error">Mínimo 3 letras, sin números ni símbolos</span>
           </div>
         </section>
       </main>
       <footer class="panel-pie">
-        <button type="submit" class="boton-primario">Guardar Chofer</button>
-        <button type="button" class="boton-secundario" onclick="cerrarSlideOver('slide-over-chofer')">Cancelar</button>
+        <button type="submit" class="boton-primario">Guardar Empleado</button>
+        <button type="button" class="boton-secundario" onclick="cerrarSlideOver('slide-over-empleado')">Cancelar</button>
       </footer>
     </form>
   </div>
@@ -263,7 +263,7 @@
     <form id="formulario-eliminar" method="post">
       {% csrf_token %}
       <input type="hidden" name="accion" id="accion-eliminar-flota" value="">
-      <input type="hidden" name="id_chofer" id="id-eliminar-chofer" disabled>
+      <input type="hidden" name="id_empleado" id="id-eliminar-empleado" disabled>
       <input type="hidden" name="id_vehiculo" id="id-eliminar-vehiculo" disabled>
       <div class="modal-eliminar-acciones">
         <button type="button" class="boton-secundario" onclick="cerrarModalEliminarFlota()">No, volver</button>

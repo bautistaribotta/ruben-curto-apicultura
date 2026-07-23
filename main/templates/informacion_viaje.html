@@ -45,7 +45,7 @@
             <span class="material-symbols-outlined">arrow_forward</span>
             {% if viaje.fecha_vuelta %}{{ viaje.fecha_vuelta|date:"d/m/Y" }}{% else %}No definido{% endif %}
           </span>
-          <span class="op-head__metaitem"><span class="material-symbols-outlined">person</span>{% if viaje.chofer %}{{ viaje.chofer.nombre }} {{ viaje.chofer.apellido }}{% else %}Sin chofer{% endif %}</span>
+          <span class="op-head__metaitem"><span class="material-symbols-outlined">person</span>{% if viaje.empleado %}{{ viaje.empleado.nombre }} {{ viaje.empleado.apellido }}{% else %}Sin empleado{% endif %}</span>
           <span class="op-head__metaitem"><span class="material-symbols-outlined">local_shipping</span>{% if viaje.vehiculo %}{{ viaje.vehiculo.nombre }}{% else %}Sin vehículo{% endif %}</span>
         </div>
       </div>
@@ -96,10 +96,10 @@
           </div>
         </div>
         <div class="vd-data__row">
-          <span class="avatar-iniciales avatar-iniciales--chofer">{% if viaje.chofer %}{{ viaje.chofer.nombre|first|upper }}{{ viaje.chofer.apellido|first|upper }}{% else %}?{% endif %}</span>
+          <span class="avatar-iniciales avatar-iniciales--empleado">{% if viaje.empleado %}{{ viaje.empleado.nombre|first|upper }}{{ viaje.empleado.apellido|first|upper }}{% else %}?{% endif %}</span>
           <div class="vd-data__meta">
-            <div class="vd-data__label">Chofer</div>
-            <div class="vd-data__value">{% if viaje.chofer %}{{ viaje.chofer.nombre }} {{ viaje.chofer.apellido }}{% else %}Chofer no especificado{% endif %}</div>
+            <div class="vd-data__label">Empleado</div>
+            <div class="vd-data__value">{% if viaje.empleado %}{{ viaje.empleado.nombre }} {{ viaje.empleado.apellido }}{% else %}Empleado no especificado{% endif %}</div>
           </div>
         </div>
       </div>
@@ -383,14 +383,14 @@
             </div>
 
             <div class="grupo-input">
-              <label for="chofer-viaje">Chofer</label>
-              <select id="chofer-viaje" name="id_chofer" class="select-estandar" required>
-                <option value="" disabled>Seleccione un chofer</option>
-                {% for chofer in choferes %}
-                <option value="{{ chofer.id }}" {% if viaje.chofer.id == chofer.id %}selected{% endif %}>{{ chofer.nombre }} {{ chofer.apellido }}</option>
+              <label for="empleado-viaje">Empleado</label>
+              <select id="empleado-viaje" name="id_empleado" class="select-estandar" required>
+                <option value="" disabled>Seleccione un empleado</option>
+                {% for empleado in empleados %}
+                <option value="{{ empleado.id }}" {% if viaje.empleado.id == empleado.id %}selected{% endif %}>{{ empleado.nombre }} {{ empleado.apellido }}</option>
                 {% endfor %}
               </select>
-              <span class="mensaje-error">Por favor, seleccione un chofer de la lista.</span>
+              <span class="mensaje-error">Por favor, seleccione un empleado de la lista.</span>
             </div>
 
             <div class="grupo-input">

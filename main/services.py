@@ -10,7 +10,7 @@ from django.db import transaction
 from django.db.models import Sum, F, Value, Count, Q, Subquery, OuterRef
 from django.db.models.functions import Coalesce
 from django.core.cache import cache
-from .models import (Producto, Cliente, Operacion, DetalleOperacion, Pago, Cotizaciones, Chofer, Vehiculo, Viaje,
+from .models import (Producto, Cliente, Operacion, DetalleOperacion, Pago, Cotizaciones, Empleado, Vehiculo, Viaje,
                      DetalleViaje, Gasto, ViajeCereal, DetalleViajeCereal, GastoViajeCereal,
                      ViajeReparto, GastoViajeReparto, DestinoViajeReparto)
 
@@ -218,7 +218,7 @@ def filtro_nombre_apellido(q, prefijo=""):
     Caso particular de filtro_tokens para nombre + apellido: "carola diaz"
     encuentra a Carola Diaz aunque sean columnas separadas y sin importar el
     orden. 'prefijo' permite reutilizarlo sobre relaciones, por ejemplo
-    "cliente__" o "chofer__".
+    "cliente__" o "empleado__".
     """
     return filtro_tokens(q, f"{prefijo}nombre", f"{prefijo}apellido")
 
@@ -962,7 +962,7 @@ def get_cotizacion_cera_operculo():
         return None
 
 
-def crear_chofer(nombre, apellido):
+def crear_empleado(nombre, apellido):
     # Aplico limpieza de espacios
     nombre = nombre.strip()
     apellido = apellido.strip()
@@ -975,15 +975,15 @@ def crear_chofer(nombre, apellido):
     if not (3 <= len(apellido) <= 25) or not REGEX_TEXTO_BASICO.match(apellido):
         raise ValueError("El apellido debe tener entre 3 y 25 letras, sin números ni símbolos.")
 
-    nuevo_chofer = Chofer.objects.create(
+    nuevo_empleado = Empleado.objects.create(
         nombre=nombre,
         apellido=apellido
     )
-    return nuevo_chofer
+    return nuevo_empleado
 
 
-def editar_chofer(id_chofer, nombre, apellido, activo):
-    chofer = get_object_or_404(Chofer, id=id_chofer)
+def editar_empleado(id_empleado, nombre, apellido, activo):
+    empleado = get_object_or_404(Empleado, id=id_empleado)
 
     # Aplico limpieza de espacios
     nombre = nombre.strip()
@@ -997,19 +997,19 @@ def editar_chofer(id_chofer, nombre, apellido, activo):
     if not (3 <= len(apellido) <= 25) or not REGEX_TEXTO_BASICO.match(apellido):
         raise ValueError("El apellido debe tener entre 3 y 25 letras, sin números ni símbolos.")
 
-    chofer.nombre = nombre
-    chofer.apellido = apellido
-    chofer.activo = activo
+    empleado.nombre = nombre
+    empleado.apellido = apellido
+    empleado.activo = activo
 
-    chofer.save()
-    return chofer
+    empleado.save()
+    return empleado
 
 
-def eliminar_chofer(id_chofer):
-    chofer = get_object_or_404(Chofer, id=id_chofer)
-    chofer.activo = False
-    chofer.save()
-    return chofer
+def eliminar_empleado(id_empleado):
+    empleado = get_object_or_404(Empleado, id=id_empleado)
+    empleado.activo = False
+    empleado.save()
+    return empleado
 
 
 def crear_vehiculo(nombre, patente):
@@ -1062,15 +1062,15 @@ def eliminar_vehiculo(id_vehiculo):
     return vehiculo
 
 
-def _validar_viaje(id_chofer, id_vehiculo, destinos, inicio_caja, fecha_inicio, fecha_vuelta):
+def _validar_viaje(id_empleado, id_vehiculo, destinos, inicio_caja, fecha_inicio, fecha_vuelta):
     """
     Centraliza las validaciones de un viaje comun (crear y editar comparten las
     mismas reglas). Devuelve una tupla con los valores ya limpios y convertidos
     (caja_val, destinos_limpios), o lanza ValueError ante el primer dato invalido.
     """
-    # 1. El chofer debe existir en la base de datos
-    if not Chofer.objects.filter(id=id_chofer).exists():
-        raise ValueError("El chofer seleccionado no existe en el sistema.")
+    # 1. El empleado debe existir en la base de datos
+    if not Empleado.objects.filter(id=id_empleado).exists():
+        raise ValueError("El empleado seleccionado no existe en el sistema.")
 
     # 2. El vehiculo debe existir en la base de datos
     if not Vehiculo.objects.filter(id=id_vehiculo).exists():
@@ -1106,19 +1106,19 @@ def _validar_viaje(id_chofer, id_vehiculo, destinos, inicio_caja, fecha_inicio, 
     return caja_val, destinos_limpios
 
 
-def crear_viaje(id_chofer, id_vehiculo, destinos, inicio_caja, fecha_inicio, fecha_vuelta=None):
+def crear_viaje(id_empleado, id_vehiculo, destinos, inicio_caja, fecha_inicio, fecha_vuelta=None):
     """
     Crea un viaje (maestro) y sus destinos asociados (detalle) usando una transacción atómica.
     'destinos' debe ser una lista de strings. Ejemplo: ["Buenos Aires", "Rosario"].
     """
     caja_val, destinos_limpios = _validar_viaje(
-        id_chofer, id_vehiculo, destinos, inicio_caja, fecha_inicio, fecha_vuelta
+        id_empleado, id_vehiculo, destinos, inicio_caja, fecha_inicio, fecha_vuelta
     )
 
     with transaction.atomic():
         # Creamos el viaje (Tabla Maestra)
         nuevo_viaje = Viaje.objects.create(
-            chofer_id=id_chofer,
+            empleado_id=id_empleado,
             vehiculo_id=id_vehiculo,
             inicio_caja=caja_val,
             fecha_inicio=fecha_inicio,
@@ -1135,13 +1135,13 @@ def crear_viaje(id_chofer, id_vehiculo, destinos, inicio_caja, fecha_inicio, fec
     return nuevo_viaje
 
 
-def obtener_choferes_activos():
+def obtener_empleados_activos():
     # Anoto _num_viajes (viajes activos) para que la property total_viajes no
-    # dispare una query por cada chofer en el listado de flota. Sumo los tres
+    # dispare una query por cada empleado en el listado de flota. Sumo los tres
     # tipos de viaje. Uso distinct=True en cada Count porque los tres LEFT JOIN
     # generan fan-out y sin el distinct los conteos se multiplicarian entre si.
     return (
-        Chofer.objects.filter(activo=True)
+        Empleado.objects.filter(activo=True)
         .annotate(_num_viajes=(
             Count("viaje", filter=Q(viaje__activo=True), distinct=True)
             + Count("viajereparto", filter=Q(viajereparto__activo=True), distinct=True)
@@ -1167,7 +1167,7 @@ def incluir_asignado(opciones, asignado):
     """
     Devuelve las opciones de un <select> incluyendo el registro actualmente asignado,
     aunque este inactivo (y por lo tanto ausente del queryset de activos). Asi, al editar
-    un viaje cuyo chofer, vehiculo o cliente fue dado de baja, su valor sigue
+    un viaje cuyo empleado, vehiculo o cliente fue dado de baja, su valor sigue
     preseleccionado en vez de obligar a elegir otro.
     """
     opciones = list(opciones)
@@ -1177,28 +1177,28 @@ def incluir_asignado(opciones, asignado):
 
 
 def obtener_viajes():
-    return Viaje.objects.filter(activo=True).select_related('chofer', 'vehiculo').prefetch_related('destinos').order_by('-fecha_inicio')
+    return Viaje.objects.filter(activo=True).select_related('empleado', 'vehiculo').prefetch_related('destinos').order_by('-fecha_inicio')
 
 
 def obtener_datos_viaje(id_viaje):
     # Trae un viaje comun activo con sus relaciones listas para la vista de informacion.
     # Mismo patron que obtener_datos_viaje_cereal / _reparto: la vista no toca el ORM directo.
     return get_object_or_404(
-        Viaje.objects.select_related("chofer", "vehiculo").prefetch_related("destinos", "detalle_gastos"),
+        Viaje.objects.select_related("empleado", "vehiculo").prefetch_related("destinos", "detalle_gastos"),
         id=id_viaje,
         activo=True,
     )
 
 
-def editar_viaje(id_viaje, id_chofer, id_vehiculo, destinos, inicio_caja, fecha_inicio, fecha_vuelta):
+def editar_viaje(id_viaje, id_empleado, id_vehiculo, destinos, inicio_caja, fecha_inicio, fecha_vuelta):
     caja_val, destinos_limpios = _validar_viaje(
-        id_chofer, id_vehiculo, destinos, inicio_caja, fecha_inicio, fecha_vuelta
+        id_empleado, id_vehiculo, destinos, inicio_caja, fecha_inicio, fecha_vuelta
     )
 
     with transaction.atomic():
         viaje = get_object_or_404(Viaje, id=id_viaje)
 
-        viaje.chofer_id = id_chofer
+        viaje.empleado_id = id_empleado
         viaje.vehiculo_id = id_vehiculo
         viaje.inicio_caja = caja_val
         viaje.fecha_inicio = fecha_inicio
@@ -1249,8 +1249,8 @@ def crear_gasto(id_viaje, tipo_gasto, monto):
 
 # --- Viajes de cereales ---
 
-def _validar_viaje_cereal(id_cliente, id_chofer, id_vehiculo, tipo_cereal, codigo_trazabilidad,
-                          toneladas, precio_tonelada, porcentaje_chofer, fecha_viaje_cereal, destinos):
+def _validar_viaje_cereal(id_cliente, id_empleado, id_vehiculo, tipo_cereal, codigo_trazabilidad,
+                          toneladas, precio_tonelada, porcentaje_empleado, fecha_viaje_cereal, destinos):
     """
     Centraliza las validaciones de un viaje de cereal (crear y editar comparten las
     mismas reglas). Devuelve una tupla con los valores ya limpios y convertidos,
@@ -1260,9 +1260,9 @@ def _validar_viaje_cereal(id_cliente, id_chofer, id_vehiculo, tipo_cereal, codig
     if id_cliente and not Cliente.objects.filter(id=id_cliente, activo=True).exists():
         raise ValueError("El cliente seleccionado no existe en el sistema.")
 
-    # 2. El chofer debe existir en la base de datos
-    if not Chofer.objects.filter(id=id_chofer).exists():
-        raise ValueError("El chofer seleccionado no existe en el sistema.")
+    # 2. El empleado debe existir en la base de datos
+    if not Empleado.objects.filter(id=id_empleado).exists():
+        raise ValueError("El empleado seleccionado no existe en el sistema.")
 
     # 3. El vehiculo debe existir en la base de datos
     if not Vehiculo.objects.filter(id=id_vehiculo).exists():
@@ -1309,16 +1309,16 @@ def _validar_viaje_cereal(id_cliente, id_chofer, id_vehiculo, tipo_cereal, codig
     except (ValueError, TypeError):
         raise ValueError("El precio por tonelada debe ser un numero entero positivo.")
 
-    # 8. Porcentaje del chofer: opcional. Si no se carga queda en 0; si viene, debe ser 1 a 100
-    if porcentaje_chofer in (None, ""):
+    # 8. Porcentaje del empleado: opcional. Si no se carga queda en 0; si viene, debe ser 1 a 100
+    if porcentaje_empleado in (None, ""):
         porcentaje_val = 0
     else:
         try:
-            porcentaje_val = int(porcentaje_chofer)
+            porcentaje_val = int(porcentaje_empleado)
             if porcentaje_val < 1 or porcentaje_val > 100:
                 raise ValueError()
         except (ValueError, TypeError):
-            raise ValueError("El porcentaje del chofer debe ser un numero entero entre 1 y 100.")
+            raise ValueError("El porcentaje del empleado debe ser un numero entero entre 1 y 100.")
 
     # 9. Fecha del viaje: obligatoria y con formato YYYY-MM-DD
     try:
@@ -1340,8 +1340,8 @@ def _validar_viaje_cereal(id_cliente, id_chofer, id_vehiculo, tipo_cereal, codig
     return codigo_limpio, toneladas_val, precio_val, porcentaje_val, destinos_limpios
 
 
-def crear_viaje_cereal(id_cliente, id_chofer, id_vehiculo, tipo_cereal, codigo_trazabilidad,
-                       toneladas, precio_tonelada, porcentaje_chofer, fecha_viaje_cereal, destinos,
+def crear_viaje_cereal(id_cliente, id_empleado, id_vehiculo, tipo_cereal, codigo_trazabilidad,
+                       toneladas, precio_tonelada, porcentaje_empleado, fecha_viaje_cereal, destinos,
                        pagado=False):
     """
     Crea un viaje de cereal (maestro) y sus destinos asociados (detalle) en una
@@ -1351,20 +1351,20 @@ def crear_viaje_cereal(id_cliente, id_chofer, id_vehiculo, tipo_cereal, codigo_t
     alcanza con el booleano (o esta cobrado o no lo esta). Por defecto nace impago.
     """
     codigo, toneladas_val, precio_val, porcentaje_val, destinos_limpios = _validar_viaje_cereal(
-        id_cliente, id_chofer, id_vehiculo, tipo_cereal, codigo_trazabilidad,
-        toneladas, precio_tonelada, porcentaje_chofer, fecha_viaje_cereal, destinos
+        id_cliente, id_empleado, id_vehiculo, tipo_cereal, codigo_trazabilidad,
+        toneladas, precio_tonelada, porcentaje_empleado, fecha_viaje_cereal, destinos
     )
 
     with transaction.atomic():
         nuevo_viaje_cereal = ViajeCereal.objects.create(
             cliente_id=id_cliente or None,
-            chofer_id=id_chofer,
+            empleado_id=id_empleado,
             vehiculo_id=id_vehiculo,
             tipo_cereal=tipo_cereal,
             codigo_trazabilidad_granos=codigo,
             toneladas=toneladas_val,
             precio_tonelada=precio_val,
-            porcentaje_chofer=porcentaje_val,
+            porcentaje_empleado=porcentaje_val,
             fecha_viaje_cereal=fecha_viaje_cereal,
             pagado=bool(pagado),
             # Si nace cobrado, el momento del cobro es el del alta
@@ -1384,7 +1384,7 @@ def obtener_viajes_cereales():
     # Solo los viajes activos (borrado logico), con relaciones precargadas para evitar el N+1
     return (
         ViajeCereal.objects.filter(activo=True)
-        .select_related("cliente", "chofer", "vehiculo")
+        .select_related("cliente", "empleado", "vehiculo")
         .prefetch_related("destinos")
         .order_by("-fecha_viaje_cereal")
     )
@@ -1398,12 +1398,12 @@ def obtener_resumen_cereal(viajes):
     no solo la pagina visible.
 
     Total   = suma de (toneladas * precio_tonelada) de cada viaje (total_bruto).
-    Gastos  = suma de los gastos de cada viaje MAS el pago al chofer de cada uno.
+    Gastos  = suma de los gastos de cada viaje MAS el pago al empleado de cada uno.
     Ganancia = (total + 21%) - gastos.
 
-    El pago al chofer no es un aggregate plano: depende del subtotal por viaje
+    El pago al empleado no es un aggregate plano: depende del subtotal por viaje
     (bruto - gastos de ese viaje) con un tope en 0 (si los gastos superan al
-    bruto el chofer no aporta plata). Por eso anoto los gastos de cada viaje con
+    bruto el empleado no aporta plata). Por eso anoto los gastos de cada viaje con
     UNA sola subconsulta correlacionada y recorro el resultado en Python: es una
     unica query y evita el N+1 (no dispara un aggregate por viaje como haria la
     property total_gastos del modelo).
@@ -1425,7 +1425,7 @@ def obtener_resumen_cereal(viajes):
             _bruto=F("toneladas") * F("precio_tonelada"),
             _gastos=Coalesce(gastos_por_viaje, Value(0)),
         )
-        .values("_bruto", "_gastos", "porcentaje_chofer")
+        .values("_bruto", "_gastos", "porcentaje_empleado")
     )
 
     total = Decimal(0)
@@ -1435,9 +1435,9 @@ def obtener_resumen_cereal(viajes):
         gastos_viaje = v["_gastos"] or 0
         subtotal = bruto - gastos_viaje
         base = subtotal if subtotal > 0 else Decimal(0)
-        pago_chofer = base * v["porcentaje_chofer"] / 100
+        pago_empleado = base * v["porcentaje_empleado"] / 100
         total += bruto
-        gastos += gastos_viaje + pago_chofer
+        gastos += gastos_viaje + pago_empleado
 
     total = int(round(total))
     gastos = int(round(gastos))
@@ -1456,34 +1456,34 @@ def obtener_datos_viaje_cereal(id_viaje_cereal):
     # Trae un viaje de cereal activo con sus relaciones listas para la vista de informacion.
     # Precargo tambien los gastos para que la tarjeta de calculo no dispare queries extra.
     return get_object_or_404(
-        ViajeCereal.objects.select_related("cliente", "chofer", "vehiculo")
+        ViajeCereal.objects.select_related("cliente", "empleado", "vehiculo")
         .prefetch_related("destinos", "detalle_gastos"),
         id=id_viaje_cereal,
         activo=True,
     )
 
 
-def editar_viaje_cereal(id_viaje_cereal, id_cliente, id_chofer, id_vehiculo, tipo_cereal, codigo_trazabilidad,
-                        toneladas, precio_tonelada, porcentaje_chofer, fecha_viaje_cereal, destinos,
+def editar_viaje_cereal(id_viaje_cereal, id_cliente, id_empleado, id_vehiculo, tipo_cereal, codigo_trazabilidad,
+                        toneladas, precio_tonelada, porcentaje_empleado, fecha_viaje_cereal, destinos,
                         pagado=None):
     # 'pagado' llega en None cuando quien edita no puede tocar el cobro (no staff):
     # en ese caso el estado de pago queda como estaba, no se pisa con un False.
     codigo, toneladas_val, precio_val, porcentaje_val, destinos_limpios = _validar_viaje_cereal(
-        id_cliente, id_chofer, id_vehiculo, tipo_cereal, codigo_trazabilidad,
-        toneladas, precio_tonelada, porcentaje_chofer, fecha_viaje_cereal, destinos
+        id_cliente, id_empleado, id_vehiculo, tipo_cereal, codigo_trazabilidad,
+        toneladas, precio_tonelada, porcentaje_empleado, fecha_viaje_cereal, destinos
     )
 
     with transaction.atomic():
         viaje_cereal = get_object_or_404(ViajeCereal, id=id_viaje_cereal)
 
         viaje_cereal.cliente_id = id_cliente or None
-        viaje_cereal.chofer_id = id_chofer
+        viaje_cereal.empleado_id = id_empleado
         viaje_cereal.vehiculo_id = id_vehiculo
         viaje_cereal.tipo_cereal = tipo_cereal
         viaje_cereal.codigo_trazabilidad_granos = codigo
         viaje_cereal.toneladas = toneladas_val
         viaje_cereal.precio_tonelada = precio_val
-        viaje_cereal.porcentaje_chofer = porcentaje_val
+        viaje_cereal.porcentaje_empleado = porcentaje_val
         viaje_cereal.fecha_viaje_cereal = fecha_viaje_cereal
         if pagado is not None:
             _aplicar_estado_pago(viaje_cereal, pagado)
@@ -1522,7 +1522,7 @@ def eliminar_viaje_cereal(id_viaje_cereal):
 
 def crear_gasto_viaje_cereal(id_viaje_cereal, tipo_gasto, monto):
     # Mismo patron que crear_gasto (viajes comunes), pero sobre la tabla GastoViajeCereal.
-    # Cada gasto cargado recalcula automaticamente el subtotal y el pago del chofer, porque
+    # Cada gasto cargado recalcula automaticamente el subtotal y el pago del empleado, porque
     # esas propiedades del modelo se derivan de la suma de gastos del viaje.
     viaje_cereal = get_object_or_404(ViajeCereal, id=id_viaje_cereal)
 
@@ -1637,16 +1637,16 @@ def _restar_viaje_a_destino(id_destino):
 
 # --- Viajes de reparto (Mercado Libre) ---
 
-def _validar_viaje_reparto(id_chofer, id_vehiculo, gasto_combustible,
+def _validar_viaje_reparto(id_empleado, id_vehiculo, gasto_combustible,
                            costo_empleado, valor_viaje, fecha_viaje_reparto, id_destino):
     """
     Centraliza las validaciones de un viaje de reparto (crear y editar comparten las
     mismas reglas). Devuelve una tupla con los valores ya limpios y convertidos,
     listos para persistir, o lanza ValueError ante el primer dato invalido.
     """
-    # 1. El chofer debe existir en la base de datos
-    if not Chofer.objects.filter(id=id_chofer).exists():
-        raise ValueError("El chofer seleccionado no existe en el sistema.")
+    # 1. El empleado debe existir en la base de datos
+    if not Empleado.objects.filter(id=id_empleado).exists():
+        raise ValueError("El empleado seleccionado no existe en el sistema.")
 
     # 2. El vehiculo debe existir en la base de datos
     if not Vehiculo.objects.filter(id=id_vehiculo).exists():
@@ -1695,7 +1695,7 @@ def _validar_viaje_reparto(id_chofer, id_vehiculo, gasto_combustible,
     return gasto_val, costo_val, valor_val, destino
 
 
-def crear_viaje_reparto(id_chofer, id_vehiculo, gasto_combustible, costo_empleado,
+def crear_viaje_reparto(id_empleado, id_vehiculo, gasto_combustible, costo_empleado,
                         valor_viaje, fecha_viaje_reparto, id_destino, pagado=False):
     """
     Crea un viaje de reparto. El destino se elige del catalogo (DestinoViajeReparto)
@@ -1706,13 +1706,13 @@ def crear_viaje_reparto(id_chofer, id_vehiculo, gasto_combustible, costo_emplead
     alcanza con el booleano (o esta cobrado o no lo esta). Por defecto nace impago.
     """
     gasto_val, costo_val, valor_val, destino = _validar_viaje_reparto(
-        id_chofer, id_vehiculo, gasto_combustible, costo_empleado,
+        id_empleado, id_vehiculo, gasto_combustible, costo_empleado,
         valor_viaje, fecha_viaje_reparto, id_destino
     )
 
     with transaction.atomic():
         nuevo_viaje_reparto = ViajeReparto.objects.create(
-            chofer_id=id_chofer,
+            empleado_id=id_empleado,
             vehiculo_id=id_vehiculo,
             destino=destino,
             gasto_combustible_viaje_reparto=gasto_val,
@@ -1732,7 +1732,7 @@ def obtener_viajes_reparto():
     # Solo los viajes activos (borrado logico), con relaciones precargadas para evitar el N+1
     return (
         ViajeReparto.objects.filter(activo=True)
-        .select_related("chofer", "vehiculo", "destino")
+        .select_related("empleado", "vehiculo", "destino")
         .order_by("-fecha_viaje_reparto")
     )
 
@@ -1785,7 +1785,7 @@ def obtener_datos_viaje_reparto(id_viaje_reparto):
     # Trae un viaje de reparto activo con sus relaciones listas para la vista de informacion.
     # Precargo tambien los gastos para que la tarjeta de resultado no dispare queries extra.
     return get_object_or_404(
-        ViajeReparto.objects.select_related("chofer", "vehiculo", "destino")
+        ViajeReparto.objects.select_related("empleado", "vehiculo", "destino")
         .prefetch_related("detalle_gastos"),
         id=id_viaje_reparto,
         activo=True,
@@ -1819,12 +1819,12 @@ def crear_gasto_viaje_reparto(id_viaje_reparto, tipo_gasto, monto):
     return nuevo_gasto
 
 
-def editar_viaje_reparto(id_viaje_reparto, id_chofer, id_vehiculo, gasto_combustible,
+def editar_viaje_reparto(id_viaje_reparto, id_empleado, id_vehiculo, gasto_combustible,
                          costo_empleado, valor_viaje, fecha_viaje_reparto, id_destino, pagado=None):
     # 'pagado' llega en None cuando quien edita no puede tocar el cobro (no staff):
     # en ese caso el estado de pago queda como estaba, no se pisa con un False.
     gasto_val, costo_val, valor_val, destino = _validar_viaje_reparto(
-        id_chofer, id_vehiculo, gasto_combustible, costo_empleado,
+        id_empleado, id_vehiculo, gasto_combustible, costo_empleado,
         valor_viaje, fecha_viaje_reparto, id_destino
     )
 
@@ -1832,7 +1832,7 @@ def editar_viaje_reparto(id_viaje_reparto, id_chofer, id_vehiculo, gasto_combust
         viaje_reparto = get_object_or_404(ViajeReparto, id=id_viaje_reparto)
         destino_anterior_id = viaje_reparto.destino_id
 
-        viaje_reparto.chofer_id = id_chofer
+        viaje_reparto.empleado_id = id_empleado
         viaje_reparto.vehiculo_id = id_vehiculo
         viaje_reparto.destino = destino
         viaje_reparto.gasto_combustible_viaje_reparto = gasto_val

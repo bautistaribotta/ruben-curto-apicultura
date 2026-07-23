@@ -229,27 +229,28 @@ class Cotizaciones(models.Model):
         return f"Cotizacion {self.articulo}: {self.monto}"
 
 
-class Chofer(models.Model):
+class Empleado(models.Model):
     nombre = models.CharField(max_length=25)
     apellido = models.CharField(max_length=25)
     activo = models.BooleanField(default=True)
+    saldo = models.DecimalField(max_digits=12, decimal_places=2, default=0)
 
     class Meta:
-        db_table = "choferes"
-        verbose_name_plural = "Choferes"
+        db_table = "empleados"
+        verbose_name_plural = "Empleados"
         constraints = [
             models.UniqueConstraint(
                 fields=["nombre", "apellido"],
-                name="unique_nombre_apellido_chofer"
+                name="unique_nombre_apellido_empleado"
             )
         ]
 
     @property
     def total_viajes(self):
-        # Cantidad de viajes activos del chofer, sumando los tres tipos de viaje
+        # Cantidad de viajes activos del empleado, sumando los tres tipos de viaje
         # (miel/cera, reparto y cereal). Un viaje cuenta como uno, sin importar
         # cuantos destinos tenga. Si el queryset vino anotado con _num_viajes
-        # (ver obtener_choferes_activos) reutilizo ese valor para evitar una
+        # (ver obtener_empleados_activos) reutilizo ese valor para evitar una
         # query por fila en el listado de flota.
         if hasattr(self, "_num_viajes"):
             return self._num_viajes
@@ -260,7 +261,20 @@ class Chofer(models.Model):
         )
 
     def __str__(self):
-        return f"Chofer: {self.nombre} {self.apellido}"
+        return f"Empleado: {self.nombre} {self.apellido}"
+
+
+class PagosEmpleados(models.Model):
+    empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE, db_column="id_empleado")
+    fecha = models.DateField(default=timezone.now)
+    monto = models.DecimalField(max_digits=12, decimal_places=2)
+
+    class Meta:
+        db_table = "pagos_empleados"
+        verbose_name_plural = "Pagos de Empleados"
+
+    def __str__(self):
+        return f"Pago de {self.monto} a {self.empleado} el {self.fecha}"
 
 
 class Vehiculo(models.Model):
@@ -274,7 +288,7 @@ class Vehiculo(models.Model):
     @property
     def total_viajes(self):
         # Suma los tres tipos de viaje activos (miel/cera, reparto y cereal),
-        # igual que en Chofer.
+        # igual que en Empleado.
         if hasattr(self, "_num_viajes"):
             return self._num_viajes
         return (
@@ -288,7 +302,7 @@ class Vehiculo(models.Model):
 
 
 class Viaje(models.Model):
-    chofer = models.ForeignKey(Chofer, on_delete=models.PROTECT, db_column="id_chofer")
+    empleado = models.ForeignKey(Empleado, on_delete=models.PROTECT, db_column="id_empleado")
     vehiculo = models.ForeignKey(Vehiculo, on_delete=models.PROTECT, db_column="id_vehiculo")
     inicio_caja = models.PositiveIntegerField(default=0)
     fecha_inicio = models.DateField()
@@ -368,7 +382,7 @@ class Gasto(GastoBase):
 
 class ViajeReparto(models.Model):
     fecha_viaje_reparto = models.DateField()
-    chofer = models.ForeignKey(Chofer, on_delete=models.PROTECT, db_column="id_chofer")
+    empleado = models.ForeignKey(Empleado, on_delete=models.PROTECT, db_column="id_empleado")
     vehiculo = models.ForeignKey(Vehiculo, on_delete=models.PROTECT, db_column="id_vehiculo")
     # Localidad del reparto, elegida del catalogo. Es nullable solo para los repartos
     # historicos que se cargaron con destinos escritos a mano y quedaron sin catalogo.
@@ -455,7 +469,7 @@ class ViajeCereal(models.Model):
         ("Mani", "Mani")
     ]
     fecha_viaje_cereal = models.DateField()
-    chofer = models.ForeignKey(Chofer, on_delete=models.PROTECT, db_column="id_chofer")
+    empleado = models.ForeignKey(Empleado, on_delete=models.PROTECT, db_column="id_empleado")
     vehiculo = models.ForeignKey(Vehiculo, on_delete=models.PROTECT, db_column="id_vehiculo")
     # Cliente al que se le presta el flete. Es nullable para no romper los viajes
     # de cereal que ya existian antes de incorporar este campo (quedan "Sin cliente").
@@ -470,7 +484,7 @@ class ViajeCereal(models.Model):
     # las cantidades comerciales del sistema (DetalleOperacion, Cotizaciones).
     toneladas = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     precio_tonelada = models.PositiveIntegerField(default=0)
-    porcentaje_chofer = models.PositiveIntegerField(default=0)
+    porcentaje_empleado = models.PositiveIntegerField(default=0)
     activo = models.BooleanField(default=True)
     pagado = models.BooleanField(default=False)
     # Momento en que se registro el cobro. Queda en None mientras el viaje esta
@@ -497,22 +511,22 @@ class ViajeCereal(models.Model):
 
     @property
     def subtotal(self):
-        # Base sobre la que se reparte el chofer: facturacion menos los gastos del viaje
+        # Base sobre la que se reparte el empleado: facturacion menos los gastos del viaje
         return self.total_bruto - self.total_gastos
 
     @property
-    def pago_chofer(self):
-        # Lo que se lleva el chofer segun su porcentaje sobre el subtotal (bruto - gastos).
-        # Si los gastos superan al bruto el subtotal es negativo; en ese caso el chofer no
+    def pago_empleado(self):
+        # Lo que se lleva el empleado segun su porcentaje sobre el subtotal (bruto - gastos).
+        # Si los gastos superan al bruto el subtotal es negativo; en ese caso el empleado no
         # "aporta" plata, asi que tomo la base en 0 para no calcular un pago negativo.
         base = self.subtotal if self.subtotal > 0 else 0
-        return base * self.porcentaje_chofer / 100
+        return base * self.porcentaje_empleado / 100
 
     @property
     def ganancia_neta(self):
         # Lo que le queda a la empresa: el subtotal (ya descontados los gastos) menos
-        # la parte del chofer. Puede ser negativo si los gastos superan la facturacion.
-        return self.subtotal - self.pago_chofer
+        # la parte del empleado. Puede ser negativo si los gastos superan la facturacion.
+        return self.subtotal - self.pago_empleado
 
     def __str__(self):
         return f"Viaje de cereal nro: {self.id}"

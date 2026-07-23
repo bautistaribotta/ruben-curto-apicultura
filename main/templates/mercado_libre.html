@@ -35,7 +35,7 @@
     <div class="grupo-busqueda">
       <div class="contenedor-buscador">
         <span class="material-symbols-outlined icono-busqueda">search</span>
-        <input type="text" id="buscador-viajes-meli" class="input-busqueda" placeholder="Busca un viaje por vehiculo, chofer o destino" value="{{ q|default:'' }}">
+        <input type="text" id="buscador-viajes-meli" class="input-busqueda" placeholder="Busca un viaje por vehiculo, empleado o destino" value="{{ q|default:'' }}">
       </div>
       {% include 'filtro_fechas.html' %}
     </div>
@@ -91,14 +91,14 @@
           </div>
 
           <div class="grupo-input">
-            <label for="chofer-reparto">Chofer</label>
-            <select id="chofer-reparto" name="id_chofer" class="select-estandar" required>
-              <option value="" disabled selected>Seleccione un chofer</option>
-              {% for chofer in choferes %}
-              <option value="{{ chofer.id }}">{{ chofer.nombre }} {{ chofer.apellido }}</option>
+            <label for="empleado-reparto">Empleado</label>
+            <select id="empleado-reparto" name="id_empleado" class="select-estandar" required>
+              <option value="" disabled selected>Seleccione un empleado</option>
+              {% for empleado in empleados %}
+              <option value="{{ empleado.id }}">{{ empleado.nombre }} {{ empleado.apellido }}</option>
               {% endfor %}
             </select>
-            <span class="mensaje-error">Por favor, seleccione un chofer de la lista.</span>
+            <span class="mensaje-error">Por favor, seleccione un empleado de la lista.</span>
           </div>
 
           <div class="grupo-input">

@@ -46,7 +46,7 @@
             {{ viaje_cereal.fecha_viaje_cereal|date:"d/m/Y"|default:"--" }}
           </span>
           <span class="op-head__metaitem"><span class="material-symbols-outlined">store</span>{% if viaje_cereal.cliente %}{{ viaje_cereal.cliente.nombre }} {{ viaje_cereal.cliente.apellido|default:"" }}{% else %}Sin cliente{% endif %}</span>
-          <span class="op-head__metaitem"><span class="material-symbols-outlined">person</span>{% if viaje_cereal.chofer %}{{ viaje_cereal.chofer.nombre }} {{ viaje_cereal.chofer.apellido }}{% else %}Sin chofer{% endif %}</span>
+          <span class="op-head__metaitem"><span class="material-symbols-outlined">person</span>{% if viaje_cereal.empleado %}{{ viaje_cereal.empleado.nombre }} {{ viaje_cereal.empleado.apellido }}{% else %}Sin empleado{% endif %}</span>
           <span class="op-head__metaitem"><span class="material-symbols-outlined">local_shipping</span>{% if viaje_cereal.vehiculo %}{{ viaje_cereal.vehiculo.nombre }}{% else %}Sin vehiculo{% endif %}</span>
         </div>
       </div>
@@ -88,10 +88,10 @@
           </div>
         </div>
         <div class="vd-data__row">
-          <span class="avatar-iniciales avatar-iniciales--chofer">{% if viaje_cereal.chofer %}{{ viaje_cereal.chofer.nombre|first|upper }}{{ viaje_cereal.chofer.apellido|first|upper }}{% else %}?{% endif %}</span>
+          <span class="avatar-iniciales avatar-iniciales--empleado">{% if viaje_cereal.empleado %}{{ viaje_cereal.empleado.nombre|first|upper }}{{ viaje_cereal.empleado.apellido|first|upper }}{% else %}?{% endif %}</span>
           <div class="vd-data__meta">
-            <div class="vd-data__label">Chofer</div>
-            <div class="vd-data__value">{% if viaje_cereal.chofer %}{{ viaje_cereal.chofer.nombre }} {{ viaje_cereal.chofer.apellido }}{% else %}Chofer no especificado{% endif %}</div>
+            <div class="vd-data__label">Empleado</div>
+            <div class="vd-data__value">{% if viaje_cereal.empleado %}{{ viaje_cereal.empleado.nombre }} {{ viaje_cereal.empleado.apellido }}{% else %}Empleado no especificado{% endif %}</div>
           </div>
         </div>
         <div class="vd-data__row">
@@ -188,10 +188,10 @@
         <div class="vd-caja__row">
           <span class="vd-caja__k">
             <span class="vd-gasto__ico"><span class="material-symbols-outlined">badge</span></span>
-            Pago del chofer
-            <span class="vc-pct">{{ viaje_cereal.porcentaje_chofer }}%</span>
+            Pago del empleado
+            <span class="vc-pct">{{ viaje_cereal.porcentaje_empleado }}%</span>
           </span>
-          <span class="vd-caja__v vc-deduct">-${{ viaje_cereal.pago_chofer|floatformat:0|intcomma }}</span>
+          <span class="vd-caja__v vc-deduct">-${{ viaje_cereal.pago_empleado|floatformat:0|intcomma }}</span>
         </div>
         <div class="vd-caja__row vd-caja__row--total">
           <span class="vd-caja__k"><span class="material-symbols-outlined">savings</span>Ganancia neta</span>
@@ -223,7 +223,7 @@
       </div>
 
       <h3>Registrar gasto</h3>
-      <p>Seleccioná el tipo de gasto e ingresá el monto. El subtotal y el pago del chofer se recalculan solos.</p>
+      <p>Seleccioná el tipo de gasto e ingresá el monto. El subtotal y el pago del empleado se recalculan solos.</p>
 
       <div class="grupo-input">
         <label for="tipo-gasto">Tipo de gasto</label>
@@ -340,14 +340,14 @@
           </div>
 
           <div class="grupo-input">
-            <label for="chofer-cereal">Chofer</label>
-            <select id="chofer-cereal" name="id_chofer" class="select-estandar" required>
-              <option value="" disabled>Seleccione un chofer</option>
-              {% for chofer in choferes %}
-              <option value="{{ chofer.id }}" {% if viaje_cereal.chofer_id == chofer.id %}selected{% endif %}>{{ chofer.nombre }} {{ chofer.apellido }}</option>
+            <label for="empleado-cereal">Empleado</label>
+            <select id="empleado-cereal" name="id_empleado" class="select-estandar" required>
+              <option value="" disabled>Seleccione un empleado</option>
+              {% for empleado in empleados %}
+              <option value="{{ empleado.id }}" {% if viaje_cereal.empleado_id == empleado.id %}selected{% endif %}>{{ empleado.nombre }} {{ empleado.apellido }}</option>
               {% endfor %}
             </select>
-            <span class="mensaje-error">Por favor, seleccione un chofer de la lista.</span>
+            <span class="mensaje-error">Por favor, seleccione un empleado de la lista.</span>
           </div>
 
           <div class="grupo-input">
@@ -429,16 +429,16 @@
           </div>
 
           <div class="grupo-input">
-            <label for="porcentaje-cereal">Porcentaje del chofer (%)</label>
+            <label for="porcentaje-cereal">Porcentaje del empleado (%)</label>
             <input
               type="number"
               id="porcentaje-cereal"
-              name="porcentaje_chofer"
+              name="porcentaje_empleado"
               placeholder="Opcional"
               min="1"
               max="100"
               step="1"
-              value="{% if viaje_cereal.porcentaje_chofer %}{{ viaje_cereal.porcentaje_chofer }}{% endif %}">
+              value="{% if viaje_cereal.porcentaje_empleado %}{{ viaje_cereal.porcentaje_empleado }}{% endif %}">
             <span class="mensaje-error">Debe ser un numero entre 1 y 100.</span>
           </div>
 

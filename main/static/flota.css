@@ -23,7 +23,7 @@
   font-size: 20px;
 }
 
-/* --- DOS COLUMNAS: Choferes | Vehículos --- */
+/* --- DOS COLUMNAS: Empleados | Vehículos --- */
 .flota-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -160,8 +160,8 @@
   color: var(--color-rojo-eliminacion);
 }
 
-/* --- PANEL LATERAL (SLIDE-OVER) CHOFER / VEHÍCULO --- */
-#slide-over-chofer,
+/* --- PANEL LATERAL (SLIDE-OVER) EMPLEADO / VEHÍCULO --- */
+#slide-over-empleado,
 #slide-over-vehiculo {
   position: fixed;
   inset: 0;
@@ -174,7 +174,7 @@
   transition: visibility var(--dur-slow);
 }
 
-#slide-over-chofer.slide-over-abierto,
+#slide-over-empleado.slide-over-abierto,
 #slide-over-vehiculo.slide-over-abierto {
   visibility: visible;
   pointer-events: auto;
@@ -191,7 +191,7 @@
   transition: opacity var(--dur-slow) var(--ease-standard);
 }
 
-#slide-over-chofer.slide-over-abierto #slide-over-fondo,
+#slide-over-empleado.slide-over-abierto #slide-over-fondo,
 #slide-over-vehiculo.slide-over-abierto #slide-over-fondo {
   opacity: 1;
 }
@@ -212,14 +212,14 @@
   -webkit-font-smoothing: antialiased;
 }
 
-#form-chofer,
+#form-empleado,
 #form-vehiculo {
   height: 100%;
   display: flex;
   flex-direction: column;
 }
 
-#slide-over-chofer.slide-over-abierto #slide-over-panel,
+#slide-over-empleado.slide-over-abierto #slide-over-panel,
 #slide-over-vehiculo.slide-over-abierto #slide-over-panel {
   transform: translateX(0);
 }

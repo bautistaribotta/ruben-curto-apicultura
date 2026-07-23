@@ -1,27 +1,27 @@
 // =============================================
-//  GESTIÓN DE CHOFERES Y VEHÍCULOS (FLOTA)
+//  GESTIÓN DE EMPLEADOS Y VEHÍCULOS (FLOTA)
 //  Reusa los slide-overs (paneles.js) para alta y edición,
 //  cambiando la accion/titulo/campos segun el caso.
 // =============================================
 
-// ---------- CHOFER ----------
+// ---------- EMPLEADO ----------
 
-function abrirNuevoChofer() {
-    document.getElementById('accion-chofer').value = 'nuevo_chofer';
-    document.getElementById('id-chofer-input').value = '';
-    document.getElementById('nombre-chofer').value = '';
-    document.getElementById('apellido-chofer').value = '';
-    document.getElementById('titulo-chofer').textContent = 'Nuevo Chofer';
-    abrirSlideOver('slide-over-chofer');
+function abrirNuevoEmpleado() {
+    document.getElementById('accion-empleado').value = 'nuevo_empleado';
+    document.getElementById('id-empleado-input').value = '';
+    document.getElementById('nombre-empleado').value = '';
+    document.getElementById('apellido-empleado').value = '';
+    document.getElementById('titulo-empleado').textContent = 'Nuevo Empleado';
+    abrirSlideOver('slide-over-empleado');
 }
 
-function abrirEditarChofer(boton) {
-    document.getElementById('accion-chofer').value = 'editar_chofer';
-    document.getElementById('id-chofer-input').value = boton.dataset.id;
-    document.getElementById('nombre-chofer').value = boton.dataset.nombre;
-    document.getElementById('apellido-chofer').value = boton.dataset.apellido;
-    document.getElementById('titulo-chofer').textContent = 'Editar Chofer';
-    abrirSlideOver('slide-over-chofer');
+function abrirEditarEmpleado(boton) {
+    document.getElementById('accion-empleado').value = 'editar_empleado';
+    document.getElementById('id-empleado-input').value = boton.dataset.id;
+    document.getElementById('nombre-empleado').value = boton.dataset.nombre;
+    document.getElementById('apellido-empleado').value = boton.dataset.apellido;
+    document.getElementById('titulo-empleado').textContent = 'Editar Empleado';
+    abrirSlideOver('slide-over-empleado');
 }
 
 // ---------- VEHÍCULO ----------
@@ -50,25 +50,25 @@ function abrirEliminarFlota(tipo, boton) {
     const id = boton.dataset.id;
     const nombre = boton.dataset.nombre;
 
-    const inputChofer = document.getElementById('id-eliminar-chofer');
+    const inputEmpleado = document.getElementById('id-eliminar-empleado');
     const inputVehiculo = document.getElementById('id-eliminar-vehiculo');
 
     // Dejo habilitado solo el campo del tipo correspondiente (los disabled no se envian)
-    if (tipo === 'chofer') {
-        document.getElementById('accion-eliminar-flota').value = 'eliminar_chofer';
-        inputChofer.disabled = false;
-        inputChofer.value = id;
+    if (tipo === 'empleado') {
+        document.getElementById('accion-eliminar-flota').value = 'eliminar_empleado';
+        inputEmpleado.disabled = false;
+        inputEmpleado.value = id;
         inputVehiculo.disabled = true;
         inputVehiculo.value = '';
     } else {
         document.getElementById('accion-eliminar-flota').value = 'eliminar_vehiculo';
         inputVehiculo.disabled = false;
         inputVehiculo.value = id;
-        inputChofer.disabled = true;
-        inputChofer.value = '';
+        inputEmpleado.disabled = true;
+        inputEmpleado.value = '';
     }
 
-    const etiqueta = tipo === 'chofer' ? 'al chofer' : 'el vehículo';
+    const etiqueta = tipo === 'empleado' ? 'al empleado' : 'el vehículo';
     document.getElementById('texto-eliminar-flota').innerHTML =
         `¿Seguro que quiere eliminar ${etiqueta} <b>${nombre}</b>? Dejará de estar disponible para nuevos viajes.`;
 

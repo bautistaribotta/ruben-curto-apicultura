@@ -931,7 +931,7 @@ body {
 }
 
 /* --- AVATAR DE INICIALES UNIFICADO --- */
-/* Dos variantes semanticas: chofer (paleta miel, como la tabla de viajes)
+/* Dos variantes semanticas: empleado (paleta miel, como la tabla de viajes)
    y cliente (paleta pino, como la tabla de clientes). */
 .avatar-iniciales {
   flex: none;
@@ -943,7 +943,7 @@ body {
   letter-spacing: 0.02em;
 }
 
-.avatar-iniciales--chofer {
+.avatar-iniciales--empleado {
   width: 32px;
   height: 32px;
   background-color: var(--honey-50);

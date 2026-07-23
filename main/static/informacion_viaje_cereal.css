@@ -56,7 +56,7 @@
   border-bottom: 1px solid var(--border-subtle);
 }
 
-/* Insignia con el porcentaje que se lleva el chofer */
+/* Insignia con el porcentaje que se lleva el empleado */
 .vc-pct {
   display: inline-flex;
   align-items: center;
@@ -70,12 +70,12 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Monto que se reparte al chofer: se descuenta del subtotal */
+/* Monto que se reparte al empleado: se descuenta del subtotal */
 .vc-deduct {
   color: var(--text-muted);
 }
 
-/* El icono de "Pago del chofer" va en caja neutra (igual que los gastos), no con
+/* El icono de "Pago del empleado" va en caja neutra (igual que los gastos), no con
    el color de marca de los iconos de resumen. Gano especificidad a la regla
    .vd-caja__k .material-symbols-outlined de informacion_viaje.css. */
 .vd-caja__k .vd-gasto__ico .material-symbols-outlined {

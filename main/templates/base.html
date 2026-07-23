@@ -60,12 +60,14 @@
             Clientes
           </a>
         </li>
+        {% if user.is_staff %}
         <li>
           <a href="{% url 'empleados' %}" class="item-menu {% if request.resolver_match.url_name == 'empleados' %} activo {% endif %}">
             <span class="material-symbols-outlined">badge</span>
             Empleados
           </a>
         </li>
+        {% endif %}
         {% comment %}
           Las tres secciones de viajes cuelgan sus paginas de apoyo (Flota, y en
           repartos tambien Destinos) como sub-items de la barra, en vez de repetir

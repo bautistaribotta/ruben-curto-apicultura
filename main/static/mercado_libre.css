@@ -269,16 +269,16 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* --- Celda Chofer --- */
-.meli-chofer {
+/* --- Celda Empleado --- */
+.meli-empleado {
   display: flex;
   align-items: center;
   gap: 0.65rem;
 }
 
-/* Avatar de iniciales (.avatar-iniciales--chofer): estilos unificados en base.css */
+/* Avatar de iniciales (.avatar-iniciales--empleado): estilos unificados en base.css */
 
-.meli-chofer__name {
+.meli-empleado__name {
   font-weight: var(--weight-semibold);
   color: var(--text-strong);
 }
