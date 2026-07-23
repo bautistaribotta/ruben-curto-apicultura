@@ -235,20 +235,23 @@
   color: var(--color-blanco);
 }
 
-/* --- Filtro por cliente (chip + modal) ---------------------------------------
-   El chip "Cliente" reutiliza .prod-chip (mismo lenguaje que fechas y los chips de
-   tipo). Al hacer click abre el modal selector; una vez elegido, muestra el nombre
-   del cliente y hereda el pino de .prod-chip.is-active. */
-.deu-cliente {
+/* --- Filtros por entidad (chip + modal): cliente y producto ------------------
+   Ambos chips reutilizan .prod-chip (mismo lenguaje que fechas y los chips de tipo).
+   Al hacer click abren su modal selector; una vez elegido, muestran el nombre de la
+   entidad y heredan el pino de .prod-chip.is-active. */
+.deu-cliente,
+.deu-producto {
   display: inline-flex;
 }
 
-.deu-cliente__trigger {
-  /* El nombre del cliente puede ser largo; acoto para que no desborde la barra. */
+.deu-cliente__trigger,
+.deu-producto__trigger {
+  /* El nombre de la entidad puede ser largo; acoto para que no desborde la barra. */
   max-width: 15rem;
 }
 
-.deu-cliente__label {
+.deu-cliente__label,
+.deu-producto__label {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -256,7 +259,8 @@
 
 /* La "x" para limpiar vive dentro del chip activo; es un target propio, con su
    propio hover, sin disparar la apertura del modal (lo frena el JS). */
-.deu-cliente__clear {
+.deu-cliente__clear,
+.deu-producto__clear {
   font-size: 1rem;
   margin-left: 0.1rem;
   margin-right: -0.2rem;
@@ -266,7 +270,8 @@
               background-color var(--dur-fast) var(--ease-standard);
 }
 
-.deu-cliente__clear:hover {
+.deu-cliente__clear:hover,
+.deu-producto__clear:hover {
   opacity: 1;
   background-color: oklch(100% 0 0 / 0.18);
 }

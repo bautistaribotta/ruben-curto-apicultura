@@ -1071,6 +1071,8 @@ def informacion_viaje(request, id_viaje):
 # Verifico que solo un administrador pueda ver la vista, tambien verifica que el usuario este logueado
 @staff_member_required(login_url="inicio")
 def deudores(request):
+    import re
+    from collections import defaultdict
     from decimal import Decimal
 
     # Filtro por cliente: en vez de un texto libre (propenso a errores de tipeo o a
@@ -1079,6 +1081,13 @@ def deudores(request):
     cliente_id = request.GET.get("cliente", "")
     if not cliente_id.isdigit():
         cliente_id = ""
+
+    # Filtro por producto: tambien via modal selector. El valor es un token que
+    # distingue producto de catalogo ("p<id>") de articulo a granel ("g<id_cotizacion>"),
+    # porque una linea de operacion apunta a uno u otro. Un token mal formado se ignora.
+    producto_token = request.GET.get("producto", "")
+    if not re.fullmatch(r"[pg]\d+", producto_token):
+        producto_token = ""
 
     # Filtro por tipo de deuda: 'cobros' (ventas impagas) o 'pagos' (compras impagas).
     # Cualquier otro valor se ignora y se muestran todas.
@@ -1122,19 +1131,60 @@ def deudores(request):
     # resultado. Una sola llamada evita golpear dos veces las cotizaciones.
     todas = obtener_listado_deudores("", tipo, desde, hasta)
 
-    if cliente_id:
-        lista_deudores = [d for d in todas if str(d["cliente_id"]) == cliente_id]
-    else:
-        lista_deudores = todas
-
-    # Items del selector de cliente: un cliente por fila con su saldo agregado en el modo
-    # vigente (neto en "saldo"; total a cobrar o a pagar en los otros). El saldo acompana
-    # al nombre para decidir con el monto a la vista antes de filtrar.
     def _formato_pesos_ar(valor):
         # 1234567.5 -> "1.234.567,50" (miles con punto, decimales con coma)
         crudo = f"{abs(valor):,.2f}"
         return crudo.replace(",", "@").replace(".", ",").replace("@", ".")
 
+    # Mapa operacion -> tokens de sus items, y las opciones del selector de producto.
+    # Cada linea apunta a un producto de catalogo ("p<id>") o a un articulo a granel
+    # ("g<id_cotizacion>"); ambos entran como opciones filtrables. Se arma sobre 'todas'
+    # (solo tipo/fechas), independiente del cliente/producto elegidos, para que la lista
+    # del modal siempre este poblada.
+    tokens_por_operacion = defaultdict(set)
+    opciones_producto = {}
+    ids_operaciones = [d["id"] for d in todas]
+    detalles = (
+        DetalleOperacion.objects
+        .filter(operacion_id__in=ids_operaciones)
+        .select_related("producto", "cotizacion")
+    )
+    for det in detalles:
+        if det.cotizacion_id:
+            token = f"g{det.cotizacion_id}"
+            nombre = f"{det.cotizacion.articulo} (granel)"
+        else:
+            token = f"p{det.producto_id}"
+            nombre = det.producto.nombre
+        tokens_por_operacion[det.operacion_id].add(token)
+        info = opciones_producto.get(token)
+        if info is None:
+            info = opciones_producto[token] = {"id": token, "principal": nombre, "operaciones": set()}
+        info["operaciones"].add(det.operacion_id)
+
+    productos_con_deuda = []
+    for info in sorted(opciones_producto.values(), key=lambda i: i["principal"].lower()):
+        cantidad = len(info["operaciones"])
+        productos_con_deuda.append({
+            "id": info["id"],
+            "principal": info["principal"],
+            "busqueda": info["principal"].lower(),
+            "secundario": f"En {cantidad} deuda{'' if cantidad == 1 else 's'}",
+            "tono": "neutro",
+        })
+
+    # Filtro de la tabla/tarjetas: cliente Y producto se combinan (AND) sobre el listado.
+    lista_deudores = todas
+    if cliente_id:
+        lista_deudores = [d for d in lista_deudores if str(d["cliente_id"]) == cliente_id]
+    if producto_token:
+        lista_deudores = [
+            d for d in lista_deudores if producto_token in tokens_por_operacion.get(d["id"], set())
+        ]
+
+    # Items del selector de cliente: un cliente por fila con su saldo agregado en el modo
+    # vigente (neto en "saldo"; total a cobrar o a pagar en los otros). El saldo acompana
+    # al nombre para decidir con el monto a la vista antes de filtrar.
     agrupado = {}
     for d in todas:
         cid = d["cliente_id"]
@@ -1170,11 +1220,15 @@ def deudores(request):
             "tono": tono,
         })
 
-    # Nombre del cliente elegido para rehidratar el chip al cargar por URL directa.
+    # Nombres elegidos para rehidratar los chips al cargar por URL directa.
     cliente_nombre = ""
     if cliente_id:
         elegido = next((c for c in clientes_con_deuda if str(c["id"]) == cliente_id), None)
         cliente_nombre = elegido["principal"] if elegido else ""
+    producto_nombre = ""
+    if producto_token:
+        elegido = next((p for p in productos_con_deuda if p["id"] == producto_token), None)
+        producto_nombre = elegido["principal"] if elegido else ""
 
     # Cada equivalencia suma la columna de la valuacion elegida. Una operacion sin
     # cotizacion de origen guardada cae a su valor actual: aporta lo mismo a ambos
@@ -1236,6 +1290,11 @@ def deudores(request):
         "cliente": cliente_id,
         "cliente_nombre": cliente_nombre,
         "clientes_con_deuda": clientes_con_deuda,
+        # Producto elegido en el selector: token para los links de paginacion y nombre
+        # para el chip; vacio si no hay filtro de producto activo.
+        "producto": producto_token,
+        "producto_nombre": producto_nombre,
+        "productos_con_deuda": productos_con_deuda,
         "tipo": tipo,
         # Fechas en ISO para rellenar los <input type="date"> y armar los links de
         # paginacion; vacio si no hay filtro activo.

@@ -67,7 +67,7 @@
           con deuda; el estado aplicado (id + nombre) vive en data-* y es la fuente de
           verdad que lee deudores.js para armar la busqueda.
         {% endcomment %}
-        <div class="deu-cliente" id="deu-cliente" data-cliente-id="{{ cliente }}" data-cliente-nombre="{{ cliente_nombre }}">
+        <div class="deu-cliente" id="deu-cliente" data-filtro-id="{{ cliente }}" data-filtro-nombre="{{ cliente_nombre }}">
           <button type="button"
                   class="prod-chip deu-cliente__trigger {% if cliente %}is-active{% endif %}"
                   id="deu-cliente-trigger" aria-haspopup="dialog" aria-expanded="false">
@@ -76,6 +76,23 @@
             {% if cliente %}
               <span class="material-symbols-outlined deu-cliente__clear" id="deu-cliente-clear"
                     role="button" tabindex="0" aria-label="Quitar filtro de cliente">close</span>
+            {% endif %}
+          </button>
+        </div>
+        {% comment %}
+          Chip selector de producto. Mismo patron que el de cliente: abre un modal para
+          elegir de la lista de productos presentes en operaciones con deuda. El estado
+          aplicado (token + nombre) vive en data-* y lo lee deudores.js.
+        {% endcomment %}
+        <div class="deu-producto" id="deu-producto" data-filtro-id="{{ producto }}" data-filtro-nombre="{{ producto_nombre }}">
+          <button type="button"
+                  class="prod-chip deu-producto__trigger {% if producto %}is-active{% endif %}"
+                  id="deu-producto-trigger" aria-haspopup="dialog" aria-expanded="false">
+            <span class="material-symbols-outlined">inventory_2</span>
+            <span class="deu-producto__label" id="deu-producto-label">{{ producto_nombre|default:"Producto" }}</span>
+            {% if producto %}
+              <span class="material-symbols-outlined deu-producto__clear" id="deu-producto-clear"
+                    role="button" tabindex="0" aria-label="Quitar filtro de producto">close</span>
             {% endif %}
           </button>
         </div>
@@ -140,6 +157,12 @@
     con su saldo al lado. deudores.js escucha el evento 'selector-entidad:elegir'.
   {% endcomment %}
   {% include "selector_entidad.html" with selector_id="selector-cliente-deuda" icono="person_search" titulo="Elegir cliente" descripcion="Filtrá las deudas por el cliente que elijas de la lista." placeholder="Buscar por nombre" items=clientes_con_deuda sin_items="No hay clientes con deuda para el filtro actual." %}
+
+  {% comment %}
+    Modal selector de producto. Lista los productos (y articulos a granel) presentes
+    en operaciones con deuda, con la cantidad de deudas al lado.
+  {% endcomment %}
+  {% include "selector_entidad.html" with selector_id="selector-producto-deuda" icono="inventory_2" titulo="Elegir producto" descripcion="Filtrá las deudas por el producto que elijas de la lista." placeholder="Buscar por producto" items=productos_con_deuda sin_items="No hay productos con deuda para el filtro actual." %}
 {% endblock %}
 
 {% block codigo-javascript %}
