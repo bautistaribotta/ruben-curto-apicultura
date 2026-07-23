@@ -510,36 +510,6 @@ html {
 
 /* Estado vacio (.estado-vacio): estilos unificados en base.css */
 
-/* --- Lista del modal de seleccion de cliente (rediseno) --- */
-.vd-clilist {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  max-height: 320px;
-  overflow-y: auto;
-  margin-top: 0.25rem;
-}
-
-.vd-cliitem {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-  width: 100%;
-  text-align: left;
-  padding: 0.6rem 0.75rem;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  background-color: var(--surface-card);
-  border: 1px solid var(--border-subtle);
-  font-family: var(--font-sans);
-  transition: background-color var(--dur-normal) var(--ease-standard), border-color var(--dur-normal) var(--ease-standard);
-}
-
-.vd-cliitem:hover {
-  background-color: var(--surface-hover);
-  border-color: var(--brand);
-}
-
 /* Grilla sin panel de caja (usuario no-staff): datos generales a todo el ancho */
 .op-grid--solo {
   grid-template-columns: 1fr;
@@ -890,162 +860,11 @@ html {
   margin-top: 0.125rem;
 }
 
-/* --- Modal de seleccion de cliente --- */
-#contenedor-modal-cliente {
-  position: fixed;
-  inset: 0;
-  z-index: 2000;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  visibility: hidden;
-  transition: visibility 0.3s;
-}
-
-#contenedor-modal-cliente.abierto {
-  visibility: visible;
-  transition: none;
-}
-
-#contenedor-modal-fondo-cliente {
-  position: absolute;
-  inset: 0;
-  background-color: var(--color-slate-900-transparente-40);
-  -webkit-backdrop-filter: blur(4px);
-  backdrop-filter: blur(4px);
-  opacity: 0;
-  transition: opacity 0.3s ease-in-out;
-}
-
-#contenedor-modal-cliente.abierto #contenedor-modal-fondo-cliente {
-  opacity: 1;
-}
-
-#panel-cliente {
-  position: relative;
-  background-color: var(--color-blanco);
-  border-radius: 12px;
-  border: 1px solid var(--color-verde-medio-transparente-10-alt);
-  padding: 2.5rem 2rem 2rem 2rem;
-  width: 90%;
-  max-width: 450px;
-  box-shadow: 0 20px 25px -5px var(--color-sombra-1);
-  display: flex;
-  flex-direction: column;
-  text-align: center;
-  opacity: 0;
-  transform: scale(0.95);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-#contenedor-modal-cliente.abierto #panel-cliente {
-  opacity: 1;
-  transform: scale(1);
-}
-
-#icono-cliente {
-  color: var(--brand-olive);
-  align-self: center;
-  margin-bottom: 1rem;
-  display: flex;
-  justify-content: center;
-}
-
-#icono-cliente span {
-  font-size: 4rem;
-  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 48;
-}
-
-#panel-cliente h3 {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--slate-900);
-  margin-bottom: 0.5rem;
-}
-
-#panel-cliente p {
-  font-size: 0.875rem;
-  color: var(--slate-500);
-  margin-bottom: 1.5rem;
-  line-height: 1.5;
-}
-
-.buscador-cliente {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.625rem 0.875rem;
-  background-color: var(--color-gris-fondo-input);
-  border: 1px solid var(--stone-200);
-  border-radius: 0.75rem;
-  margin-bottom: 1rem;
-}
-
-.buscador-cliente span {
-  color: var(--slate-400);
-}
-
-.buscador-cliente input {
-  flex: 1;
-  border: none;
-  background: transparent;
-  font-size: 0.875rem;
-  font-family: inherit;
-  outline: none;
-  color: var(--slate-700);
-}
-
-#lista-clientes-modal {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  max-height: 260px;
-  overflow-y: auto;
-  text-align: left;
-}
-
-.item-cliente-modal {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  padding: 0.625rem 0.75rem;
-  border-radius: 0.5rem;
-  cursor: pointer;
-  font-size: 0.875rem;
-  color: var(--slate-700);
-  transition: background 0.15s;
-}
-
-.item-cliente-modal[hidden] {
-  display: none;
-}
-
-.item-cliente-modal:hover,
-.item-cliente-modal.resaltado {
-  background-color: var(--color-gris-fondo-input);
-}
-
-.item-cliente-modal.resaltado {
-  outline: 2px solid var(--brand-olive);
-  outline-offset: -2px;
-}
-
-.item-cliente-modal span {
-  color: var(--slate-400);
-}
-
-.sin-clientes-modal {
-  text-align: center;
-  color: var(--slate-400);
-  font-size: 0.875rem;
-  padding: 1rem 0;
-}
-
 /* ============================================================
    Override de modales con el design system (cargado al final
    para pisar las reglas viejas de mas arriba).
    ============================================================ */
-#panel-eliminar, #panel-gasto, #panel-cliente {
+#panel-eliminar, #panel-gasto {
   background-color: var(--surface-card);
   border: 1px solid var(--border-subtle);
   box-shadow: var(--shadow-xl);
@@ -1062,16 +881,16 @@ html {
   color: var(--text-muted);
 }
 
-#icono-gasto, #icono-cliente {
+#icono-gasto {
   color: var(--brand-active);
 }
 
-#panel-eliminar h3, #panel-gasto h3, #panel-cliente h3 {
+#panel-eliminar h3, #panel-gasto h3 {
   font-weight: var(--weight-bold);
   color: var(--text-strong);
 }
 
-#panel-eliminar p, #panel-gasto p, #panel-cliente p {
+#panel-eliminar p, #panel-gasto p {
   font-size: var(--text-sm);
   color: var(--text-muted);
 }
@@ -1131,39 +950,6 @@ html {
 .vd-select:focus {
   border-color: var(--brand);
   box-shadow: var(--ring);
-}
-
-/* Buscador y lista del modal de cliente */
-.buscador-cliente {
-  background-color: var(--surface-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-}
-
-.buscador-cliente:focus-within {
-  border-color: var(--brand);
-  box-shadow: var(--ring);
-}
-
-.buscador-cliente span {
-  color: var(--text-subtle);
-}
-
-.buscador-cliente input {
-  color: var(--text-strong);
-}
-
-.item-cliente-modal {
-  color: var(--text-body);
-  border-radius: var(--radius-sm);
-}
-
-.item-cliente-modal:hover, .item-cliente-modal.resaltado {
-  background-color: var(--surface-hover);
-}
-
-.item-cliente-modal.resaltado {
-  outline-color: var(--brand);
 }
 
 /* ============================================================
@@ -1412,10 +1198,6 @@ html {
   #slide-over-viaje .panel-pie button {
     width: 100%;
   }
-}
-
-.item-cliente-modal span {
-  color: var(--text-subtle);
 }
 
 /* fallback-oklch-autogenerado */

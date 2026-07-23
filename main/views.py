@@ -18,7 +18,7 @@ from .pdf_services import Remito
 from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo_cliente, editar_cliente,
                        eliminar_cliente, buscar_clientes, get_cotizacion_dolar_oficial, get_cotizaciones, get_total_kilos_granel, get_articulos_granel, actualizar_cotizacion, obtener_datos_cliente,
                        obtener_datos_producto, modificar_stock, crear_operacion, editar_operacion, servicio_cancelar_operacion,
-                       obtener_listado_deudores, filtro_nombre_apellido, filtro_tokens, crear_chofer, crear_vehiculo, crear_viaje, obtener_choferes_activos,
+                       obtener_listado_deudores, _iniciales, filtro_nombre_apellido, filtro_tokens, crear_chofer, crear_vehiculo, crear_viaje, obtener_choferes_activos,
                        obtener_vehiculos_activos, obtener_viajes, obtener_datos_viaje, editar_viaje, eliminar_viaje, crear_gasto,
                        incluir_asignado,
                        editar_chofer, eliminar_chofer, editar_vehiculo, eliminar_vehiculo,
@@ -1057,13 +1057,26 @@ def informacion_viaje(request, id_viaje):
         .order_by("-fecha")
     )
 
+    # Items para el modal selector de cliente (mismo componente que el filtro de deudas,
+    # pero sin monto debajo del nombre). Se elige de la lista para no confundir clientes
+    # de nombre parecido antes de arrancar una compra/venta.
+    clientes_items = [
+        {
+            "id": c.id,
+            "principal": f"{c.nombre} {c.apellido or ''}".strip(),
+            "busqueda": f"{c.nombre} {c.apellido or ''}".strip().lower(),
+            "iniciales": _iniciales(c.nombre, c.apellido),
+        }
+        for c in Cliente.objects.filter(activo=True).order_by("nombre", "apellido")
+    ]
+
     contexto = {
         'viaje': viaje,
         'pestaña': 'viajes',
         'choferes': incluir_asignado(obtener_choferes_activos(), viaje.chofer),
         'vehiculos': incluir_asignado(obtener_vehiculos_activos(), viaje.vehiculo),
         'operaciones': operaciones_viaje,
-        'clientes': Cliente.objects.filter(activo=True).order_by("nombre", "apellido"),
+        'clientes_items': clientes_items,
     }
     return render(request, "informacion_viaje.html", contexto)
 

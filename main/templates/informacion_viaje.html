@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="{% static 'operaciones_compartido.css' %}">
 <link rel="stylesheet" href="{% static 'informacion_operacion.css' %}">
 <link rel="stylesheet" href="{% static 'informacion_viaje.css' %}">
+<link rel="stylesheet" href="{% static 'selector_entidad.css' %}">
 {% endblock %}
 
 {% block top-header %}
@@ -255,42 +256,10 @@
 
 </section>
 
-<!-- Modal de Seleccion de Cliente (paso previo al carrito) -->
-<div id="contenedor-modal-cliente">
-  <div id="contenedor-modal-fondo-cliente" onclick="cerrarModalSeleccionCliente()"></div>
-
-  <div id="panel-cliente" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-cliente" aria-describedby="descripcion-modal-cliente">
-    <button type="button" class="boton-cerrar" onclick="cerrarModalSeleccionCliente()" aria-label="Cerrar selección de cliente">
-      <span class="material-symbols-outlined" aria-hidden="true">close</span>
-    </button>
-
-    <div id="icono-cliente" aria-hidden="true">
-      <span class="material-symbols-outlined">person_search</span>
-    </div>
-
-    <h3 id="titulo-modal-cliente">Seleccionar cliente</h3>
-    <p id="descripcion-modal-cliente">Elegí el cliente para la nueva operación de este viaje.</p>
-
-    <div class="buscador-cliente">
-      <span class="material-symbols-outlined" aria-hidden="true">search</span>
-      <input type="text" id="input-buscar-cliente" placeholder="Buscar por nombre o apellido" autocomplete="off"
-             role="combobox" aria-expanded="true" aria-controls="lista-clientes-modal"
-             aria-label="Buscar cliente por nombre o apellido" aria-activedescendant="">
-    </div>
-
-    <ul id="lista-clientes-modal" role="listbox" aria-label="Lista de clientes">
-      {% for cliente in clientes %}
-      <li class="item-cliente-modal" id="cliente-modal-{{ cliente.id }}" role="option" tabindex="-1" aria-selected="false" data-id="{{ cliente.id }}" data-nombre="{{ cliente.nombre|lower }} {{ cliente.apellido|lower }}">
-        <span class="material-symbols-outlined" aria-hidden="true">person</span>
-        <span class="nombre-cliente-modal">{{ cliente.nombre }} {{ cliente.apellido|default:"" }}</span>
-      </li>
-      {% empty %}
-      <li class="sin-clientes-modal">No hay clientes registrados.</li>
-      {% endfor %}
-    </ul>
-    <p id="sin-resultados-cliente" class="sin-clientes-modal" role="status" aria-live="polite" hidden>No se encontraron clientes.</p>
-  </div>
-</div>
+<!-- Modal de Seleccion de Cliente (paso previo al carrito). Usa el componente
+     compartido selector_entidad; informacion_viaje.js escucha 'selector-entidad:elegir'
+     y navega a la nueva operacion del cliente elegido. -->
+{% include "selector_entidad.html" with selector_id="selector-cliente-viaje" icono="person_search" titulo="Seleccionar cliente" descripcion="Elegí el cliente para la nueva operación de este viaje." placeholder="Buscar por nombre o apellido" items=clientes_items sin_items="No hay clientes registrados." %}
 
 <!-- Panel de Nuevo Gasto -->
 <form id="formulario-gasto" method="POST">
@@ -545,6 +514,7 @@
 
 {% block codigo-javascript %}
   <script src="{% static 'js/autocompletado_ciudades.js' %}"></script>
+  <script src="{% static 'js/selector_entidad.js' %}"></script>
   <script src="{% static 'js/informacion_viaje.js' %}"></script>
   <script>
     // Filtro de operaciones por tipo (Todas / Compras / Ventas)
