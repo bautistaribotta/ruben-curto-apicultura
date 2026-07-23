@@ -32,65 +32,79 @@
 {% block area-trabajo %}
 <section id="area-trabajo">
 
-  <div class="flota-grid">
-
-    <!-- COLUMNA VEHÍCULOS -->
-    <section class="flota-columna">
-      <div class="flota-columna-header">
-        <h3><span class="material-symbols-outlined">local_shipping</span> Vehículos</h3>
-        <button type="button" class="boton-nuevo" onclick="abrirNuevoVehiculo()">
-          <span class="material-symbols-outlined">add</span>
-          Nuevo
-        </button>
-      </div>
-      <div class="flota-tabla-container">
-        <table class="tabla-flota">
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th>Patente</th>
-              <th class="col-centrada">Viajes</th>
-              <th class="col-acciones">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for vehiculo in vehiculos %}
-            <tr>
-              <td class="celda-flota-nombre">{{ vehiculo.nombre }}</td>
-              <td><span class="celda-flota-patente">{{ vehiculo.patente }}</span></td>
-              <td class="col-centrada">{{ vehiculo.total_viajes|intcomma }}</td>
-              <td class="col-acciones">
-                <button type="button" class="boton-accion-flota editar"
-                        title="Editar vehículo"
-                        data-id="{{ vehiculo.id }}"
-                        data-nombre="{{ vehiculo.nombre }}"
-                        data-patente="{{ vehiculo.patente }}"
-                        onclick="abrirEditarVehiculo(this)">
-                  <span class="material-symbols-outlined">edit</span>
-                </button>
-                <button type="button" class="boton-accion-flota eliminar"
-                        title="Eliminar vehículo"
-                        data-id="{{ vehiculo.id }}"
-                        data-nombre="{{ vehiculo.nombre }}"
-                        onclick="abrirEliminarFlota(this)">
-                  <span class="material-symbols-outlined">delete</span>
-                </button>
-              </td>
-            </tr>
-            {% empty %}
-            <tr class="fila-vacia">
-              <td colspan="4" class="celda-vacia">
-                <span class="material-symbols-outlined">local_shipping</span>
-                No hay vehículos registrados.
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </section>
-
+  <!-- Titulo de la seccion -->
+  <div class="cabecera-seccion">
+    <h2><span class="material-symbols-outlined">local_shipping</span> Vehículos</h2>
   </div>
+
+  <!-- Controles superiores: buscador + alta -->
+  <div class="barra-herramientas">
+    <div class="grupo-busqueda">
+      <div class="contenedor-input-busqueda">
+        <span class="material-symbols-outlined icono-busqueda">search</span>
+        <input type="text" id="buscar-vehiculo" class="input-busqueda" placeholder="Buscar vehículo por nombre">
+      </div>
+    </div>
+
+    <button type="button" class="boton-nuevo" onclick="abrirNuevoVehiculo()">
+      <span class="material-symbols-outlined">local_shipping</span>
+      <span class="texto-boton">Nuevo Vehículo</span>
+    </button>
+  </div>
+
+  <!-- Tabla de vehículos -->
+  <div class="contenedor-tabla">
+    <table class="tabla-flota">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Patente</th>
+          <th class="col-centrada">Viajes</th>
+          <th class="col-acciones">Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="cuerpo-tabla-flota">
+        {% for vehiculo in vehiculos %}
+        <tr class="fila-vehiculo" data-nombre="{{ vehiculo.nombre|lower }}">
+          <td class="celda-flota-nombre">{{ vehiculo.nombre }}</td>
+          <td><span class="celda-flota-patente">{{ vehiculo.patente }}</span></td>
+          <td class="col-centrada">{{ vehiculo.total_viajes|intcomma }}</td>
+          <td class="col-acciones">
+            <button type="button" class="boton-accion-flota editar"
+                    title="Editar vehículo"
+                    data-id="{{ vehiculo.id }}"
+                    data-nombre="{{ vehiculo.nombre }}"
+                    data-patente="{{ vehiculo.patente }}"
+                    onclick="abrirEditarVehiculo(this)">
+              <span class="material-symbols-outlined">edit</span>
+            </button>
+            <button type="button" class="boton-accion-flota eliminar"
+                    title="Eliminar vehículo"
+                    data-id="{{ vehiculo.id }}"
+                    data-nombre="{{ vehiculo.nombre }}"
+                    onclick="abrirEliminarFlota(this)">
+              <span class="material-symbols-outlined">delete</span>
+            </button>
+          </td>
+        </tr>
+        {% empty %}
+        <tr class="fila-vacia">
+          <td colspan="4" class="celda-vacia">
+            <span class="material-symbols-outlined">local_shipping</span>
+            No hay vehículos registrados.
+          </td>
+        </tr>
+        {% endfor %}
+        <tr class="fila-vacia" id="fila-sin-resultados" hidden>
+          <td colspan="4" class="celda-vacia">
+            <span class="material-symbols-outlined">search_off</span>
+            No se encontraron vehículos con ese nombre.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
 </section>
 
 <!-- SLIDE-OVER VEHÍCULO (alta y edición) -->

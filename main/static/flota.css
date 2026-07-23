@@ -23,50 +23,94 @@
   font-size: 20px;
 }
 
-/* --- DOS COLUMNAS: Empleados | Vehículos --- */
-.flota-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.5rem;
+/* --- TITULO DE LA SECCION --- */
+.cabecera-seccion {
+  margin-bottom: 1.25rem;
 }
 
-.flota-columna {
-  background-color: var(--surface-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  box-shadow: var(--shadow-sm);
-  display: flex;
-  flex-direction: column;
-}
-
-.flota-columna-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 1.25rem;
-  border-bottom: 1px solid var(--border-default);
-  background-color: var(--surface-sunken);
-}
-
-.flota-columna-header h3 {
+.cabecera-seccion h2 {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 1rem;
-  font-weight: var(--weight-bold);
+  font-size: var(--text-3xl);
+  font-weight: var(--weight-extra);
+  letter-spacing: var(--tracking-tight);
   color: var(--text-strong);
   margin: 0;
 }
 
-.flota-columna-header h3 .material-symbols-outlined {
+.cabecera-seccion h2 .material-symbols-outlined {
   color: var(--brand-active);
-  font-size: 20px;
+  font-size: 1.75rem;
+}
+
+/* --- BARRA DE HERRAMIENTAS (Buscador + alta) --- */
+.barra-herramientas {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.grupo-busqueda {
+  display: flex;
+  gap: 1rem;
+  flex: 1;
+}
+
+.contenedor-input-busqueda {
+  position: relative;
+  width: 24rem;
+}
+
+.icono-busqueda {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--sand-400);
+  transition: color var(--dur-normal) var(--ease-standard);
+}
+
+.input-busqueda {
+  width: 100%;
+  padding: 0.625rem 1rem 0.625rem 2.5rem;
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  color: var(--text-body);
+  outline: none;
+  box-shadow: 0 1px 2px var(--color-sombra-1);
+  transition: all var(--dur-normal) var(--ease-standard);
+  font-family: inherit;
+}
+
+.input-busqueda::placeholder {
+  color: var(--text-subtle);
+}
+
+.input-busqueda:focus {
+  border-color: var(--brand);
+  box-shadow: var(--ring);
+}
+
+.contenedor-input-busqueda:focus-within .icono-busqueda {
+  color: var(--brand-active);
 }
 
 /* Boton "Nuevo" (.boton-nuevo): estilos unificados en base.css */
-.flota-columna-header .boton-nuevo .material-symbols-outlined {
+.barra-herramientas .boton-nuevo .material-symbols-outlined {
   font-size: 18px;
+}
+
+/* --- CONTENEDOR PRINCIPAL TABLA --- */
+.contenedor-tabla {
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
 }
 
 /* --- TABLA --- */
@@ -78,7 +122,7 @@
 
 /* Cabecera de tabla: estilos unificados en base.css; esta tabla mantiene su
    densidad compacta para alinear con las celdas de 1.25rem */
-.flota-columna .tabla-flota th {
+.contenedor-tabla .tabla-flota th {
   padding: 0.75rem 1.25rem;
 }
 
@@ -608,9 +652,46 @@
 }
 
 /* --- RESPONSIVE --- */
-@media (max-width: 900px) {
-  .flota-grid {
-    grid-template-columns: 1fr;
+/* Colapsa el texto del boton a "Nuevo" en pantallas medianas */
+@media (max-width: 1200px) {
+  .barra-herramientas .boton-nuevo {
+    padding: 0.625rem 1rem;
+  }
+  .barra-herramientas .boton-nuevo .texto-boton {
+    font-size: 0;
+  }
+  .barra-herramientas .boton-nuevo .texto-boton::before {
+    content: "Nuevo";
+    font-size: var(--text-sm);
+  }
+}
+
+@media (max-width: 1024px) {
+  .barra-herramientas {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+  .grupo-busqueda {
+    width: 100%;
+  }
+  .contenedor-input-busqueda {
+    width: 100%;
+  }
+  .barra-herramientas .boton-nuevo {
+    width: 100%;
+    justify-content: center;
+    padding: 0.75rem;
+  }
+  .barra-herramientas .boton-nuevo .texto-boton {
+    font-size: var(--text-sm);
+  }
+  .barra-herramientas .boton-nuevo .texto-boton::before {
+    content: none;
+  }
+  /* La tabla hace scroll horizontal en pantallas chicas */
+  .contenedor-tabla {
+    overflow-x: auto;
   }
 }
 

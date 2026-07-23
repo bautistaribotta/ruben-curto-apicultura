@@ -5,6 +5,31 @@
 //  Los empleados se gestionan desde la vista de empleados.
 // =============================================
 
+// ---------- BUSQUEDA (filtro por nombre, client-side) ----------
+
+function filtrarVehiculos() {
+    const input = document.getElementById('buscar-vehiculo');
+    if (!input) return;
+
+    const termino = input.value.trim().toLowerCase();
+    const filas = document.querySelectorAll('#cuerpo-tabla-flota .fila-vehiculo');
+    let visibles = 0;
+
+    filas.forEach((fila) => {
+        const coincide = fila.dataset.nombre.includes(termino);
+        fila.hidden = !coincide;
+        if (coincide) visibles++;
+    });
+
+    // Muestro el aviso de "sin resultados" solo si hay vehiculos pero ninguno coincide
+    const filaSinResultados = document.getElementById('fila-sin-resultados');
+    if (filaSinResultados) {
+        filaSinResultados.hidden = !(filas.length > 0 && visibles === 0);
+    }
+}
+
+document.getElementById('buscar-vehiculo')?.addEventListener('input', filtrarVehiculos);
+
 // ---------- VEHÍCULO ----------
 
 function abrirNuevoVehiculo() {
