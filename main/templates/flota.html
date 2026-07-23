@@ -3,7 +3,7 @@
 {% load humanize %}
 
 {% block nombre-pestaña %}
-  <title> Empleados y Vehículos </title>
+  <title> Vehículos </title>
 {% endblock %}
 
 {% block links %}
@@ -33,60 +33,6 @@
 <section id="area-trabajo">
 
   <div class="flota-grid">
-
-    <!-- COLUMNA EMPLEADOS -->
-    <section class="flota-columna">
-      <div class="flota-columna-header">
-        <h3><span class="material-symbols-outlined">badge</span> Empleados</h3>
-        <button type="button" class="boton-nuevo" onclick="abrirNuevoEmpleado()">
-          <span class="material-symbols-outlined">person_add</span>
-          Nuevo
-        </button>
-      </div>
-      <div class="flota-tabla-container">
-        <table class="tabla-flota">
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th class="col-centrada">Viajes</th>
-              <th class="col-acciones">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for empleado in empleados %}
-            <tr>
-              <td class="celda-flota-nombre">{{ empleado.nombre }} {{ empleado.apellido }}</td>
-              <td class="col-centrada">{{ empleado.total_viajes|intcomma }}</td>
-              <td class="col-acciones">
-                <button type="button" class="boton-accion-flota editar"
-                        title="Editar empleado"
-                        data-id="{{ empleado.id }}"
-                        data-nombre="{{ empleado.nombre }}"
-                        data-apellido="{{ empleado.apellido }}"
-                        onclick="abrirEditarEmpleado(this)">
-                  <span class="material-symbols-outlined">edit</span>
-                </button>
-                <button type="button" class="boton-accion-flota eliminar"
-                        title="Eliminar empleado"
-                        data-id="{{ empleado.id }}"
-                        data-nombre="{{ empleado.nombre }} {{ empleado.apellido }}"
-                        onclick="abrirEliminarFlota('empleado', this)">
-                  <span class="material-symbols-outlined">delete</span>
-                </button>
-              </td>
-            </tr>
-            {% empty %}
-            <tr class="fila-vacia">
-              <td colspan="3" class="celda-vacia">
-                <span class="material-symbols-outlined">person</span>
-                No hay empleados registrados.
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </section>
 
     <!-- COLUMNA VEHÍCULOS -->
     <section class="flota-columna">
@@ -126,7 +72,7 @@
                         title="Eliminar vehículo"
                         data-id="{{ vehiculo.id }}"
                         data-nombre="{{ vehiculo.nombre }}"
-                        onclick="abrirEliminarFlota('vehiculo', this)">
+                        onclick="abrirEliminarFlota(this)">
                   <span class="material-symbols-outlined">delete</span>
                 </button>
               </td>
@@ -146,56 +92,6 @@
 
   </div>
 </section>
-
-<!-- SLIDE-OVER EMPLEADO (alta y edición) -->
-<div id="slide-over-empleado">
-  <div id="slide-over-fondo" onclick="cerrarSlideOver('slide-over-empleado')"></div>
-  <div id="slide-over-panel">
-    <form id="form-empleado" method="post" autocomplete="off">
-      {% csrf_token %}
-      <input type="hidden" name="accion" id="accion-empleado" value="nuevo_empleado">
-      <input type="hidden" name="id_empleado" id="id-empleado-input">
-      <header class="panel-cabecera">
-        <div class="panel-titulo-fila">
-          <div class="icono-contenedor">
-            <span class="material-symbols-outlined">badge</span>
-          </div>
-          <div class="texto-cabecera">
-            <h3 id="titulo-empleado">Nuevo Empleado</h3>
-            <p>Ingrese los datos del empleado</p>
-          </div>
-        </div>
-        <button type="button" class="boton-cerrar" onclick="cerrarSlideOver('slide-over-empleado')">
-          <span class="material-symbols-outlined">close</span>
-        </button>
-      </header>
-      <main class="panel-cuerpo">
-        <section class="seccion-bloque">
-          <div class="subtitulo-formulario">
-            <span class="material-symbols-outlined">badge</span>
-            <h4>Información del empleado</h4>
-          </div>
-          <div class="grupo-input">
-            <label for="nombre-empleado">Nombre</label>
-            <input type="text" id="nombre-empleado" name="nombre_empleado" placeholder="Ej: Juan"
-                   required minlength="3" maxlength="25" pattern="[a-zA-ZÁÉÍÓÚáéíóúñÑ\s]{3,}">
-            <span class="mensaje-error">Mínimo 3 letras, sin números ni símbolos</span>
-          </div>
-          <div class="grupo-input">
-            <label for="apellido-empleado">Apellido</label>
-            <input type="text" id="apellido-empleado" name="apellido_empleado" placeholder="Ej: Perez"
-                   required minlength="3" maxlength="25" pattern="[a-zA-ZÁÉÍÓÚáéíóúñÑ\s]{3,}">
-            <span class="mensaje-error">Mínimo 3 letras, sin números ni símbolos</span>
-          </div>
-        </section>
-      </main>
-      <footer class="panel-pie">
-        <button type="submit" class="boton-primario">Guardar Empleado</button>
-        <button type="button" class="boton-secundario" onclick="cerrarSlideOver('slide-over-empleado')">Cancelar</button>
-      </footer>
-    </form>
-  </div>
-</div>
 
 <!-- SLIDE-OVER VEHÍCULO (alta y edición) -->
 <div id="slide-over-vehiculo">
@@ -263,8 +159,7 @@
     <form id="formulario-eliminar" method="post">
       {% csrf_token %}
       <input type="hidden" name="accion" id="accion-eliminar-flota" value="">
-      <input type="hidden" name="id_empleado" id="id-eliminar-empleado" disabled>
-      <input type="hidden" name="id_vehiculo" id="id-eliminar-vehiculo" disabled>
+      <input type="hidden" name="id_vehiculo" id="id-eliminar-vehiculo">
       <div class="modal-eliminar-acciones">
         <button type="button" class="boton-secundario" onclick="cerrarModalEliminarFlota()">No, volver</button>
         <button type="button" id="boton-confirmar-eliminar" class="boton-eliminar-confirmar">

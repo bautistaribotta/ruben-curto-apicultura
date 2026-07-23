@@ -1018,20 +1018,9 @@ def flota(request):
         accion = request.POST.get("accion")
 
         try:
-            if accion == "nuevo_empleado":
-                crear_empleado(request.POST.get("nombre_empleado", ""), request.POST.get("apellido_empleado", ""))
-                messages.success(request, "Empleado registrado exitosamente.")
-
-            elif accion == "editar_empleado":
-                editar_empleado(request.POST.get("id_empleado"), request.POST.get("nombre_empleado", ""),
-                              request.POST.get("apellido_empleado", ""), True)
-                messages.success(request, "Empleado actualizado correctamente.")
-
-            elif accion == "eliminar_empleado":
-                eliminar_empleado(request.POST.get("id_empleado"))
-                messages.success(request, "Empleado eliminado correctamente.")
-
-            elif accion == "nuevo_vehiculo":
+            # Los empleados ya no se gestionan desde flota: alta, edicion y baja
+            # viven en la vista de empleados. Aca solo quedan los vehiculos.
+            if accion == "nuevo_vehiculo":
                 crear_vehiculo(request.POST.get("nombre_vehiculo", ""), request.POST.get("patente_vehiculo", ""))
                 messages.success(request, "Vehículo registrado exitosamente.")
 
@@ -1059,7 +1048,6 @@ def flota(request):
         return redirect(url_flota)
 
     contexto = {
-        "empleados": obtener_empleados_activos(),
         "vehiculos": obtener_vehiculos_activos(),
         "pestaña": "viajes",
     }

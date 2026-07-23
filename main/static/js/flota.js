@@ -1,28 +1,9 @@
 // =============================================
-//  GESTIÓN DE EMPLEADOS Y VEHÍCULOS (FLOTA)
+//  GESTIÓN DE VEHÍCULOS (FLOTA)
 //  Reusa los slide-overs (paneles.js) para alta y edición,
 //  cambiando la accion/titulo/campos segun el caso.
+//  Los empleados se gestionan desde la vista de empleados.
 // =============================================
-
-// ---------- EMPLEADO ----------
-
-function abrirNuevoEmpleado() {
-    document.getElementById('accion-empleado').value = 'nuevo_empleado';
-    document.getElementById('id-empleado-input').value = '';
-    document.getElementById('nombre-empleado').value = '';
-    document.getElementById('apellido-empleado').value = '';
-    document.getElementById('titulo-empleado').textContent = 'Nuevo Empleado';
-    abrirSlideOver('slide-over-empleado');
-}
-
-function abrirEditarEmpleado(boton) {
-    document.getElementById('accion-empleado').value = 'editar_empleado';
-    document.getElementById('id-empleado-input').value = boton.dataset.id;
-    document.getElementById('nombre-empleado').value = boton.dataset.nombre;
-    document.getElementById('apellido-empleado').value = boton.dataset.apellido;
-    document.getElementById('titulo-empleado').textContent = 'Editar Empleado';
-    abrirSlideOver('slide-over-empleado');
-}
 
 // ---------- VEHÍCULO ----------
 
@@ -46,31 +27,15 @@ function abrirEditarVehiculo(boton) {
 
 // ---------- ELIMINAR (modal de confirmación) ----------
 
-function abrirEliminarFlota(tipo, boton) {
+function abrirEliminarFlota(boton) {
     const id = boton.dataset.id;
     const nombre = boton.dataset.nombre;
 
-    const inputEmpleado = document.getElementById('id-eliminar-empleado');
-    const inputVehiculo = document.getElementById('id-eliminar-vehiculo');
+    document.getElementById('accion-eliminar-flota').value = 'eliminar_vehiculo';
+    document.getElementById('id-eliminar-vehiculo').value = id;
 
-    // Dejo habilitado solo el campo del tipo correspondiente (los disabled no se envian)
-    if (tipo === 'empleado') {
-        document.getElementById('accion-eliminar-flota').value = 'eliminar_empleado';
-        inputEmpleado.disabled = false;
-        inputEmpleado.value = id;
-        inputVehiculo.disabled = true;
-        inputVehiculo.value = '';
-    } else {
-        document.getElementById('accion-eliminar-flota').value = 'eliminar_vehiculo';
-        inputVehiculo.disabled = false;
-        inputVehiculo.value = id;
-        inputEmpleado.disabled = true;
-        inputEmpleado.value = '';
-    }
-
-    const etiqueta = tipo === 'empleado' ? 'al empleado' : 'el vehículo';
     document.getElementById('texto-eliminar-flota').innerHTML =
-        `¿Seguro que quiere eliminar ${etiqueta} <b>${nombre}</b>? Dejará de estar disponible para nuevos viajes.`;
+        `¿Seguro que quiere eliminar el vehículo <b>${nombre}</b>? Dejará de estar disponible para nuevos viajes.`;
 
     document.getElementById('modal-eliminar-flota').classList.add('abierto');
     document.body.style.overflow = 'hidden';
