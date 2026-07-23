@@ -6,7 +6,7 @@
       <th>Fecha</th>
       <th>Vehículo</th>
       <th>Chofer</th>
-      <th>Destinos</th>
+      <th>Destino</th>
     </tr>
   </thead>
   <tbody>
@@ -51,13 +51,8 @@
       </td>
       <td>
         <span class="meli-dest">
-          {% with destinos_lista=viaje.destinos.all %}
           <span class="material-symbols-outlined meli-dest__pin">location_on</span>
-          <span class="meli-dest__first">{{ destinos_lista.0.destinos_reparto }}</span>
-          {% if destinos_lista|length > 1 %}
-          <span class="meli-dest__more">+{{ destinos_lista|length|add:"-1" }}</span>
-          {% endif %}
-          {% endwith %}
+          <span class="meli-dest__first">{{ viaje.destino.localidad_destino|default:"Sin destino" }}</span>
         </span>
       </td>
     </tr>

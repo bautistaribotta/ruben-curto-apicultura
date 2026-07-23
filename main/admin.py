@@ -2,7 +2,7 @@ from django.contrib import admin
 from .models import (
     Cliente, Producto, Operacion, DetalleOperacion, Pago, Cotizaciones,
     Chofer, Vehiculo, Viaje, DetalleViaje, Gasto,
-    ViajeReparto, DetalleViajeReparto, ViajeCereal, DetalleViajeCereal,
+    ViajeReparto, DetalleViajeReparto, DestinoViajeReparto, ViajeCereal, DetalleViajeCereal,
     GastoViajeCereal,
 )
 
@@ -45,7 +45,11 @@ class DetalleViajeRepartoInline(admin.TabularInline):
 @admin.register(ViajeReparto)
 class ViajeRepartoAdmin(admin.ModelAdmin):
     inlines = [DetalleViajeRepartoInline]
-    list_display = ('id', 'fecha_viaje_reparto', 'chofer', 'vehiculo', 'valor_viaje', 'activo')
+    list_display = ('id', 'fecha_viaje_reparto', 'chofer', 'vehiculo', 'destino', 'valor_viaje', 'activo')
+
+@admin.register(DestinoViajeReparto)
+class DestinoViajeRepartoAdmin(admin.ModelAdmin):
+    list_display = ('id', 'localidad_destino', 'valor_viaje', 'cant_viajes', 'activo')
 
 class DetalleViajeCerealInline(admin.TabularInline):
     model = DetalleViajeCereal

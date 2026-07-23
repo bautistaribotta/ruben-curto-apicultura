@@ -27,7 +27,9 @@ from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo
                        obtener_resumen_cereal, marcar_pago_viaje_cereal,
                        crear_viaje_reparto, obtener_viajes_reparto, obtener_datos_viaje_reparto,
                        editar_viaje_reparto, eliminar_viaje_reparto, crear_gasto_viaje_reparto,
-                       obtener_resumen_reparto, marcar_pago_viaje_reparto)
+                       obtener_resumen_reparto, marcar_pago_viaje_reparto,
+                       obtener_destinos_reparto, crear_destino_reparto, editar_destino_reparto,
+                       eliminar_destino_reparto)
 
 
 def _pagado_del_formulario(request):
@@ -1214,17 +1216,17 @@ def mercado_libre(request):
                 costo_empleado = request.POST.get("costo_empleado")
                 valor_viaje = request.POST.get("valor_viaje")
                 fecha_viaje_reparto = request.POST.get("fecha_viaje_reparto")
-                destinos = request.POST.getlist("destino_reparto")
+                id_destino = request.POST.get("id_destino")
 
                 # 2. Validacion de presencia de lo obligatorio (lo esencial en la vista)
                 if not all([id_chofer, id_vehiculo, gasto_combustible, costo_empleado,
-                            valor_viaje, fecha_viaje_reparto]) or not destinos:
+                            valor_viaje, fecha_viaje_reparto, id_destino]):
                     messages.error(request, "Faltan datos obligatorios para crear el viaje de reparto.")
                     return redirect("mercado_libre")
 
                 # 3. Delegacion al servicio (reglas de negocio y validacion)
                 crear_viaje_reparto(id_chofer, id_vehiculo, gasto_combustible, costo_empleado,
-                                    valor_viaje, fecha_viaje_reparto, destinos,
+                                    valor_viaje, fecha_viaje_reparto, id_destino,
                                     pagado=bool(_pagado_del_formulario(request)))
                 messages.success(request, "Viaje de reparto registrado exitosamente.")
 
@@ -1252,7 +1254,7 @@ def mercado_libre(request):
                 Q(vehiculo__nombre__icontains=q)
                 | Q(vehiculo__patente__icontains=q)
                 | filtro_nombre_apellido(q, "chofer__")
-                | Q(destinos__destinos_reparto__icontains=q)
+                | Q(destino__localidad_destino__icontains=q)
             ).distinct()
 
     # Filtro por rango de fechas (chip + popover), por la fecha del reparto.
@@ -1271,6 +1273,8 @@ def mercado_libre(request):
         "page_obj": page_obj,
         "choferes": obtener_choferes_activos(),
         "vehiculos": obtener_vehiculos_activos(),
+        # Catalogo de localidades: el alta de un reparto elige de aca, no escribe a mano
+        "destinos": obtener_destinos_reparto(),
         "q": q,
         # Las tarjetas reflejan los mismos filtros que la tabla: calculo el resumen
         # sobre el listado ya filtrado (antes de paginar), no sobre todos los viajes.
@@ -1310,7 +1314,7 @@ def informacion_viaje_reparto(request, id_viaje_reparto):
             costo_empleado = request.POST.get("costo_empleado")
             valor_viaje = request.POST.get("valor_viaje")
             fecha_viaje_reparto = request.POST.get("fecha_viaje_reparto")
-            destinos = request.POST.getlist("destino_reparto")
+            id_destino = request.POST.get("id_destino")
 
             try:
                 editar_viaje_reparto(
@@ -1321,7 +1325,7 @@ def informacion_viaje_reparto(request, id_viaje_reparto):
                     costo_empleado=costo_empleado,
                     valor_viaje=valor_viaje,
                     fecha_viaje_reparto=fecha_viaje_reparto,
-                    destinos=destinos,
+                    id_destino=id_destino,
                     pagado=_pagado_del_formulario(request),
                 )
                 messages.success(request, "Viaje de reparto modificado exitosamente.")
@@ -1351,6 +1355,9 @@ def informacion_viaje_reparto(request, id_viaje_reparto):
         "pestaña": "viajes",
         "choferes": incluir_asignado(obtener_choferes_activos(), viaje_reparto.chofer),
         "vehiculos": incluir_asignado(obtener_vehiculos_activos(), viaje_reparto.vehiculo),
+        # Incluyo el destino del viaje aunque este dado de baja, para que al editar
+        # siga preseleccionado en vez de obligar a elegir otra localidad.
+        "destinos": incluir_asignado(obtener_destinos_reparto(), viaje_reparto.destino),
     }
     return render(request, "informacion_viaje_reparto.html", contexto)
 
@@ -1370,6 +1377,47 @@ def marcar_pago_reparto_ajax(request, id_viaje_reparto):
 
     viaje_reparto = marcar_pago_viaje_reparto(id_viaje_reparto, request.POST.get("pagado") == "1")
     return JsonResponse({"ok": True, "pagado": viaje_reparto.pagado})
+
+
+@login_required
+def destinos_reparto(request):
+    """Catalogo de localidades de reparto con su tarifa (alta, edicion y baja).
+
+    Mismo patron que la vista de flota: un solo POST con el campo 'accion' que rutea
+    a cada servicio, y redirect para no repetir el envio si se recarga la pagina.
+    """
+    if request.method == "POST":
+        accion = request.POST.get("accion")
+
+        try:
+            if accion == "nuevo_destino":
+                crear_destino_reparto(request.POST.get("localidad_destino", ""),
+                                      request.POST.get("valor_viaje"))
+                messages.success(request, "Destino registrado exitosamente.")
+
+            elif accion == "editar_destino":
+                editar_destino_reparto(request.POST.get("id_destino"),
+                                       request.POST.get("localidad_destino", ""),
+                                       request.POST.get("valor_viaje"))
+                messages.success(request, "Destino actualizado correctamente.")
+
+            elif accion == "eliminar_destino":
+                eliminar_destino_reparto(request.POST.get("id_destino"))
+                messages.success(request, "Destino eliminado correctamente.")
+
+        except ValueError as e:
+            # Errores de validacion que llegan desde services.py
+            messages.error(request, str(e))
+        except Exception as e:
+            messages.error(request, f"Ocurrió un error inesperado: {e}")
+
+        return redirect("destinos_reparto")
+
+    contexto = {
+        "destinos": obtener_destinos_reparto(),
+        "pestaña": "viajes",
+    }
+    return render(request, "destinos_reparto.html", contexto)
 
 
 @login_required

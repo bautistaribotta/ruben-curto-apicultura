@@ -356,6 +356,7 @@ class GastoBase(models.Model):
 
 
 class Gasto(GastoBase):
+    # Para los viajes de miel/cera, la nombre gasto simplemente
     viaje = models.ForeignKey(Viaje, on_delete=models.CASCADE, related_name="detalle_gastos", db_column="id_viaje")
 
     class Meta:
@@ -369,6 +370,11 @@ class ViajeReparto(models.Model):
     fecha_viaje_reparto = models.DateField()
     chofer = models.ForeignKey(Chofer, on_delete=models.PROTECT, db_column="id_chofer")
     vehiculo = models.ForeignKey(Vehiculo, on_delete=models.PROTECT, db_column="id_vehiculo")
+    # Localidad del reparto, elegida del catalogo. Es nullable solo para los repartos
+    # historicos que se cargaron con destinos escritos a mano y quedaron sin catalogo.
+    # Referencia por texto porque el catalogo se declara mas abajo en este mismo archivo.
+    destino = models.ForeignKey("DestinoViajeReparto", on_delete=models.PROTECT, null=True, blank=True,
+                                db_column="id_destino", related_name="viajes")
     gasto_combustible_viaje_reparto = models.PositiveIntegerField(default=0)
     costo_empleado = models.PositiveIntegerField(default=0)
     valor_viaje = models.PositiveIntegerField(default=0)
@@ -419,6 +425,26 @@ class GastoViajeReparto(GastoBase):
 
     def __str__(self):
         return f"Gasto {self.gasto} de {self.monto} pesos (Viaje reparto: {self.viaje_reparto})"
+
+
+class DestinoViajeReparto(models.Model):
+    """Catalogo de localidades a las que se reparte, con su tarifa ya pactada.
+
+    Los repartos van a localidades cercanas que define Mercado Libre, no la
+    empresa: por eso el destino se elige de esta lista en vez de escribirse a
+    mano en cada viaje.
+    """
+    localidad_destino = models.CharField(max_length=60, unique=True)
+    valor_viaje = models.PositiveIntegerField(default=0)
+    cant_viajes = models.PositiveIntegerField(default=0)
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = "destino_viaje_reparto"
+        ordering = ["localidad_destino"]
+
+    def __str__(self):
+        return f"Localidad: {self.localidad_destino}, valor {self.valor_viaje}"
 
 
 class ViajeCereal(models.Model):

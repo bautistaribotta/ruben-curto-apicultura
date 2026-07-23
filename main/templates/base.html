@@ -67,7 +67,7 @@
           </a>
         </li>
         <li>
-          <a href="{% url 'mercado_libre' %}" class="item-menu {% if request.resolver_match.url_name == 'mercado_libre' or request.resolver_match.url_name == 'informacion_viaje_reparto' or request.resolver_match.url_name == 'flota' and request.GET.origen == 'reparto' %} activo {% endif %}">
+          <a href="{% url 'mercado_libre' %}" class="item-menu {% if request.resolver_match.url_name == 'mercado_libre' or request.resolver_match.url_name == 'informacion_viaje_reparto' or request.resolver_match.url_name == 'destinos_reparto' or request.resolver_match.url_name == 'flota' and request.GET.origen == 'reparto' %} activo {% endif %}">
             <span class="material-symbols-outlined">inventory</span>
             Viajes repartos
           </a>

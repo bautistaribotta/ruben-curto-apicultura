@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 {% load static_version %}
+{% load humanize %}
 
 {% block nombre-pestaña %}
 <title>Mercado Libre</title>
@@ -9,7 +10,6 @@
 {% block links %}
 <link rel="stylesheet" href="{% static_v 'mercado_libre.css' %}">
 <link rel="stylesheet" href="{% static_v 'filtro_fechas.css' %}">
-<link rel="stylesheet" href="{% static_v 'autocompletado_ciudades.css' %}">
 <link rel="stylesheet" href="{% static_v 'pago_viaje.css' %}">
 {% endblock %}
 
@@ -41,6 +41,10 @@
     </div>
 
     <div class="grupo-botones-meli">
+      <a id="btn-gestionar-destinos-meli" class="boton-nuevo secundario" href="{% url 'destinos_reparto' %}">
+        <span class="material-symbols-outlined">pin_drop</span>
+        Destinos
+      </a>
       <a id="btn-gestionar-flota-meli" class="boton-nuevo secundario" href="{% url 'flota' %}?origen=reparto">
         <span class="material-symbols-outlined">groups</span>
         Flota
@@ -123,29 +127,25 @@
             <h4>Recorrido</h4>
           </div>
 
-          <div class="grupo-input" id="contenedor-destinos-reparto">
-            <label for="destino-reparto">Destinos</label>
-            <input
-              type="text"
-              id="destino-reparto"
-              name="destino_reparto"
-              placeholder="Ej: Buenos Aires"
-              required
-              maxlength="30"
-              pattern="[a-zA-ZÁÉÍÓÚáéíóúñÑ\s\d]{3,}"
-              data-autocompletar-ciudad>
-
-            <div class="vje-destacciones">
-              <button type="button" id="btn-agregar-destino-reparto" class="vje-addbtn">
-                <span class="material-symbols-outlined">add_circle</span>
-                Añadir un destino
-              </button>
-              <button type="button" id="btn-quitar-destino-reparto" class="vje-removebtn">
-                <span class="material-symbols-outlined">do_not_disturb_on</span>
-                Quitar destino
-              </button>
-            </div>
-            <span class="mensaje-error">Minimo 3 caracteres (Solo letras y numeros)</span>
+          {% comment %}
+            El destino sale del catalogo: las localidades las define Mercado Libre y
+            cada una ya tiene su tarifa, por eso no se escribe a mano. Al elegir una,
+            el JS completa el valor del viaje (data-valor-objetivo).
+          {% endcomment %}
+          <div class="grupo-input">
+            <label for="destino-reparto">Destino</label>
+            <select id="destino-reparto" name="id_destino" class="select-estandar" required
+                    data-valor-objetivo="valor-viaje-reparto">
+              <option value="" disabled selected>Seleccione un destino</option>
+              {% for destino in destinos %}
+              <option value="{{ destino.id }}" data-valor="{{ destino.valor_viaje }}">{{ destino.localidad_destino }} · $ {{ destino.valor_viaje|intcomma }}</option>
+              {% endfor %}
+            </select>
+            <span class="vje-ayuda">
+              {% if destinos %}¿Falta una localidad?{% else %}Todavía no hay destinos cargados.{% endif %}
+              <a href="{% url 'destinos_reparto' %}">Gestionar destinos</a>
+            </span>
+            <span class="mensaje-error">Por favor, seleccione un destino de la lista.</span>
           </div>
         </section>
 
@@ -250,62 +250,16 @@
 {% endblock %}
 
 {% block codigo-javascript %}
-<script src="{% static_v 'js/autocompletado_ciudades.js' %}"></script>
 <script src="{% static_v 'js/filtro_fechas.js' %}"></script>
 <script src="{% static_v 'js/mercado_libre.js' %}"></script>
 <script src="{% static_v 'js/pago_viaje.js' %}"></script>
+<script src="{% static_v 'js/destino_reparto.js' %}"></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     // Autocompletar la fecha del reparto con la fecha actual al cargar la pagina
     const inputFechaReparto = document.getElementById('fecha-viaje-reparto');
     if (inputFechaReparto) {
       inputFechaReparto.value = new Date().toISOString().split('T')[0];
-    }
-
-    // Logica para añadir y quitar dinamicamente multiples destinos
-    const btnAgregarDestino = document.getElementById('btn-agregar-destino-reparto');
-    const btnQuitarDestino = document.getElementById('btn-quitar-destino-reparto');
-    const contenedorDestinos = document.getElementById('contenedor-destinos-reparto');
-
-    if (btnAgregarDestino && btnQuitarDestino && contenedorDestinos) {
-      const contenedorBotones = btnAgregarDestino.parentElement;
-
-      // Evento Agregar
-      btnAgregarDestino.addEventListener('click', () => {
-        const nuevoInput = document.createElement('input');
-        nuevoInput.type = 'text';
-        nuevoInput.name = 'destino_reparto';
-        nuevoInput.placeholder = 'Siguiente destino...';
-        nuevoInput.required = true;
-        nuevoInput.maxLength = 30;
-        nuevoInput.pattern = '[a-zA-ZÁÉÍÓÚáéíóúñÑ\\s\\d]{3,}';
-        nuevoInput.style.marginTop = '0.5rem';
-
-        contenedorDestinos.insertBefore(nuevoInput, contenedorBotones);
-        inicializarAutocompletadoCiudad(nuevoInput);
-
-        // Mostrar boton de quitar si hay mas de 1 input
-        btnQuitarDestino.style.display = 'flex';
-      });
-
-      // Evento Quitar
-      btnQuitarDestino.addEventListener('click', () => {
-        const inputs = contenedorDestinos.querySelectorAll('input[name="destino_reparto"]');
-        if (inputs.length > 1) {
-          // Borra el ultimo input añadido y su lista de sugerencias asociada
-          const ultimoInput = inputs[inputs.length - 1];
-          const listaSugerencias = ultimoInput.nextElementSibling;
-          if (listaSugerencias && listaSugerencias.classList.contains('lista-autocompletado-ciudades')) {
-            listaSugerencias.remove();
-          }
-          ultimoInput.remove();
-        }
-
-        // Ocultar el boton de quitar si solo queda el input original
-        if (inputs.length - 1 <= 1) {
-          btnQuitarDestino.style.display = 'none';
-        }
-      });
     }
   });
 </script>

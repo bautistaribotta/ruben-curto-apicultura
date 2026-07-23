@@ -189,55 +189,20 @@
   gap: 0.85rem;
 }
 
-/* Editor de multiples destinos */
-#slide-over-reparto-editar .vje-destacciones {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 0.125rem;
+/* Ayuda al pie del selector de destino: atajo al catalogo de localidades */
+#slide-over-reparto-editar .vje-ayuda {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
 }
 
-#slide-over-reparto-editar .vje-addbtn {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  background: none;
-  border: none;
+#slide-over-reparto-editar .vje-ayuda a {
   color: var(--brand-active);
-  font-family: inherit;
-  font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
-  cursor: pointer;
-  padding: 0.25rem 0;
-  width: fit-content;
+  text-decoration: none;
 }
 
-#slide-over-reparto-editar .vje-addbtn:hover {
-  color: var(--honey-700);
-}
-
-#slide-over-reparto-editar .vje-addbtn .material-symbols-outlined {
-  font-size: 18px;
-}
-
-#slide-over-reparto-editar .vje-removebtn {
-  display: none;
-  /* JS lo muestra como flex cuando hay mas de un destino */
-  align-items: center;
-  gap: 0.25rem;
-  background: none;
-  border: none;
-  color: var(--color-rojo-eliminacion);
-  font-family: inherit;
-  font-size: var(--text-sm);
-  font-weight: var(--weight-semibold);
-  cursor: pointer;
-  padding: 0.25rem 0;
-  width: fit-content;
-}
-
-#slide-over-reparto-editar .vje-removebtn .material-symbols-outlined {
-  font-size: 18px;
+#slide-over-reparto-editar .vje-ayuda a:hover {
+  text-decoration: underline;
 }
 
 /* Pie del panel */

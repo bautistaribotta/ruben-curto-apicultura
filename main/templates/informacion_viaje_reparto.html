@@ -7,7 +7,6 @@
 {% endblock %}
 
 {% block links %}
-<link rel="stylesheet" href="{% static 'autocompletado_ciudades.css' %}">
 <link rel="stylesheet" href="{% static 'panel_compartido.css' %}">
 <link rel="stylesheet" href="{% static 'operaciones_compartido.css' %}">
 <link rel="stylesheet" href="{% static 'informacion_operacion.css' %}">
@@ -76,6 +75,13 @@
           </div>
         </div>
         <div class="vd-data__row">
+          <span class="vd-data__ico"><span class="material-symbols-outlined">location_on</span></span>
+          <div class="vd-data__meta">
+            <div class="vd-data__label">Destino</div>
+            <div class="vd-data__value">{% if viaje_reparto.destino %}{{ viaje_reparto.destino.localidad_destino }}{% else %}Sin destino registrado{% endif %}</div>
+          </div>
+        </div>
+        <div class="vd-data__row">
           <span class="vd-data__ico"><span class="material-symbols-outlined">local_shipping</span></span>
           <div class="vd-data__meta">
             <div class="vd-data__label">Vehículo</div>
@@ -102,27 +108,6 @@
             </div>
           </div>
         </div>
-      </div>
-      <div class="vd-journey">
-        <div class="vd-journey__label">Ruta de destinos</div>
-        {% if viaje_reparto.destinos.all %}
-        <div class="vd-stops">
-          {% for d in viaje_reparto.destinos.all %}
-          <div class="vd-stop">
-            <div class="vd-stop__rail">
-              <span class="vd-stop__dot"></span>
-              <span class="vd-stop__line"></span>
-            </div>
-            <div class="vd-stop__body">
-              <div class="vd-stop__city">{{ d.destinos_reparto }}</div>
-              <div class="vd-stop__tag">{% if forloop.first %}Primera parada{% elif forloop.last %}Destino final{% else %}Parada {{ forloop.counter }}{% endif %}</div>
-            </div>
-          </div>
-          {% endfor %}
-        </div>
-        {% else %}
-        <span class="vd-data__value">Sin destinos registrados</span>
-        {% endif %}
       </div>
     </div>
 
@@ -324,42 +309,26 @@
             <h4>Recorrido</h4>
           </div>
 
-          <div class="grupo-input" id="contenedor-destinos-reparto-editar">
-            <label for="destino-reparto-editar">Destinos</label>
-            {% for destino in viaje_reparto.destinos.all %}
-            <input
-              type="text"
-              name="destino_reparto"
-              placeholder="Ej: Buenos Aires"
-              required
-              maxlength="30"
-              pattern="[a-zA-ZÁÉÍÓÚáéíóúñÑ\s\d]{3,}"
-              value="{{ destino.destinos_reparto }}"
-              data-autocompletar-ciudad
-              {% if forloop.first %}id="destino-reparto-editar"{% endif %}>
-            {% empty %}
-            <input
-              type="text"
-              id="destino-reparto-editar"
-              name="destino_reparto"
-              placeholder="Ej: Buenos Aires"
-              required
-              maxlength="30"
-              pattern="[a-zA-ZÁÉÍÓÚáéíóúñÑ\s\d]{3,}"
-              data-autocompletar-ciudad>
-            {% endfor %}
-
-            <div class="vje-destacciones">
-              <button type="button" id="btn-agregar-destino-reparto-editar" class="vje-addbtn">
-                <span class="material-symbols-outlined">add_circle</span>
-                Añadir un destino
-              </button>
-              <button type="button" id="btn-quitar-destino-reparto-editar" class="vje-removebtn">
-                <span class="material-symbols-outlined">do_not_disturb_on</span>
-                Quitar destino
-              </button>
-            </div>
-            <span class="mensaje-error">Minimo 3 caracteres (Solo letras y numeros)</span>
+          {% comment %}
+            Al cambiar de localidad, el JS pisa el valor del viaje con la tarifa del
+            destino nuevo (data-valor-objetivo). Si no se toca el selector, el monto
+            guardado queda como estaba.
+          {% endcomment %}
+          <div class="grupo-input">
+            <label for="destino-reparto-editar">Destino</label>
+            <select id="destino-reparto-editar" name="id_destino" class="select-estandar" required
+                    data-valor-objetivo="valor-viaje-reparto-editar">
+              <option value="" disabled {% if not viaje_reparto.destino %}selected{% endif %}>Seleccione un destino</option>
+              {% for destino in destinos %}
+              <option value="{{ destino.id }}" data-valor="{{ destino.valor_viaje }}"
+                      {% if viaje_reparto.destino_id == destino.id %}selected{% endif %}>{{ destino.localidad_destino }} · $ {{ destino.valor_viaje|intcomma }}</option>
+              {% endfor %}
+            </select>
+            <span class="vje-ayuda">
+              {% if destinos %}¿Falta una localidad?{% else %}Todavía no hay destinos cargados.{% endif %}
+              <a href="{% url 'destinos_reparto' %}">Gestionar destinos</a>
+            </span>
+            <span class="mensaje-error">Por favor, seleccione un destino de la lista.</span>
           </div>
         </section>
 
@@ -466,6 +435,6 @@
 {% endblock %}
 
 {% block codigo-javascript %}
-<script src="{% static 'js/autocompletado_ciudades.js' %}"></script>
 <script src="{% static 'js/informacion_viaje_reparto.js' %}"></script>
+<script src="{% static 'js/destino_reparto.js' %}"></script>
 {% endblock %}
