@@ -1012,6 +1012,19 @@ def eliminar_empleado(id_empleado):
     return empleado
 
 
+def obtener_datos_empleado(id_empleado):
+    try:
+        # Solo empleados activos, para no exponer registros dados de baja
+        empleado = Empleado.objects.get(id=id_empleado, activo=True)
+        return {
+            "id": empleado.id,
+            "nombre": empleado.nombre,
+            "apellido": empleado.apellido,
+        }
+    except Empleado.DoesNotExist:
+        return None
+
+
 def crear_vehiculo(nombre, patente):
     # Aplico limpieza de espacios y fuerzo la patente a mayúsculas
     nombre = nombre.strip()

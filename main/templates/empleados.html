@@ -29,6 +29,11 @@
           <input type="text" id="buscar-empleado" class="input-busqueda" placeholder="Buscar empleados por nombre o id" value="{{ q|default:'' }}">
         </div>
       </div>
+
+      <button class="boton-nuevo" onclick="prepararPanelNuevoEmpleado()">
+        <span class="material-symbols-outlined">person_add</span>
+        <span class="texto-boton">Nuevo Empleado</span>
+      </button>
     </div>
 
     <!-- Tabla de Empleados -->
@@ -37,8 +42,90 @@
     </div>
 
   </section>
+
+  <!-- PANEL LATERAL NUEVO/EDITAR EMPLEADO (SLIDE-OVER) -->
+  <div id="contenedor-slide-over">
+    <div id="slide-over-fondo" onclick="cerrarSlideOver()"></div>
+
+    <div id="slide-over-panel">
+      <form id="form-empleado" method="POST" autocomplete="off">
+        {% csrf_token %}
+        <header class="panel-cabecera">
+          <div class="panel-titulo-fila">
+            <div class="icono-contenedor">
+              <span class="material-symbols-outlined">person_add</span>
+            </div>
+            <div class="texto-cabecera">
+              <h3>Nuevo Empleado</h3>
+              <p>Ingrese los datos para el registro</p>
+            </div>
+          </div>
+          <button type="button" class="boton-cerrar" onclick="cerrarSlideOver()">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </header>
+
+        <main class="panel-cuerpo">
+          <input type="hidden" id="id_empleado" name="id_empleado" value="">
+          <section class="seccion-bloque">
+            <div class="subtitulo-formulario">
+              <span class="material-symbols-outlined">badge</span>
+              <h4>Información Personal</h4>
+            </div>
+
+            <div class="grupo-input">
+              <label for="nombre">Nombre</label>
+              <input type="text" id="nombre" name="nombre" placeholder="Ej: Juan" required maxlength="25" pattern="[a-zA-ZÁÉÍÓÚáéíóúñÑ\s]{3,25}">
+              <span class="mensaje-error">Mínimo 3 letras, máximo 25, sin números ni símbolos</span>
+            </div>
+
+            <div class="grupo-input">
+              <label for="apellido">Apellido</label>
+              <input type="text" id="apellido" name="apellido" placeholder="Ej: Perez" required maxlength="25" pattern="[a-zA-ZÁÉÍÓÚáéíóúñÑ\s]{3,25}">
+              <span class="mensaje-error">Mínimo 3 letras, máximo 25, sin números ni símbolos</span>
+            </div>
+          </section>
+        </main>
+
+        <footer class="panel-pie">
+          <button type="submit" class="boton-primario">Guardar Empleado</button>
+          <button type="button" class="boton-secundario" onclick="cerrarSlideOver()">Cancelar</button>
+        </footer>
+      </form>
+    </div>
+  </div>
+
+  <!-- Panel de eliminacion y Fondo -->
+  <form id="formulario-eliminar" method="POST">
+    {% csrf_token %}
+    <div id="contenedor-panel-eliminar">
+      <div id="contenedor-panel-fondo" onclick="cerrarPanelEliminar()"> </div>
+      <div id="panel-eliminar">
+        <input type="hidden" id="id_eliminar" name="id_eliminar" value="">
+        <input type="hidden" name="accion" value="eliminar"> 
+
+        <button type="button" class="boton-cerrar" id="icono-cerrar-panel-eliminar" onclick="cerrarPanelEliminar()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+
+        <div id="icono-advertencia">
+          <span class="material-symbols-outlined">warning</span>
+        </div>
+
+        <h3>Confirmar eliminación</h3>
+        <p id="texto-confirmacion-eliminar">¿Está seguro que quiere eliminar este empleado?</p>
+
+        <div class="acciones-modal">
+          <button type="button" class="boton-secundario" onclick="cerrarPanelEliminar()">No, mantener</button>
+          <button type="button" class="boton-primario-eliminar" id="boton-confirmar-eliminar"><span>Sí, eliminar</span></button>
+        </div>
+      </div>
+    </div>
+  </form>
+
 {% endblock %}
 
 {% block codigo-javascript %}
+  <script src="{% static_v 'js/paneles.js' %}"></script>
   <script src="{% static_v 'js/empleados.js' %}"></script>
 {% endblock %}

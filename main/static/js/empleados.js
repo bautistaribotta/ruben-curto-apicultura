@@ -69,3 +69,70 @@ if (inputBusquedaEmpleado) {
 
 // Vinculo la paginacion al cargar la pagina
 vincularPaginacionEmpleados();
+
+/**
+ * -----------------------------------------------------------------------------
+ * CONTROLADORES DE PANELES (NUEVO/EDITAR/ELIMINAR)
+ * -----------------------------------------------------------------------------
+ */
+
+const prepararPanelNuevoEmpleado = () => {
+  document.querySelector('#slide-over-panel h3').innerText = 'Nuevo Empleado';
+  document.querySelector('#slide-over-panel .texto-cabecera p').innerText = 'Ingrese los datos para el registro';
+  document.querySelector('.boton-primario').innerText = 'Guardar Empleado';
+  document.querySelector('.icono-contenedor span').innerText = 'person_add';
+
+  document.getElementById('form-empleado').reset();
+  document.getElementById('id_empleado').value = '';
+
+  if (typeof abrirSlideOver === 'function') abrirSlideOver();
+};
+
+const prepararPanelEditarEmpleado = (id) => {
+  // Pido los datos del empleado a la API interna y relleno el formulario
+  fetch(`/api/empleados/${id}/`)
+    .then((response) => response.json())
+    .then((empleado) => {
+      document.querySelector('#slide-over-panel h3').innerText = 'Editar Empleado';
+      document.querySelector('#slide-over-panel .texto-cabecera p').innerText = 'Modifique los datos del empleado';
+      document.querySelector('.boton-primario').innerText = 'Actualizar Empleado';
+      document.querySelector('.icono-contenedor span').innerText = 'edit_note';
+
+      document.getElementById('id_empleado').value = empleado.id;
+      document.getElementById('nombre').value = empleado.nombre;
+      document.getElementById('apellido').value = empleado.apellido;
+
+      if (typeof abrirSlideOver === 'function') abrirSlideOver();
+    })
+    .catch((error) => {
+      console.error(error);
+      if (typeof abrirModalError === 'function') {
+        abrirModalError('Error al cargar los datos del empleado');
+      }
+    });
+};
+
+const prepararPanelEliminarEmpleado = (id, nombre) => {
+  document.getElementById('id_eliminar').value = id;
+  document.getElementById('texto-confirmacion-eliminar').innerText = `¿Está seguro que quiere eliminar al empleado ${nombre}?`;
+  if (typeof abrirPanelEliminar === 'function') abrirPanelEliminar();
+};
+
+// Delegacion de eventos en la tabla para botones generados dinamicamente (AJAX)
+if (contenedorTablaEmpleados) {
+  contenedorTablaEmpleados.addEventListener('click', (e) => {
+    const btnEditar = e.target.closest('.boton-icono.editar');
+    const btnEliminar = e.target.closest('.boton-icono.eliminar');
+
+    if (btnEditar) {
+      e.preventDefault();
+      prepararPanelEditarEmpleado(btnEditar.dataset.id);
+    } else if (btnEliminar) {
+      e.preventDefault();
+      prepararPanelEliminarEmpleado(btnEliminar.dataset.id, btnEliminar.dataset.nombre);
+    }
+  });
+}
+
+// Hago accesible la funcion que el HTML llama desde el atributo onclick inline
+window.prepararPanelNuevoEmpleado = prepararPanelNuevoEmpleado;

@@ -5,7 +5,7 @@ from main.views import (login, inicio, actualizar_cotizacion_ajax,
                         obtener_producto_json, viajes, informacion_viaje, deudores, mercado_libre, cerrar_sesion, flota,
                         viaje_cereales, informacion_viaje_cereal, informacion_viaje_reparto, buscar_clientes_json,
                         alquileres, combustible, marcar_pago_reparto_ajax, marcar_pago_cereal_ajax,
-                        destinos_reparto, empleados)
+                        destinos_reparto, empleados, obtener_empleado_json)
 
 """
 La sentencia name="nombre_del_archivo" se usa 
@@ -28,6 +28,7 @@ urlpatterns = [
     path('api/clientes/buscar/', buscar_clientes_json, name="buscar_clientes_json"),
     path('api/clientes/<int:id_cliente>/', obtener_cliente_json, name="obtener_cliente_json"),
     path('api/productos/<int:id_producto>/', obtener_producto_json, name="obtener_producto_json"),
+    path('api/empleados/<int:id_empleado>/', obtener_empleado_json, name="obtener_empleado_json"),
     path('viajes/', viajes, name="viajes"),
     path('flota/', flota, name="flota"),
     path('informacion_viaje/<int:id_viaje>/', informacion_viaje, name="informacion_viaje"),

@@ -21,7 +21,7 @@ from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo
                        obtener_listado_deudores, _iniciales, filtro_nombre_apellido, filtro_tokens, crear_empleado, crear_vehiculo, crear_viaje, obtener_empleados_activos,
                        obtener_vehiculos_activos, obtener_viajes, obtener_datos_viaje, editar_viaje, eliminar_viaje, crear_gasto,
                        incluir_asignado,
-                       editar_empleado, eliminar_empleado, editar_vehiculo, eliminar_vehiculo,
+                       editar_empleado, eliminar_empleado, obtener_datos_empleado, editar_vehiculo, eliminar_vehiculo,
                        crear_viaje_cereal, obtener_viajes_cereales, obtener_datos_viaje_cereal,
                        editar_viaje_cereal, eliminar_viaje_cereal, crear_gasto_viaje_cereal,
                        obtener_resumen_cereal, marcar_pago_viaje_cereal,
@@ -115,6 +115,34 @@ def inicio(request):
 
 @staff_member_required
 def empleados(request):
+    if request.method == "POST":
+        accion = request.POST.get("accion")
+        id_eliminar = request.POST.get("id_eliminar")
+
+        try:
+            if accion == "eliminar" and id_eliminar:
+                eliminar_empleado(id_eliminar)
+                messages.success(request, "Empleado eliminado correctamente")
+            else:
+                id_empleado = request.POST.get("id_empleado")
+                nombre = request.POST.get("nombre", "")
+                apellido = request.POST.get("apellido", "")
+
+                # Si viene id_empleado es una EDICION, si no es un NUEVO empleado
+                if id_empleado:
+                    editar_empleado(id_empleado, nombre, apellido, True)
+                    messages.success(request, "Empleado editado correctamente")
+                else:
+                    crear_empleado(nombre, apellido)
+                    messages.success(request, "Empleado agregado correctamente")
+        except ValueError as e:
+            # Errores de validacion provenientes de services.py
+            messages.error(request, str(e))
+        except Exception as e:
+            messages.error(request, f"Ocurrió un error inesperado: {e}")
+
+        return redirect("empleados")
+
     q = request.GET.get("q", "")
 
     empleados_list = Empleado.objects.filter(activo=True)
@@ -137,6 +165,18 @@ def empleados(request):
         return render(request, "tabla_empleados.html", contexto)
 
     return render(request, "empleados.html", contexto)
+
+
+@staff_member_required
+def obtener_empleado_json(request, id_empleado):
+    datos = obtener_datos_empleado(id_empleado)
+
+    if datos:
+        # Si el empleado existe y está activo, devuelvo sus datos en formato JSON
+        return JsonResponse(datos)
+
+    # Si no lo encuentro o está inactivo, devuelvo un error 404
+    return JsonResponse({"Error": "Empleado no encontrado"}, status=404)
 
 
 @login_required

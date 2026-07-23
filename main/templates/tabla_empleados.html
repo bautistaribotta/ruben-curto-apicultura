@@ -1,8 +1,9 @@
 <table class="tabla-empleados">
   <thead>
     <tr id="encabezado-tabla-empleados">
-      <th> Empleado </th>
+      <th> Empleados </th>
       <th class="texto-derecha"> Saldo </th>
+      <th class="texto-derecha"> Acciones </th>
     </tr>
   </thead>
   <tbody>
@@ -20,10 +21,23 @@
         <td class="texto-derecha">
           <span class="empleado-saldo">$ {{ empleado.saldo|floatformat:2 }}</span>
         </td>
+        <td>
+          <div class="acciones-tabla">
+            <button class="boton-icono editar" title="Editar" data-id="{{ empleado.id }}">
+              <span class="material-symbols-outlined">edit</span>
+            </button>
+            <button class="boton-icono eliminar" 
+                    title="Eliminar" 
+                    data-id="{{ empleado.id }}"
+                    data-nombre="{{ empleado.nombre }} {{ empleado.apellido }}">
+              <span class="material-symbols-outlined">delete</span>
+            </button>
+          </div>
+        </td>
       </tr>
     {% empty %}
       <tr class="fila-vacia">
-        <td colspan="2" class="celda-vacia">
+        <td colspan="3" class="celda-vacia">
           <span class="material-symbols-outlined">badge</span>
           {% if q %}No se encontraron empleados con esos filtros.{% else %}No hay empleados registrados.{% endif %}
         </td>
