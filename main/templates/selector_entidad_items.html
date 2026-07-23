@@ -1,0 +1,29 @@
+{% comment %}
+  Items del selector de entidad (partial reutilizable). Se renderiza dentro del
+  <ul> del modal y tambien de forma aislada cuando una vista refresca la lista por
+  AJAX. Espera 'items': lista de dicts con
+    id         -> valor que viaja al elegir
+    principal  -> texto principal (nombre)
+    busqueda   -> cadena en minusculas para el filtro por texto
+    iniciales  -> (opcional) para el avatar
+    secundario -> (opcional) segunda linea (por ej. el saldo)
+    tono       -> (opcional) 'cobrar' | 'pagar' | 'neutro' para colorear el secundario
+  'sin_items' es el mensaje cuando la lista viene vacia.
+{% endcomment %}
+{% for item in items %}
+  <li class="selent-item" role="option" tabindex="-1" aria-selected="false"
+      data-id="{{ item.id }}" data-principal="{{ item.principal }}"
+      data-busqueda="{{ item.busqueda }}">
+    {% if item.iniciales %}
+      <span class="avatar-iniciales avatar-iniciales--cliente" aria-hidden="true">{{ item.iniciales }}</span>
+    {% endif %}
+    <span class="selent-item__body">
+      <span class="selent-item__principal">{{ item.principal }}</span>
+      {% if item.secundario %}
+        <span class="selent-item__secundario selent-item__secundario--{{ item.tono|default:'neutro' }}">{{ item.secundario }}</span>
+      {% endif %}
+    </span>
+  </li>
+{% empty %}
+  <li class="selent-vacio">{{ sin_items|default:"No hay resultados." }}</li>
+{% endfor %}

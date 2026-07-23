@@ -131,60 +131,16 @@
   color: var(--danger-600);
 }
 
-/* --- BARRA DE HERRAMIENTAS (Buscador) --- */
+/* --- BARRA DE HERRAMIENTAS --- */
+/* A la izquierda el modo de vista (chips de tipo); a la derecha los filtros de
+   cliente y fecha (ambos chips). El filtro de cliente ya no es un input de texto:
+   se elige desde el modal selector. */
 .barra-herramientas {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
-}
-
-.grupo-busqueda {
-  display: flex;
   gap: 1rem;
-  flex: 1;
-}
-
-.contenedor-input-busqueda {
-  position: relative;
-  width: 24rem;
-  max-width: 100%;
-}
-
-.icono-busqueda {
-  position: absolute;
-  left: 0.75rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--sand-400);
-  transition: color var(--dur-normal) var(--ease-standard);
-}
-
-.input-busqueda {
-  width: 100%;
-  padding: 0.625rem 1rem 0.625rem 2.5rem;
-  background-color: var(--surface-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  font-size: var(--text-sm);
-  color: var(--text-body);
-  outline: none;
-  box-shadow: 0 1px 2px var(--color-sombra-1);
-  transition: all var(--dur-normal) var(--ease-standard);
-  font-family: inherit;
-}
-
-.input-busqueda::placeholder {
-  color: var(--text-subtle);
-}
-
-.input-busqueda:focus {
-  border-color: var(--brand);
-  box-shadow: var(--ring);
-}
-
-.contenedor-input-busqueda:focus-within .icono-busqueda {
-  color: var(--brand-active);
+  margin-bottom: 1.5rem;
 }
 
 .barra-herramientas__right {
@@ -277,6 +233,42 @@
   background-color: var(--danger-600);
   border-color: var(--danger-600);
   color: var(--color-blanco);
+}
+
+/* --- Filtro por cliente (chip + modal) ---------------------------------------
+   El chip "Cliente" reutiliza .prod-chip (mismo lenguaje que fechas y los chips de
+   tipo). Al hacer click abre el modal selector; una vez elegido, muestra el nombre
+   del cliente y hereda el pino de .prod-chip.is-active. */
+.deu-cliente {
+  display: inline-flex;
+}
+
+.deu-cliente__trigger {
+  /* El nombre del cliente puede ser largo; acoto para que no desborde la barra. */
+  max-width: 15rem;
+}
+
+.deu-cliente__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* La "x" para limpiar vive dentro del chip activo; es un target propio, con su
+   propio hover, sin disparar la apertura del modal (lo frena el JS). */
+.deu-cliente__clear {
+  font-size: 1rem;
+  margin-left: 0.1rem;
+  margin-right: -0.2rem;
+  border-radius: var(--radius-pill);
+  opacity: 0.8;
+  transition: opacity var(--dur-fast) var(--ease-standard),
+              background-color var(--dur-fast) var(--ease-standard);
+}
+
+.deu-cliente__clear:hover {
+  opacity: 1;
+  background-color: oklch(100% 0 0 / 0.18);
 }
 
 /* --- Filtro por fecha (chip + popover) ---------------------------------------
@@ -688,12 +680,9 @@
     align-items: stretch;
     gap: 1rem;
   }
-  .grupo-busqueda {
-    flex-direction: column;
-    width: 100%;
-  }
-  .contenedor-input-busqueda {
-    width: 100%;
+  /* Los chips de filtro pasan a ocupar el ancho completo bajo los de tipo. */
+  .barra-herramientas__right {
+    justify-content: flex-start;
   }
   /* Mas especificidad que la cabecera unificada de base.css */
   .contenedor-tabla .tabla-deudores th, .contenedor-tabla .tabla-deudores td {

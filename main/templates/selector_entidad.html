@@ -1,0 +1,48 @@
+{% comment %}
+  Selector de entidad (modal reutilizable, chip -> modal).
+  Reemplaza a los buscadores de texto libre por una lista acotada donde el usuario
+  ELIGE en vez de tipear: evita errores de tipeo y confusiones entre nombres
+  parecidos a la hora de filtrar o de tomar una decision.
+
+  El JS (selector_entidad.js) es agnostico de la vista: abre/cierra el modal, filtra
+  la lista por texto, navega con teclado y, al elegir, dispara el evento
+  'selector-entidad:elegir' sobre el contenedor con detail { id, principal }. Cada
+  vista engancha ese evento a su propia logica (filtro AJAX, navegacion, etc.).
+
+  Parametros de contexto:
+    selector_id -> id unico del contenedor (para varias instancias en una pagina)
+    titulo / descripcion / placeholder
+    icono       -> simbolo Material del encabezado (por defecto person_search)
+    items       -> ver selector_entidad_items.html
+    sin_items   -> mensaje cuando no hay items
+{% endcomment %}
+<div class="selent" id="{{ selector_id }}">
+  <div class="selent__fondo" data-selent-cerrar></div>
+
+  <div class="selent__panel" role="dialog" aria-modal="true"
+       aria-labelledby="{{ selector_id }}-titulo" aria-describedby="{{ selector_id }}-desc">
+    <button type="button" class="selent__cerrar" data-selent-cerrar aria-label="Cerrar">
+      <span class="material-symbols-outlined" aria-hidden="true">close</span>
+    </button>
+
+    <div class="selent__icono" aria-hidden="true">
+      <span class="material-symbols-outlined">{{ icono|default:"person_search" }}</span>
+    </div>
+
+    <h3 class="selent__titulo" id="{{ selector_id }}-titulo">{{ titulo|default:"Seleccionar" }}</h3>
+    <p class="selent__desc" id="{{ selector_id }}-desc">{{ descripcion }}</p>
+
+    <div class="selent__buscador">
+      <span class="material-symbols-outlined" aria-hidden="true">search</span>
+      <input type="text" class="selent__input" id="{{ selector_id }}-input"
+             placeholder="{{ placeholder|default:'Buscar por nombre' }}" autocomplete="off"
+             role="combobox" aria-expanded="true" aria-controls="{{ selector_id }}-lista"
+             aria-activedescendant="">
+    </div>
+
+    <ul class="selent__lista" id="{{ selector_id }}-lista" role="listbox" aria-label="{{ titulo|default:'Opciones' }}">
+      {% include "selector_entidad_items.html" %}
+    </ul>
+    <p class="selent__sin-resultados" role="status" aria-live="polite" hidden>No se encontraron resultados.</p>
+  </div>
+</div>

@@ -1,9 +1,17 @@
 document.addEventListener('DOMContentLoaded', () => {
     // Selecciono los elementos del DOM que voy a usar para la búsqueda
-    const inputBusqueda = document.getElementById('buscar-deudor');
     const contenedorTabla = document.getElementById('tabla-deudores-container');
     const chipsTipo = document.querySelectorAll('#chips-tipo .prod-chip');
     const optsValuacion = document.querySelectorAll('#deu-valuacion .deu-seg__opt');
+
+    // --- Filtro por cliente (chip + modal selector) ---
+    // El contenedor guarda el estado APLICADO (id + nombre) en sus data-*; es la
+    // fuente de verdad que lee buscar(). El chip vive fuera de la region que el AJAX
+    // reemplaza, asi que su dataset sobrevive a los refrescos.
+    const clienteCont = document.getElementById('deu-cliente');
+    const clienteTrigger = document.getElementById('deu-cliente-trigger');
+    const clienteLabel = document.getElementById('deu-cliente-label');
+    const modalCliente = document.getElementById('selector-cliente-deuda');
 
     // Base de valuacion elegida en el segmentado ('hoy' u 'origen'). Solo cambia las
     // tarjetas de resumen; la tabla muestra ambas columnas siempre.
@@ -61,13 +69,25 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 url.searchParams.delete('hasta');
             }
+            // Mismo refuerzo para el cliente elegido: el chip vive fuera de la region
+            // que reemplaza el AJAX, asi que su dataset sigue siendo la fuente de verdad.
+            const cid = clienteCont ? clienteCont.dataset.clienteId : '';
+            if (cid) {
+                url.searchParams.set('cliente', cid);
+            } else {
+                url.searchParams.delete('cliente');
+            }
             // Mismo refuerzo para la valuacion: el segmentado vive fuera de la region
             // que reemplaza el AJAX, asi que su estado sigue siendo la fuente de verdad.
             url.searchParams.set('valuacion', valuacionActiva());
         } else {
             url = new URL(window.location.href);
-            if (inputBusqueda) {
-                url.searchParams.set('q', inputBusqueda.value);
+            // Cliente elegido: lo tomo del estado del chip, no de un input de texto
+            const clienteId = clienteCont ? clienteCont.dataset.clienteId : '';
+            if (clienteId) {
+                url.searchParams.set('cliente', clienteId);
+            } else {
+                url.searchParams.delete('cliente');
             }
             const tipo = tipoActivo();
             if (tipo) {
@@ -107,6 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const nuevasTarjetas = fragmento.querySelector('#deu-stats-region');
             const nuevaTabla = fragmento.querySelector('#tabla-deudores-region');
+            const nuevaListaModal = fragmento.querySelector('#deu-selector-clientes-region');
 
             const tarjetas = document.getElementById('deu-stats-region');
             if (nuevasTarjetas && tarjetas) {
@@ -114,6 +135,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if (nuevaTabla && contenedorTabla) {
                 contenedorTabla.innerHTML = nuevaTabla.innerHTML;
+            }
+            // La lista de clientes del modal sigue al filtro de tipo/fechas: reemplazo
+            // solo los <li> (el shell del modal y sus listeners quedan intactos).
+            const listaModal = modalCliente ? modalCliente.querySelector('.selent__lista') : null;
+            if (nuevaListaModal && listaModal) {
+                listaModal.innerHTML = nuevaListaModal.innerHTML;
             }
 
             // Actualizo la URL en la barra del navegador sin recargar la página
@@ -141,9 +168,68 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    // Agrego los event listeners iniciales
-    if (inputBusqueda) {
-        inputBusqueda.addEventListener('input', () => buscar());
+    // ---------------------------------------------------------------------------
+    // Filtro por cliente (chip + modal). El chip abre el modal; el modal avisa la
+    // eleccion por evento y aca aplico el filtro. La "x" del chip limpia.
+    // ---------------------------------------------------------------------------
+    if (clienteCont && clienteTrigger && modalCliente) {
+        // Crea o quita la "x" para limpiar dentro del chip segun haya cliente elegido.
+        const actualizarClearCliente = (activo) => {
+            let clearEl = clienteTrigger.querySelector('.deu-cliente__clear');
+            if (activo && !clearEl) {
+                clearEl = document.createElement('span');
+                clearEl.className = 'material-symbols-outlined deu-cliente__clear';
+                clearEl.id = 'deu-cliente-clear';
+                clearEl.setAttribute('role', 'button');
+                clearEl.setAttribute('tabindex', '0');
+                clearEl.setAttribute('aria-label', 'Quitar filtro de cliente');
+                clearEl.textContent = 'close';
+                clienteTrigger.appendChild(clearEl);
+            } else if (!activo && clearEl) {
+                clearEl.remove();
+            }
+        };
+
+        // Vuelca el estado elegido al chip (label, activo, boton limpiar) y a los data-*.
+        const setEstadoCliente = (id, nombre) => {
+            clienteCont.dataset.clienteId = id || '';
+            clienteCont.dataset.clienteNombre = nombre || '';
+            const activo = Boolean(id);
+            clienteLabel.textContent = activo ? nombre : 'Cliente';
+            clienteTrigger.classList.toggle('is-active', activo);
+            actualizarClearCliente(activo);
+        };
+
+        const limpiarCliente = () => {
+            setEstadoCliente('', '');
+            buscar();
+        };
+
+        // El chip abre el modal; si el click cae en la "x", limpia en su lugar (la "x"
+        // vive dentro del boton, asi que un solo handler cubre ambos casos).
+        clienteTrigger.addEventListener('click', (e) => {
+            if (e.target.closest('.deu-cliente__clear')) {
+                e.stopPropagation();
+                limpiarCliente();
+                return;
+            }
+            abrirSelectorEntidad(modalCliente);
+        });
+
+        // La "x" es un span con role=button: Enter/Espacio tambien limpian.
+        clienteTrigger.addEventListener('keydown', (e) => {
+            if (e.target.closest('.deu-cliente__clear') && (e.key === 'Enter' || e.key === ' ')) {
+                e.preventDefault();
+                e.stopPropagation();
+                limpiarCliente();
+            }
+        });
+
+        // El modal avisa la eleccion; aplico el filtro con el cliente elegido.
+        modalCliente.addEventListener('selector-entidad:elegir', (e) => {
+            setEstadoCliente(e.detail.id, e.detail.principal);
+            buscar();
+        });
     }
 
     // Chips de tipo (saldo/cobros/pagos): seleccion unica, siempre hay uno activo.

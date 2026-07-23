@@ -1071,7 +1071,14 @@ def informacion_viaje(request, id_viaje):
 # Verifico que solo un administrador pueda ver la vista, tambien verifica que el usuario este logueado
 @staff_member_required(login_url="inicio")
 def deudores(request):
-    q = request.GET.get("q", "")
+    from decimal import Decimal
+
+    # Filtro por cliente: en vez de un texto libre (propenso a errores de tipeo o a
+    # confundir nombres parecidos) se elige un cliente desde el modal selector. Viaja
+    # su id; cualquier valor no numerico se ignora y se muestran todos.
+    cliente_id = request.GET.get("cliente", "")
+    if not cliente_id.isdigit():
+        cliente_id = ""
 
     # Filtro por tipo de deuda: 'cobros' (ventas impagas) o 'pagos' (compras impagas).
     # Cualquier otro valor se ignora y se muestran todas.
@@ -1096,10 +1103,8 @@ def deudores(request):
     if valuacion != "origen":
         valuacion = "hoy"
 
-    lista_deudores = obtener_listado_deudores(q, tipo, desde, hasta)
-
     # Modo de las tarjetas de resumen segun el filtro de tipo:
-    #   - sin filtro (por defecto, tambien al buscar un cliente): "saldo", el neto
+    #   - sin filtro (por defecto, tambien al elegir un cliente): "saldo", el neto
     #     entre lo que hay por cobrar (ventas impagas) y lo que hay por pagar (compras
     #     impagas). Positivo = a favor (nos deben); negativo = en contra (debemos).
     #   - filtro cobros: "cobrar", solo el total por cobrar.
@@ -1110,6 +1115,66 @@ def deudores(request):
         modo = "pagar"
     else:
         modo = "saldo"
+
+    # Traigo el listado completo bajo el filtro de tipo/fechas (sin acotar por cliente):
+    # la tabla y las tarjetas usan la version filtrada por el cliente elegido, mientras
+    # que el selector muestra todos los clientes con deuda para que elegir siempre de un
+    # resultado. Una sola llamada evita golpear dos veces las cotizaciones.
+    todas = obtener_listado_deudores("", tipo, desde, hasta)
+
+    if cliente_id:
+        lista_deudores = [d for d in todas if str(d["cliente_id"]) == cliente_id]
+    else:
+        lista_deudores = todas
+
+    # Items del selector de cliente: un cliente por fila con su saldo agregado en el modo
+    # vigente (neto en "saldo"; total a cobrar o a pagar en los otros). El saldo acompana
+    # al nombre para decidir con el monto a la vista antes de filtrar.
+    def _formato_pesos_ar(valor):
+        # 1234567.5 -> "1.234.567,50" (miles con punto, decimales con coma)
+        crudo = f"{abs(valor):,.2f}"
+        return crudo.replace(",", "@").replace(".", ",").replace("@", ".")
+
+    agrupado = {}
+    for d in todas:
+        cid = d["cliente_id"]
+        fila = agrupado.get(cid)
+        if fila is None:
+            fila = agrupado[cid] = {
+                "id": cid,
+                "principal": d["cliente"],
+                "busqueda": d["cliente"].lower(),
+                "iniciales": d["iniciales"],
+                "pesos": Decimal("0"),
+            }
+        signo = 1 if d["tipo_operacion"] == "venta" else -1
+        # En "saldo" las ventas suman y las compras restan; en cobrar/pagar el listado ya
+        # viene acotado a un solo tipo, asi que sumo el monto directo.
+        fila["pesos"] += (signo if modo == "saldo" else 1) * (d["deuda_pesos"] or 0)
+
+    clientes_con_deuda = []
+    for fila in sorted(agrupado.values(), key=lambda f: f["principal"].lower()):
+        pesos = fila["pesos"]
+        if modo == "cobrar" or (modo == "saldo" and pesos > 0):
+            tono, secundario = "cobrar", f"+ $ {_formato_pesos_ar(pesos)}"
+        elif modo == "pagar" or (modo == "saldo" and pesos < 0):
+            tono, secundario = "pagar", f"− $ {_formato_pesos_ar(pesos)}"
+        else:
+            tono, secundario = "neutro", f"$ {_formato_pesos_ar(pesos)}"
+        clientes_con_deuda.append({
+            "id": fila["id"],
+            "principal": fila["principal"],
+            "busqueda": fila["busqueda"],
+            "iniciales": fila["iniciales"],
+            "secundario": secundario,
+            "tono": tono,
+        })
+
+    # Nombre del cliente elegido para rehidratar el chip al cargar por URL directa.
+    cliente_nombre = ""
+    if cliente_id:
+        elegido = next((c for c in clientes_con_deuda if str(c["id"]) == cliente_id), None)
+        cliente_nombre = elegido["principal"] if elegido else ""
 
     # Cada equivalencia suma la columna de la valuacion elegida. Una operacion sin
     # cotizacion de origen guardada cae a su valor actual: aporta lo mismo a ambos
@@ -1166,7 +1231,11 @@ def deudores(request):
 
     contexto = {
         "deudores": pagina_obj,
-        "q": q,
+        # Cliente elegido en el selector: id para armar los links de paginacion y el
+        # nombre para pintar el chip; vacio si no hay filtro de cliente activo.
+        "cliente": cliente_id,
+        "cliente_nombre": cliente_nombre,
+        "clientes_con_deuda": clientes_con_deuda,
         "tipo": tipo,
         # Fechas en ISO para rellenar los <input type="date"> y armar los links de
         # paginacion; vacio si no hay filtro activo.

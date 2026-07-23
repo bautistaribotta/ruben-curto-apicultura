@@ -1,6 +1,8 @@
 {% comment %}
-  Respuesta AJAX del listado de deudas: refresca las tarjetas de resumen y la tabla.
+  Respuesta AJAX del listado de deudas: refresca las tarjetas de resumen, la tabla
+  y la lista de clientes del selector (que sigue al filtro de tipo/fechas activo).
   deudores.js parsea este fragmento y reemplaza cada region por su id.
 {% endcomment %}
 <div id="deu-stats-region">{% include "deu_stats.html" %}</div>
 <div id="tabla-deudores-region">{% include "tabla_deudores.html" %}</div>
+<div id="deu-selector-clientes-region">{% include "selector_entidad_items.html" with items=clientes_con_deuda sin_items="No hay clientes con deuda para el filtro actual." %}</div>

@@ -7,6 +7,7 @@
 
 {% block links %}
   <link rel="stylesheet" href="{% static 'deudores.css' %}">
+  <link rel="stylesheet" href="{% static 'selector_entidad.css' %}">
 {% endblock %}
 
 {% block cabecera %}
@@ -40,28 +41,42 @@
       </div>
     </div>
 
-    <!-- Controles Superiores: Buscador -->
+    {% comment %}
+      Controles superiores. A la izquierda el modo de vista (saldo/cobrar/pagar);
+      a la derecha los filtros: el cliente (via modal selector) y las fechas.
+    {% endcomment %}
     <div class="barra-herramientas">
-      <div class="grupo-busqueda">
-        <div class="contenedor-input-busqueda">
-          <span class="material-symbols-outlined icono-busqueda">search</span>
-          <input type="text" id="buscar-deudor" class="input-busqueda" placeholder="Buscar clientes/proveedores por nombre o ID" value="{{ q }}">
-        </div>
+      <div class="prod-chips prod-chips--tipo" id="chips-tipo" role="group" aria-label="Ver el saldo, los cobros o los pagos">
+        <button type="button" class="prod-chip prod-chip--saldo {% if tipo != 'cobros' and tipo != 'pagos' %}is-active{% endif %}" data-tipo=""
+                title="Saldo neto: lo que hay por cobrar menos lo que hay por pagar. Es la vista por defecto.">
+          <span class="material-symbols-outlined">balance</span>
+          Saldo
+        </button>
+        <button type="button" class="prod-chip prod-chip--cobros {% if tipo == 'cobros' %}is-active{% endif %}" data-tipo="cobros">
+          <span class="material-symbols-outlined">arrow_upward</span>
+          Cobrar
+        </button>
+        <button type="button" class="prod-chip prod-chip--pagos {% if tipo == 'pagos' %}is-active{% endif %}" data-tipo="pagos">
+          <span class="material-symbols-outlined">arrow_downward</span>
+          Pagar
+        </button>
       </div>
       <div class="barra-herramientas__right">
-        <div class="prod-chips prod-chips--tipo" id="chips-tipo" role="group" aria-label="Ver el saldo, los cobros o los pagos">
-          <button type="button" class="prod-chip prod-chip--saldo {% if tipo != 'cobros' and tipo != 'pagos' %}is-active{% endif %}" data-tipo=""
-                  title="Saldo neto: lo que hay por cobrar menos lo que hay por pagar. Es la vista por defecto.">
-            <span class="material-symbols-outlined">balance</span>
-            Saldo
-          </button>
-          <button type="button" class="prod-chip prod-chip--cobros {% if tipo == 'cobros' %}is-active{% endif %}" data-tipo="cobros">
-            <span class="material-symbols-outlined">arrow_upward</span>
-            Cobrar
-          </button>
-          <button type="button" class="prod-chip prod-chip--pagos {% if tipo == 'pagos' %}is-active{% endif %}" data-tipo="pagos">
-            <span class="material-symbols-outlined">arrow_downward</span>
-            Pagar
+        {% comment %}
+          Chip selector de cliente. Abre el modal para elegir de la lista de clientes
+          con deuda; el estado aplicado (id + nombre) vive en data-* y es la fuente de
+          verdad que lee deudores.js para armar la busqueda.
+        {% endcomment %}
+        <div class="deu-cliente" id="deu-cliente" data-cliente-id="{{ cliente }}" data-cliente-nombre="{{ cliente_nombre }}">
+          <button type="button"
+                  class="prod-chip deu-cliente__trigger {% if cliente %}is-active{% endif %}"
+                  id="deu-cliente-trigger" aria-haspopup="dialog" aria-expanded="false">
+            <span class="material-symbols-outlined">person_search</span>
+            <span class="deu-cliente__label" id="deu-cliente-label">{{ cliente_nombre|default:"Cliente" }}</span>
+            {% if cliente %}
+              <span class="material-symbols-outlined deu-cliente__clear" id="deu-cliente-clear"
+                    role="button" tabindex="0" aria-label="Quitar filtro de cliente">close</span>
+            {% endif %}
           </button>
         </div>
         {% comment %}
@@ -119,8 +134,15 @@
       {% include "tabla_deudores.html" %}
     </div>
   </section>
+
+  {% comment %}
+    Modal selector de cliente. Lista solo clientes con deuda bajo el filtro vigente,
+    con su saldo al lado. deudores.js escucha el evento 'selector-entidad:elegir'.
+  {% endcomment %}
+  {% include "selector_entidad.html" with selector_id="selector-cliente-deuda" icono="person_search" titulo="Elegir cliente" descripcion="Filtrá las deudas por el cliente que elijas de la lista." placeholder="Buscar por nombre" items=clientes_con_deuda sin_items="No hay clientes con deuda para el filtro actual." %}
 {% endblock %}
 
 {% block codigo-javascript %}
+  <script src="{% static 'js/selector_entidad.js' %}"></script>
   <script src="{% static 'js/deudores.js' %}"></script>
 {% endblock %}

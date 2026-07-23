@@ -832,6 +832,9 @@ def obtener_listado_deudores(q="", tipo="", desde=None, hasta=None):
             # deuda "a cobrar" (el cliente nos debe) y una compra impaga es "a pagar"
             # (nosotros le debemos al proveedor).
             "tipo_operacion": operacion.tipo_operacion,
+            # Id del cliente: permite agrupar por cliente para el selector y filtrar el
+            # listado por el cliente elegido (en vez de por texto libre).
+            "cliente_id": operacion.cliente.id,
             "cliente": f"{operacion.cliente.nombre} {operacion.cliente.apellido or ''}".strip(),
             "iniciales": _iniciales(operacion.cliente.nombre, operacion.cliente.apellido),
             "fecha": operacion.fecha,
