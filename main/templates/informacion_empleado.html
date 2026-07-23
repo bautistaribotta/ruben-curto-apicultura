@@ -10,13 +10,15 @@
   <link rel="stylesheet" href="{% static_v 'informacion_empleado.css' %}">
 {% endblock %}
 
+{% block cabecera %}
+  <a href="{% url 'empleados' %}" class="boton-volver">
+    <span class="material-symbols-outlined">arrow_back</span>
+    Volver a Empleados
+  </a>
+{% endblock %}
+
 {% block area-trabajo %}
   <div id="espacio-trabajo-empleado">
-
-    <a href="{% url 'empleados' %}" class="boton-volver">
-      <span class="material-symbols-outlined">arrow_back</span>
-      Volver a Empleados
-    </a>
 
     <!-- Cabecera del perfil: avatar + nombre completo -->
     <div class="cabecera-empleado">
