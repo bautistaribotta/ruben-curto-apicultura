@@ -88,16 +88,24 @@
   margin-bottom: 1.5rem;
 }
 
+/* min-width: 0 anula el minimo automatico del flex: sin el, el grupo no puede
+   achicarse por debajo de su contenido y un chip de fecha largo termina
+   empujando los botones fuera de la barra. */
 .grupo-busqueda {
   display: flex;
   flex: 1;
+  min-width: 0;
   gap: 1rem;
 }
 
+/* El buscador es lo unico elastico de la barra: parte de 24rem y cede ancho
+   cuando el chip de fechas crece, hasta el piso donde todavia se lee lo escrito.
+   El chip (.ff) ya es flex: none, asi que nunca se deforma. */
 .contenedor-buscador {
   position: relative;
-  width: 24rem;
-  max-width: 100%;
+  flex: 1 1 24rem;
+  min-width: 10rem;
+  max-width: 24rem;
 }
 
 .icono-busqueda {
@@ -137,10 +145,13 @@
 }
 
 /* --- GRUPO DE BOTONES --- */
+/* flex: none para que los botones conserven su ancho: el que cede espacio
+   cuando el chip de fechas crece es el buscador, no ellos. */
 .grupo-botones-meli {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  flex: none;
 }
 
 /* --- BOTON GESTIONAR FLOTA --- */
@@ -286,9 +297,12 @@
     align-items: stretch;
     gap: 1rem;
   }
+  /* Apilado, el buscador ocupa toda la fila: suelto el tope de 24rem que en
+     escritorio lo mantiene del ancho de siempre. */
   .grupo-busqueda,
   .contenedor-buscador {
     width: 100%;
+    max-width: 100%;
   }
   /* Los botones se reparten el ancho. Uso auto-fit y no un numero fijo de columnas
      porque "Destinos" solo lo ve el staff: sin el quedan dos y no un hueco vacio. */
