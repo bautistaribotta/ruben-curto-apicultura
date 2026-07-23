@@ -42,25 +42,10 @@
     </div>
 
     {% comment %}
-      Controles superiores. A la izquierda el modo de vista (saldo/cobrar/pagar);
-      a la derecha los filtros: el cliente (via modal selector) y las fechas.
+      Controles superiores. A la izquierda los filtros: cliente y producto (via modal
+      selector) y fecha; a la derecha el modo de vista (saldo/cobrar/pagar).
     {% endcomment %}
     <div class="barra-herramientas">
-      <div class="prod-chips prod-chips--tipo" id="chips-tipo" role="group" aria-label="Ver el saldo, los cobros o los pagos">
-        <button type="button" class="prod-chip prod-chip--saldo {% if tipo != 'cobros' and tipo != 'pagos' %}is-active{% endif %}" data-tipo=""
-                title="Saldo neto: lo que hay por cobrar menos lo que hay por pagar. Es la vista por defecto.">
-          <span class="material-symbols-outlined">balance</span>
-          Saldo
-        </button>
-        <button type="button" class="prod-chip prod-chip--cobros {% if tipo == 'cobros' %}is-active{% endif %}" data-tipo="cobros">
-          <span class="material-symbols-outlined">arrow_upward</span>
-          Cobrar
-        </button>
-        <button type="button" class="prod-chip prod-chip--pagos {% if tipo == 'pagos' %}is-active{% endif %}" data-tipo="pagos">
-          <span class="material-symbols-outlined">arrow_downward</span>
-          Pagar
-        </button>
-      </div>
       <div class="barra-herramientas__right">
         {% comment %}
           Chip selector de cliente. Abre el modal para elegir de la lista de clientes
@@ -144,6 +129,21 @@
             </div>
           </div>
         </div>
+      </div>
+      <div class="prod-chips prod-chips--tipo" id="chips-tipo" role="group" aria-label="Ver el saldo, los cobros o los pagos">
+        <button type="button" class="prod-chip prod-chip--saldo {% if tipo != 'cobros' and tipo != 'pagos' %}is-active{% endif %}" data-tipo=""
+                title="Saldo neto: lo que hay por cobrar menos lo que hay por pagar. Es la vista por defecto.">
+          <span class="material-symbols-outlined">balance</span>
+          Saldo
+        </button>
+        <button type="button" class="prod-chip prod-chip--cobros {% if tipo == 'cobros' %}is-active{% endif %}" data-tipo="cobros">
+          <span class="material-symbols-outlined">arrow_upward</span>
+          Cobrar
+        </button>
+        <button type="button" class="prod-chip prod-chip--pagos {% if tipo == 'pagos' %}is-active{% endif %}" data-tipo="pagos">
+          <span class="material-symbols-outlined">arrow_downward</span>
+          Pagar
+        </button>
       </div>
     </div>
 
