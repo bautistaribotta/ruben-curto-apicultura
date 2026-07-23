@@ -40,21 +40,8 @@
       {% include 'filtro_fechas.html' %}
     </div>
 
+    <!-- Flota y Destinos se llegan desde la barra lateral, como sub-items de esta seccion -->
     <div class="grupo-botones-meli">
-      {% comment %}
-        El catalogo de destinos define cuanto se cobra cada viaje, asi que lo maneja
-        solo el personal administrativo. La vista tambien valida el permiso.
-      {% endcomment %}
-      {% if user.is_staff %}
-      <a id="btn-gestionar-destinos-meli" class="boton-nuevo secundario" href="{% url 'destinos_reparto' %}">
-        <span class="material-symbols-outlined">pin_drop</span>
-        Destinos
-      </a>
-      {% endif %}
-      <a id="btn-gestionar-flota-meli" class="boton-nuevo secundario" href="{% url 'flota' %}?origen=reparto">
-        <span class="material-symbols-outlined">groups</span>
-        Flota
-      </a>
       <button id="nuevo-viaje-meli" class="boton-nuevo" onclick="abrirSlideOver('slide-over-reparto')">
         <span class="material-symbols-outlined">local_shipping</span>
         Nuevo reparto

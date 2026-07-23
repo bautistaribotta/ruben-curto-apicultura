@@ -781,10 +781,9 @@
   .contenedor-input-busqueda {
     width: 100%;
   }
+  /* Quedo un solo boton (Flota se movio a la barra lateral), asi que ocupa la
+     fila entera sin necesidad de grilla. */
   .grupo-botones {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.75rem;
     width: 100%;
   }
   .boton-nuevo {
@@ -801,9 +800,6 @@
 }
 
 @media (max-width: 600px) {
-  .grupo-botones {
-    grid-template-columns: 1fr;
-  }
   #slide-over-panel {
     width: 100%;
     border-radius: 0;

@@ -154,8 +154,7 @@
   flex: none;
 }
 
-/* --- BOTON GESTIONAR FLOTA --- */
-/* Botones de la cabecera: usan .boton-nuevo / .boton-nuevo.secundario de base.css */
+/* El boton de la cabecera usa .boton-nuevo de base.css */
 
 /* --- CONTENEDOR DE LA TABLA --- */
 #contenedor-tabla-viajes-meli {
@@ -304,16 +303,11 @@
     width: 100%;
     max-width: 100%;
   }
-  /* Los botones se reparten el ancho. Uso auto-fit y no un numero fijo de columnas
-     porque "Destinos" solo lo ve el staff: sin el quedan dos y no un hueco vacio. */
+  /* Quedo un solo boton (Flota y Destinos se movieron a la barra lateral), asi que
+     ocupa la fila entera sin necesidad de grilla. */
   .grupo-botones-meli {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
-    gap: 0.75rem;
     width: 100%;
   }
-  #btn-gestionar-flota-meli,
-  #btn-gestionar-destinos-meli,
   #nuevo-viaje-meli {
     width: 100%;
     padding: 0.75rem;
@@ -684,9 +678,6 @@
 @media (max-width: 600px) {
   /* En moviles chicos las tarjetas se apilan en una sola columna. */
   .meli-stats {
-    grid-template-columns: 1fr;
-  }
-  .grupo-botones-meli {
     grid-template-columns: 1fr;
   }
   #slide-over-reparto .slide-over-panel {

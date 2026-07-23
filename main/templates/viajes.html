@@ -33,11 +33,8 @@
         {% include 'filtro_fechas.html' %}
       </div>
 
+      <!-- Flota se llega desde la barra lateral, como sub-item de esta seccion -->
       <div class="grupo-botones">
-        <a class="boton-nuevo secundario" id="btn-gestionar-flota" href="{% url 'flota' %}?origen=viajes">
-          <span class="material-symbols-outlined">groups</span>
-          <span class="texto-boton">Flota</span>
-        </a>
         <button class="boton-nuevo" id="btn-nuevo-viaje" onclick="abrirSlideOver('slide-over-viaje')">
           <span class="material-symbols-outlined">add</span>
           <span class="texto-boton">Nuevo Viaje</span>
