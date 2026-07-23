@@ -1,0 +1,58 @@
+<table class="tabla-empleados">
+  <thead>
+    <tr id="encabezado-tabla-empleados">
+      <th> Empleado </th>
+      <th class="texto-derecha"> Saldo </th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for empleado in empleados %}
+      <tr class="fila-empleado">
+        <td>
+          <div class="emp-empleado">
+            <span class="avatar-iniciales avatar-iniciales--empleado">{{ empleado.nombre|first|upper }}{{ empleado.apellido|first|upper }}</span>
+            <div>
+              <div class="empleado-nombre"> {{ empleado.nombre }} {{ empleado.apellido }} </div>
+              <div class="empleado-id"> ID: {{ empleado.id }} </div>
+            </div>
+          </div>
+        </td>
+        <td class="texto-derecha">
+          <span class="empleado-saldo">$ {{ empleado.saldo|floatformat:2 }}</span>
+        </td>
+      </tr>
+    {% empty %}
+      <tr class="fila-vacia">
+        <td colspan="2" class="celda-vacia">
+          <span class="material-symbols-outlined">badge</span>
+          {% if q %}No se encontraron empleados con esos filtros.{% else %}No hay empleados registrados.{% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<!-- Paginacion -->
+<div class="paginacion">
+  <div class="paginacion-info">
+    Mostrando <span>{{ empleados.start_index }}-{{ empleados.end_index }}</span>
+    de <span>{{ empleados.paginator.count }}</span> empleados
+  </div>
+  <div class="paginacion-botones">
+    {% if empleados.has_previous %}
+      <a href="?page={{ empleados.previous_page_number }}{% if q %}&q={{ q }}{% endif %}">
+        <button class="boton-paginacion">Anterior</button>
+      </a>
+    {% else %}
+      <button class="boton-paginacion" disabled>Anterior</button>
+    {% endif %}
+
+    {% if empleados.has_next %}
+      <a href="?page={{ empleados.next_page_number }}{% if q %}&q={{ q }}{% endif %}">
+        <button class="boton-paginacion">Siguiente</button>
+      </a>
+    {% else %}
+      <button class="boton-paginacion" disabled>Siguiente</button>
+    {% endif %}
+  </div>
+</div>

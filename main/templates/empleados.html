@@ -1,20 +1,44 @@
 {% extends "base.html" %}
 {% load static %}
+{% load static_version %}
 
 {% block nombre-pestaña %}
   <title> Empleados </title>
 {% endblock %}
 
+{% block links %}
+  <link rel="stylesheet" href="{% static_v 'empleados.css' %}">
+{% endblock %}
+
 {% block cabecera %}
   <div id="titulos-cabecera">
     <h2> Empleados </h2>
-    <p> Sección de empleados para ver las entregas de dinero </p>
+    <p> Gestione el personal de la empresa </p>
   </div>
 {% endblock %}
 
 {% block area-trabajo %}
-  <!-- Área de Trabajo -->
+  <!-- AREA DE TRABAJO -->
   <section id="area-trabajo">
-    
+
+    <!-- Controles Superiores: Buscador -->
+    <div class="barra-herramientas">
+      <div class="grupo-busqueda">
+        <div class="contenedor-input-busqueda">
+          <span class="material-symbols-outlined icono-busqueda">search</span>
+          <input type="text" id="buscar-empleado" class="input-busqueda" placeholder="Buscar empleados por nombre o id" value="{{ q|default:'' }}">
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla de Empleados -->
+    <div class="contenedor-tabla" id="tabla-empleados-container">
+      {% include 'tabla_empleados.html' %}
+    </div>
+
   </section>
+{% endblock %}
+
+{% block codigo-javascript %}
+  <script src="{% static_v 'js/empleados.js' %}"></script>
 {% endblock %}

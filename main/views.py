@@ -115,7 +115,28 @@ def inicio(request):
 
 @staff_member_required
 def empleados(request):
-    return render(request, "empleados.html")
+    q = request.GET.get("q", "")
+
+    empleados_list = Empleado.objects.filter(activo=True)
+
+    if q:
+        if q.isdigit():
+            empleados_list = empleados_list.filter(id__icontains=q)
+        else:
+            empleados_list = empleados_list.filter(filtro_nombre_apellido(q))
+
+    empleados_list = empleados_list.order_by("nombre")
+
+    paginator_empleados = Paginator(empleados_list, 10)
+    pagina_numero = request.GET.get("page")
+    pagina_obj = paginator_empleados.get_page(pagina_numero)
+
+    contexto = {"empleados": pagina_obj, "q": q}
+
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        return render(request, "tabla_empleados.html", contexto)
+
+    return render(request, "empleados.html", contexto)
 
 
 @login_required

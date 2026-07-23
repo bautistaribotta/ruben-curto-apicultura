@@ -1,0 +1,162 @@
+/* Nota: La barra lateral, header y layout base se heredan de base.css */
+
+/* --- BARRA DE HERRAMIENTAS (Buscador) --- */
+.barra-herramientas {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.grupo-busqueda {
+  display: flex;
+  gap: 1rem;
+  flex: 1;
+}
+
+.contenedor-input-busqueda {
+  position: relative;
+  width: 24rem;
+}
+
+.icono-busqueda {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--sand-400);
+  transition: color var(--dur-normal) var(--ease-standard);
+}
+
+.input-busqueda {
+  width: 100%;
+  padding: 0.625rem 1rem 0.625rem 2.5rem;
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  color: var(--text-body);
+  outline: none;
+  box-shadow: 0 1px 2px var(--color-sombra-1);
+  transition: all var(--dur-normal) var(--ease-standard);
+  font-family: inherit;
+}
+
+.input-busqueda::placeholder {
+  color: var(--text-subtle);
+}
+
+.input-busqueda:focus {
+  border-color: var(--brand);
+  box-shadow: var(--ring);
+}
+
+.contenedor-input-busqueda:focus-within .icono-busqueda {
+  color: var(--brand-active);
+}
+
+/* --- CONTENEDOR PRINCIPAL TABLA --- */
+.contenedor-tabla {
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+/* --- TABLA DE EMPLEADOS --- */
+.tabla-empleados {
+  width: 100%;
+  text-align: left;
+  border-collapse: collapse;
+}
+
+/* Cabecera de tabla: estilos unificados en base.css */
+.tabla-empleados th {
+  padding: 0.9rem 1.5rem;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  background-color: var(--surface-sunken);
+  border-bottom: 1px solid var(--border-subtle);
+  white-space: nowrap;
+}
+
+/* Anchos de columnas */
+.tabla-empleados th:nth-child(1) {
+  width: 70%;
+}
+
+.tabla-empleados th:nth-child(2) {
+  width: 30%;
+}
+
+.texto-derecha {
+  text-align: right;
+}
+
+.tabla-empleados td {
+  padding: 1rem 1.5rem;
+  font-size: var(--text-sm);
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-body);
+  vertical-align: middle;
+}
+
+.tabla-empleados tbody tr {
+  transition: background-color var(--dur-normal) var(--ease-standard);
+}
+
+.tabla-empleados tbody tr:hover {
+  background-color: var(--surface-hover);
+}
+
+.tabla-empleados tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* --- Celda Empleado: avatar con iniciales + nombre + id --- */
+.emp-empleado {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Avatar de iniciales (.avatar-iniciales--empleado): estilos unificados en base.css */
+
+.empleado-nombre {
+  font-weight: var(--weight-semibold);
+  color: var(--text-strong);
+}
+
+.empleado-id {
+  font-size: var(--text-xs);
+  font-weight: 400;
+  color: var(--text-subtle);
+  margin-top: 0.125rem;
+}
+
+/* --- Celda de Saldo --- */
+.empleado-saldo {
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-strong);
+}
+
+/* Paginacion y estado vacio: estilos unificados en base.css */
+
+/* --- ADAPTACION PARA MOVILES Y TABLETS --- */
+@media (max-width: 1024px) {
+  .contenedor-input-busqueda {
+    width: 100%;
+  }
+}
+
+@media (max-width: 600px) {
+  .tabla-empleados th:nth-child(2),
+  .tabla-empleados td:nth-child(2) {
+    display: none;
+  }
+}
