@@ -94,6 +94,8 @@
   /* anillo de foco */
   --blanco-transparente-6: oklch(100% 0 0 / 0.06);
   /* hover item */
+  --blanco-transparente-12: oklch(100% 0 0 / 0.12);
+  /* rama del submenu de la barra */
   /* ============================================================
      Sistema de diseno: escala de marca completa (oklch)
      Nombres alineados al design system para reutilizar en vistas.
@@ -299,6 +301,73 @@ body {
   width: 4px;
   height: 1.4rem;
   border-radius: 0 9999px 9999px 0;
+  background-color: var(--honey-500);
+}
+
+/* --- SUB-ITEMS DE SECCION ---
+   Paginas de apoyo de una seccion (Flota, Destinos). Solo se despliegan las de la
+   seccion en la que ya estas: el hermano adyacente del item activo alcanza, no hace
+   falta ni JS ni :has(). Sin toggle ni hover, no hay estado que recordar entre
+   navegaciones ni disparos accidentales al mover el mouse por la barra. */
+.nav-sub {
+  display: none;
+  list-style: none;
+  flex-direction: column;
+  gap: 0.1rem;
+  /* La rama nace bajo el centro del icono del padre: 1.1rem del padding del item
+     mas media caja del icono de 1.4rem. */
+  margin: 0.35rem 0 0.15rem 1.8rem;
+  padding-left: 0.7rem;
+  border-left: 1px solid var(--blanco-transparente-12);
+}
+
+.item-menu.activo + .nav-sub {
+  display: flex;
+}
+
+.item-sub {
+  position: relative;
+  display: block;
+  /* 0.75rem de padding sobre los 2.5rem donde arranca la lista: el texto cae
+     alineado con el del item padre, y la sangria la marca la rama. */
+  padding: 0.45rem 0.75rem;
+  border-radius: 0.5rem;
+  color: var(--sand-300);
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  opacity: 0.75;
+  transition: background-color 0.2s, color 0.2s, opacity 0.2s;
+}
+
+.item-sub:hover {
+  background-color: var(--blanco-transparente-6);
+  color: var(--sand-50);
+  opacity: 1;
+}
+
+.item-sub:focus-visible {
+  outline: 2px solid var(--honey-500);
+  outline-offset: 2px;
+}
+
+.item-sub.activo {
+  color: var(--brand-cream);
+  font-weight: 600;
+  opacity: 1;
+}
+
+/* La rama se enciende en miel a la altura de la pagina abierta. Marca donde estas
+   sin repetir el fondo dorado que ya lleva la seccion, que sigue activa arriba. */
+.item-sub.activo::before {
+  content: "";
+  position: absolute;
+  left: -0.7rem;
+  margin-left: -1px;
+  top: 0.3rem;
+  bottom: 0.3rem;
+  width: 2px;
+  border-radius: 9999px;
   background-color: var(--honey-500);
 }
 
@@ -1180,6 +1249,7 @@ tbody tr.fila-vacia:active {
     --honey-tint-10: rgba(255, 181, 4, 0.12);
     --honey-tint-20: rgba(255, 181, 4, 0.22);
     --blanco-transparente-6: rgba(255, 255, 255, 0.06);
+    --blanco-transparente-12: rgba(255, 255, 255, 0.12);
     --honey-50: #fff8e6;
     --honey-200: #ffe08a;
     --honey-300: #ffd24f;
