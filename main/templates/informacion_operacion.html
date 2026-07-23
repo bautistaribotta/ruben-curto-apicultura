@@ -15,7 +15,8 @@
 
     <!-- Volver: el destino depende del origen de navegacion (?origen=) -->
     {% if request.GET.origen == 'deudores' %}
-    <a href="{% url 'deudores' %}" class="boton-volver">
+    {# Reconstruyo la URL de deudas con los mismos filtros con que se llego (viajan en request.GET), asi al volver el listado queda filtrado igual. La vista de deudas ignora 'origen'. #}
+    <a href="{% url 'deudores' %}?{{ request.GET.urlencode }}" class="boton-volver">
         <span class="material-symbols-outlined">arrow_back</span>
         Volver a Deudores
     </a>

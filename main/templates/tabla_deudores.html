@@ -11,7 +11,7 @@
         </thead>
         <tbody>
           {% for deudor in deudores %}
-            <tr data-url="{% url 'informacion_operacion' deudor.id %}?origen=deudores" onclick="window.location.href=this.dataset.url" class="fila-deudor">
+            <tr data-url="{% url 'informacion_operacion' deudor.id %}?origen=deudores{% if cliente %}&cliente={{ cliente }}{% endif %}{% if producto %}&producto={{ producto }}{% endif %}{% if tipo %}&tipo={{ tipo }}{% endif %}{% if desde %}&desde={{ desde }}{% endif %}{% if hasta %}&hasta={{ hasta }}{% endif %}{% if valuacion == 'origen' %}&valuacion=origen{% endif %}" onclick="window.location.href=this.dataset.url" class="fila-deudor">
               <td>
                 <div class="deu-cliente">
                   <span class="avatar-iniciales avatar-iniciales--cliente">{{ deudor.iniciales }}</span>
