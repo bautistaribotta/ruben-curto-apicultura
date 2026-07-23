@@ -24,6 +24,29 @@
   --cereal-mani-dot: oklch(63% 0.100 48);
 }
 
+/* --- BARRA DE HERRAMIENTAS ---
+   Con un rango cargado, la etiqueta del chip de fechas crece y empujaba los
+   botones fuera del ancho de la barra. Aca el buscador es el unico elastico:
+   parte de 24rem y cede ancho a medida que el chip ocupa mas lugar.
+
+   Va en esta hoja y no en viajes.css porque esa la comparte la vista de
+   miel/cera, que no tiene el problema. Se carga despues, asi que pisa las
+   reglas de alla con la misma especificidad. */
+.grupo-busqueda {
+  /* Anula el minimo automatico de flex, que impide achicar por debajo del contenido */
+  min-width: 0;
+}
+
+.contenedor-input-busqueda {
+  flex: 1 1 24rem;
+  min-width: 10rem;
+  max-width: 24rem;
+}
+
+.grupo-botones {
+  flex: none;
+}
+
 /* --- TARJETAS DE RESUMEN ---
    Mismo componente que las tarjetas superiores de Deudas (deu-stat), replicado
    aqui con prefijo propio para no depender de deudores.css. Sin datos por ahora. */
@@ -102,6 +125,11 @@
 @media (max-width: 1024px) {
   .vjc-stats {
     grid-template-columns: repeat(2, 1fr);
+  }
+  /* Apilado, el buscador ocupa toda la fila: suelto el tope de 24rem que en
+     escritorio lo mantiene del ancho de siempre. */
+  .contenedor-input-busqueda {
+    max-width: 100%;
   }
 }
 
