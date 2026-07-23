@@ -324,10 +324,16 @@
                       {% if viaje_reparto.destino_id == destino.id %}selected{% endif %}>{{ destino.localidad_destino }} · $ {{ destino.valor_viaje|intcomma }}</option>
               {% endfor %}
             </select>
+            {% comment %}
+              El atajo al catalogo es solo para staff. Si no hay ningun destino cargado
+              todos ven el aviso, porque explica por que el selector esta vacio.
+            {% endcomment %}
+            {% if not destinos or user.is_staff %}
             <span class="vje-ayuda">
-              {% if destinos %}¿Falta una localidad?{% else %}Todavía no hay destinos cargados.{% endif %}
-              <a href="{% url 'destinos_reparto' %}">Gestionar destinos</a>
+              {% if not destinos %}Todavía no hay destinos cargados.{% elif user.is_staff %}¿Falta una localidad?{% endif %}
+              {% if user.is_staff %}<a href="{% url 'destinos_reparto' %}">Gestionar destinos</a>{% endif %}
             </span>
+            {% endif %}
             <span class="mensaje-error">Por favor, seleccione un destino de la lista.</span>
           </div>
         </section>

@@ -1385,7 +1385,15 @@ def destinos_reparto(request):
 
     Mismo patron que la vista de flota: un solo POST con el campo 'accion' que rutea
     a cada servicio, y redirect para no repetir el envio si se recarga la pagina.
+
+    Solo staff: aca se define cuanto se cobra cada reparto. Sin el permiso vuelvo al
+    listado con un aviso, en vez de usar staff_member_required, que manda al login
+    del admin y deja al usuario fuera de la aplicacion.
     """
+    if not request.user.is_staff:
+        messages.error(request, "No tenés permiso para gestionar los destinos de reparto.")
+        return redirect("mercado_libre")
+
     if request.method == "POST":
         accion = request.POST.get("accion")
 
