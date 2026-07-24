@@ -19,29 +19,7 @@
   gap: 1.25rem;
 }
 
-/* --- Volver (estilo del sistema) --- */
-.boton-volver {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  align-self: flex-start;
-  color: var(--text-muted);
-  font-size: var(--text-xs);
-  font-weight: var(--weight-bold);
-  text-transform: uppercase;
-  text-decoration: none;
-  letter-spacing: var(--tracking-wide);
-  margin-bottom: 0;
-  transition: color var(--dur-normal) var(--ease-standard);
-}
-
-.boton-volver:hover {
-  color: var(--brand-active);
-}
-
-.boton-volver .material-symbols-outlined {
-  font-size: 1.05rem;
-}
+/* Boton volver: estilos unificados en base.css (.boton-volver) */
 
 /* --- Cabecera --- */
 .op-head {

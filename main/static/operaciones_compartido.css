@@ -24,23 +24,7 @@ html {
   /* Reduzco el padding superior del contenedor base */
 }
 
-.boton-volver {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: var(--slate-500);
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  text-decoration: none;
-  margin-bottom: 2rem;
-  letter-spacing: 0.05em;
-  transition: color 0.2s;
-}
-
-.boton-volver:hover {
-  color: var(--brand-olive);
-}
+/* Boton volver: estilos unificados en base.css (.boton-volver) */
 
 .cabecera-detalle {
   display: flex;

@@ -2,26 +2,7 @@
   --color-rojo-eliminacion: oklch(57.71% 0.2152 27.33);
 }
 
-/* --- ENLACE VOLVER --- */
-.flota-volver {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: var(--text-muted);
-  text-decoration: none;
-  font-size: var(--text-xs);
-  font-weight: var(--weight-bold);
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-wide);
-}
-
-.flota-volver:hover {
-  color: var(--brand-active);
-}
-
-.flota-volver .material-symbols-outlined {
-  font-size: 20px;
-}
+/* Boton volver: estilos unificados en base.css (.boton-volver) */
 
 /* --- TITULO DE LA SECCION --- */
 .cabecera-seccion {

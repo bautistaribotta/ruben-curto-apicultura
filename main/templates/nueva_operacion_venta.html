@@ -19,12 +19,12 @@
     <div class="cart-screen">
       <!-- Encabezado de la vista -->
       {% if edicion %}
-      <a href="{% url 'informacion_operacion' edicion.id %}" class="cart-back">
+      <a href="{% url 'informacion_operacion' edicion.id %}" class="boton-volver">
         <span class="material-symbols-outlined">arrow_back</span>
         Volver a la operación #{{ edicion.id }}
       </a>
       {% else %}
-      <a href="{% url 'informacion_clientes' cliente.id %}" class="cart-back">
+      <a href="{% url 'informacion_clientes' cliente.id %}" class="boton-volver">
         <span class="material-symbols-outlined">arrow_back</span>
         Volver al perfil del cliente
       </a>

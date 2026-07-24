@@ -60,31 +60,7 @@
 }
 
 /* ---- Header ----------------------------------------------------------- */
-.cart-back {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  align-self: flex-start;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0 0 0.2rem;
-  color: var(--text-muted);
-  font-family: var(--font-sans);
-  font-size: var(--text-xs);
-  font-weight: var(--weight-bold);
-  text-transform: uppercase;
-  text-decoration: none;
-  letter-spacing: var(--tracking-wide);
-}
-
-.cart-back:hover {
-  color: var(--brand-active);
-}
-
-.cart-back .material-symbols-outlined {
-  font-size: 1.15rem;
-}
+/* Boton volver: estilos unificados en base.css (.boton-volver) */
 
 .cart-head {
   display: flex;

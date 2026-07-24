@@ -12,17 +12,17 @@
 
 {% block cabecera %}
   {% if request.GET.origen == 'cereales' %}
-  <a href="{% url 'viajes_cereales' %}" class="flota-volver">
+  <a href="{% url 'viajes_cereales' %}" class="boton-volver">
     <span class="material-symbols-outlined">arrow_back</span>
     Volver a Viajes de cereales
   </a>
   {% elif request.GET.origen == 'reparto' %}
-  <a href="{% url 'mercado_libre' %}" class="flota-volver">
+  <a href="{% url 'mercado_libre' %}" class="boton-volver">
     <span class="material-symbols-outlined">arrow_back</span>
     Volver a Repartos
   </a>
   {% else %}
-  <a href="{% url 'viajes' %}" class="flota-volver">
+  <a href="{% url 'viajes' %}" class="boton-volver">
     <span class="material-symbols-outlined">arrow_back</span>
     Volver a Viajes
   </a>
