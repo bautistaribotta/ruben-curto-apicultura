@@ -11,34 +11,36 @@
 {% endblock %}
 
 {% block cabecera %}
-  {% if request.GET.origen == 'cereales' %}
-  <a href="{% url 'viajes_cereales' %}" class="boton-volver">
-    <span class="material-symbols-outlined">arrow_back</span>
-    Volver a Viajes de cereales
-  </a>
-  {% elif request.GET.origen == 'reparto' %}
-  <a href="{% url 'mercado_libre' %}" class="boton-volver">
-    <span class="material-symbols-outlined">arrow_back</span>
-    Volver a Repartos
-  </a>
-  {% else %}
-  <a href="{% url 'viajes' %}" class="boton-volver">
-    <span class="material-symbols-outlined">arrow_back</span>
-    Volver a Viajes
-  </a>
-  {% endif %}
+  <div class="flota-cabecera-grupo">
+    {% if request.GET.origen == 'cereales' %}
+    <a href="{% url 'viajes_cereales' %}" class="boton-volver">
+      <span class="material-symbols-outlined">arrow_back</span>
+      Volver a Viajes de cereales
+    </a>
+    {% elif request.GET.origen == 'reparto' %}
+    <a href="{% url 'mercado_libre' %}" class="boton-volver">
+      <span class="material-symbols-outlined">arrow_back</span>
+      Volver a Repartos
+    </a>
+    {% else %}
+    <a href="{% url 'viajes' %}" class="boton-volver">
+      <span class="material-symbols-outlined">arrow_back</span>
+      Volver a Viajes
+    </a>
+    {% endif %}
+
+    <!-- Titulo de la seccion: tile oscuro + titulo -->
+    <div class="cabecera-seccion">
+      <span class="cabecera-seccion__tile">
+        <span class="material-symbols-outlined">local_shipping</span>
+      </span>
+      <h2>Vehículos</h2>
+    </div>
+  </div>
 {% endblock %}
 
 {% block area-trabajo %}
 <section id="area-trabajo">
-
-  <!-- Titulo de la seccion -->
-  <div class="cabecera-seccion">
-    <span class="cabecera-seccion__tile">
-      <span class="material-symbols-outlined">local_shipping</span>
-    </span>
-    <h2>Vehículos</h2>
-  </div>
 
   <!-- Controles superiores: buscador + alta -->
   <div class="barra-herramientas">

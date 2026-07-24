@@ -4,12 +4,18 @@
 
 /* Boton volver: estilos unificados en base.css (.boton-volver) */
 
+/* --- CABECERA: volver + titulo apilados en el header global --- */
+.flota-cabecera-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
 /* --- TITULO DE LA SECCION (tile oscuro + titulo, mismo patron que op-head) --- */
 .cabecera-seccion {
   display: flex;
   align-items: center;
   gap: 0.85rem;
-  margin-bottom: 1.5rem;
 }
 
 .cabecera-seccion__tile {
