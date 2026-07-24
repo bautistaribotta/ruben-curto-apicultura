@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load static_version %}
 {% load humanize %}
 
 {% block nombre-pestaña %}
@@ -7,7 +8,7 @@
 {% endblock %}
 
 {% block links %}
-  <link rel="stylesheet" href="{% static 'flota.css' %}">
+  <link rel="stylesheet" href="{% static_v 'flota.css' %}">
 {% endblock %}
 
 {% block cabecera %}

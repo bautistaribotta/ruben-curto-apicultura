@@ -97,10 +97,8 @@
   color: var(--brand-active);
 }
 
-/* Boton "Nuevo" (.boton-nuevo): estilos unificados en base.css */
-.barra-herramientas .boton-nuevo .material-symbols-outlined {
-  font-size: 18px;
-}
+/* Boton "Nuevo" (.boton-nuevo) e icono: estilos unificados en base.css.
+   Mantiene el mismo alto/ancho que "Nuevo Empleado" y el resto de la app. */
 
 /* --- CONTENEDOR PRINCIPAL TABLA --- */
 .contenedor-tabla {
