@@ -1361,33 +1361,6 @@
 
 /* Boton de paginacion (.boton-paginacion): estilos unificados en base.css */
 
-.boton-volver-sistema {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: none;
-  border: none;
-  padding: 0;
-  color: var(--text-muted);
-  font-weight: var(--weight-bold);
-  font-size: var(--text-xs);
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-wide);
-  cursor: pointer;
-  transition: color var(--dur-normal) var(--ease-standard);
-  font-family: var(--font-sans);
-  text-decoration: none;
-}
-
-.boton-volver-sistema:hover {
-  color: var(--brand-active);
-  text-decoration: none;
-}
-
-.boton-volver-sistema .material-symbols-outlined {
-  font-size: 1.15rem;
-}
-
 /* ============================================================
    Modal de cotizaciones históricas (fecha anterior a hoy)
    Pide miel 50mm, dólar oficial venta y cera opérculo de aquel
