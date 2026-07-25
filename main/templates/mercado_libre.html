@@ -25,10 +25,13 @@
 <section id="area-trabajo-meli">
 
   <!-- Tarjetas de resumen. Reflejan los filtros aplicados (texto/fecha); el JS
-       refresca esta region por AJAX junto con la tabla. -->
+       refresca esta region por AJAX junto con la tabla. Los usuarios no
+       administrativos no ven los totales, asi que se omite el contenedor -->
+  {% if user.is_staff %}
   <div class="meli-stats" id="meli-stats-region">
     {% include 'tarjetas_reparto.html' %}
   </div>
+  {% endif %}
 
   <!-- Controles Superiores: Buscador + Boton nuevo -->
   <div class="barra-herramientas">

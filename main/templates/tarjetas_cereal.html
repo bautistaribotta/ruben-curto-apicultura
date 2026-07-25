@@ -7,7 +7,11 @@
   Tarjetas de resumen de viajes de cereal. Se incluyen tanto en la pagina completa
   como en la respuesta AJAX, asi los totales se recalculan con cada cambio de filtro.
   Esperan 'resumen' en el contexto (ver obtener_resumen_cereal).
+
+  Los usuarios no administrativos no ven estos totales: el chequeo va aca dentro
+  para que los montos tampoco viajen en la respuesta AJAX del listado.
 {% endcomment %}
+{% if user.is_staff %}
 <article class="vjc-stat">
   <div class="vjc-stat__head">
     <span class="vjc-stat__label">Total</span>
@@ -36,3 +40,4 @@
   </div>
   <span class="vjc-stat__value {% if resumen.ganancia < 0 %}vjc-stat__value--neg{% else %}vjc-stat__value--pos{% endif %}">${{ resumen.ganancia|intcomma }}</span>
 </article>
+{% endif %}
