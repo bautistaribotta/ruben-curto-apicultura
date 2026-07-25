@@ -213,6 +213,12 @@
   border-color: var(--border-default);
 }
 
+/* Tablero de solo lectura (usuario no-staff): la tarjeta conserva el hover de
+   elevacion, pero sin cursor de mano porque el click ya no edita nada */
+.ini-board-wrap--solo-lectura .ini-tile {
+  cursor: default;
+}
+
 .ini-tile.is-editing {
   transform: none;
   border-color: var(--brand);

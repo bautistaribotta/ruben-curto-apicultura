@@ -189,6 +189,12 @@ def obtener_empleado_json(request, id_empleado):
 @login_required
 @ensure_csrf_cookie
 def actualizar_cotizacion_ajax(request):
+    # Las cotizaciones las maneja solo el personal administrativo. El resto ve
+    # las tarjetas sin la edicion, pero el chequeo va aca porque la plantilla
+    # sola no frena un POST armado a mano contra esta URL.
+    if not request.user.is_staff:
+        return JsonResponse({"error": "No tiene permiso para modificar las cotizaciones"}, status=403)
+
     if request.method == "POST":
         try:
             datos = json.loads(request.body)

@@ -19,7 +19,7 @@
 {% block area-trabajo %}
   <!-- Área de Trabajo -->
   <section id="area-trabajo">
-    <div class="ini-board-wrap">
+    <div class="ini-board-wrap{% if not user.is_staff %} ini-board-wrap--solo-lectura{% endif %}">
 
       <!-- Panel de referencia del dolar oficial -->
       <section class="ini-dolar ini-dolar--pino">
@@ -60,7 +60,9 @@
             <div class="ini-tile__head">
               <span class="ini-tile__glyph"><span class="material-symbols-outlined">water_drop</span></span>
               <div class="ini-tile__id"><h4>Miel 34mm</h4></div>
+              {% if user.is_staff %}
               <span class="ini-tile__edit material-symbols-outlined">edit</span>
+              {% endif %}
             </div>
             <div class="ini-tile__pricewrap">
               <div class="ini-tile__price">
@@ -79,7 +81,9 @@
             <div class="ini-tile__head">
               <span class="ini-tile__glyph"><span class="material-symbols-outlined">water_drop</span></span>
               <div class="ini-tile__id"><h4>Miel 50mm</h4></div>
+              {% if user.is_staff %}
               <span class="ini-tile__edit material-symbols-outlined">edit</span>
+              {% endif %}
             </div>
             <div class="ini-tile__pricewrap">
               <div class="ini-tile__price">
@@ -98,7 +102,9 @@
             <div class="ini-tile__head">
               <span class="ini-tile__glyph"><span class="material-symbols-outlined">water_drop</span></span>
               <div class="ini-tile__id"><h4>Miel +50mm</h4></div>
+              {% if user.is_staff %}
               <span class="ini-tile__edit material-symbols-outlined">edit</span>
+              {% endif %}
             </div>
             <div class="ini-tile__pricewrap">
               <div class="ini-tile__price">
@@ -131,7 +137,9 @@
             <div class="ini-tile__head">
               <span class="ini-tile__glyph"><span class="material-symbols-outlined">hexagon</span></span>
               <div class="ini-tile__id"><h4>Cera Operculo</h4></div>
+              {% if user.is_staff %}
               <span class="ini-tile__edit material-symbols-outlined">edit</span>
+              {% endif %}
             </div>
             <div class="ini-tile__pricewrap">
               <div class="ini-tile__price">
@@ -150,7 +158,9 @@
             <div class="ini-tile__head">
               <span class="ini-tile__glyph"><span class="material-symbols-outlined">hexagon</span></span>
               <div class="ini-tile__id"><h4>Cera Recupero</h4></div>
+              {% if user.is_staff %}
               <span class="ini-tile__edit material-symbols-outlined">edit</span>
+              {% endif %}
             </div>
             <div class="ini-tile__pricewrap">
               <div class="ini-tile__price">
@@ -173,6 +183,11 @@
   </section>
 
       <script src="{% static 'js/notifications.js' %}"></script>
+      {% comment %}
+        La edicion de cotizaciones es solo para el personal administrativo: sin
+        este bloque las tarjetas quedan como simple lectura, sin escuchar clicks.
+      {% endcomment %}
+      {% if user.is_staff %}
       <script>
       document.addEventListener('DOMContentLoaded', function() {
       const tarjetas = document.querySelectorAll('.ini-tile[data-articulo]');
@@ -273,4 +288,5 @@
       });
       });
       </script>
+      {% endif %}
       {% endblock %}
