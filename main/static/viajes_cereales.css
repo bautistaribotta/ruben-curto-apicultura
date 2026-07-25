@@ -168,6 +168,30 @@
 }
 
 /* Cereal */
+
+/* --- Anchos sin la columna de pago (usuario no-staff): las cuatro columnas
+   restantes se corren un lugar, asi que hay que reasignarles el ancho. El
+   espacio de la columna que se fue se reparte en proporcion al reparto original. --- */
+.contenedor-tabla .tabla-cereales.tabla-cereales--sin-pago th:nth-child(1) {
+  width: 19%;
+}
+
+/* Fecha */
+.contenedor-tabla .tabla-cereales.tabla-cereales--sin-pago th:nth-child(2) {
+  width: 32%;
+}
+
+/* Vehiculo */
+.contenedor-tabla .tabla-cereales.tabla-cereales--sin-pago th:nth-child(3) {
+  width: 30%;
+}
+
+/* Empleado */
+.contenedor-tabla .tabla-cereales.tabla-cereales--sin-pago th:nth-child(4) {
+  width: 19%;
+}
+
+/* Cereal */
 /* La celda de fecha usa .celda-fecha, el componente unificado de base.css */
 
 /* --- Pildora de tipo de cereal --- */
