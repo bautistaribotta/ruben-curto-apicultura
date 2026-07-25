@@ -27,6 +27,21 @@
   border-bottom: none;
 }
 
+/* Carga sin el precio por tonelada (usuario no-staff): cereal, CTG y toneladas
+   entran en una unica fila de tres columnas, separadas solo en vertical */
+.vc-carga--solo {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.vc-carga.vc-carga--solo .vc-carga__cell {
+  border-bottom: none;
+  border-right: 1px solid var(--border-subtle);
+}
+
+.vc-carga.vc-carga--solo .vc-carga__cell:last-child {
+  border-right: none;
+}
+
 .vc-ctg {
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.08em;

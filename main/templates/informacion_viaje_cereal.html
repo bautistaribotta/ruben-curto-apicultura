@@ -108,7 +108,7 @@
           </div>
         </div>
         <!-- Datos de la carga -->
-        <div class="vc-carga">
+        <div class="vc-carga{% if not user.is_staff %} vc-carga--solo{% endif %}">
           <div class="vc-carga__cell">
             <div class="vd-data__label">Cereal</div>
             <div class="vd-data__value">{{ viaje_cereal.tipo_cereal }}</div>
@@ -121,10 +121,12 @@
             <div class="vd-data__label">Toneladas</div>
             <div class="vd-data__value">{{ viaje_cereal.toneladas|intcomma }} t</div>
           </div>
+          {% if user.is_staff %}
           <div class="vc-carga__cell">
             <div class="vd-data__label">Precio / tonelada</div>
             <div class="vd-data__value">${{ viaje_cereal.precio_tonelada|intcomma }}</div>
           </div>
+          {% endif %}
         </div>
       </div>
       <div class="vd-journey">
