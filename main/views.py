@@ -524,6 +524,10 @@ def generar_remito(request, id_operacion):
         Solo le paso el de la operacion que acabo de encontrar en la Query anterior
     """
 
+    # Los usuarios no administrativos reciben el remito sin ningun importe: no
+    # se calculan los subtotales ni el total, asi el PDF no los contiene
+    mostrar_importes = request.user.is_staff
+
     # Armamos la lista estructurada de los productos para enviarlo al PDF
     lista_productos = []
     total = 0
@@ -534,7 +538,7 @@ def generar_remito(request, id_operacion):
         else:
             cantidad = d.cantidad
         # Subtotal de la fila: cantidad por precio unitario
-        subtotal = d.cantidad * d.precio_unitario
+        subtotal = d.cantidad * d.precio_unitario if mostrar_importes else 0
         total += subtotal
         lista_productos.append({
             'cantidad': cantidad,
@@ -553,7 +557,8 @@ def generar_remito(request, id_operacion):
         cuit=cliente.cuit if cliente.cuit else "",
         telefono=cliente.telefono if cliente.telefono else "",
         observaciones=operacion.observaciones,
-        total=total
+        total=total,
+        mostrar_importes=mostrar_importes
     )
 
     pdf_bytes = pdf.generate_pdf()

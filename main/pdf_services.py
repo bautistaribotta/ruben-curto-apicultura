@@ -1,5 +1,15 @@
 from fpdf import FPDF
 
+# Ancho en mm de la columna DETALLE: el valor normal deja lugar a la columna
+# de subtotales; el "solo" ocupa tambien ese espacio cuando no hay importes
+ANCHO_DETALLE = 86
+ANCHO_DETALLE_SOLO = 121.5
+
+# Tope de caracteres del detalle para que no invada la columna siguiente ni el
+# borde del comprobante, proporcional al ancho disponible en cada caso
+CHARS_DETALLE = 48
+CHARS_DETALLE_SOLO = 67
+
 
 def _formato_moneda(valor):
     # Formato argentino: punto para los miles y coma para los decimales
@@ -13,7 +23,7 @@ def _formato_moneda(valor):
 
 
 class Remito(FPDF):
-    def __init__(self, id_operacion, fecha, nombre, localidad, direccion, productos, apellido=" ", cuit=" ", telefono="", observaciones="", total=0):
+    def __init__(self, id_operacion, fecha, nombre, localidad, direccion, productos, apellido=" ", cuit=" ", telefono="", observaciones="", total=0, mostrar_importes=True):
         # A4 Apaisado (Landscape): 297mm x 210mm
         super().__init__(orientation='L', format='A4')
         self.set_auto_page_break(auto=True, margin=5)
@@ -31,6 +41,9 @@ class Remito(FPDF):
         self.observaciones = str(observaciones or "")[:250]
         # Total de la operación, para la casilla grande al pie del comprobante
         self.total = total
+        # Los remitos que se emiten sin importes (usuarios no administrativos)
+        # omiten la columna de subtotales y la casilla de total
+        self.mostrar_importes = mostrar_importes
 
     def header(self):
         self.dibujar_esqueleto(0, "ORIGINAL")
@@ -173,20 +186,23 @@ class Remito(FPDF):
         self.set_text_color(0, 0, 0)
         self.line(offset_x + 5, 84, offset_x + 143.5, 84)
 
-        # Columnas: CANT. | DETALLE | SUBTOTAL
+        # Columnas: CANT. | DETALLE | SUBTOTAL. Sin importes queda CANT. |
+        # DETALLE, y el detalle se estira hasta el borde del comprobante
         self.set_font('Arial', 'B', 9)
         self.set_xy(offset_x + 5, 84)
         self.cell(17, 8, 'CANT.', 0, 0, 'C')
         self.set_xy(offset_x + 22, 84)
-        self.cell(86, 8, 'DETALLE', 0, 0, 'C')
-        self.set_xy(offset_x + 108, 84)
-        self.cell(35.5, 8, 'SUBTOTAL', 0, 0, 'C')
+        self.cell(ANCHO_DETALLE if self.mostrar_importes else ANCHO_DETALLE_SOLO, 8, 'DETALLE', 0, 0, 'C')
+        if self.mostrar_importes:
+            self.set_xy(offset_x + 108, 84)
+            self.cell(35.5, 8, 'SUBTOTAL', 0, 0, 'C')
         self.line(offset_x + 5, 92, offset_x + 143.5, 92)
 
         # Lineas verticales de la tabla (cortan en 193; las casillas de firma y
         # total las tapan con relleno blanco sobre la ultima pagina)
         self.line(offset_x + 22, 84, offset_x + 22, 193)
-        self.line(offset_x + 108, 84, offset_x + 108, 193)
+        if self.mostrar_importes:
+            self.line(offset_x + 108, 84, offset_x + 108, 193)
 
     def draw_products(self):
         y_pos = 92
@@ -211,7 +227,7 @@ class Remito(FPDF):
                     detalle = str(getattr(prod, 'detalle', getattr(prod, 'nombre', '-')))
                 subtotal = getattr(prod, 'subtotal', 0)
 
-            sub_str = _formato_moneda(subtotal)
+            sub_str = _formato_moneda(subtotal) if self.mostrar_importes else ''
             self.escribir_fila(0, y_pos, cant, detalle, sub_str)
             self.escribir_fila(148.5, y_pos, cant, detalle, sub_str)
 
@@ -222,17 +238,21 @@ class Remito(FPDF):
 
         self.dibujar_firma(0)
         self.dibujar_firma(148.5)
-        self.dibujar_total(0)
-        self.dibujar_total(148.5)
+        if self.mostrar_importes:
+            self.dibujar_total(0)
+            self.dibujar_total(148.5)
 
     def escribir_fila(self, offset_x, y, c, d, s):
         self.set_xy(offset_x + 5, y)
         self.cell(17, 8, c, 0, 0, 'C')
         self.set_xy(offset_x + 22, y)
         # Detalle con limite de caracteres para no invadir la columna de subtotal
-        self.cell(86, 8, f' {d[:48]}', 0, 0, 'L')
-        self.set_xy(offset_x + 108, y)
-        self.cell(34.5, 8, s, 0, 0, 'R')
+        if self.mostrar_importes:
+            self.cell(ANCHO_DETALLE, 8, f' {d[:CHARS_DETALLE]}', 0, 0, 'L')
+            self.set_xy(offset_x + 108, y)
+            self.cell(34.5, 8, s, 0, 0, 'R')
+        else:
+            self.cell(ANCHO_DETALLE_SOLO, 8, f' {d[:CHARS_DETALLE_SOLO]}', 0, 0, 'L')
 
     def dibujar_total(self, offset_x):
         """
