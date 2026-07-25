@@ -69,11 +69,13 @@
             </div>
         </div>
         <div class="op-head__actions">
+            {% if user.is_staff %}
             <button class="op-btn op-btn--dark"
                 {% if operacion.estado_pago == 'Cancelada' or operacion.estado_pago == 'Pagada' %}disabled{% else %}onclick="abrirModalPago('{{ operacion.id }}', '{{ operacion.monto_total|default_if_none:0|stringformat:'f' }}', '{{ operacion.total_pagado|default_if_none:0|stringformat:'f' }}');"{% endif %}>
                 <span class="material-symbols-outlined">payments</span>
                 Añadir pago
             </button>
+            {% endif %}
             {% if request.user.is_staff and operacion.activa %}
             <a href="{% if operacion.tipo_operacion == 'compra' %}{% url 'nueva_operacion_compra' operacion.cliente.id %}{% else %}{% url 'nueva_operacion_venta' operacion.cliente.id %}{% endif %}?editar={{ operacion.id }}"
                class="op-btn op-btn--secondary">
@@ -94,6 +96,7 @@
     </div>
 
     <!-- Totales -->
+    {% if user.is_staff %}
     <div class="op-totals">
         <div class="op-total">
             <span class="op-total__k"><span class="material-symbols-outlined">receipt</span>Total operación</span>
@@ -109,9 +112,10 @@
             <span class="op-total__v">$ {{ restante|floatformat:"-2g" }}</span>
         </div>
     </div>
+    {% endif %}
 
     <!-- Productos + Pagos -->
-    <div class="op-grid">
+    <div class="op-grid{% if not user.is_staff %} op-grid--solo{% endif %}">
 
         <!-- Productos -->
         <div class="op-card">
@@ -120,13 +124,15 @@
                 <h4>{% if operacion.tipo_operacion == 'compra' %}Productos comprados{% else %}Productos vendidos{% endif %}</h4>
                 <span class="op-card__count">{{ detalles|length }} ítem{{ detalles|length|pluralize }}</span>
             </div>
-            <table class="op-table">
+            <table class="op-table{% if not user.is_staff %} op-table--reducida{% endif %}">
                 <thead>
                     <tr>
                         <th>Producto</th>
                         <th class="c">Cantidad</th>
+                        {% if user.is_staff %}
                         <th class="r">Precio unit.</th>
                         <th class="r">Subtotal</th>
+                        {% endif %}
                     </tr>
                 </thead>
                 <tbody>
@@ -134,28 +140,33 @@
                     <tr>
                         <td><div class="op-prod__name">{{ detalle.nombre_item }}</div></td>
                         <td class="c">{% if detalle.es_granel %}{{ detalle.cantidad|floatformat:"-2g" }} kg{% else %}{{ detalle.cantidad|floatformat:"0g" }}{% endif %}</td>
+                        {% if user.is_staff %}
                         <td class="r">$ {{ detalle.precio_unitario|floatformat:"-2g" }}</td>
                         <td class="r op-sub">$ {{ detalle.subtotal|floatformat:"-2g" }}</td>
+                        {% endif %}
                     </tr>
                     {% empty %}
                     <tr class="fila-vacia">
-                      <td colspan="4" class="celda-vacia">
+                      <td colspan="{% if user.is_staff %}4{% else %}2{% endif %}" class="celda-vacia">
                         <span class="material-symbols-outlined">inventory_2</span>
                         No hay productos registrados.
                       </td>
                     </tr>
                     {% endfor %}
                 </tbody>
+                {% if user.is_staff %}
                 <tfoot class="op-table__foot">
                     <tr>
                         <td colspan="3">Total</td>
                         <td class="r">$ {{ operacion.monto_total|floatformat:"-2g" }}</td>
                     </tr>
                 </tfoot>
+                {% endif %}
             </table>
         </div>
 
         <!-- Historial de pagos -->
+        {% if user.is_staff %}
         <div class="op-card">
             <div class="op-card__head">
                 <span class="material-symbols-outlined">payments</span>
@@ -196,6 +207,7 @@
                 </tfoot>
             </table>
         </div>
+        {% endif %}
 
     </div>
 

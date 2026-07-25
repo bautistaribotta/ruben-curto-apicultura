@@ -314,6 +314,11 @@
   align-items: start;
 }
 
+/* Grilla sin la tarjeta de pagos (usuario no-staff): productos a todo el ancho */
+.op-grid--solo {
+  grid-template-columns: 1fr;
+}
+
 .op-card {
   background-color: var(--surface-card);
   border: 1px solid var(--border-subtle);
@@ -387,6 +392,13 @@
 .op-table .c {
   text-align: center;
   font-variant-numeric: tabular-nums;
+}
+
+/* Tabla sin las columnas de importes (usuario no-staff): la cantidad queda
+   acotada a la derecha y el nombre del producto se lleva el ancho sobrante */
+.op-table--reducida th.c,
+.op-table--reducida td.c {
+  width: 12rem;
 }
 
 .op-prod__name {
