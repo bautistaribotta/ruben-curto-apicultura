@@ -510,6 +510,18 @@ html {
   background-color: var(--surface-hover);
 }
 
+/* Tabla sin las columnas administrativas (usuario no-staff): se acotan fecha y
+   tipo para que el detalle de la operacion se quede con el ancho sobrante */
+.tabla-operaciones--reducida th:first-child,
+.tabla-operaciones--reducida td:first-child {
+  width: 14rem;
+}
+
+.tabla-operaciones--reducida th:last-child,
+.tabla-operaciones--reducida td:last-child {
+  width: 12rem;
+}
+
 .fecha-operacion {
   color: var(--text-muted);
   font-weight: var(--weight-medium);

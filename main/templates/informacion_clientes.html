@@ -173,15 +173,17 @@
         </div>
         <div class="tabla-operaciones-container">
             {% if operaciones %}
-            <table class="tabla-operaciones">
+            <table class="tabla-operaciones{% if not user.is_staff %} tabla-operaciones--reducida{% endif %}">
                 <thead>
                     <tr>
                         <th style="padding-left: 2.75rem;">Fecha</th>
                         <th>Detalle de Operación</th>
                         <th style="text-align: center;">Tipo</th>
+                        {% if user.is_staff %}
                         <th style="text-align: center;">Estado</th>
                         <th style="text-align: right;">Monto Total</th>
                         <th style="text-align: center;">Acciones</th>
+                        {% endif %}
                     </tr>
                 </thead>
                 <tbody>
@@ -215,6 +217,7 @@
                                 <span class="badge-tipo-operacion venta">Venta</span>
                             {% endif %}
                         </td>
+                        {% if user.is_staff %}
                         <td class="estado" style="text-align: center;">
                             {% if operacion.estado_pago == 'Pagada' %}
                                 <span class="pildora-estado pagada">Pagada</span>
@@ -241,6 +244,7 @@
                                 </button>
                             </div>
                         </td>
+                        {% endif %}
                     </tr>
                     {% endfor %}
                 </tbody>
