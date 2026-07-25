@@ -189,15 +189,17 @@
 
     <div class="op-card contenedor-listado-operaciones">
       {% if operaciones %}
-      <table class="op-table vd-opstable">
+      <table class="op-table vd-opstable{% if not user.is_staff %} vd-opstable--reducida{% endif %}">
         <thead>
           <tr>
             <th>Fecha</th>
             <th>Cliente</th>
             <th>Detalle</th>
+            {% if user.is_staff %}
             <th class="c">Tipo</th>
             <th class="c">Estado</th>
             <th class="r">Monto total</th>
+            {% endif %}
           </tr>
         </thead>
         <tbody>
@@ -217,6 +219,7 @@
                 {% endif %}
               </div>
             </td>
+            {% if user.is_staff %}
             <td class="c">
               {% if operacion.tipo_operacion == 'compra' %}
                 <span class="badge-tipo-operacion compra">Compra</span>
@@ -236,6 +239,7 @@
               {% endif %}
             </td>
             <td class="r vd-op-monto">${{ operacion.monto_total|floatformat:"-2g" }}</td>
+            {% endif %}
           </tr>
           {% endfor %}
         </tbody>

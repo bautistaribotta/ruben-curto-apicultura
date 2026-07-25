@@ -480,6 +480,18 @@ html {
   white-space: nowrap;
 }
 
+/* Tabla sin las columnas de tipo, estado e importe (usuario no-staff): se acotan
+   fecha y cliente para que el detalle se quede con el ancho sobrante */
+.vd-opstable--reducida th:nth-child(1),
+.vd-opstable--reducida td:nth-child(1) {
+  width: 10rem;
+}
+
+.vd-opstable--reducida th:nth-child(2),
+.vd-opstable--reducida td:nth-child(2) {
+  width: 18rem;
+}
+
 .vd-opstable .fila-operacion {
   cursor: pointer;
 }
