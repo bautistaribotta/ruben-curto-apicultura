@@ -10,8 +10,8 @@ from django.db import transaction
 from django.db.models import Sum, F, Value, Count, Q, Subquery, OuterRef
 from django.db.models.functions import Coalesce
 from django.core.cache import cache
-from .models import (Producto, Cliente, Operacion, DetalleOperacion, Pago, Cotizaciones, Empleado, Vehiculo, Viaje,
-                     DetalleViaje, Gasto, ViajeCereal, DetalleViajeCereal, GastoViajeCereal,
+from .models import (Producto, Cliente, Operacion, DetalleOperacion, Pago, Cotizaciones, Empleado, PagosEmpleados,
+                     Vehiculo, Viaje, DetalleViaje, Gasto, ViajeCereal, DetalleViajeCereal, GastoViajeCereal,
                      ViajeReparto, GastoViajeReparto, DestinoViajeReparto)
 
 
@@ -1023,6 +1023,44 @@ def obtener_datos_empleado(id_empleado):
         }
     except Empleado.DoesNotExist:
         return None
+
+
+def crear_pago_empleado(id_empleado, monto, observaciones=""):
+    """Registra un pago a un empleado con la fecha del dia.
+
+    El modal solo pide monto y observacion: la fecha la pone el servidor para
+    que no dependa del reloj del navegador ni se pueda mandar una fecha armada
+    a mano en el POST.
+
+    No toca Empleado.saldo: como se descuenta un pago del saldo todavia no esta
+    definido, y descontarlo mal desbalancea la cuenta del empleado.
+    """
+    empleado = get_object_or_404(Empleado, id=id_empleado, activo=True)
+
+    try:
+        monto = Decimal(str(monto).strip())
+    except (InvalidOperation, AttributeError):
+        raise ValueError("El monto del pago no es un número válido.")
+
+    if monto <= 0:
+        raise ValueError("El monto del pago debe ser mayor a cero.")
+
+    # El campo es DecimalField(max_digits=12, decimal_places=2): con mas de 10
+    # enteros la base rechaza el insert, asi que corto antes con un mensaje claro
+    monto = monto.quantize(Decimal("0.01"))
+    if monto >= Decimal("10000000000"):
+        raise ValueError("El monto del pago es demasiado grande.")
+
+    observaciones = (observaciones or "").strip()
+    if len(observaciones) > 250:
+        raise ValueError("La observación no puede superar los 250 caracteres.")
+
+    return PagosEmpleados.objects.create(
+        empleado=empleado,
+        fecha=timezone.localdate(),
+        monto=monto,
+        observaciones=observaciones,
+    )
 
 
 def crear_vehiculo(nombre, patente):

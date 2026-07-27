@@ -1,12 +1,27 @@
 {% extends "base.html" %}
 {% load static %}
 {% load static_version %}
+{% load humanize %}
+
+{% comment %}
+  Perfil de empleado.
+
+  Los datos de identidad, saldo y cantidad de viajes salen del modelo. El detalle
+  de gastos y el listado de viajes todavia estan cargados a mano en la plantilla:
+  es una maqueta para definir la interfaz antes de escribir las consultas.
+  Los bloques hardcodeados quedan marcados con el comentario MAQUETA.
+{% endcomment %}
 
 {% block nombre-pestaña %}
   <title> Información Empleado </title>
 {% endblock %}
 
 {% block links %}
+  {% comment %}
+    empleados.css trae el slide-over de alta/edicion y el panel de eliminacion,
+    asi el perfil usa exactamente los mismos paneles que el listado.
+  {% endcomment %}
+  <link rel="stylesheet" href="{% static_v 'empleados.css' %}">
   <link rel="stylesheet" href="{% static_v 'informacion_empleado.css' %}">
 {% endblock %}
 
@@ -20,11 +35,488 @@
 {% block area-trabajo %}
   <div id="espacio-trabajo-empleado">
 
-    <!-- Cabecera del perfil: avatar + nombre completo -->
+    <!-- Identidad del empleado + acciones -->
     <div class="cabecera-empleado">
-      <span class="avatar-empleado-perfil">{{ empleado.nombre|first|upper }}{{ empleado.apellido|first|upper }}</span>
-      <h2 class="nombre-empleado-titulo">{{ empleado.nombre }} {{ empleado.apellido }}</h2>
+      <div class="identidad-empleado">
+        <span class="avatar-empleado-perfil">{{ empleado.nombre|first|upper }}{{ empleado.apellido|first|upper }}</span>
+        <div class="identidad-empleado__datos">
+          <h2 class="nombre-empleado-titulo">{{ empleado.nombre }} {{ empleado.apellido }}</h2>
+          <p class="identidad-empleado__meta">
+            <span>ID {{ empleado.id }}</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="acciones-empleado">
+        <button type="button" class="boton-nuevo" id="boton-anadir-pago">
+          <span class="material-symbols-outlined">payments</span>
+          Añadir pago
+        </button>
+        <button type="button" class="boton-accion boton-editar" id="boton-editar-empleado"
+                data-id="{{ empleado.id }}">
+          <span class="material-symbols-outlined">edit</span>
+          Editar empleado
+        </button>
+        <button type="button" class="boton-accion boton-cancelar" id="boton-eliminar-empleado"
+                data-id="{{ empleado.id }}"
+                data-nombre="{{ empleado.nombre }} {{ empleado.apellido }}">
+          <span class="material-symbols-outlined">delete</span>
+          Eliminar empleado
+        </button>
+      </div>
     </div>
 
+    <!-- Pagos al empleado. Datos reales del modelo PagosEmpleados. -->
+    <section class="emp-seccion" id="seccion-pagos">
+      <div class="seccion-info-header">
+        <h4><span class="material-symbols-outlined">payments</span> Pagos</h4>
+      </div>
+
+      <div class="panel-pagos">
+        <div class="tabla-pagos-contenedor">
+          <table class="tabla-pagos">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Observación</th>
+                <th class="texto-derecha">Monto</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for pago in pagos %}
+              <tr>
+                <td class="celda-fecha-pago">{{ pago.fecha|date:"d/m/Y" }}</td>
+                <td class="celda-observacion">{{ pago.observaciones|default:"Sin observación" }}</td>
+                <td class="texto-derecha celda-monto-pago">${{ pago.monto|floatformat:"0"|intcomma }}</td>
+              </tr>
+              {% empty %}
+              <tr class="fila-vacia">
+                <td colspan="3" class="celda-vacia">
+                  <span class="material-symbols-outlined">payments</span>
+                  Todavía no hay pagos registrados para este empleado.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        {% if pagos.paginator.num_pages > 1 %}
+        <div class="paginacion">
+          <div class="paginacion-info">
+            Mostrando <span>{{ pagos.start_index }}-{{ pagos.end_index }}</span>
+            de <span>{{ pagos.paginator.count }}</span> pagos
+          </div>
+          <div class="paginacion-botones">
+            {% if pagos.has_previous %}
+              <a href="?page={{ pagos.previous_page_number }}#seccion-pagos">
+                <button class="boton-paginacion">Anterior</button>
+              </a>
+            {% else %}
+              <button class="boton-paginacion" disabled>Anterior</button>
+            {% endif %}
+
+            {% if pagos.has_next %}
+              <a href="?page={{ pagos.next_page_number }}#seccion-pagos">
+                <button class="boton-paginacion">Siguiente</button>
+              </a>
+            {% else %}
+              <button class="boton-paginacion" disabled>Siguiente</button>
+            {% endif %}
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </section>
+
+    <!-- MAQUETA: gastos rendidos. Montos y porcentajes cargados a mano. -->
+    <section class="emp-seccion" id="seccion-gastos">
+      <div class="seccion-info-header">
+        <h4><span class="material-symbols-outlined">receipt_long</span> Gastos rendidos</h4>
+      </div>
+
+      <div class="panel-gastos">
+        <div class="panel-gastos__resumen">
+          <div>
+            <p class="panel-gastos__label" id="etiqueta-total-gastos">Total rendido en 47 viajes</p>
+            <p class="panel-gastos__total" id="monto-total-gastos">$2.913.400</p>
+          </div>
+          <p class="panel-gastos__nota" id="nota-gastos">Combustible se lleva casi la mitad de lo rendido</p>
+        </div>
+
+        <!-- Cinta de gastos: cada segmento es una categoria. El ancho es la
+             participacion sobre el total y el color codifica el puesto en el
+             ranking, del mas alto (pino) al mas bajo (miel). -->
+        <div class="cinta-gastos" id="cinta-gastos">
+          <span class="cinta-gastos__seg cinta-gastos__seg--r1" data-categoria="combustible" title="Combustible 48,1%"></span>
+          <span class="cinta-gastos__seg cinta-gastos__seg--r2" data-categoria="comida" title="Comida 13,8%"></span>
+          <span class="cinta-gastos__seg cinta-gastos__seg--r3" data-categoria="peaje" title="Peaje 13,1%"></span>
+          <span class="cinta-gastos__seg cinta-gastos__seg--r4" data-categoria="hotel" title="Hotel 8,0%"></span>
+          <span class="cinta-gastos__seg cinta-gastos__seg--r5" data-categoria="playa" title="Playa 7,3%"></span>
+          <span class="cinta-gastos__seg cinta-gastos__seg--r6" data-categoria="viaticos" title="Viáticos personales 6,1%"></span>
+          <span class="cinta-gastos__seg cinta-gastos__seg--r7" data-categoria="extras" title="Extras 3,6%"></span>
+        </div>
+
+        <div class="chips-gasto" id="chips-gasto">
+          <button type="button" class="chip-gasto activa" data-categoria="todas">Todas</button>
+          <button type="button" class="chip-gasto" data-categoria="combustible"><span class="punto-rango punto-rango--r1"></span>Combustible</button>
+          <button type="button" class="chip-gasto" data-categoria="comida"><span class="punto-rango punto-rango--r2"></span>Comida</button>
+          <button type="button" class="chip-gasto" data-categoria="peaje"><span class="punto-rango punto-rango--r3"></span>Peaje</button>
+          <button type="button" class="chip-gasto" data-categoria="hotel"><span class="punto-rango punto-rango--r4"></span>Hotel</button>
+          <button type="button" class="chip-gasto" data-categoria="playa"><span class="punto-rango punto-rango--r5"></span>Playa</button>
+          <button type="button" class="chip-gasto" data-categoria="viaticos"><span class="punto-rango punto-rango--r6"></span>Viáticos personales</button>
+          <button type="button" class="chip-gasto" data-categoria="extras"><span class="punto-rango punto-rango--r7"></span>Extras</button>
+        </div>
+
+        <div class="tabla-gastos-contenedor">
+          <table class="tabla-gastos">
+            <thead>
+              <tr>
+                <th>Categoría</th>
+                <th class="texto-derecha">Miel y cera</th>
+                <th class="texto-derecha">Repartos</th>
+                <th class="texto-derecha">Cereales</th>
+                <th class="texto-derecha">Total</th>
+                <th class="texto-derecha">Part.</th>
+              </tr>
+            </thead>
+            <tbody id="cuerpo-tabla-gastos">
+              <tr class="fila-gasto" data-categoria="combustible">
+                <td class="celda-categoria"><span class="punto-rango punto-rango--r1"></span>Combustible</td>
+                <td class="texto-derecha">$620.400</td>
+                <td class="texto-derecha">$512.700</td>
+                <td class="texto-derecha">$269.000</td>
+                <td class="texto-derecha celda-total-gasto">$1.402.100</td>
+                <td class="texto-derecha celda-participacion">48,1%</td>
+              </tr>
+              <tr class="fila-gasto" data-categoria="comida">
+                <td class="celda-categoria"><span class="punto-rango punto-rango--r2"></span>Comida</td>
+                <td class="texto-derecha">$214.800</td>
+                <td class="texto-derecha">$138.500</td>
+                <td class="texto-derecha">$49.000</td>
+                <td class="texto-derecha celda-total-gasto">$402.300</td>
+                <td class="texto-derecha celda-participacion">13,8%</td>
+              </tr>
+              <tr class="fila-gasto" data-categoria="peaje">
+                <td class="celda-categoria"><span class="punto-rango punto-rango--r3"></span>Peaje</td>
+                <td class="texto-derecha">$176.200</td>
+                <td class="texto-derecha">$141.900</td>
+                <td class="texto-derecha">$62.400</td>
+                <td class="texto-derecha celda-total-gasto">$380.500</td>
+                <td class="texto-derecha celda-participacion">13,1%</td>
+              </tr>
+              <tr class="fila-gasto" data-categoria="hotel">
+                <td class="celda-categoria"><span class="punto-rango punto-rango--r4"></span>Hotel</td>
+                <td class="texto-derecha">$198.000</td>
+                <td class="texto-derecha celda-sin-dato">—</td>
+                <td class="texto-derecha">$34.000</td>
+                <td class="texto-derecha celda-total-gasto">$232.000</td>
+                <td class="texto-derecha celda-participacion">8,0%</td>
+              </tr>
+              <tr class="fila-gasto" data-categoria="playa">
+                <td class="celda-categoria"><span class="punto-rango punto-rango--r5"></span>Playa</td>
+                <td class="texto-derecha">$96.500</td>
+                <td class="texto-derecha">$74.300</td>
+                <td class="texto-derecha">$41.200</td>
+                <td class="texto-derecha celda-total-gasto">$212.000</td>
+                <td class="texto-derecha celda-participacion">7,3%</td>
+              </tr>
+              <tr class="fila-gasto" data-categoria="viaticos">
+                <td class="celda-categoria"><span class="punto-rango punto-rango--r6"></span>Viáticos personales</td>
+                <td class="texto-derecha">$88.400</td>
+                <td class="texto-derecha">$63.100</td>
+                <td class="texto-derecha">$27.500</td>
+                <td class="texto-derecha celda-total-gasto">$179.000</td>
+                <td class="texto-derecha celda-participacion">6,1%</td>
+              </tr>
+              <tr class="fila-gasto" data-categoria="extras">
+                <td class="celda-categoria"><span class="punto-rango punto-rango--r7"></span>Extras</td>
+                <td class="texto-derecha">$52.300</td>
+                <td class="texto-derecha">$31.700</td>
+                <td class="texto-derecha">$21.500</td>
+                <td class="texto-derecha celda-total-gasto">$105.500</td>
+                <td class="texto-derecha celda-participacion">3,6%</td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr class="fila-total-gastos">
+                <td>Total</td>
+                <td class="texto-derecha">$1.446.600</td>
+                <td class="texto-derecha">$962.200</td>
+                <td class="texto-derecha">$504.600</td>
+                <td class="texto-derecha celda-total-gasto">$2.913.400</td>
+                <td class="texto-derecha celda-participacion">100%</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- MAQUETA: viajes del empleado. Las pestañas filtran las filas cargadas a mano. -->
+    <section class="emp-seccion" id="seccion-viajes">
+      <div class="seccion-info-header">
+        <h4><span class="material-symbols-outlined">route</span> Viajes</h4>
+      </div>
+
+      <div class="panel-viajes">
+        <div class="tabs-viajes" id="tabs-viajes">
+          <button type="button" class="tab-viaje activa" data-tipo="todos">Todos <span class="tab-viaje__cuenta">47</span></button>
+          <button type="button" class="tab-viaje" data-tipo="miel">Miel y cera <span class="tab-viaje__cuenta">18</span></button>
+          <button type="button" class="tab-viaje" data-tipo="reparto">Repartos <span class="tab-viaje__cuenta">21</span></button>
+          <button type="button" class="tab-viaje" data-tipo="cereal">Cereales <span class="tab-viaje__cuenta">8</span></button>
+        </div>
+
+        <div class="tabla-viajes-contenedor">
+          <table class="tabla-viajes-empleado">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Tipo</th>
+                <th>Vehículo</th>
+                <th>Destino</th>
+                <th class="texto-derecha">Gastos</th>
+                <th class="texto-derecha">Estado</th>
+              </tr>
+            </thead>
+            <tbody id="cuerpo-tabla-viajes">
+              <tr class="fila-viaje-empleado" data-tipo="miel">
+                <td class="celda-fecha-viaje">12/07/2026</td>
+                <td><span class="badge-tipo-viaje badge-tipo-viaje--miel"><span class="material-symbols-outlined">hive</span>Miel y cera</span></td>
+                <td>Traffic Peugeot</td>
+                <td>Tandil, Azul</td>
+                <td class="texto-derecha celda-gasto-viaje">$184.200</td>
+                <td class="texto-derecha"><span class="pildora-viaje pildora-viaje--curso">En curso</span></td>
+              </tr>
+              <tr class="fila-viaje-empleado" data-tipo="cereal">
+                <td class="celda-fecha-viaje">05/07/2026</td>
+                <td><span class="badge-tipo-viaje badge-tipo-viaje--cereal"><span class="material-symbols-outlined">agriculture</span>Cereales</span></td>
+                <td>Scania R450</td>
+                <td>Necochea</td>
+                <td class="texto-derecha celda-gasto-viaje">$96.400</td>
+                <td class="texto-derecha"><span class="pildora-viaje pildora-viaje--fin">Finalizado</span></td>
+              </tr>
+              <tr class="fila-viaje-empleado" data-tipo="reparto">
+                <td class="celda-fecha-viaje">28/06/2026</td>
+                <td><span class="badge-tipo-viaje badge-tipo-viaje--reparto"><span class="material-symbols-outlined">package_2</span>Repartos</span></td>
+                <td>Iveco Daily</td>
+                <td>Mar del Plata</td>
+                <td class="texto-derecha celda-gasto-viaje">$61.800</td>
+                <td class="texto-derecha"><span class="pildora-viaje pildora-viaje--fin">Finalizado</span></td>
+              </tr>
+              <tr class="fila-viaje-empleado" data-tipo="miel">
+                <td class="celda-fecha-viaje">21/06/2026</td>
+                <td><span class="badge-tipo-viaje badge-tipo-viaje--miel"><span class="material-symbols-outlined">hive</span>Miel y cera</span></td>
+                <td>Traffic Peugeot</td>
+                <td>Olavarría, Bolívar</td>
+                <td class="texto-derecha celda-gasto-viaje">$152.900</td>
+                <td class="texto-derecha"><span class="pildora-viaje pildora-viaje--fin">Finalizado</span></td>
+              </tr>
+              <tr class="fila-viaje-empleado" data-tipo="reparto">
+                <td class="celda-fecha-viaje">14/06/2026</td>
+                <td><span class="badge-tipo-viaje badge-tipo-viaje--reparto"><span class="material-symbols-outlined">package_2</span>Repartos</span></td>
+                <td>Iveco Daily</td>
+                <td>Balcarce</td>
+                <td class="texto-derecha celda-gasto-viaje">$43.500</td>
+                <td class="texto-derecha"><span class="pildora-viaje pildora-viaje--fin">Finalizado</span></td>
+              </tr>
+              <tr class="fila-viaje-empleado" data-tipo="cereal">
+                <td class="celda-fecha-viaje">06/06/2026</td>
+                <td><span class="badge-tipo-viaje badge-tipo-viaje--cereal"><span class="material-symbols-outlined">agriculture</span>Cereales</span></td>
+                <td>Scania R450</td>
+                <td>Quequén</td>
+                <td class="texto-derecha celda-gasto-viaje">$88.700</td>
+                <td class="texto-derecha"><span class="pildora-viaje pildora-viaje--fin">Finalizado</span></td>
+              </tr>
+              <tr class="fila-viaje-empleado" data-tipo="reparto">
+                <td class="celda-fecha-viaje">30/05/2026</td>
+                <td><span class="badge-tipo-viaje badge-tipo-viaje--reparto"><span class="material-symbols-outlined">package_2</span>Repartos</span></td>
+                <td>Fiat Ducato</td>
+                <td>Miramar</td>
+                <td class="texto-derecha celda-gasto-viaje">$38.900</td>
+                <td class="texto-derecha"><span class="pildora-viaje pildora-viaje--fin">Finalizado</span></td>
+              </tr>
+              <tr class="fila-viaje-empleado" data-tipo="miel">
+                <td class="celda-fecha-viaje">22/05/2026</td>
+                <td><span class="badge-tipo-viaje badge-tipo-viaje--miel"><span class="material-symbols-outlined">hive</span>Miel y cera</span></td>
+                <td>Mercedes Atego</td>
+                <td>Bahía Blanca, Pigüé</td>
+                <td class="texto-derecha celda-gasto-viaje">$217.400</td>
+                <td class="texto-derecha"><span class="pildora-viaje pildora-viaje--fin">Finalizado</span></td>
+              </tr>
+              <tr class="fila-viaje-empleado" data-tipo="reparto">
+                <td class="celda-fecha-viaje">15/05/2026</td>
+                <td><span class="badge-tipo-viaje badge-tipo-viaje--reparto"><span class="material-symbols-outlined">package_2</span>Repartos</span></td>
+                <td>Iveco Daily</td>
+                <td>Mar del Plata</td>
+                <td class="texto-derecha celda-gasto-viaje">$55.100</td>
+                <td class="texto-derecha"><span class="pildora-viaje pildora-viaje--fin">Finalizado</span></td>
+              </tr>
+              <tr class="fila-viaje-empleado" data-tipo="cereal">
+                <td class="celda-fecha-viaje">08/05/2026</td>
+                <td><span class="badge-tipo-viaje badge-tipo-viaje--cereal"><span class="material-symbols-outlined">agriculture</span>Cereales</span></td>
+                <td>Scania R450</td>
+                <td>Necochea</td>
+                <td class="texto-derecha celda-gasto-viaje">$74.300</td>
+                <td class="texto-derecha"><span class="pildora-viaje pildora-viaje--fin">Finalizado</span></td>
+              </tr>
+              <tr class="fila-vacia" id="fila-sin-viajes" hidden>
+                <td colspan="6" class="celda-vacia">
+                  <span class="material-symbols-outlined">route</span>
+                  Este empleado no tiene viajes de ese tipo.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p class="pie-tabla-viajes" id="pie-tabla-viajes">Mostrando los últimos 10 viajes de 47</p>
+      </div>
+    </section>
+
   </div>
+
+  <!-- MODAL AÑADIR PAGO
+       La fecha no se pide: la pone el servidor con el dia actual. -->
+  <div id="contenedor-modal-pago">
+    <div id="fondo-modal-pago" onclick="cerrarModalPagoEmpleado()"></div>
+
+    <div id="panel-modal-pago" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-pago">
+      <form id="form-pago-empleado" method="POST" autocomplete="off">
+        {% csrf_token %}
+        <input type="hidden" name="accion" value="pago">
+
+        <header class="panel-cabecera">
+          <div class="panel-titulo-fila">
+            <div class="icono-contenedor">
+              <span class="material-symbols-outlined">payments</span>
+            </div>
+            <div class="texto-cabecera">
+              <h3 id="titulo-modal-pago">Añadir pago</h3>
+              <p>{{ empleado.nombre }} {{ empleado.apellido }}</p>
+            </div>
+          </div>
+          <button type="button" class="boton-cerrar" onclick="cerrarModalPagoEmpleado()">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </header>
+
+        <main class="cuerpo-modal-pago">
+          <div class="campo-monto">
+            <label for="monto-pago">Monto</label>
+            <div class="campo-monto__caja">
+              <span class="campo-monto__signo">$</span>
+              <input type="number" id="monto-pago" name="monto" placeholder="0"
+                     required min="0.01" step="0.01" max="9999999999.99" inputmode="decimal">
+            </div>
+            <span class="mensaje-error">Ingrese un monto mayor a cero</span>
+            <p class="campo-monto__fecha">
+              <span class="material-symbols-outlined">event</span>
+              Se registra con fecha de hoy, {% now "d/m/Y" %}
+            </p>
+          </div>
+
+          <div class="grupo-input">
+            <label for="observaciones-pago">Observación <span class="etiqueta-opcional">opcional</span></label>
+            <textarea id="observaciones-pago" name="observaciones" rows="3" maxlength="250"
+                      placeholder="Ej: adelanto de quincena"></textarea>
+            <p class="contador-observacion"><span id="contador-observacion">0</span>/250</p>
+          </div>
+        </main>
+
+        <footer class="pie-modal-pago">
+          <button type="submit" class="boton-primario">Registrar pago</button>
+          <button type="button" class="boton-secundario" onclick="cerrarModalPagoEmpleado()">Cancelar</button>
+        </footer>
+      </form>
+    </div>
+  </div>
+
+  <!-- PANEL LATERAL EDITAR EMPLEADO (SLIDE-OVER)
+       Mismo panel que el listado de empleados: comparte marcado, estilos y las
+       funciones de empleados.js. El POST sin action vuelve a esta misma vista. -->
+  <div id="contenedor-slide-over">
+    <div id="slide-over-fondo" onclick="cerrarSlideOver()"></div>
+
+    <div id="slide-over-panel">
+      <form id="form-empleado" method="POST" autocomplete="off">
+        {% csrf_token %}
+        <header class="panel-cabecera">
+          <div class="panel-titulo-fila">
+            <div class="icono-contenedor">
+              <span class="material-symbols-outlined">edit_note</span>
+            </div>
+            <div class="texto-cabecera">
+              <h3>Editar Empleado</h3>
+              <p>Modifique los datos del empleado</p>
+            </div>
+          </div>
+          <button type="button" class="boton-cerrar" onclick="cerrarSlideOver()">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </header>
+
+        <main class="panel-cuerpo">
+          <input type="hidden" id="id_empleado" name="id_empleado" value="">
+          <section class="seccion-bloque">
+            <div class="subtitulo-formulario">
+              <span class="material-symbols-outlined">badge</span>
+              <h4>Información Personal</h4>
+            </div>
+
+            <div class="grupo-input">
+              <label for="nombre">Nombre</label>
+              <input type="text" id="nombre" name="nombre" placeholder="Ej: Juan" required maxlength="25" pattern="[a-zA-ZÁÉÍÓÚáéíóúñÑ\s]{3,25}">
+              <span class="mensaje-error">Mínimo 3 letras, máximo 25, sin números ni símbolos</span>
+            </div>
+
+            <div class="grupo-input">
+              <label for="apellido">Apellido</label>
+              <input type="text" id="apellido" name="apellido" placeholder="Ej: Perez" required maxlength="25" pattern="[a-zA-ZÁÉÍÓÚáéíóúñÑ\s]{3,25}">
+              <span class="mensaje-error">Mínimo 3 letras, máximo 25, sin números ni símbolos</span>
+            </div>
+          </section>
+        </main>
+
+        <footer class="panel-pie">
+          <button type="submit" class="boton-primario">Actualizar Empleado</button>
+          <button type="button" class="boton-secundario" onclick="cerrarSlideOver()">Cancelar</button>
+        </footer>
+      </form>
+    </div>
+  </div>
+
+  <!-- Panel de eliminacion y Fondo -->
+  <form id="formulario-eliminar" method="POST">
+    {% csrf_token %}
+    <div id="contenedor-panel-eliminar">
+      <div id="contenedor-panel-fondo" onclick="cerrarPanelEliminar()"> </div>
+      <div id="panel-eliminar">
+        <input type="hidden" id="id_eliminar" name="id_eliminar" value="">
+        <input type="hidden" name="accion" value="eliminar">
+
+        <button type="button" class="boton-cerrar" id="icono-cerrar-panel-eliminar" onclick="cerrarPanelEliminar()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+
+        <div id="icono-advertencia">
+          <span class="material-symbols-outlined">warning</span>
+        </div>
+
+        <h3>Confirmar eliminación</h3>
+        <p id="texto-confirmacion-eliminar">¿Está seguro que quiere eliminar este empleado?</p>
+
+        <div class="acciones-modal">
+          <button type="button" class="boton-secundario" onclick="cerrarPanelEliminar()">No, mantener</button>
+          <button type="button" class="boton-primario-eliminar" id="boton-confirmar-eliminar"><span>Sí, eliminar</span></button>
+        </div>
+      </div>
+    </div>
+  </form>
+{% endblock %}
+
+{% block codigo-javascript %}
+  <script src="{% static_v 'js/paneles.js' %}"></script>
+  <script src="{% static_v 'js/empleados.js' %}"></script>
+  <script src="{% static_v 'js/informacion_empleado.js' %}"></script>
 {% endblock %}

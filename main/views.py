@@ -13,7 +13,8 @@ from django.db import transaction
 from django.utils import timezone
 from django.utils.dateparse import parse_date
 
-from .models import Cliente, Producto, Operacion, DetalleOperacion, Pago, Cotizaciones, Empleado, Vehiculo, Viaje, ViajeCereal, ViajeReparto
+from .models import (Cliente, Producto, Operacion, DetalleOperacion, Pago, Cotizaciones, Empleado, PagosEmpleados,
+                     Vehiculo, Viaje, ViajeCereal, ViajeReparto)
 from .pdf_services import Remito
 from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo_cliente, editar_cliente,
                        eliminar_cliente, buscar_clientes, get_cotizacion_dolar_oficial, get_cotizaciones, get_total_kilos_granel, get_articulos_granel, actualizar_cotizacion, obtener_datos_cliente,
@@ -21,7 +22,8 @@ from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo
                        obtener_listado_deudores, _iniciales, filtro_nombre_apellido, filtro_tokens, crear_empleado, crear_vehiculo, crear_viaje, obtener_empleados_activos,
                        obtener_vehiculos_activos, obtener_viajes, obtener_datos_viaje, editar_viaje, eliminar_viaje, crear_gasto,
                        incluir_asignado,
-                       editar_empleado, eliminar_empleado, obtener_datos_empleado, editar_vehiculo, eliminar_vehiculo,
+                       editar_empleado, eliminar_empleado, obtener_datos_empleado, crear_pago_empleado,
+                       editar_vehiculo, eliminar_vehiculo,
                        crear_viaje_cereal, obtener_viajes_cereales, obtener_datos_viaje_cereal,
                        editar_viaje_cereal, eliminar_viaje_cereal, crear_gasto_viaje_cereal,
                        obtener_resumen_cereal, marcar_pago_viaje_cereal,
@@ -170,7 +172,50 @@ def empleados(request):
 @staff_member_required
 def informacion_empleado(request, id_empleado):
     empleado = get_object_or_404(Empleado, id=id_empleado, activo=True)
-    contexto = {"empleado": empleado}
+
+    if request.method == "POST":
+        # El perfil abre los mismos paneles que el listado, asi que reutiliza sus
+        # servicios: eliminar es una baja logica (activo=False), igual que alli.
+        accion = request.POST.get("accion")
+
+        try:
+            if accion == "eliminar":
+                eliminar_empleado(empleado.id)
+                messages.success(request, "Empleado eliminado correctamente")
+                # El perfil ya no existe para el usuario: vuelvo al listado
+                return redirect("empleados")
+
+            if accion == "pago":
+                crear_pago_empleado(
+                    empleado.id,
+                    request.POST.get("monto"),
+                    request.POST.get("observaciones", ""),
+                )
+                messages.success(request, "Pago registrado correctamente")
+                return redirect("informacion_empleado", id_empleado=empleado.id)
+
+            editar_empleado(
+                empleado.id,
+                request.POST.get("nombre", ""),
+                request.POST.get("apellido", ""),
+                True,
+            )
+            messages.success(request, "Empleado editado correctamente")
+        except ValueError as e:
+            # Errores de validacion provenientes de services.py
+            messages.error(request, str(e))
+        except Exception as e:
+            messages.error(request, f"Ocurrió un error inesperado: {e}")
+
+        return redirect("informacion_empleado", id_empleado=empleado.id)
+
+    # Pagos del empleado, del mas reciente al mas viejo. El id desempata los que
+    # caen el mismo dia, porque fecha es DateField y no guarda la hora.
+    pagos = PagosEmpleados.objects.filter(empleado=empleado).order_by("-fecha", "-id")
+    paginador_pagos = Paginator(pagos, 8)
+    pagina_pagos = paginador_pagos.get_page(request.GET.get("page"))
+
+    contexto = {"empleado": empleado, "pagos": pagina_pagos}
     return render(request, "informacion_empleado.html", contexto)
 
 
@@ -1153,7 +1198,6 @@ def informacion_viaje(request, id_viaje):
     return render(request, "informacion_viaje.html", contexto)
 
 
-# Verifico que solo un administrador pueda ver la vista, tambien verifica que el usuario este logueado
 @staff_member_required(login_url="inicio")
 def deudores(request):
     import re
@@ -1402,9 +1446,6 @@ def deudores(request):
     return render(request, "deudores.html", contexto)
 
 
-# Secciones en construccion: por ahora solo la cabecera y el cartel de aviso.
-# Mismo criterio de acceso que Deudas (solo staff), asi el dia que tengan
-# contenido real no hay que rever los permisos.
 @staff_member_required(login_url="inicio")
 def alquileres(request):
     return render(request, "alquileres.html")
