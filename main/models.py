@@ -268,6 +268,7 @@ class PagosEmpleados(models.Model):
     empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE, db_column="id_empleado")
     fecha = models.DateField(default=timezone.now)
     monto = models.DecimalField(max_digits=12, decimal_places=2)
+    observaciones = models.CharField(max_length=250, blank=True, default="")
 
     class Meta:
         db_table = "pagos_empleados"

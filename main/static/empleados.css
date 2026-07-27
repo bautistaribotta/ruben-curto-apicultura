@@ -97,6 +97,12 @@
   text-align: right;
 }
 
+/* Separo la columna de saldo de la de acciones */
+.tabla-empleados th:nth-child(2),
+.tabla-empleados td:nth-child(2) .enlace-fila {
+  padding-right: 100px;
+}
+
 .tabla-empleados td {
   padding: 1rem 1.5rem;
   font-size: var(--text-sm);
