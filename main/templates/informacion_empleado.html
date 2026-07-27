@@ -6,10 +6,10 @@
 {% comment %}
   Perfil de empleado.
 
-  Los datos de identidad, saldo y cantidad de viajes salen del modelo. El detalle
-  de gastos y el listado de viajes todavia estan cargados a mano en la plantilla:
-  es una maqueta para definir la interfaz antes de escribir las consultas.
-  Los bloques hardcodeados quedan marcados con el comentario MAQUETA.
+  La pagina tiene dos mitades. Los pagos se renderizan aca y no dependen de
+  ningun filtro. Los gastos y los viajes viven en secciones_empleado.html, que se
+  incluye tanto en esta pagina como en la respuesta AJAX: al cambiar el rango de
+  fechas o la pestaña de tipo de viaje se reemplaza ese bloque entero.
 {% endcomment %}
 
 {% block nombre-pestaña %}
@@ -22,6 +22,7 @@
     asi el perfil usa exactamente los mismos paneles que el listado.
   {% endcomment %}
   <link rel="stylesheet" href="{% static_v 'empleados.css' %}">
+  <link rel="stylesheet" href="{% static_v 'filtro_fechas.css' %}">
   <link rel="stylesheet" href="{% static_v 'informacion_empleado.css' %}">
 {% endblock %}
 
@@ -109,7 +110,7 @@
           </div>
           <div class="paginacion-botones">
             {% if pagos.has_previous %}
-              <a href="?page={{ pagos.previous_page_number }}#seccion-pagos">
+              <a href="?page_pagos={{ pagos.previous_page_number }}#seccion-pagos">
                 <button class="boton-paginacion">Anterior</button>
               </a>
             {% else %}
@@ -117,7 +118,7 @@
             {% endif %}
 
             {% if pagos.has_next %}
-              <a href="?page={{ pagos.next_page_number }}#seccion-pagos">
+              <a href="?page_pagos={{ pagos.next_page_number }}#seccion-pagos">
                 <button class="boton-paginacion">Siguiente</button>
               </a>
             {% else %}
@@ -129,250 +130,20 @@
       </div>
     </section>
 
-    <!-- MAQUETA: gastos rendidos. Montos y porcentajes cargados a mano. -->
-    <section class="emp-seccion" id="seccion-gastos">
-      <div class="seccion-info-header">
-        <h4><span class="material-symbols-outlined">receipt_long</span> Gastos rendidos</h4>
-      </div>
+    {% comment %}
+      El chip de fechas queda fuera de #secciones-empleado a proposito: filtro_fechas.js
+      se engancha una sola vez al cargar la pagina, asi que si el AJAX lo reemplazara
+      se quedaria sin eventos.
+    {% endcomment %}
+    <div class="barra-periodo">
+      <p class="barra-periodo__texto">Gastos y viajes del período</p>
+      {% include 'filtro_fechas.html' %}
+    </div>
 
-      <div class="panel-gastos">
-        <div class="panel-gastos__resumen">
-          <div>
-            <p class="panel-gastos__label" id="etiqueta-total-gastos">Total rendido en 47 viajes</p>
-            <p class="panel-gastos__total" id="monto-total-gastos">$2.913.400</p>
-          </div>
-          <p class="panel-gastos__nota" id="nota-gastos">Combustible se lleva casi la mitad de lo rendido</p>
-        </div>
-
-        <!-- Cinta de gastos: cada segmento es una categoria. El ancho es la
-             participacion sobre el total y el color codifica el puesto en el
-             ranking, del mas alto (pino) al mas bajo (miel). -->
-        <div class="cinta-gastos" id="cinta-gastos">
-          <span class="cinta-gastos__seg cinta-gastos__seg--r1" data-categoria="combustible" title="Combustible 48,1%"></span>
-          <span class="cinta-gastos__seg cinta-gastos__seg--r2" data-categoria="comida" title="Comida 13,8%"></span>
-          <span class="cinta-gastos__seg cinta-gastos__seg--r3" data-categoria="peaje" title="Peaje 13,1%"></span>
-          <span class="cinta-gastos__seg cinta-gastos__seg--r4" data-categoria="hotel" title="Hotel 8,0%"></span>
-          <span class="cinta-gastos__seg cinta-gastos__seg--r5" data-categoria="playa" title="Playa 7,3%"></span>
-          <span class="cinta-gastos__seg cinta-gastos__seg--r6" data-categoria="viaticos" title="Viáticos personales 6,1%"></span>
-          <span class="cinta-gastos__seg cinta-gastos__seg--r7" data-categoria="extras" title="Extras 3,6%"></span>
-        </div>
-
-        <div class="chips-gasto" id="chips-gasto">
-          <button type="button" class="chip-gasto activa" data-categoria="todas">Todas</button>
-          <button type="button" class="chip-gasto" data-categoria="combustible"><span class="punto-rango punto-rango--r1"></span>Combustible</button>
-          <button type="button" class="chip-gasto" data-categoria="comida"><span class="punto-rango punto-rango--r2"></span>Comida</button>
-          <button type="button" class="chip-gasto" data-categoria="peaje"><span class="punto-rango punto-rango--r3"></span>Peaje</button>
-          <button type="button" class="chip-gasto" data-categoria="hotel"><span class="punto-rango punto-rango--r4"></span>Hotel</button>
-          <button type="button" class="chip-gasto" data-categoria="playa"><span class="punto-rango punto-rango--r5"></span>Playa</button>
-          <button type="button" class="chip-gasto" data-categoria="viaticos"><span class="punto-rango punto-rango--r6"></span>Viáticos personales</button>
-          <button type="button" class="chip-gasto" data-categoria="extras"><span class="punto-rango punto-rango--r7"></span>Extras</button>
-        </div>
-
-        <div class="tabla-gastos-contenedor">
-          <table class="tabla-gastos">
-            <thead>
-              <tr>
-                <th>Categoría</th>
-                <th class="texto-derecha">Miel y cera</th>
-                <th class="texto-derecha">Repartos</th>
-                <th class="texto-derecha">Cereales</th>
-                <th class="texto-derecha">Total</th>
-                <th class="texto-derecha">Part.</th>
-              </tr>
-            </thead>
-            <tbody id="cuerpo-tabla-gastos">
-              <tr class="fila-gasto" data-categoria="combustible">
-                <td class="celda-categoria"><span class="punto-rango punto-rango--r1"></span>Combustible</td>
-                <td class="texto-derecha">$620.400</td>
-                <td class="texto-derecha">$512.700</td>
-                <td class="texto-derecha">$269.000</td>
-                <td class="texto-derecha celda-total-gasto">$1.402.100</td>
-                <td class="texto-derecha celda-participacion">48,1%</td>
-              </tr>
-              <tr class="fila-gasto" data-categoria="comida">
-                <td class="celda-categoria"><span class="punto-rango punto-rango--r2"></span>Comida</td>
-                <td class="texto-derecha">$214.800</td>
-                <td class="texto-derecha">$138.500</td>
-                <td class="texto-derecha">$49.000</td>
-                <td class="texto-derecha celda-total-gasto">$402.300</td>
-                <td class="texto-derecha celda-participacion">13,8%</td>
-              </tr>
-              <tr class="fila-gasto" data-categoria="peaje">
-                <td class="celda-categoria"><span class="punto-rango punto-rango--r3"></span>Peaje</td>
-                <td class="texto-derecha">$176.200</td>
-                <td class="texto-derecha">$141.900</td>
-                <td class="texto-derecha">$62.400</td>
-                <td class="texto-derecha celda-total-gasto">$380.500</td>
-                <td class="texto-derecha celda-participacion">13,1%</td>
-              </tr>
-              <tr class="fila-gasto" data-categoria="hotel">
-                <td class="celda-categoria"><span class="punto-rango punto-rango--r4"></span>Hotel</td>
-                <td class="texto-derecha">$198.000</td>
-                <td class="texto-derecha celda-sin-dato">—</td>
-                <td class="texto-derecha">$34.000</td>
-                <td class="texto-derecha celda-total-gasto">$232.000</td>
-                <td class="texto-derecha celda-participacion">8,0%</td>
-              </tr>
-              <tr class="fila-gasto" data-categoria="playa">
-                <td class="celda-categoria"><span class="punto-rango punto-rango--r5"></span>Playa</td>
-                <td class="texto-derecha">$96.500</td>
-                <td class="texto-derecha">$74.300</td>
-                <td class="texto-derecha">$41.200</td>
-                <td class="texto-derecha celda-total-gasto">$212.000</td>
-                <td class="texto-derecha celda-participacion">7,3%</td>
-              </tr>
-              <tr class="fila-gasto" data-categoria="viaticos">
-                <td class="celda-categoria"><span class="punto-rango punto-rango--r6"></span>Viáticos personales</td>
-                <td class="texto-derecha">$88.400</td>
-                <td class="texto-derecha">$63.100</td>
-                <td class="texto-derecha">$27.500</td>
-                <td class="texto-derecha celda-total-gasto">$179.000</td>
-                <td class="texto-derecha celda-participacion">6,1%</td>
-              </tr>
-              <tr class="fila-gasto" data-categoria="extras">
-                <td class="celda-categoria"><span class="punto-rango punto-rango--r7"></span>Extras</td>
-                <td class="texto-derecha">$52.300</td>
-                <td class="texto-derecha">$31.700</td>
-                <td class="texto-derecha">$21.500</td>
-                <td class="texto-derecha celda-total-gasto">$105.500</td>
-                <td class="texto-derecha celda-participacion">3,6%</td>
-              </tr>
-            </tbody>
-            <tfoot>
-              <tr class="fila-total-gastos">
-                <td>Total</td>
-                <td class="texto-derecha">$1.446.600</td>
-                <td class="texto-derecha">$962.200</td>
-                <td class="texto-derecha">$504.600</td>
-                <td class="texto-derecha celda-total-gasto">$2.913.400</td>
-                <td class="texto-derecha celda-participacion">100%</td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- MAQUETA: viajes del empleado. Las pestañas filtran las filas cargadas a mano. -->
-    <section class="emp-seccion" id="seccion-viajes">
-      <div class="seccion-info-header">
-        <h4><span class="material-symbols-outlined">route</span> Viajes</h4>
-      </div>
-
-      <div class="panel-viajes">
-        <div class="tabs-viajes" id="tabs-viajes">
-          <button type="button" class="tab-viaje activa" data-tipo="todos">Todos <span class="tab-viaje__cuenta">47</span></button>
-          <button type="button" class="tab-viaje" data-tipo="miel">Miel y cera <span class="tab-viaje__cuenta">18</span></button>
-          <button type="button" class="tab-viaje" data-tipo="reparto">Repartos <span class="tab-viaje__cuenta">21</span></button>
-          <button type="button" class="tab-viaje" data-tipo="cereal">Cereales <span class="tab-viaje__cuenta">8</span></button>
-        </div>
-
-        <div class="tabla-viajes-contenedor">
-          <table class="tabla-viajes-empleado">
-            <thead>
-              <tr>
-                <th>Fecha</th>
-                <th>Tipo</th>
-                <th>Vehículo</th>
-                <th>Destino</th>
-                <th class="texto-derecha">Gastos</th>
-                <th class="texto-derecha">Estado</th>
-              </tr>
-            </thead>
-            <tbody id="cuerpo-tabla-viajes">
-              <tr class="fila-viaje-empleado" data-tipo="miel">
-                <td class="celda-fecha-viaje">12/07/2026</td>
-                <td><span class="badge-tipo-viaje badge-tipo-viaje--miel"><span class="material-symbols-outlined">hive</span>Miel y cera</span></td>
-                <td>Traffic Peugeot</td>
-                <td>Tandil, Azul</td>
-                <td class="texto-derecha celda-gasto-viaje">$184.200</td>
-                <td class="texto-derecha"><span class="pildora-viaje pildora-viaje--curso">En curso</span></td>
-              </tr>
-              <tr class="fila-viaje-empleado" data-tipo="cereal">
-                <td class="celda-fecha-viaje">05/07/2026</td>
-                <td><span class="badge-tipo-viaje badge-tipo-viaje--cereal"><span class="material-symbols-outlined">agriculture</span>Cereales</span></td>
-                <td>Scania R450</td>
-                <td>Necochea</td>
-                <td class="texto-derecha celda-gasto-viaje">$96.400</td>
-                <td class="texto-derecha"><span class="pildora-viaje pildora-viaje--fin">Finalizado</span></td>
-              </tr>
-              <tr class="fila-viaje-empleado" data-tipo="reparto">
-                <td class="celda-fecha-viaje">28/06/2026</td>
-                <td><span class="badge-tipo-viaje badge-tipo-viaje--reparto"><span class="material-symbols-outlined">package_2</span>Repartos</span></td>
-                <td>Iveco Daily</td>
-                <td>Mar del Plata</td>
-                <td class="texto-derecha celda-gasto-viaje">$61.800</td>
-                <td class="texto-derecha"><span class="pildora-viaje pildora-viaje--fin">Finalizado</span></td>
-              </tr>
-              <tr class="fila-viaje-empleado" data-tipo="miel">
-                <td class="celda-fecha-viaje">21/06/2026</td>
-                <td><span class="badge-tipo-viaje badge-tipo-viaje--miel"><span class="material-symbols-outlined">hive</span>Miel y cera</span></td>
-                <td>Traffic Peugeot</td>
-                <td>Olavarría, Bolívar</td>
-                <td class="texto-derecha celda-gasto-viaje">$152.900</td>
-                <td class="texto-derecha"><span class="pildora-viaje pildora-viaje--fin">Finalizado</span></td>
-              </tr>
-              <tr class="fila-viaje-empleado" data-tipo="reparto">
-                <td class="celda-fecha-viaje">14/06/2026</td>
-                <td><span class="badge-tipo-viaje badge-tipo-viaje--reparto"><span class="material-symbols-outlined">package_2</span>Repartos</span></td>
-                <td>Iveco Daily</td>
-                <td>Balcarce</td>
-                <td class="texto-derecha celda-gasto-viaje">$43.500</td>
-                <td class="texto-derecha"><span class="pildora-viaje pildora-viaje--fin">Finalizado</span></td>
-              </tr>
-              <tr class="fila-viaje-empleado" data-tipo="cereal">
-                <td class="celda-fecha-viaje">06/06/2026</td>
-                <td><span class="badge-tipo-viaje badge-tipo-viaje--cereal"><span class="material-symbols-outlined">agriculture</span>Cereales</span></td>
-                <td>Scania R450</td>
-                <td>Quequén</td>
-                <td class="texto-derecha celda-gasto-viaje">$88.700</td>
-                <td class="texto-derecha"><span class="pildora-viaje pildora-viaje--fin">Finalizado</span></td>
-              </tr>
-              <tr class="fila-viaje-empleado" data-tipo="reparto">
-                <td class="celda-fecha-viaje">30/05/2026</td>
-                <td><span class="badge-tipo-viaje badge-tipo-viaje--reparto"><span class="material-symbols-outlined">package_2</span>Repartos</span></td>
-                <td>Fiat Ducato</td>
-                <td>Miramar</td>
-                <td class="texto-derecha celda-gasto-viaje">$38.900</td>
-                <td class="texto-derecha"><span class="pildora-viaje pildora-viaje--fin">Finalizado</span></td>
-              </tr>
-              <tr class="fila-viaje-empleado" data-tipo="miel">
-                <td class="celda-fecha-viaje">22/05/2026</td>
-                <td><span class="badge-tipo-viaje badge-tipo-viaje--miel"><span class="material-symbols-outlined">hive</span>Miel y cera</span></td>
-                <td>Mercedes Atego</td>
-                <td>Bahía Blanca, Pigüé</td>
-                <td class="texto-derecha celda-gasto-viaje">$217.400</td>
-                <td class="texto-derecha"><span class="pildora-viaje pildora-viaje--fin">Finalizado</span></td>
-              </tr>
-              <tr class="fila-viaje-empleado" data-tipo="reparto">
-                <td class="celda-fecha-viaje">15/05/2026</td>
-                <td><span class="badge-tipo-viaje badge-tipo-viaje--reparto"><span class="material-symbols-outlined">package_2</span>Repartos</span></td>
-                <td>Iveco Daily</td>
-                <td>Mar del Plata</td>
-                <td class="texto-derecha celda-gasto-viaje">$55.100</td>
-                <td class="texto-derecha"><span class="pildora-viaje pildora-viaje--fin">Finalizado</span></td>
-              </tr>
-              <tr class="fila-viaje-empleado" data-tipo="cereal">
-                <td class="celda-fecha-viaje">08/05/2026</td>
-                <td><span class="badge-tipo-viaje badge-tipo-viaje--cereal"><span class="material-symbols-outlined">agriculture</span>Cereales</span></td>
-                <td>Scania R450</td>
-                <td>Necochea</td>
-                <td class="texto-derecha celda-gasto-viaje">$74.300</td>
-                <td class="texto-derecha"><span class="pildora-viaje pildora-viaje--fin">Finalizado</span></td>
-              </tr>
-              <tr class="fila-vacia" id="fila-sin-viajes" hidden>
-                <td colspan="6" class="celda-vacia">
-                  <span class="material-symbols-outlined">route</span>
-                  Este empleado no tiene viajes de ese tipo.
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <p class="pie-tabla-viajes" id="pie-tabla-viajes">Mostrando los últimos 10 viajes de 47</p>
-      </div>
-    </section>
+    <!-- Gastos rendidos y viajes. Se reemplaza entero por AJAX al filtrar. -->
+    <div id="secciones-empleado">
+      {% include 'secciones_empleado.html' %}
+    </div>
 
   </div>
 
@@ -518,5 +289,6 @@
 {% block codigo-javascript %}
   <script src="{% static_v 'js/paneles.js' %}"></script>
   <script src="{% static_v 'js/empleados.js' %}"></script>
+  <script src="{% static_v 'js/filtro_fechas.js' %}"></script>
   <script src="{% static_v 'js/informacion_empleado.js' %}"></script>
 {% endblock %}

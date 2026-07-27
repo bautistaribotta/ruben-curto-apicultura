@@ -1,63 +1,124 @@
-// Perfil de empleado: filtro de gastos por categoria y de viajes por tipo.
-// Los datos todavia estan cargados a mano en la plantilla, asi que el filtrado
-// es del lado del cliente sobre las filas ya renderizadas.
+// Perfil de empleado.
+//
+// El bloque de gastos y viajes (#secciones-empleado) lo devuelve el servidor y se
+// reemplaza entero al cambiar el rango de fechas, la pestaña de tipo de viaje o la
+// pagina. Por eso todo lo que vive adentro se engancha por delegacion en document:
+// asi los listeners sobreviven al reemplazo.
 
-// ---------- GASTOS (filtro por categoria) ----------
+const contenedorSecciones = document.getElementById("secciones-empleado");
+const filtroFechasEmpleado = document.getElementById("filtro-fechas");
 
-// Copia del detalle que hoy vive en la plantilla. Cuando los montos salgan de la
-// base, esto se reemplaza por lo que mande la vista.
-const DETALLE_GASTOS = {
-    combustible: { nombre: "Combustible", total: "$1.402.100", parte: "48,1%" },
-    comida: { nombre: "Comida", total: "$402.300", parte: "13,8%" },
-    peaje: { nombre: "Peaje", total: "$380.500", parte: "13,1%" },
-    hotel: { nombre: "Hotel", total: "$232.000", parte: "8,0%" },
-    playa: { nombre: "Playa", total: "$212.000", parte: "7,3%" },
-    viaticos: { nombre: "Viáticos personales", total: "$179.000", parte: "6,1%" },
-    extras: { nombre: "Extras", total: "$105.500", parte: "3,6%" }
-};
+// ---------- CARGA AJAX DEL BLOQUE DE GASTOS Y VIAJES ----------
 
-const TOTAL_GASTOS = "$2.913.400";
+function armarUrlSecciones(base = null) {
+    const url = base ? new URL(base, window.location.origin) : new URL(window.location.href);
 
-function filtrarGastos(categoria) {
-    const segmentos = document.querySelectorAll(".cinta-gastos__seg");
-    const filas = document.querySelectorAll(".fila-gasto");
+    // A diferencia de las otras vistas, aca los parametros de fecha se mandan
+    // siempre, aunque esten vacios: la vista arranca en el año en curso cuando no
+    // vienen, asi que un vacio explicito es lo que pide el historial completo.
+    const desde = filtroFechasEmpleado ? filtroFechasEmpleado.dataset.desde : "";
+    const hasta = filtroFechasEmpleado ? filtroFechasEmpleado.dataset.hasta : "";
+    url.searchParams.set("desde", desde || "");
+    url.searchParams.set("hasta", hasta || "");
+
+    return url;
+}
+
+function cargarSecciones(url) {
+    if (!contenedorSecciones) return;
+
+    contenedorSecciones.setAttribute("aria-busy", "true");
+
+    fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest" } })
+        .then((respuesta) => respuesta.text())
+        .then((html) => {
+            contenedorSecciones.innerHTML = html;
+            contenedorSecciones.removeAttribute("aria-busy");
+            repartirCintaGastos();
+            guardarTitularGastos();
+            window.history.pushState({}, "", url);
+        })
+        .catch((error) => {
+            contenedorSecciones.removeAttribute("aria-busy");
+            console.error("Error al cargar los gastos y viajes:", error);
+        });
+}
+
+// El filtro de fecha avisa por evento; recargo el bloque con el rango aplicado.
+document.addEventListener("filtrofechas:cambio", () => {
+    const url = armarUrlSecciones();
+    // Al cambiar el periodo la paginacion de viajes deja de tener sentido
+    url.searchParams.delete("page_viajes");
+    cargarSecciones(url);
+});
+
+// ---------- GASTOS ----------
+
+// El ancho de cada segmento es su participacion sobre el total, un dato que solo
+// conoce el servidor. Viaja en data-parte y se traduce a flex-grow aca; el color y
+// el resto del aspecto siguen viviendo en la hoja de estilos.
+function repartirCintaGastos() {
+    document.querySelectorAll(".cinta-gastos__seg").forEach((segmento) => {
+        segmento.style.flexGrow = segmento.dataset.parte;
+    });
+}
+
+// Los textos del titular los escribe el servidor con el total del periodo. Los
+// guardo apenas se renderiza para poder volver a ellos al elegir "Todas".
+let titularGastos = {};
+
+function guardarTitularGastos() {
+    const etiqueta = document.getElementById("etiqueta-total-gastos");
+    const monto = document.getElementById("monto-total-gastos");
+    const nota = document.getElementById("nota-gastos");
+    titularGastos = {
+        etiqueta: etiqueta ? etiqueta.textContent.trim() : "",
+        monto: monto ? monto.textContent.trim() : "",
+        nota: nota ? nota.textContent.trim() : ""
+    };
+}
+
+function filtrarGastos(chip) {
+    const categoria = chip.dataset.categoria;
+    const todas = categoria === "todas";
+
     const etiqueta = document.getElementById("etiqueta-total-gastos");
     const monto = document.getElementById("monto-total-gastos");
     const nota = document.getElementById("nota-gastos");
 
-    const todas = categoria === "todas";
-
     // Apago lo que no corresponde a la categoria elegida, en la cinta y en la tabla
-    segmentos.forEach((segmento) => {
+    document.querySelectorAll(".cinta-gastos__seg").forEach((segmento) => {
         segmento.toggleAttribute("data-atenuado", !todas && segmento.dataset.categoria !== categoria);
     });
 
-    filas.forEach((fila) => {
+    document.querySelectorAll(".fila-gasto").forEach((fila) => {
         fila.toggleAttribute("data-atenuado", !todas && fila.dataset.categoria !== categoria);
     });
 
     if (todas) {
-        etiqueta.textContent = "Total rendido en 47 viajes";
-        monto.textContent = TOTAL_GASTOS;
-        nota.textContent = "Combustible se lleva casi la mitad de lo rendido";
+        if (etiqueta) etiqueta.textContent = titularGastos.etiqueta;
+        if (monto) monto.textContent = titularGastos.monto;
+        if (nota) nota.textContent = titularGastos.nota;
         return;
     }
 
-    const detalle = DETALLE_GASTOS[categoria];
-    etiqueta.textContent = `Rendido en ${detalle.nombre}`;
-    monto.textContent = detalle.total;
-    nota.textContent = `${detalle.parte} del total gastado`;
+    if (etiqueta) etiqueta.textContent = `Rendido en ${chip.dataset.nombre}`;
+    if (monto) monto.textContent = chip.dataset.total;
+    if (nota) nota.textContent = `${chip.dataset.parte}% del total gastado`;
 }
 
-document.getElementById("chips-gasto")?.addEventListener("click", (evento) => {
+document.addEventListener("click", (evento) => {
     const chip = evento.target.closest(".chip-gasto");
     if (!chip) return;
 
     document.querySelectorAll(".chip-gasto").forEach((otro) => otro.classList.remove("activa"));
     chip.classList.add("activa");
 
-    filtrarGastos(chip.dataset.categoria);
+    filtrarGastos(chip);
 });
+
+repartirCintaGastos();
+guardarTitularGastos();
 
 // ---------- MODAL DE PAGO ----------
 
@@ -140,39 +201,33 @@ document.getElementById("boton-eliminar-empleado")?.addEventListener("click", (e
     prepararPanelEliminarEmpleado(boton.dataset.id, boton.dataset.nombre);
 });
 
-// ---------- VIAJES (filtro por tipo) ----------
+// ---------- VIAJES ----------
+// Pestañas de tipo, paginacion y filas: todo por delegacion, porque el bloque se
+// reemplaza con cada carga AJAX.
 
-function filtrarViajes(tipo) {
-    const filas = document.querySelectorAll(".fila-viaje-empleado");
-    const pie = document.getElementById("pie-tabla-viajes");
-    let visibles = 0;
-
-    filas.forEach((fila) => {
-        const coincide = tipo === "todos" || fila.dataset.tipo === tipo;
-        fila.hidden = !coincide;
-        if (coincide) visibles++;
-    });
-
-    // Aviso de tabla vacia: solo si hay viajes cargados y ninguno es de ese tipo
-    const filaVacia = document.getElementById("fila-sin-viajes");
-    if (filaVacia) {
-        filaVacia.hidden = visibles > 0;
-    }
-
-    if (pie) {
-        const total = document.querySelector(`.tab-viaje[data-tipo="${tipo}"] .tab-viaje__cuenta`);
-        pie.textContent = visibles > 0
-            ? `Mostrando los últimos ${visibles} viajes de ${total.textContent}`
-            : "Sin viajes para mostrar";
-    }
-}
-
-document.getElementById("tabs-viajes")?.addEventListener("click", (evento) => {
+document.addEventListener("click", (evento) => {
+    // Pestañas de tipo de viaje
     const tab = evento.target.closest(".tab-viaje");
-    if (!tab) return;
+    if (tab && !tab.classList.contains("activa")) {
+        const url = armarUrlSecciones();
+        url.searchParams.set("tipo", tab.dataset.tipo);
+        // Al cambiar de tipo vuelvo a la primera pagina
+        url.searchParams.delete("page_viajes");
+        cargarSecciones(url);
+        return;
+    }
 
-    document.querySelectorAll(".tab-viaje").forEach((otro) => otro.classList.remove("activa"));
-    tab.classList.add("activa");
+    // Paginacion de viajes
+    const paginacion = evento.target.closest("#seccion-viajes .paginacion-botones a");
+    if (paginacion) {
+        evento.preventDefault();
+        cargarSecciones(armarUrlSecciones(paginacion.href));
+        return;
+    }
 
-    filtrarViajes(tab.dataset.tipo);
+    // Cada fila abre el detalle del viaje
+    const fila = evento.target.closest(".fila-viaje-empleado");
+    if (fila && fila.dataset.url) {
+        window.location.href = fila.dataset.url;
+    }
 });

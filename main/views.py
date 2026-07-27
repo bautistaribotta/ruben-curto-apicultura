@@ -1,4 +1,5 @@
 import json
+from datetime import date
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
@@ -23,6 +24,7 @@ from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo
                        obtener_vehiculos_activos, obtener_viajes, obtener_datos_viaje, editar_viaje, eliminar_viaje, crear_gasto,
                        incluir_asignado,
                        editar_empleado, eliminar_empleado, obtener_datos_empleado, crear_pago_empleado,
+                       obtener_gastos_empleado, obtener_viajes_empleado, TIPOS_VIAJE_EMPLEADO,
                        editar_vehiculo, eliminar_vehiculo,
                        crear_viaje_cereal, obtener_viajes_cereales, obtener_datos_viaje_cereal,
                        editar_viaje_cereal, eliminar_viaje_cereal, crear_gasto_viaje_cereal,
@@ -76,6 +78,28 @@ def _rango_fechas(request):
         "desde": desde.isoformat() if desde else "",
         "hasta": hasta.isoformat() if hasta else "",
         "fecha_label": fecha_label,
+    }
+    return desde, hasta, ctx
+
+
+def _rango_fechas_empleado(request):
+    """Igual que _rango_fechas pero con el año en curso como valor por defecto.
+
+    El perfil del empleado arranca mostrando el año actual, no todo el historial.
+    Para poder distinguir "recien entre a la pagina" de "vacie el filtro a mano"
+    miro si los parametros vinieron en la URL: informacion_empleado.js los manda
+    siempre, aunque esten vacios, justamente para poder ver el historial completo.
+    """
+    if "desde" in request.GET or "hasta" in request.GET:
+        return _rango_fechas(request)
+
+    año = timezone.localdate().year
+    desde = date(año, 1, 1)
+    hasta = date(año, 12, 31)
+    ctx = {
+        "desde": desde.isoformat(),
+        "hasta": hasta.isoformat(),
+        "fecha_label": f"Año {año}",
     }
     return desde, hasta, ctx
 
@@ -209,13 +233,57 @@ def informacion_empleado(request, id_empleado):
 
         return redirect("informacion_empleado", id_empleado=empleado.id)
 
+    # Rango de fechas del chip. Por defecto, el año en curso.
+    desde, hasta, ctx_fechas = _rango_fechas_empleado(request)
+
+    # Gastos rendidos y viajes, ambos acotados al mismo rango de fechas.
+    gastos = obtener_gastos_empleado(empleado, desde, hasta)
+
+    tipo = request.GET.get("tipo", "todos")
+    if tipo not in TIPOS_VIAJE_EMPLEADO:
+        tipo = "todos"
+
+    filas_viajes, conteos_viajes = obtener_viajes_empleado(empleado, tipo, desde, hasta)
+    paginador_viajes = Paginator(filas_viajes, 10)
+    pagina_viajes = paginador_viajes.get_page(request.GET.get("page_viajes"))
+
+    # Las pestañas se arman aca y no en la plantilla: Django no sabe buscar en un
+    # diccionario con una clave variable.
+    pestañas_viajes = [{
+        "clave": "todos",
+        "etiqueta": "Todos",
+        "cuenta": conteos_viajes["todos"],
+        "activa": tipo == "todos",
+    }]
+    pestañas_viajes += [{
+        "clave": clave,
+        "etiqueta": config["etiqueta"],
+        "cuenta": conteos_viajes[clave],
+        "activa": tipo == clave,
+    } for clave, config in TIPOS_VIAJE_EMPLEADO.items()]
+
+    contexto = {
+        "empleado": empleado,
+        "gastos": gastos,
+        "viajes": pagina_viajes,
+        "tipo": tipo,
+        "pestañas_viajes": pestañas_viajes,
+        "total_viajes_periodo": conteos_viajes["todos"],
+        **ctx_fechas,
+    }
+
+    # Las pestañas de tipo, el filtro de fechas y la paginacion de viajes van por
+    # AJAX: devuelvo solo el bloque de gastos + viajes, que es lo que depende de
+    # esos filtros. Los pagos no dependen del rango, asi que quedan afuera.
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        return render(request, "secciones_empleado.html", contexto)
+
     # Pagos del empleado, del mas reciente al mas viejo. El id desempata los que
     # caen el mismo dia, porque fecha es DateField y no guarda la hora.
     pagos = PagosEmpleados.objects.filter(empleado=empleado).order_by("-fecha", "-id")
     paginador_pagos = Paginator(pagos, 8)
-    pagina_pagos = paginador_pagos.get_page(request.GET.get("page"))
+    contexto["pagos"] = paginador_pagos.get_page(request.GET.get("page_pagos"))
 
-    contexto = {"empleado": empleado, "pagos": pagina_pagos}
     return render(request, "informacion_empleado.html", contexto)
 
 

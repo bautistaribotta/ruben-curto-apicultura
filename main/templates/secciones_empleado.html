@@ -1,0 +1,188 @@
+{% load humanize %}
+{% load l10n %}
+{% comment %}
+  Gastos rendidos y viajes del empleado. Es el bloque que depende de los filtros
+  (rango de fechas y tipo de viaje), asi que se incluye tanto en la pagina completa
+  como en la respuesta AJAX: al aplicar un filtro se reemplaza entero.
+
+  Los pagos quedan fuera a proposito, porque no dependen del rango de fechas.
+{% endcomment %}
+
+<!-- GASTOS RENDIDOS -->
+<section class="emp-seccion" id="seccion-gastos">
+  <div class="seccion-info-header">
+    <h4><span class="material-symbols-outlined">receipt_long</span> Gastos rendidos</h4>
+  </div>
+
+  <div class="panel-gastos">
+    <div class="panel-gastos__resumen">
+      <div>
+        <p class="panel-gastos__label" id="etiqueta-total-gastos">
+          Total rendido en {{ total_viajes_periodo }} viaje{{ total_viajes_periodo|pluralize }}
+        </p>
+        <p class="panel-gastos__total" id="monto-total-gastos">${{ gastos.total|intcomma }}</p>
+      </div>
+      {% if gastos.principal %}
+      <p class="panel-gastos__nota" id="nota-gastos">
+        {{ gastos.principal.categoria }} se lleva el {{ gastos.principal.porcentaje }}% de lo rendido
+      </p>
+      {% endif %}
+    </div>
+
+    {% if gastos.por_categoria %}
+      {% comment %}
+        Cinta de gastos: cada segmento es una categoria. El color sale de la clase
+        de rango (del gasto mas alto al mas bajo) y el ancho lo reparte el JS con
+        el porcentaje de data-parte, porque es un dato y no un estilo fijo.
+      {% endcomment %}
+      <div class="cinta-gastos" id="cinta-gastos">
+        {% for fila in gastos.por_categoria %}
+        {% comment %}
+          data-parte va sin localizar: el JS lo usa como flex-grow y con la coma
+          decimal del formato local seria un valor de CSS invalido.
+        {% endcomment %}
+        <span class="cinta-gastos__seg cinta-gastos__seg--r{{ fila.rango }}"
+              data-categoria="{{ fila.categoria|slugify }}"
+              data-parte="{{ fila.porcentaje|unlocalize }}"
+              title="{{ fila.categoria }} {{ fila.porcentaje }}%"></span>
+        {% endfor %}
+      </div>
+
+      <div class="chips-gasto" id="chips-gasto">
+        <button type="button" class="chip-gasto activa" data-categoria="todas">Todas</button>
+        {% for fila in gastos.por_categoria %}
+        <button type="button" class="chip-gasto" data-categoria="{{ fila.categoria|slugify }}"
+                data-nombre="{{ fila.categoria }}"
+                data-total="${{ fila.total|intcomma }}"
+                data-parte="{{ fila.porcentaje }}">
+          <span class="punto-rango punto-rango--r{{ fila.rango }}"></span>{{ fila.categoria }}
+        </button>
+        {% endfor %}
+      </div>
+
+      <div class="tabla-gastos-contenedor">
+        <table class="tabla-gastos">
+          <thead>
+            <tr>
+              <th>Categoría</th>
+              <th class="texto-derecha">Miel y cera</th>
+              <th class="texto-derecha">Repartos</th>
+              <th class="texto-derecha">Cereales</th>
+              <th class="texto-derecha">Total</th>
+              <th class="texto-derecha">Part.</th>
+            </tr>
+          </thead>
+          <tbody id="cuerpo-tabla-gastos">
+            {% for fila in gastos.por_categoria %}
+            <tr class="fila-gasto" data-categoria="{{ fila.categoria|slugify }}">
+              <td class="celda-categoria">
+                <span class="punto-rango punto-rango--r{{ fila.rango }}"></span>{{ fila.categoria }}
+              </td>
+              <td class="texto-derecha">{% if fila.miel %}${{ fila.miel|intcomma }}{% else %}<span class="celda-sin-dato">—</span>{% endif %}</td>
+              <td class="texto-derecha">{% if fila.reparto %}${{ fila.reparto|intcomma }}{% else %}<span class="celda-sin-dato">—</span>{% endif %}</td>
+              <td class="texto-derecha">{% if fila.cereal %}${{ fila.cereal|intcomma }}{% else %}<span class="celda-sin-dato">—</span>{% endif %}</td>
+              <td class="texto-derecha celda-total-gasto">${{ fila.total|intcomma }}</td>
+              <td class="texto-derecha celda-participacion">{{ fila.porcentaje }}%</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot>
+            <tr class="fila-total-gastos">
+              <td>Total</td>
+              <td class="texto-derecha">${{ gastos.totales_por_tipo.miel|intcomma }}</td>
+              <td class="texto-derecha">${{ gastos.totales_por_tipo.reparto|intcomma }}</td>
+              <td class="texto-derecha">${{ gastos.totales_por_tipo.cereal|intcomma }}</td>
+              <td class="texto-derecha celda-total-gasto">${{ gastos.total|intcomma }}</td>
+              <td class="texto-derecha celda-participacion">100%</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    {% else %}
+      <div class="estado-vacio">
+        <span class="material-symbols-outlined">receipt_long</span>
+        <h4>Sin gastos en este período</h4>
+        <p>Este empleado no rindió gastos en el rango de fechas elegido.</p>
+      </div>
+    {% endif %}
+  </div>
+</section>
+
+<!-- VIAJES -->
+<section class="emp-seccion" id="seccion-viajes">
+  <div class="seccion-info-header">
+    <h4><span class="material-symbols-outlined">route</span> Viajes</h4>
+  </div>
+
+  <div class="panel-viajes">
+    <div class="tabs-viajes" id="tabs-viajes">
+      {% for pestaña in pestañas_viajes %}
+      <button type="button" class="tab-viaje {% if pestaña.activa %}activa{% endif %}" data-tipo="{{ pestaña.clave }}">
+        {{ pestaña.etiqueta }} <span class="tab-viaje__cuenta">{{ pestaña.cuenta }}</span>
+      </button>
+      {% endfor %}
+    </div>
+
+    <div class="tabla-viajes-contenedor">
+      <table class="tabla-viajes-empleado">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Tipo</th>
+            <th>Vehículo</th>
+            <th>Destino</th>
+            <th class="texto-derecha">Gastos</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for viaje in viajes %}
+          <tr class="fila-viaje-empleado" data-url="{% url viaje.url viaje.id %}">
+            <td class="celda-fecha-viaje">{{ viaje.fecha|date:"d/m/Y" }}</td>
+            <td>
+              <span class="badge-tipo-viaje badge-tipo-viaje--{{ viaje.tipo }}">
+                <span class="material-symbols-outlined">{{ viaje.icono }}</span>{{ viaje.etiqueta }}
+              </span>
+            </td>
+            <td>{{ viaje.vehiculo }}</td>
+            <td>{{ viaje.destino|default:"Sin destino" }}</td>
+            <td class="texto-derecha celda-gasto-viaje">${{ viaje.gastos|intcomma }}</td>
+          </tr>
+          {% empty %}
+          <tr class="fila-vacia">
+            <td colspan="5" class="celda-vacia">
+              <span class="material-symbols-outlined">route</span>
+              No hay viajes de este tipo en el período elegido.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if viajes.paginator.num_pages > 1 %}
+    <div class="paginacion">
+      <div class="paginacion-info">
+        Mostrando <span>{{ viajes.start_index }}-{{ viajes.end_index }}</span>
+        de <span>{{ viajes.paginator.count }}</span> viajes
+      </div>
+      <div class="paginacion-botones">
+        {% if viajes.has_previous %}
+          <a href="?tipo={{ tipo }}&page_viajes={{ viajes.previous_page_number }}&desde={{ desde }}&hasta={{ hasta }}">
+            <button class="boton-paginacion">Anterior</button>
+          </a>
+        {% else %}
+          <button class="boton-paginacion" disabled>Anterior</button>
+        {% endif %}
+
+        {% if viajes.has_next %}
+          <a href="?tipo={{ tipo }}&page_viajes={{ viajes.next_page_number }}&desde={{ desde }}&hasta={{ hasta }}">
+            <button class="boton-paginacion">Siguiente</button>
+          </a>
+        {% else %}
+          <button class="boton-paginacion" disabled>Siguiente</button>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</section>

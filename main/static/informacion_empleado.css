@@ -539,14 +539,15 @@ body.con-modal-abierto #contenido-principal {
 }
 
 /* Escala de rango: del gasto mas alto (pino) al mas bajo (miel). El color dice
-   en que puesto quedo la categoria, no cual es. */
-.cinta-gastos__seg--r1 { flex-grow: 48.13; background-color: oklch(30% 0.045 168); }
-.cinta-gastos__seg--r2 { flex-grow: 13.81; background-color: oklch(40% 0.060 155); }
-.cinta-gastos__seg--r3 { flex-grow: 13.06; background-color: oklch(50% 0.075 140); }
-.cinta-gastos__seg--r4 { flex-grow: 7.96;  background-color: oklch(60% 0.095 120); }
-.cinta-gastos__seg--r5 { flex-grow: 7.28;  background-color: oklch(69% 0.115 103); }
-.cinta-gastos__seg--r6 { flex-grow: 6.14;  background-color: oklch(77% 0.145 90); }
-.cinta-gastos__seg--r7 { flex-grow: 3.62;  background-color: oklch(85% 0.155 82); }
+   en que puesto quedo la categoria, no cual es. El ancho de cada segmento lo
+   pone el JS con el porcentaje que calculo el servidor. */
+.cinta-gastos__seg--r1 { background-color: oklch(30% 0.045 168); }
+.cinta-gastos__seg--r2 { background-color: oklch(40% 0.060 155); }
+.cinta-gastos__seg--r3 { background-color: oklch(50% 0.075 140); }
+.cinta-gastos__seg--r4 { background-color: oklch(60% 0.095 120); }
+.cinta-gastos__seg--r5 { background-color: oklch(69% 0.115 103); }
+.cinta-gastos__seg--r6 { background-color: oklch(77% 0.145 90); }
+.cinta-gastos__seg--r7 { background-color: oklch(85% 0.155 82); }
 
 /* Con una categoria seleccionada, las demas se apagan */
 .cinta-gastos__seg[data-atenuado] {
@@ -848,10 +849,43 @@ body.con-modal-abierto #contenido-principal {
   color: var(--success-600);
 }
 
-.pie-tabla-viajes {
+.panel-viajes .paginacion {
   padding: 0.85rem 1.25rem;
-  font-size: var(--text-xs);
-  color: var(--text-subtle);
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* Cada fila abre el detalle del viaje */
+.fila-viaje-empleado {
+  cursor: pointer;
+}
+
+/* --- Barra de periodo: rotulo + chip de fechas --- */
+.barra-periodo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: -0.75rem;
+}
+
+.barra-periodo__texto {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+/* Mientras llega la respuesta del servidor, el bloque se apaga un poco y deja de
+   aceptar clicks, para que no se pueda pedir dos filtros encimados. */
+#secciones-empleado {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  transition: opacity var(--dur-normal) var(--ease-standard);
+}
+
+#secciones-empleado[aria-busy="true"] {
+  opacity: 0.55;
+  pointer-events: none;
 }
 
 /* -----------------------------------------------------------------------------
