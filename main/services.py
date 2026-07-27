@@ -1110,9 +1110,26 @@ def obtener_gastos_empleado(empleado, desde=None, hasta=None):
                 fila["gasto"],
                 {"categoria": fila["gasto"], "miel": 0, "reparto": 0, "cereal": 0, "total": 0},
             )
-            categoria[tipo] = fila["total"]
+            categoria[tipo] += fila["total"]
             categoria["total"] += fila["total"]
             total_tipo += fila["total"]
+
+        # En los repartos el combustible no va a la tabla de gastos: es un campo
+        # del propio viaje. Sin esto se pierde el gasto mas grande del reparto.
+        # No sumo costo_empleado: eso es lo que cobra el empleado, no un gasto
+        # que rindio, y ya se ve en la seccion de pagos.
+        if tipo == "reparto":
+            combustible = _viajes_empleado_por_tipo(empleado, tipo, desde, hasta).aggregate(
+                total=Coalesce(Sum("gasto_combustible_viaje_reparto"), Value(0))
+            )["total"]
+            if combustible:
+                categoria = categorias.setdefault(
+                    "Combustible",
+                    {"categoria": "Combustible", "miel": 0, "reparto": 0, "cereal": 0, "total": 0},
+                )
+                categoria["reparto"] += combustible
+                categoria["total"] += combustible
+                total_tipo += combustible
 
         totales_por_tipo[tipo] = total_tipo
 
@@ -1183,6 +1200,11 @@ def obtener_viajes_empleado(empleado, tipo="todos", desde=None, hasta=None):
                   .annotate(gastos_totales=Coalesce(Sum("detalle_gastos__monto"), Value(0))))
 
         for viaje in viajes:
+            gastos = viaje.gastos_totales
+            # El combustible del reparto vive en el viaje, no en la tabla de gastos
+            if nombre_tipo == "reparto":
+                gastos += viaje.gasto_combustible_viaje_reparto
+
             filas.append({
                 "tipo": nombre_tipo,
                 "etiqueta": config["etiqueta"],
@@ -1192,7 +1214,7 @@ def obtener_viajes_empleado(empleado, tipo="todos", desde=None, hasta=None):
                 "fecha": getattr(viaje, config["campo_fecha"]),
                 "vehiculo": viaje.vehiculo.nombre,
                 "destino": _destino_viaje_empleado(viaje, nombre_tipo),
-                "gastos": viaje.gastos_totales,
+                "gastos": gastos,
             })
 
     # Del mas reciente al mas viejo; el id desempata los que caen el mismo dia,
