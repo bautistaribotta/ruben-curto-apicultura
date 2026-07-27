@@ -62,7 +62,7 @@
         </li>
         {% if user.is_staff %}
         <li>
-          <a href="{% url 'empleados' %}" class="item-menu {% if request.resolver_match.url_name == 'empleados' %} activo {% endif %}">
+          <a href="{% url 'empleados' %}" class="item-menu {% if request.resolver_match.url_name == 'empleados' or request.resolver_match.url_name == 'informacion_empleado' %} activo {% endif %}">
             <span class="material-symbols-outlined">badge</span>
             Empleados
           </a>
