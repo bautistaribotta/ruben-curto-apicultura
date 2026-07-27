@@ -84,23 +84,15 @@
   white-space: nowrap;
 }
 
-/* Anchos de columnas */
-.tabla-empleados th:nth-child(1) {
-  width: 70%;
-}
-
+/* Anchos de columnas: el nombre se queda con todo el ancho sobrante y acciones
+   ocupa apenas lo que necesitan los dos botones. */
 .tabla-empleados th:nth-child(2) {
-  width: 30%;
+  width: 1%;
+  white-space: nowrap;
 }
 
 .texto-derecha {
   text-align: right;
-}
-
-/* Separo la columna de saldo de la de acciones */
-.tabla-empleados th:nth-child(2),
-.tabla-empleados td:nth-child(2) .enlace-fila {
-  padding-right: 100px;
 }
 
 .tabla-empleados td {
@@ -158,13 +150,6 @@
   margin-top: 0.125rem;
 }
 
-/* --- Celda de Saldo --- */
-.empleado-saldo {
-  font-weight: var(--weight-semibold);
-  font-variant-numeric: tabular-nums;
-  color: var(--text-strong);
-}
-
 /* Paginacion y estado vacio: estilos unificados en base.css */
 
 /* --- ADAPTACION PARA MOVILES Y TABLETS --- */
@@ -174,12 +159,6 @@
   }
 }
 
-@media (max-width: 600px) {
-  .tabla-empleados th:nth-child(2),
-  .tabla-empleados td:nth-child(2) {
-    display: none;
-  }
-}
 /* --- ACCIONES --- */
 .acciones-tabla {
   display: flex;

@@ -2,7 +2,6 @@
   <thead>
     <tr id="encabezado-tabla-empleados">
       <th> Empleados </th>
-      <th class="texto-derecha"> Saldo </th>
       <th class="texto-derecha"> Acciones </th>
     </tr>
   </thead>
@@ -18,11 +17,6 @@
                 <div class="empleado-id"> ID: {{ empleado.id }} </div>
               </div>
             </div>
-          </a>
-        </td>
-        <td class="texto-derecha td-enlace">
-          <a href="{% url 'informacion_empleado' empleado.id %}" class="enlace-fila">
-            <span class="empleado-saldo">$ {{ empleado.saldo|floatformat:2 }}</span>
           </a>
         </td>
         <td>
@@ -41,7 +35,7 @@
       </tr>
     {% empty %}
       <tr class="fila-vacia">
-        <td colspan="3" class="celda-vacia">
+        <td colspan="2" class="celda-vacia">
           <span class="material-symbols-outlined">badge</span>
           {% if q %}No se encontraron empleados con esos filtros.{% else %}No hay empleados registrados.{% endif %}
         </td>
