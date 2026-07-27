@@ -233,7 +233,6 @@ class Empleado(models.Model):
     nombre = models.CharField(max_length=25)
     apellido = models.CharField(max_length=25)
     activo = models.BooleanField(default=True)
-    saldo = models.DecimalField(max_digits=12, decimal_places=2, default=0)
 
     class Meta:
         db_table = "empleados"

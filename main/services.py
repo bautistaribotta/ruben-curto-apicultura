@@ -1207,9 +1207,6 @@ def crear_pago_empleado(id_empleado, monto, observaciones=""):
     El modal solo pide monto y observacion: la fecha la pone el servidor para
     que no dependa del reloj del navegador ni se pueda mandar una fecha armada
     a mano en el POST.
-
-    No toca Empleado.saldo: como se descuenta un pago del saldo todavia no esta
-    definido, y descontarlo mal desbalancea la cuenta del empleado.
     """
     empleado = get_object_or_404(Empleado, id=id_empleado, activo=True)
 
