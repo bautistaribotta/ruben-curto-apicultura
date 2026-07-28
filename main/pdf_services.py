@@ -11,15 +11,30 @@ CHARS_DETALLE = 48
 CHARS_DETALLE_SOLO = 67
 
 
-def _formato_moneda(valor):
-    # Formato argentino: punto para los miles y coma para los decimales
-    # ("$ 12.100,00"). Convierto el separador estándar de Python al criterio local.
+def _formato_importe(valor):
+    # Formato argentino sin simbolo: punto para los miles y coma para los
+    # decimales ("12.100,00"). Convierto el separador estándar de Python al
+    # criterio local.
     try:
         s = f"{float(valor or 0):,.2f}"
     except (TypeError, ValueError):
         s = "0.00"
-    s = s.replace(",", "X").replace(".", ",").replace("X", ".")
-    return f"$ {s}"
+    return s.replace(",", "X").replace(".", ",").replace("X", ".")
+
+
+def _formato_moneda(valor):
+    # Igual que _formato_importe pero con el signo pesos adelante ("$ 12.100,00")
+    return f"$ {_formato_importe(valor)}"
+
+
+def _latin1(texto):
+    """Deja el texto en el juego de caracteres que admiten las fuentes base.
+
+    Las fuentes core de FPDF (Arial/Helvetica) solo codifican latin-1: un guion
+    largo o una comilla tipografica pegada desde Word haria fallar la generacion
+    entera del PDF. Los reemplazo por '?' en vez de romper el comprobante.
+    """
+    return str(texto or "").encode("latin-1", errors="replace").decode("latin-1")
 
 
 class Remito(FPDF):
@@ -327,11 +342,340 @@ class Remito(FPDF):
     def generate_pdf(self, path=None):
         self.add_page()
         self.draw_products()
-        if path:
-            return self.output(path)
-        else:
-            try:
-                salida = self.output()
-                return bytes(salida) if isinstance(salida, bytearray) else salida
-            except TypeError:
-                return self.output(dest='S').encode('latin1')
+        return _salida_pdf(self, path)
+
+
+def _salida_pdf(documento, path=None):
+    """Devuelve el PDF ya armado como bytes, o lo escribe en disco si hay ruta.
+
+    Contempla las dos firmas de output(): la moderna de fpdf2 (devuelve bytearray)
+    y la vieja con dest='S'.
+    """
+    if path:
+        return documento.output(path)
+    try:
+        salida = documento.output()
+        return bytes(salida) if isinstance(salida, bytearray) else salida
+    except TypeError:
+        return documento.output(dest='S').encode('latin1')
+
+
+# ==========================================================================
+#  RESUMEN DE CUENTA CORRIENTE (libro Debe / Haber)
+# ==========================================================================
+
+# Grilla del resumen sobre A4 vertical (210 x 297 mm): margenes de 12 mm dejan
+# 186 mm utiles, repartidos entre las seis columnas del libro.
+MARGEN = 12
+X_FECHA = MARGEN            # 22 mm
+X_COMPROBANTE = 34          # 34 mm
+X_DETALLE = 68              # 58 mm
+X_DEBE = 126                # 24 mm
+X_HABER = 150               # 24 mm
+X_SALDO = 174               # 24 mm
+X_FIN = 198
+ANCHO_IMPORTE = 24
+# Donde arranca la segunda columna del bloque de datos del cliente (CUIT/telefono)
+X_DATOS_DERECHA = 120
+
+# Alturas fijas: donde arranca la grilla, donde cortan las filas para dejar sitio
+# al recuadro de totales, y cuanto mide cada renglon
+Y_GRILLA = 40
+Y_CABECERA_TABLA = 48
+Y_LIMITE_FILAS = 262
+ALTO_FILA = 7
+
+# Verde pino del isologo, en RGB, para el filete del membrete
+PINO = (22, 52, 44)
+GRIS_DATO = (80, 80, 80)
+GRIS_LINEA = (190, 190, 190)
+
+
+class ResumenCuenta(FPDF):
+    """Resumen de cuenta corriente de un cliente en formato Debe / Haber / Saldo.
+
+    Es el libro rayado clasico: una fila por movimiento, las columnas de importes
+    encolumnadas entre filetes verticales y el saldo acumulandose renglon a
+    renglon. Los movimientos ya vienen ordenados y con su saldo calculado desde
+    services.obtener_movimientos_cuenta_corriente().
+    """
+
+    def __init__(self, cliente, movimientos, totales, desde=None, hasta=None, fecha_emision=None):
+        super().__init__(orientation='P', format='A4')
+        # La paginacion la manejo a mano: cada fila chequea si entra antes de
+        # dibujarse, asi el recuadro de totales nunca queda partido
+        self.set_auto_page_break(auto=False)
+        self.set_margins(MARGEN, MARGEN, MARGEN)
+        self.cliente = cliente
+        self.movimientos = movimientos
+        self.totales = totales
+        self.desde = desde
+        self.hasta = hasta
+        self.fecha_emision = fecha_emision
+        self.alias_nb_pages()
+
+    # ---------------------------------------------------------------- membrete
+    def header(self):
+        self._dibujar_membrete()
+        self._dibujar_datos_cliente()
+        self._dibujar_grilla()
+
+    def _dibujar_membrete(self):
+        # Sin datos del emisor: a la izquierda que documento es, a la derecha a
+        # que periodo corresponde y cuando se emitio
+        self.set_text_color(*PINO)
+        self.set_font('Arial', 'B', 14)
+        self.set_xy(MARGEN, 13)
+        self.cell(110, 7, 'RESUMEN DE CUENTA CORRIENTE', 0, 0, 'L')
+
+        self.set_font('Arial', '', 8)
+        self.set_text_color(*GRIS_DATO)
+        self.set_xy(110, 13)
+        self.cell(X_FIN - 110, 4, f'Período: {self._texto_periodo()}', 0, 0, 'R')
+        self.set_xy(110, 17.5)
+        self.cell(X_FIN - 110, 4, f'Emitido el {self._fecha_corta(self.fecha_emision)}', 0, 0, 'R')
+
+        # Filete de marca que separa el membrete de los datos del cliente
+        self.set_draw_color(*PINO)
+        self.set_line_width(0.6)
+        self.line(MARGEN, 24, X_FIN, 24)
+
+    def _dibujar_datos_cliente(self):
+        nombre = f"{self.cliente.nombre} {self.cliente.apellido or ''}".strip()
+        cuit = self.cliente.cuit or "-"
+        domicilio = " - ".join(p for p in [self.cliente.direccion, self.cliente.localidad] if p) or "-"
+        telefono = self.cliente.telefono or "-"
+
+        # Dos columnas de datos: la del cliente a la izquierda (hasta donde arranca
+        # la fiscal) y la fiscal a la derecha, contra el borde del comprobante
+        ancho_izquierda = X_DATOS_DERECHA - MARGEN - 2
+        ancho_derecha = X_FIN - X_DATOS_DERECHA
+        self._par_etiqueta_dato(MARGEN, 27, 'Señor/a: ', nombre, ancho_izquierda, negrita_dato=True)
+        self._par_etiqueta_dato(X_DATOS_DERECHA, 27, 'CUIT: ', cuit, ancho_derecha)
+        self._par_etiqueta_dato(MARGEN, 32.5, 'Domicilio: ', domicilio, ancho_izquierda)
+        self._par_etiqueta_dato(X_DATOS_DERECHA, 32.5, 'Teléfono: ', telefono, ancho_derecha)
+
+        self.set_draw_color(0, 0, 0)
+        self.set_line_width(0.2)
+        self.line(MARGEN, 38, X_FIN, 38)
+
+    def _par_etiqueta_dato(self, x, y, etiqueta, dato, ancho, negrita_dato=False):
+        """Escribe 'Etiqueta: dato' con la etiqueta en negro y el dato en gris.
+
+        El dato se recorta al espacio que sobra: un nombre o un domicilio largo
+        se pisaria con la columna de al lado, que en A4 vertical arranca cerca.
+        """
+        self.set_xy(x, y)
+        self.set_font('Arial', '', 8)
+        self.set_text_color(0, 0, 0)
+        ancho_etiqueta = self.get_string_width(etiqueta)
+        self.cell(ancho_etiqueta, 4, etiqueta, 0, 0, 'L')
+
+        self.set_font('Arial', 'B' if negrita_dato else '', 8.5 if negrita_dato else 8)
+        self.set_text_color(*GRIS_DATO)
+        self.cell(ancho - ancho_etiqueta, 4, self._recortar(dato, ancho - ancho_etiqueta), 0, 0, 'L')
+        self.set_text_color(0, 0, 0)
+
+    # ----------------------------------------------------------------- grilla
+    def _dibujar_grilla(self):
+        # Encabezados de las seis columnas
+        self.set_font('Arial', 'B', 7.5)
+        self.set_text_color(0, 0, 0)
+        for x, ancho, titulo, alineacion in (
+            (X_FECHA, X_COMPROBANTE - X_FECHA, 'FECHA', 'L'),
+            (X_COMPROBANTE, X_DETALLE - X_COMPROBANTE, 'COMPROBANTE', 'L'),
+            (X_DETALLE, X_DEBE - X_DETALLE, 'DETALLE', 'L'),
+            (X_DEBE, ANCHO_IMPORTE, 'DEBE', 'C'),
+            (X_HABER, ANCHO_IMPORTE, 'HABER', 'C'),
+            (X_SALDO, ANCHO_IMPORTE, 'SALDO', 'C'),
+        ):
+            self.set_xy(x + (1 if alineacion == 'L' else 0), Y_GRILLA)
+            self.cell(ancho, Y_CABECERA_TABLA - Y_GRILLA, titulo, 0, 0, alineacion)
+
+        # Caja de la tabla y filetes verticales que encolumnan los importes: son
+        # los que hacen que el resumen se lea como un libro rayado y no como una lista
+        self.set_draw_color(0, 0, 0)
+        self.set_line_width(0.2)
+        self.rect(MARGEN, Y_GRILLA, X_FIN - MARGEN, Y_LIMITE_FILAS - Y_GRILLA)
+        self.line(MARGEN, Y_CABECERA_TABLA, X_FIN, Y_CABECERA_TABLA)
+        for x in (X_DEBE, X_HABER, X_SALDO):
+            self.line(x, Y_GRILLA, x, Y_LIMITE_FILAS)
+
+    def footer(self):
+        self.set_y(-14)
+        self.set_font('Arial', '', 6.5)
+        self.set_text_color(*GRIS_DATO)
+        self.cell(110, 4, 'IMPORTES EXPRESADOS EN PESOS  ·  DOCUMENTO NO VÁLIDO COMO FACTURA', 0, 0, 'L')
+        self.cell(0, 4, f'Página {self.page_no()} de {{nb}}', 0, 0, 'R')
+        self.set_text_color(0, 0, 0)
+
+    # ------------------------------------------------------------------ filas
+    def _dibujar_movimientos(self):
+        """Dibuja las filas paginando a mano y devuelve la altura donde terminaron."""
+        if not self.movimientos:
+            self.set_font('Arial', '', 9)
+            self.set_text_color(*GRIS_DATO)
+            # Centrado solo en la franja de texto: cruzarlo sobre las columnas de
+            # importes lo partiria con los filetes verticales
+            self.set_xy(MARGEN, Y_CABECERA_TABLA + 6)
+            self.cell(X_DEBE - MARGEN, 6, 'Sin movimientos registrados en el período seleccionado.', 0, 0, 'C')
+            self.set_text_color(0, 0, 0)
+            return Y_CABECERA_TABLA + 20
+
+        y = Y_CABECERA_TABLA
+        for movimiento in self.movimientos:
+            if y + ALTO_FILA > Y_LIMITE_FILAS:
+                self.add_page()
+                y = Y_CABECERA_TABLA
+            self._dibujar_fila(y, movimiento)
+            y += ALTO_FILA
+        return y
+
+    def _cerrar_tabla(self, y_final):
+        """Cierra la grilla justo debajo de la ultima fila de la pagina final.
+
+        La cabecera dibuja los filetes hasta el pie porque no sabe cuantas filas
+        van a entrar; aca tapo con blanco el tramo que quedo sin usar, para que el
+        resumen termine donde terminan los movimientos y no con media hoja rayada.
+        """
+        if y_final >= Y_LIMITE_FILAS:
+            return
+
+        self.set_fill_color(255, 255, 255)
+        self.rect(MARGEN - 0.5, y_final + 0.15, X_FIN - MARGEN + 1, Y_LIMITE_FILAS - y_final + 0.5, 'F')
+
+        self.set_draw_color(0, 0, 0)
+        self.set_line_width(0.2)
+        self.line(MARGEN, y_final, X_FIN, y_final)
+
+    def _dibujar_fila(self, y, movimiento):
+        self.set_font('Arial', '', 8)
+        self.set_text_color(*GRIS_DATO)
+
+        self.set_xy(X_FECHA + 1, y)
+        self.cell(X_COMPROBANTE - X_FECHA - 1, ALTO_FILA, self._fecha_corta(movimiento['fecha']), 0, 0, 'L')
+
+        self.set_xy(X_COMPROBANTE + 1, y)
+        self.set_text_color(0, 0, 0)
+        self.cell(X_DETALLE - X_COMPROBANTE - 2, ALTO_FILA,
+                  self._recortar(movimiento['comprobante'], X_DETALLE - X_COMPROBANTE - 2), 0, 0, 'L')
+
+        self.set_xy(X_DETALLE + 1, y)
+        self.set_text_color(*GRIS_DATO)
+        self.cell(X_DEBE - X_DETALLE - 2, ALTO_FILA,
+                  self._recortar(movimiento['detalle'], X_DEBE - X_DETALLE - 2), 0, 0, 'L')
+
+        # Debe y Haber solo se imprimen cuando la fila los mueve: la columna vacia
+        # es la que deja ver de un vistazo si el movimiento sumo o resto
+        self.set_text_color(0, 0, 0)
+        self._importe(X_DEBE, y, movimiento['debe'])
+        self._importe(X_HABER, y, movimiento['haber'])
+
+        saldo = _formato_importe(movimiento['saldo'])
+        self._fuente_que_entra(saldo, ANCHO_IMPORTE - 2, 'B', 8)
+        self.set_xy(X_SALDO, y)
+        self.cell(ANCHO_IMPORTE - 2, ALTO_FILA, saldo, 0, 0, 'R')
+
+        # Renglon: gris claro para que separe sin competir con los filetes de la caja
+        self.set_draw_color(*GRIS_LINEA)
+        self.set_line_width(0.1)
+        self.line(MARGEN, y + ALTO_FILA, X_FIN, y + ALTO_FILA)
+        self.set_draw_color(0, 0, 0)
+
+    def _importe(self, x, y, valor):
+        if not valor:
+            return
+        texto = _formato_importe(valor)
+        self._fuente_que_entra(texto, ANCHO_IMPORTE - 2, '', 8)
+        self.set_xy(x, y)
+        self.cell(ANCHO_IMPORTE - 2, ALTO_FILA, texto, 0, 0, 'R')
+
+    # ----------------------------------------------------------------- totales
+    def _dibujar_totales(self, y_final):
+        y = y_final + 4
+        self.set_draw_color(0, 0, 0)
+        self.set_line_width(0.4)
+        self.rect(MARGEN, y, X_FIN - MARGEN, 16)
+
+        # Izquierda: cuantos movimientos entraron y a favor de quien quedo el saldo
+        self.set_font('Arial', 'B', 8)
+        self.set_text_color(0, 0, 0)
+        self.set_xy(MARGEN + 3, y + 3)
+        self.cell(60, 4, f'MOVIMIENTOS DEL PERÍODO: {len(self.movimientos)}', 0, 0, 'L')
+
+        self.set_font('Arial', '', 8)
+        self.set_text_color(*GRIS_DATO)
+        self.set_xy(MARGEN + 3, y + 9)
+        self.cell(90, 4, self._leyenda_saldo(), 0, 0, 'L')
+
+        # Derecha: los totales, encolumnados bajo las mismas columnas de la tabla
+        for x, etiqueta, valor in (
+            (X_DEBE, 'TOTAL DEBE', self.totales['debe']),
+            (X_HABER, 'TOTAL HABER', self.totales['haber']),
+            (X_SALDO, 'SALDO FINAL', self.totales['saldo']),
+        ):
+            self.set_font('Arial', '', 6.5)
+            self.set_text_color(*GRIS_DATO)
+            self.set_xy(x, y + 2.5)
+            self.cell(ANCHO_IMPORTE - 2, 3.5, etiqueta, 0, 0, 'R')
+
+            texto = _formato_importe(valor)
+            self._fuente_que_entra(texto, ANCHO_IMPORTE - 2, 'B', 10 if x == X_SALDO else 8.5)
+            self.set_text_color(0, 0, 0)
+            self.set_xy(x, y + 7)
+            self.cell(ANCHO_IMPORTE - 2, 5, texto, 0, 0, 'R')
+
+        self.set_text_color(0, 0, 0)
+
+    def _leyenda_saldo(self):
+        if not self.movimientos:
+            return 'No hubo movimientos en el período.'
+        saldo = self.totales['saldo']
+        if saldo > 0:
+            return 'Saldo deudor: el cliente adeuda este importe.'
+        if saldo < 0:
+            return 'Saldo acreedor: el importe queda a favor del cliente.'
+        return 'Cuenta saldada en el período.'
+
+    # ----------------------------------------------------------------- helpers
+    def _texto_periodo(self):
+        if self.desde and self.hasta:
+            return f'{self._fecha_corta(self.desde)} al {self._fecha_corta(self.hasta)}'
+        if self.desde:
+            return f'desde el {self._fecha_corta(self.desde)}'
+        if self.hasta:
+            return f'hasta el {self._fecha_corta(self.hasta)}'
+        return 'historial completo'
+
+    @staticmethod
+    def _fecha_corta(fecha):
+        return fecha.strftime('%d/%m/%Y') if hasattr(fecha, 'strftime') else str(fecha or '')
+
+    def _fuente_que_entra(self, texto, ancho_max, estilo, size_inicial, size_minimo=5.5):
+        """Deja activa la fuente mas grande con la que el texto entra en su celda.
+
+        Los importes no se pueden recortar como un texto: un saldo de ocho cifras
+        tiene que leerse entero, asi que cuando no entra en la columna achico el
+        cuerpo en vez de cortar digitos.
+        """
+        size = size_inicial
+        self.set_font('Arial', estilo, size)
+        while size > size_minimo and self.get_string_width(texto) > ancho_max:
+            size -= 0.25
+            self.set_font('Arial', estilo, size)
+
+    def _recortar(self, texto, ancho_max):
+        """Recorta el texto al ancho de su columna, cerrando con puntos suspensivos."""
+        texto = _latin1(texto)
+        if self.get_string_width(texto) <= ancho_max:
+            return texto
+        while texto and self.get_string_width(texto + '...') > ancho_max:
+            texto = texto[:-1]
+        return texto + '...'
+
+    def generate_pdf(self, path=None):
+        self.add_page()
+        y_final = self._dibujar_movimientos()
+        self._cerrar_tabla(y_final)
+        self._dibujar_totales(y_final)
+        return _salida_pdf(self, path)

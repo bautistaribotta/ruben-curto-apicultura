@@ -16,10 +16,11 @@ from django.utils.dateparse import parse_date
 
 from .models import (Cliente, Producto, Operacion, DetalleOperacion, Pago, Cotizaciones, Empleado, PagosEmpleados,
                      Vehiculo, Viaje, ViajeCereal, ViajeReparto)
-from .pdf_services import Remito
+from .pdf_services import Remito, ResumenCuenta
 from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo_cliente, editar_cliente,
                        eliminar_cliente, buscar_clientes, get_cotizacion_dolar_oficial, get_cotizaciones, get_total_kilos_granel, get_articulos_granel, actualizar_cotizacion, obtener_datos_cliente,
                        obtener_datos_producto, modificar_stock, crear_operacion, editar_operacion, servicio_cancelar_operacion,
+                       obtener_movimientos_cuenta_corriente,
                        obtener_listado_deudores, _iniciales, filtro_nombre_apellido, filtro_tokens, crear_empleado, crear_vehiculo, crear_viaje, obtener_empleados_activos,
                        obtener_vehiculos_activos, obtener_viajes, obtener_datos_viaje, editar_viaje, eliminar_viaje, crear_gasto,
                        incluir_asignado,
@@ -685,6 +686,64 @@ def generar_remito(request, id_operacion):
     response["Content-Disposition"] = f'inline; filename="remito_{operacion.id}.pdf"'
 
     return response
+
+
+def _rango_resumen_cuenta(request):
+    """Lee el rango de fechas que manda el modal de resumen de cuenta.
+
+    Devuelve (desde, hasta) ya normalizados: si el usuario invierte el rango lo
+    doy vuelta, para que el resumen no salga vacio por un error de tipeo.
+    """
+    desde = parse_date(request.GET.get("desde", ""))
+    hasta = parse_date(request.GET.get("hasta", ""))
+    if desde and hasta and desde > hasta:
+        desde, hasta = hasta, desde
+    return desde, hasta
+
+
+@login_required
+def generar_resumen_cuenta(request, id_cliente):
+    """Imprime el resumen de cuenta corriente del cliente en formato Debe / Haber.
+
+    Solo staff: el resumen es enteramente plata, asi que a diferencia del remito
+    no tiene una version sin importes que tenga sentido emitir.
+    """
+    if not request.user.is_staff:
+        messages.error(request, "No tenés permiso para imprimir resúmenes de cuenta.")
+        return redirect("informacion_clientes", id_cliente=id_cliente)
+
+    cliente = get_object_or_404(Cliente, id=id_cliente, activo=True)
+    desde, hasta = _rango_resumen_cuenta(request)
+    movimientos, totales = obtener_movimientos_cuenta_corriente(cliente, desde, hasta)
+
+    pdf = ResumenCuenta(
+        cliente=cliente,
+        movimientos=movimientos,
+        totales=totales,
+        desde=desde,
+        hasta=hasta,
+        fecha_emision=timezone.localdate(),
+    )
+
+    response = HttpResponse(pdf.generate_pdf(), content_type="application/pdf")
+    response["Content-Disposition"] = f'inline; filename="resumen_cuenta_{cliente.id}.pdf"'
+    return response
+
+
+@login_required
+def contar_movimientos_cuenta_json(request, id_cliente):
+    """Cuenta los movimientos del rango para el modal de resumen de cuenta.
+
+    El modal lo consulta mientras el usuario elige las fechas, asi sabe si el PDF
+    va a traer algo antes de imprimirlo. Devuelve solo el conteo, no los importes.
+    """
+    if not request.user.is_staff:
+        return JsonResponse({"error": "No tenés permiso para ver la cuenta corriente."}, status=403)
+
+    cliente = get_object_or_404(Cliente, id=id_cliente, activo=True)
+    desde, hasta = _rango_resumen_cuenta(request)
+    movimientos, _ = obtener_movimientos_cuenta_corriente(cliente, desde, hasta)
+    return JsonResponse({"cantidad": len(movimientos)})
 
 
 def _contexto_edicion(operacion):
