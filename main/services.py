@@ -4,6 +4,7 @@ import requests
 from django.utils import timezone
 from decimal import Decimal, InvalidOperation
 
+from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.http import Http404
 from django.db import transaction
@@ -2125,3 +2126,175 @@ def eliminar_viaje_reparto(id_viaje_reparto):
             _restar_viaje_a_destino(viaje_reparto.destino_id)
 
     return viaje_reparto
+
+
+# ==========================================================================
+#  CUENTA CORRIENTE DEL CLIENTE
+# ==========================================================================
+
+# Peso de cada tipo de movimiento cuando varios caen el mismo dia: primero lo que
+# se factura y despues lo que se cobra, para que el saldo de la fila lea como la
+# historia real del dia y no arranque en negativo.
+ORDEN_MOVIMIENTO = {
+    "operacion": 0,
+    "flete": 1,
+    "pago": 2,
+    "cobro_flete": 3,
+}
+
+
+def _momento_local(fecha, fin_del_dia):
+    """Convierte una fecha suelta en el instante que le corresponde en la zona local.
+
+    Es el arranque (00:00) o el cierre (23:59:59) del dia segun el extremo del
+    rango que se este armando.
+    """
+    momento = datetime.combine(fecha, time.max if fin_del_dia else time.min)
+    if settings.USE_TZ:
+        return timezone.make_aware(momento, timezone.get_current_timezone())
+    return momento
+
+
+def _acotar_rango(queryset, campo, desde, hasta, es_fecha_hora=True):
+    """Acota un queryset a un rango de fechas inclusivo en ambos extremos.
+
+    Los DateTimeField se comparan contra los instantes limite del dia y no con el
+    lookup __date: sobre MySQL ese lookup se traduce a CONVERT_TZ(), que devuelve
+    NULL si el motor no tiene cargadas las tablas de zonas horarias y deja el
+    resumen vacio aunque el cliente tenga movimientos.
+    """
+    if desde:
+        valor = _momento_local(desde, fin_del_dia=False) if es_fecha_hora else desde
+        queryset = queryset.filter(**{f"{campo}__gte": valor})
+    if hasta:
+        valor = _momento_local(hasta, fin_del_dia=True) if es_fecha_hora else hasta
+        queryset = queryset.filter(**{f"{campo}__lte": valor})
+    return queryset
+
+
+def _detalle_operacion_resumido(operacion, tope=2):
+    """Arma el texto de una fila del resumen a partir de los items de la operacion.
+
+    Muestra los primeros 'tope' items y condensa el resto en un "y N mas", igual
+    que la tabla de operaciones del perfil del cliente.
+    """
+    detalles = list(operacion.detalleoperacion_set.all())
+    if not detalles:
+        return "Sin items"
+
+    partes = []
+    for detalle in detalles[:tope]:
+        if detalle.es_granel:
+            cantidad = f"{detalle.cantidad:.2f}".rstrip("0").rstrip(".") + " kg"
+        else:
+            cantidad = f"{detalle.cantidad:.0f}x"
+        partes.append(f"{cantidad} {detalle.nombre_item}")
+
+    texto = ", ".join(partes)
+    restantes = len(detalles) - tope
+    if restantes > 0:
+        texto += f" y {restantes} mas"
+    return texto
+
+
+def obtener_movimientos_cuenta_corriente(cliente, desde=None, hasta=None):
+    """Arma el libro de cuenta corriente del cliente en formato Debe / Haber.
+
+    Criterio de signos, siempre desde la empresa: al Debe va lo que el cliente nos
+    debe (ventas y fletes de cereal que le prestamos, mas la plata que le pagamos
+    por una compra) y al Haber lo que lo descarga (compras que le hicimos y los
+    pagos que nos hizo). Un saldo positivo significa que el cliente debe.
+
+    El saldo arranca en cero: el resumen refleja el movimiento del periodo, no la
+    deuda historica acumulada.
+
+    Devuelve (movimientos, totales); cada movimiento ya trae su saldo acumulado.
+    """
+    movimientos = []
+
+    # --- Ventas y compras ---
+    operaciones = _acotar_rango(
+        Operacion.objects.filter(cliente=cliente, activa=True)
+        .con_totales()
+        .prefetch_related("detalleoperacion_set__producto", "detalleoperacion_set__cotizacion"),
+        "fecha", desde, hasta,
+    )
+    for operacion in operaciones:
+        es_venta = operacion.tipo_operacion == "venta"
+        monto = Decimal(operacion.monto_total or 0)
+        movimientos.append({
+            "fecha": timezone.localtime(operacion.fecha).date() if timezone.is_aware(operacion.fecha) else operacion.fecha.date(),
+            "comprobante": f"{'Venta' if es_venta else 'Compra'} Nro {str(operacion.id).zfill(5)}",
+            "detalle": _detalle_operacion_resumido(operacion),
+            "debe": monto if es_venta else Decimal(0),
+            "haber": Decimal(0) if es_venta else monto,
+            "orden": ORDEN_MOVIMIENTO["operacion"],
+        })
+
+    # --- Pagos de esas operaciones ---
+    # El pago cancela la deuda en el sentido contrario a la operacion que lo origina:
+    # el de una venta nos entra (Haber) y el de una compra nos sale (Debe).
+    pagos = _acotar_rango(
+        Pago.objects.filter(operacion__cliente=cliente, operacion__activa=True).select_related("operacion"),
+        "fecha", desde, hasta,
+    )
+    for pago in pagos:
+        es_venta = pago.operacion.tipo_operacion == "venta"
+        etiqueta = "venta" if es_venta else "compra"
+        monto = Decimal(pago.monto or 0)
+        movimientos.append({
+            "fecha": timezone.localtime(pago.fecha).date() if timezone.is_aware(pago.fecha) else pago.fecha.date(),
+            "comprobante": "Recibo" if es_venta else "Pago emitido",
+            "detalle": f"Pago de {etiqueta} Nro {str(pago.operacion_id).zfill(5)}",
+            "debe": Decimal(0) if es_venta else monto,
+            "haber": monto if es_venta else Decimal(0),
+            "orden": ORDEN_MOVIMIENTO["pago"],
+        })
+
+    # --- Fletes de cereal prestados al cliente ---
+    fletes = _acotar_rango(
+        ViajeCereal.objects.filter(cliente=cliente, activo=True),
+        "fecha_viaje_cereal", desde, hasta, es_fecha_hora=False,
+    )
+    for flete in fletes:
+        toneladas = f"{flete.toneladas:.2f}".rstrip("0").rstrip(".")
+        movimientos.append({
+            "fecha": flete.fecha_viaje_cereal,
+            "comprobante": f"Flete Nro {str(flete.id).zfill(5)}",
+            "detalle": f"{flete.tipo_cereal} - {toneladas} tn (CTG {flete.codigo_trazabilidad_granos})",
+            "debe": Decimal(flete.total_bruto or 0),
+            "haber": Decimal(0),
+            "orden": ORDEN_MOVIMIENTO["flete"],
+        })
+
+    # --- Cobros de esos fletes ---
+    # El viaje de cereal no tiene tabla de pagos: se cobra entero o no se cobra, asi
+    # que el cobro es una sola fila con la fecha en que se sello el pago.
+    cobros = _acotar_rango(
+        ViajeCereal.objects.filter(cliente=cliente, activo=True, pagado=True, fecha_pago__isnull=False),
+        "fecha_pago", desde, hasta,
+    )
+    for cobro in cobros:
+        movimientos.append({
+            "fecha": timezone.localtime(cobro.fecha_pago).date() if timezone.is_aware(cobro.fecha_pago) else cobro.fecha_pago.date(),
+            "comprobante": "Recibo",
+            "detalle": f"Cobro del flete Nro {str(cobro.id).zfill(5)}",
+            "debe": Decimal(0),
+            "haber": Decimal(cobro.total_bruto or 0),
+            "orden": ORDEN_MOVIMIENTO["cobro_flete"],
+        })
+
+    movimientos.sort(key=lambda m: (m["fecha"], m["orden"], m["comprobante"]))
+
+    # Saldo acumulado fila por fila, que es lo que convierte el listado en un libro
+    saldo = Decimal(0)
+    total_debe = Decimal(0)
+    total_haber = Decimal(0)
+    for movimiento in movimientos:
+        saldo += movimiento["debe"] - movimiento["haber"]
+        total_debe += movimiento["debe"]
+        total_haber += movimiento["haber"]
+        movimiento["saldo"] = saldo
+
+    totales = {"debe": total_debe, "haber": total_haber, "saldo": saldo}
+    return movimientos, totales
