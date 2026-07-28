@@ -15,5 +15,6 @@ document.addEventListener('change', (evento) => {
     const opcion = select.selectedOptions[0];
     if (!input || !opcion || !opcion.dataset.valor) return;
 
-    input.value = opcion.dataset.valor;
+    // La tarifa viene pelada del data-valor, la muestro con separador de miles
+    ponerValorMiles(input, opcion.dataset.valor);
 });

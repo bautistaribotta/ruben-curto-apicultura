@@ -124,7 +124,10 @@ const prepararPanelNuevoProducto = () => {
       document.getElementById('id_producto').value = producto.id;
       document.getElementById('nombre').value = producto.nombre;
       document.getElementById('categoria').value = producto.categoria;
-      document.getElementById('precio').value = producto.precio;
+      // La API devuelve el Decimal como "1500.00". El formulario trabaja con
+      // precios enteros, asi que me quedo con la parte entera y la muestro
+      // con separador de miles.
+      ponerValorMiles(document.getElementById('precio'), producto.precio.split('.')[0]);
 
       // Oculto y deshabilito el stock: al editar no se modifica (se maneja en el
       // modal de agregar/quitar). Deshabilitado, ademas, no viaja en el submit.

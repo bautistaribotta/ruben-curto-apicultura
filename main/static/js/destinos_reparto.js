@@ -19,7 +19,10 @@ function abrirEditarDestino(boton) {
     document.getElementById('accion-destino').value = 'editar_destino';
     document.getElementById('id-destino-input').value = boton.dataset.id;
     document.getElementById('localidad-destino').value = boton.dataset.localidad;
-    document.getElementById('valor-destino').value = boton.dataset.valor;
+
+    // El valor viene pelado de la base, lo paso por el formato de miles
+    ponerValorMiles(document.getElementById('valor-destino'), boton.dataset.valor);
+
     document.getElementById('titulo-destino').textContent = 'Editar destino';
     abrirSlideOver('slide-over-destino');
 }

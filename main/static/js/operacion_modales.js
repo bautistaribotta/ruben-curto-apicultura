@@ -180,7 +180,8 @@ function abrirModalPago(idOperacion, montoTotalStr, totalPagadoStr) {
 function completarPagoTotal() {
     const inputMonto = document.getElementById('input-monto-pago');
     if (inputMonto && inputMonto.max) {
-        inputMonto.value = inputMonto.max;
+        // El max esta guardado sin formato, lo escribo con separador de miles
+        ponerValorMiles(inputMonto, inputMonto.max);
         inputMonto.focus();
     }
 }
@@ -193,7 +194,9 @@ function cerrarModalPago() {
 
 function procesarPago() {
     const idOperacion = document.getElementById('id_operacion_pago').value;
-    const monto = document.getElementById('input-monto-pago').value;
+    // El pago no sale por submit sino en un JSON armado a mano, asi que el
+    // valor hay que pelarlo aca: "1.500,50" -> "1500.50"
+    const monto = leerMiles(document.getElementById('input-monto-pago'));
     const maxPermitido = document.getElementById('input-monto-pago').max;
 
     if (!monto || isNaN(monto) || parseFloat(monto) <= 0) {

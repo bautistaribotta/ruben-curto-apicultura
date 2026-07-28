@@ -134,8 +134,14 @@
             <label for="valor-destino">Valor del viaje</label>
             <div class="input-con-icono">
               <span>$</span>
-              <input type="number" id="valor-destino" name="valor_viaje" placeholder="0"
-                     required step="1" min="1">
+              {% comment %}
+                Va como texto para poder mostrar el punto de los miles.
+                El pattern reemplaza al min/step que traia el type="number"
+                y mantiene andando el :invalid que pinta el mensaje de error.
+              {% endcomment %}
+              <input type="text" id="valor-destino" name="valor_viaje" placeholder="0"
+                     class="input-miles" inputmode="numeric" autocomplete="off"
+                     required pattern="[1-9][0-9]{0,2}(\.[0-9]{3})*">
             </div>
             <span class="mensaje-error">Ingrese un monto entero mayor a 0.</span>
           </div>

@@ -95,7 +95,8 @@ document.addEventListener('DOMContentLoaded', () => {
         fechaModal.textContent = formatearFecha(input.value);
         const precarga = cotizaciones || ultimosValores;
         Object.entries(inputsModal).forEach(([campo, campoInput]) => {
-            campoInput.value = precarga ? precarga[campo] : '';
+            // La precarga guarda los valores pelados, se reescriben con formato
+            ponerValorMiles(campoInput, precarga ? precarga[campo] : '');
             campoInput.closest('.modal-cotiz__campo').classList.remove('es-invalido');
         });
         errorModal.classList.add('oculto');
@@ -127,10 +128,13 @@ document.addEventListener('DOMContentLoaded', () => {
         let invalido = false;
 
         Object.entries(inputsModal).forEach(([campo, campoInput]) => {
-            const valor = parseFloat(campoInput.value);
+            // Estos valores no salen por submit sino en el JSON de la operacion,
+            // asi que los peleo aca antes de validarlos y guardarlos
+            const crudo = leerMiles(campoInput);
+            const valor = parseFloat(crudo);
             const esValido = !isNaN(valor) && valor >= 1;
             campoInput.closest('.modal-cotiz__campo').classList.toggle('es-invalido', !esValido);
-            if (esValido) valores[campo] = campoInput.value.trim();
+            if (esValido) valores[campo] = crudo;
             else invalido = true;
         });
 

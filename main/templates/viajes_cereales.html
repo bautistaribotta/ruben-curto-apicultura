@@ -181,12 +181,14 @@
               <div class="input-con-icono">
                 <span>$</span>
                 <input
-                  type="number"
+                  type="text"
                   id="precio-acopio"
                   name="precio_tonelada"
+                  class="input-miles"
+                  inputmode="numeric"
+                  autocomplete="off"
                   placeholder="0"
-                  min="1"
-                  step="1"
+                  pattern="[1-9][0-9]{0,2}(\.[0-9]{3})*"
                   required>
               </div>
               <span class="mensaje-error">Ingrese un monto válido mayor a 0.</span>

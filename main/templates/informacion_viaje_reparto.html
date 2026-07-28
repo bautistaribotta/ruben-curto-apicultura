@@ -197,15 +197,17 @@
         <div class="input-con-icono">
           <span>$</span>
           <input
-            type="number"
+            type="text"
             id="monto-gasto"
             name="monto_gasto"
+            class="input-miles"
+            inputmode="numeric"
+            autocomplete="off"
             placeholder="0"
-            step="1"
-            min="1"
+            pattern="[1-9][0-9]{0,2}(\.[0-9]{3})*"
             required>
         </div>
-        <span class="vd-hint">Número entero, sin puntos ni comas.</span>
+        <span class="vd-hint">Número entero. Los puntos se agregan solos.</span>
       </div>
 
       <div class="acciones-modal">
@@ -350,12 +352,14 @@
             <div class="input-con-icono">
               <span>$</span>
               <input
-                type="number"
+                type="text"
                 id="gasto-combustible-reparto-editar"
                 name="gasto_combustible_viaje_reparto"
+                class="input-miles"
+                inputmode="numeric"
+                autocomplete="off"
                 placeholder="0"
-                step="1"
-                min="1"
+                pattern="[1-9][0-9]{0,2}(\.[0-9]{3})*"
                 required
                 value="{{ viaje_reparto.gasto_combustible_viaje_reparto }}">
             </div>
@@ -368,12 +372,14 @@
               <div class="input-con-icono">
                 <span>$</span>
                 <input
-                  type="number"
+                  type="text"
                   id="empleado-costo-reparto-editar"
                   name="costo_empleado"
+                  class="input-miles"
+                  inputmode="numeric"
+                  autocomplete="off"
                   placeholder="0"
-                  step="1"
-                  min="1"
+                  pattern="[1-9][0-9]{0,2}(\.[0-9]{3})*"
                   required
                   value="{{ viaje_reparto.costo_empleado }}">
               </div>
@@ -385,12 +391,14 @@
               <div class="input-con-icono">
                 <span>$</span>
                 <input
-                  type="number"
+                  type="text"
                   id="valor-viaje-reparto-editar"
                   name="valor_viaje"
+                  class="input-miles"
+                  inputmode="numeric"
+                  autocomplete="off"
                   placeholder="0"
-                  step="1"
-                  min="1"
+                  pattern="[1-9][0-9]{0,2}(\.[0-9]{3})*"
                   required
                   value="{{ viaje_reparto.valor_viaje }}">
               </div>

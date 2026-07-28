@@ -177,8 +177,14 @@
             <label for="monto-pago">Monto</label>
             <div class="campo-monto__caja">
               <span class="campo-monto__signo">$</span>
-              <input type="number" id="monto-pago" name="monto" placeholder="0"
-                     required min="0.01" step="0.01" max="9999999999.99" inputmode="decimal">
+              {% comment %}
+                El pattern reemplaza al min="0.01" que traia el type="number":
+                acepta cualquier monto de 1 para arriba con centavos opcionales,
+                o los centavos solos (de 0,01 a 0,99).
+              {% endcomment %}
+              <input type="text" id="monto-pago" name="monto" placeholder="0"
+                     class="input-miles-decimal" inputmode="decimal" autocomplete="off"
+                     required pattern="[1-9][0-9]{0,2}(\.[0-9]{3})*(,[0-9]{1,2})?|0,(0[1-9]|[1-9][0-9]?)">
             </div>
             <span class="mensaje-error">Ingrese un monto mayor a cero</span>
             <p class="campo-monto__fecha">
