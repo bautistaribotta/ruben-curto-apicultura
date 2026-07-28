@@ -29,7 +29,13 @@
                 <p class="id-cliente-subtitulo">ID: {{ cliente.id }}</p>
             </div>
         </div>
-        <div class="acciones-cliente" style="display: flex; gap: 0.75rem;">
+        <div class="acciones-cliente">
+            {% if user.is_staff %}
+            <button type="button" class="boton-accion boton-resumen" id="btn-resumen-cuenta">
+                <span class="material-symbols-outlined">receipt_long</span>
+                Resumen de cuenta
+            </button>
+            {% endif %}
             <button type="button" class="boton-accion boton-editar" id="btn-editar-cliente">
                 <span class="material-symbols-outlined">edit</span>
                 Editar Cliente
@@ -343,6 +349,65 @@
     </div>
   </div>
 </form>
+
+{% if user.is_staff %}
+<!-- Modal para imprimir el resumen de cuenta corriente -->
+<div id="contenedor-modal-resumen">
+    <div id="contenedor-modal-fondo-resumen" onclick="cerrarModalResumen()"></div>
+    <div id="panel-resumen">
+        <button type="button" class="boton-cerrar" onclick="cerrarModalResumen()">
+            <span class="material-symbols-outlined">close</span>
+        </button>
+
+        <div id="icono-resumen-modal">
+            <span class="material-symbols-outlined">receipt_long</span>
+        </div>
+
+        <h3>Imprimir resumen de cuenta</h3>
+        <p>Cuenta corriente de <strong>{{ cliente.nombre }}{% if cliente.apellido and cliente.apellido != 'None' %} {{ cliente.apellido }}{% endif %}</strong></p>
+
+        <!-- GET directo al PDF: el navegador lo abre en otra pestaña y esta vista
+             queda intacta. El JS solo maneja los atajos de periodo y el conteo. -->
+        <form id="form-resumen-cuenta"
+              action="{% url 'generar_resumen_cuenta' cliente.id %}"
+              method="GET"
+              target="_blank"
+              data-url-conteo="{% url 'contar_movimientos_cuenta' cliente.id %}">
+
+            <p class="rc-titulo-campo">Período</p>
+            <div class="rc-atajos" id="resumen-atajos">
+                <button type="button" class="rc-atajo" data-periodo="mes">Este mes</button>
+                <button type="button" class="rc-atajo" data-periodo="mes-anterior">Mes anterior</button>
+                <button type="button" class="rc-atajo" data-periodo="trimestre">Últimos 3 meses</button>
+                <button type="button" class="rc-atajo" data-periodo="anio">Este año</button>
+            </div>
+
+            <div class="rc-rango">
+                <label class="rc-campo">
+                    <span class="rc-campo__lbl">Desde</span>
+                    <input type="date" class="rc-campo__input" id="resumen-desde" name="desde" required>
+                </label>
+                <label class="rc-campo">
+                    <span class="rc-campo__lbl">Hasta</span>
+                    <input type="date" class="rc-campo__input" id="resumen-hasta" name="hasta" required>
+                </label>
+            </div>
+
+            <p class="rc-conteo" id="resumen-conteo" data-estado="cargando" aria-live="polite">
+                Buscando movimientos...
+            </p>
+
+            <div class="acciones-modal">
+                <button type="button" class="boton-secundario" onclick="cerrarModalResumen()">Cancelar</button>
+                <button type="submit" class="rc-boton-imprimir" id="boton-imprimir-resumen">
+                    <span class="material-symbols-outlined">print</span>
+                    Imprimir
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
 
 <!-- Modal para Añadir Pago -->
 <div id="contenedor-modal-pago">

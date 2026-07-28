@@ -18,6 +18,163 @@ function cerrarPanelEliminar() {
 }
 
 // =============================================
+//  MODAL DE RESUMEN DE CUENTA CORRIENTE
+// =============================================
+
+function abrirModalResumen() {
+    const contenedor = document.getElementById('contenedor-modal-resumen');
+    if (!contenedor) return;
+    contenedor.classList.add('abierto');
+    document.body.style.overflow = 'hidden';
+}
+
+function cerrarModalResumen() {
+    const contenedor = document.getElementById('contenedor-modal-resumen');
+    // Si el modal ya estaba cerrado no toco nada: la vista tiene otros modales y
+    // devolver el scroll aca les sacaria el bloqueo mientras siguen abiertos
+    if (!contenedor || !contenedor.classList.contains('abierto')) return;
+    contenedor.classList.remove('abierto');
+    document.body.style.overflow = 'auto';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const boton = document.getElementById('btn-resumen-cuenta');
+    const formulario = document.getElementById('form-resumen-cuenta');
+    // El modal solo existe para el staff: sin el, no engancho nada
+    if (!boton || !formulario) return;
+
+    const inputDesde = document.getElementById('resumen-desde');
+    const inputHasta = document.getElementById('resumen-hasta');
+    const atajos = document.querySelectorAll('#resumen-atajos .rc-atajo');
+    const conteo = document.getElementById('resumen-conteo');
+    const botonImprimir = document.getElementById('boton-imprimir-resumen');
+    const urlConteo = formulario.dataset.urlConteo;
+
+    // Formateo a mano en vez de toISOString(): ese convierte a UTC y en Argentina
+    // adelantaria un dia la fecha elegida
+    const aIso = (fecha) => {
+        const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+        const dia = String(fecha.getDate()).padStart(2, '0');
+        return `${fecha.getFullYear()}-${mes}-${dia}`;
+    };
+
+    // Cortes con los que se emite un resumen en la practica: el mes en curso, el
+    // mes cerrado anterior, el trimestre movil y el año en curso
+    function rangoDelAtajo(periodo) {
+        const hoy = new Date();
+        switch (periodo) {
+            case 'mes':
+                return [new Date(hoy.getFullYear(), hoy.getMonth(), 1), hoy];
+            case 'mes-anterior':
+                return [
+                    new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1),
+                    new Date(hoy.getFullYear(), hoy.getMonth(), 0),
+                ];
+            case 'trimestre':
+                return [new Date(hoy.getFullYear(), hoy.getMonth() - 2, 1), hoy];
+            case 'anio':
+                return [new Date(hoy.getFullYear(), 0, 1), hoy];
+            default:
+                return [hoy, hoy];
+        }
+    }
+
+    // Marco el atajo cuyo rango coincide con lo que hay en los inputs, asi el chip
+    // sigue reflejando la realidad aunque el usuario toque las fechas a mano
+    function sincronizarAtajos() {
+        atajos.forEach((atajo) => {
+            const [desde, hasta] = rangoDelAtajo(atajo.dataset.periodo);
+            const coincide = inputDesde.value === aIso(desde) && inputHasta.value === aIso(hasta);
+            atajo.classList.toggle('activo', coincide);
+        });
+    }
+
+    function aplicarAtajo(periodo) {
+        const [desde, hasta] = rangoDelAtajo(periodo);
+        inputDesde.value = aIso(desde);
+        inputHasta.value = aIso(hasta);
+        sincronizarAtajos();
+        consultarConteo();
+    }
+
+    function pintarConteo(estado, texto) {
+        conteo.dataset.estado = estado;
+        conteo.textContent = texto;
+        // Sin movimientos no hay nada que imprimir: bloqueo la emision en vez de
+        // dejar que salga una hoja en blanco
+        botonImprimir.disabled = estado === 'vacio';
+    }
+
+    let temporizador;
+    let peticionEnCurso;
+
+    function consultarConteo() {
+        clearTimeout(temporizador);
+        if (!inputDesde.value || !inputHasta.value) {
+            pintarConteo('cargando', 'Elegí un rango de fechas para ver el período.');
+            botonImprimir.disabled = true;
+            return;
+        }
+
+        pintarConteo('cargando', 'Buscando movimientos...');
+        temporizador = setTimeout(() => {
+            // Descarto la respuesta anterior si el usuario sigue cambiando fechas
+            if (peticionEnCurso) peticionEnCurso.abort();
+            peticionEnCurso = new AbortController();
+
+            const parametros = new URLSearchParams({desde: inputDesde.value, hasta: inputHasta.value});
+            fetch(`${urlConteo}?${parametros}`, {signal: peticionEnCurso.signal})
+                .then((respuesta) => {
+                    if (!respuesta.ok) throw new Error(respuesta.status);
+                    return respuesta.json();
+                })
+                .then((datos) => {
+                    if (datos.cantidad === 0) {
+                        pintarConteo('vacio', 'Sin movimientos en el período elegido.');
+                    } else {
+                        const plural = datos.cantidad === 1 ? 'movimiento' : 'movimientos';
+                        pintarConteo('ok', `${datos.cantidad} ${plural} en el período elegido.`);
+                    }
+                })
+                .catch((error) => {
+                    if (error.name === 'AbortError') return;
+                    // Si falla la consulta dejo imprimir igual: el conteo es una ayuda,
+                    // no un requisito para emitir el resumen
+                    pintarConteo('error', 'No se pudo consultar el período. Podés imprimir igual.');
+                    botonImprimir.disabled = false;
+                });
+        }, 300);
+    }
+
+    boton.addEventListener('click', () => {
+        // Arranca en el mes en curso, que es el resumen que mas se pide
+        aplicarAtajo('mes');
+        abrirModalResumen();
+    });
+
+    atajos.forEach((atajo) => {
+        atajo.addEventListener('click', () => aplicarAtajo(atajo.dataset.periodo));
+    });
+
+    [inputDesde, inputHasta].forEach((input) => {
+        input.addEventListener('change', () => {
+            sincronizarAtajos();
+            consultarConteo();
+        });
+    });
+
+    // El resumen sale en otra pestaña (target="_blank"), asi que cierro el modal
+    // para dejar el perfil como estaba
+    formulario.addEventListener('submit', () => {
+        setTimeout(cerrarModalResumen, 200);
+    });
+
+    document.addEventListener('keydown', (evento) => {
+        if (evento.key === 'Escape') cerrarModalResumen();
+    });
+});
+
+// =============================================
 //  EDICIÓN INLINE DE CLIENTE
 // =============================================
 

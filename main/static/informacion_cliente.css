@@ -633,8 +633,8 @@ html {
   }
 }
 
-/* --- MODALES (eliminar / cancelar / pago) --- */
-#contenedor-panel-eliminar, #contenedor-modal-cancelar, #contenedor-modal-pago {
+/* --- MODALES (eliminar / cancelar / pago / resumen) --- */
+#contenedor-panel-eliminar, #contenedor-modal-cancelar, #contenedor-modal-pago, #contenedor-modal-resumen {
   position: fixed;
   inset: 0;
   z-index: 2000;
@@ -645,12 +645,14 @@ html {
   transition: visibility var(--dur-slow);
 }
 
-#contenedor-panel-eliminar.abierto, #contenedor-modal-cancelar.abierto, #contenedor-modal-pago.abierto {
+#contenedor-panel-eliminar.abierto, #contenedor-modal-cancelar.abierto, #contenedor-modal-pago.abierto,
+#contenedor-modal-resumen.abierto {
   visibility: visible;
   transition: none;
 }
 
-#contenedor-panel-fondo, #contenedor-modal-fondo-cancelar, #contenedor-modal-fondo-pago {
+#contenedor-panel-fondo, #contenedor-modal-fondo-cancelar, #contenedor-modal-fondo-pago,
+#contenedor-modal-fondo-resumen {
   position: absolute;
   inset: 0;
   background-color: var(--overlay-ink);
@@ -662,11 +664,12 @@ html {
 
 #contenedor-panel-eliminar.abierto #contenedor-panel-fondo,
 #contenedor-modal-cancelar.abierto #contenedor-modal-fondo-cancelar,
-#contenedor-modal-pago.abierto #contenedor-modal-fondo-pago {
+#contenedor-modal-pago.abierto #contenedor-modal-fondo-pago,
+#contenedor-modal-resumen.abierto #contenedor-modal-fondo-resumen {
   opacity: 1;
 }
 
-#panel-eliminar, #panel-cancelar-operacion, #panel-pago {
+#panel-eliminar, #panel-cancelar-operacion, #panel-pago, #panel-resumen {
   position: relative;
   background-color: var(--surface-card);
   border-radius: 12px;
@@ -685,7 +688,8 @@ html {
 
 #contenedor-panel-eliminar.abierto #panel-eliminar,
 #contenedor-modal-cancelar.abierto #panel-cancelar-operacion,
-#contenedor-modal-pago.abierto #panel-pago {
+#contenedor-modal-pago.abierto #panel-pago,
+#contenedor-modal-resumen.abierto #panel-resumen {
   opacity: 1;
   transform: scale(1);
 }
@@ -729,23 +733,37 @@ html {
   justify-content: center;
 }
 
-#icono-advertencia span, #icono-advertencia-cancelar span, #icono-pago-modal span {
+#icono-resumen-modal {
+  color: var(--brand-secondary);
+  align-self: center;
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: center;
+}
+
+#icono-advertencia span, #icono-advertencia-cancelar span, #icono-pago-modal span,
+#icono-resumen-modal span {
   font-size: 4rem;
   font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 48;
 }
 
-#panel-eliminar h3, #panel-cancelar-operacion h3, #panel-pago h3 {
+#panel-eliminar h3, #panel-cancelar-operacion h3, #panel-pago h3, #panel-resumen h3 {
   font-size: 1.25rem;
   font-weight: var(--weight-bold);
   color: var(--text-strong);
   margin-bottom: 0.5rem;
 }
 
-#panel-eliminar p, #panel-cancelar-operacion p, #panel-pago p {
+#panel-eliminar p, #panel-cancelar-operacion p, #panel-pago p, #panel-resumen > p {
   font-size: var(--text-sm);
   color: var(--text-muted);
   margin-bottom: 1.5rem;
   line-height: 1.5;
+}
+
+#panel-resumen > p strong {
+  color: var(--text-strong);
+  font-weight: var(--weight-semibold);
 }
 
 .acciones-modal {
@@ -838,6 +856,195 @@ html {
   cursor: not-allowed;
 }
 
+/* --- RESUMEN DE CUENTA (boton de cabecera + modal de periodo) --- */
+/* Unica accion de la cabecera que produce un documento, asi que va en pino: la
+   distingue de editar (neutra) y eliminar (roja) sin sumar un tercer gris. */
+.boton-resumen {
+  background-color: var(--surface-card);
+  color: var(--brand-secondary);
+  border-color: var(--color-verde-transparente-30);
+}
+
+.boton-resumen:hover {
+  background-color: var(--brand-secondary);
+  border-color: var(--brand-secondary);
+  color: var(--text-on-inverse);
+}
+
+.boton-resumen:focus-visible,
+.rc-boton-imprimir:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+/* El formulario va alineado a la izquierda aunque el panel centre titulo e icono:
+   son campos para completar, no un mensaje para leer. */
+#panel-resumen form {
+  text-align: left;
+}
+
+.rc-titulo-campo {
+  font-size: 0.7rem;
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 0.6rem;
+}
+
+/* Atajos de periodo: un resumen de cuenta casi siempre se corta en un limite de
+   mes o de año, asi que esos cortes van a un toque y las fechas sueltas quedan
+   como la excepcion, no como el camino obligado. */
+.rc-atajos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 1.25rem;
+}
+
+.rc-atajo {
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background-color: var(--surface-card);
+  color: var(--text-body);
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  transition: all var(--dur-normal) var(--ease-standard);
+}
+
+.rc-atajo:hover {
+  background-color: var(--surface-hover);
+  border-color: var(--border-default);
+}
+
+.rc-atajo:focus-visible {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: var(--ring);
+}
+
+.rc-atajo.activo {
+  background-color: var(--color-verde-transparente-10);
+  border-color: var(--color-verde-transparente-30);
+  color: var(--brand-secondary);
+}
+
+.rc-rango {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.rc-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.rc-campo__lbl {
+  font-size: 0.7rem;
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.rc-campo__input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: var(--weight-semibold);
+  color: var(--text-strong);
+  background-color: var(--surface-card);
+  outline: none;
+  transition: all var(--dur-normal) var(--ease-standard);
+  box-sizing: border-box;
+}
+
+.rc-campo__input:focus {
+  border-color: var(--brand);
+  box-shadow: var(--ring);
+}
+
+/* Conteo en vivo: dice cuanto trae el PDF antes de emitirlo, para no imprimir
+   una hoja vacia y descubrirlo recien en el visor. */
+.rc-conteo {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.6rem 0.75rem;
+  margin-bottom: 1.25rem;
+  border-radius: var(--radius-sm);
+  background-color: var(--surface-sunken);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--text-body);
+  line-height: 1.3;
+}
+
+.rc-conteo::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background-color: var(--text-subtle);
+  transition: background-color var(--dur-normal) var(--ease-standard);
+}
+
+.rc-conteo[data-estado="ok"]::before {
+  background-color: var(--success-500);
+}
+
+.rc-conteo[data-estado="vacio"]::before,
+.rc-conteo[data-estado="error"]::before {
+  background-color: var(--danger-500);
+}
+
+.rc-conteo[data-estado="vacio"],
+.rc-conteo[data-estado="error"] {
+  color: var(--text-muted);
+}
+
+.rc-boton-imprimir {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  background-color: var(--brand-secondary);
+  color: var(--text-on-inverse);
+  border: none;
+  padding: 0.75rem;
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-weight: var(--weight-bold);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition: all var(--dur-normal) var(--ease-standard);
+  box-shadow: var(--shadow-md);
+}
+
+.rc-boton-imprimir:hover:not(:disabled) {
+  background-color: var(--pine-950);
+}
+
+.rc-boton-imprimir:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.rc-boton-imprimir .material-symbols-outlined {
+  font-size: 1.1rem;
+}
+
 /* --- ADAPTACIÓN PARA PANTALLAS GRANDES --- */
 @media (min-width: 1440px) {
   html {
@@ -898,9 +1105,12 @@ html {
 }
 
 @media (max-width: 600px) {
-  #panel-eliminar, #panel-cancelar-operacion, #panel-pago {
+  #panel-eliminar, #panel-cancelar-operacion, #panel-pago, #panel-resumen {
     width: 95%;
     padding: 1.5rem;
+  }
+  .rc-rango {
+    grid-template-columns: 1fr;
   }
   .info-principal {
     flex-direction: column;
