@@ -2172,29 +2172,24 @@ def _acotar_rango(queryset, campo, desde, hasta, es_fecha_hora=True):
     return queryset
 
 
-def _detalle_operacion_resumido(operacion, tope=2):
-    """Arma el texto de una fila del resumen a partir de los items de la operacion.
+def _items_operacion(operacion):
+    """Lista todos los renglones de una operacion para desplegarlos en el resumen.
 
-    Muestra los primeros 'tope' items y condensa el resto en un "y N mas", igual
-    que la tabla de operaciones del perfil del cliente.
+    Va completa, sin condensar en un "y N mas": el resumen es el comprobante que
+    se le entrega al cliente y tiene que poder verificar cada producto que
+    entro o salio, con el importe al que se cerro ese renglon.
     """
-    detalles = list(operacion.detalleoperacion_set.all())
-    if not detalles:
-        return "Sin items"
-
-    partes = []
-    for detalle in detalles[:tope]:
+    items = []
+    for detalle in operacion.detalleoperacion_set.all():
         if detalle.es_granel:
             cantidad = f"{detalle.cantidad:.2f}".rstrip("0").rstrip(".") + " kg"
         else:
             cantidad = f"{detalle.cantidad:.0f}x"
-        partes.append(f"{cantidad} {detalle.nombre_item}")
-
-    texto = ", ".join(partes)
-    restantes = len(detalles) - tope
-    if restantes > 0:
-        texto += f" y {restantes} mas"
-    return texto
+        items.append({
+            "texto": f"{cantidad} {detalle.nombre_item}",
+            "subtotal": detalle.cantidad * detalle.precio_unitario,
+        })
+    return items
 
 
 def obtener_movimientos_cuenta_corriente(cliente, desde=None, hasta=None):
@@ -2222,10 +2217,14 @@ def obtener_movimientos_cuenta_corriente(cliente, desde=None, hasta=None):
     for operacion in operaciones:
         es_venta = operacion.tipo_operacion == "venta"
         monto = Decimal(operacion.monto_total or 0)
+        items = _items_operacion(operacion)
         movimientos.append({
             "fecha": timezone.localtime(operacion.fecha).date() if timezone.is_aware(operacion.fecha) else operacion.fecha.date(),
             "comprobante": f"{'Venta' if es_venta else 'Compra'} Nro {str(operacion.id).zfill(5)}",
-            "detalle": _detalle_operacion_resumido(operacion),
+            # El detalle de la fila queda vacio porque los productos se despliegan
+            # abajo, uno por linea; solo se escribe algo si la operacion no tiene
+            "detalle": "" if items else "Sin items",
+            "items": items,
             "debe": monto if es_venta else Decimal(0),
             "haber": Decimal(0) if es_venta else monto,
             "orden": ORDEN_MOVIMIENTO["operacion"],
@@ -2246,6 +2245,7 @@ def obtener_movimientos_cuenta_corriente(cliente, desde=None, hasta=None):
             "fecha": timezone.localtime(pago.fecha).date() if timezone.is_aware(pago.fecha) else pago.fecha.date(),
             "comprobante": "Recibo" if es_venta else "Pago emitido",
             "detalle": f"Pago de {etiqueta} Nro {str(pago.operacion_id).zfill(5)}",
+            "items": [],
             "debe": Decimal(0) if es_venta else monto,
             "haber": monto if es_venta else Decimal(0),
             "orden": ORDEN_MOVIMIENTO["pago"],
@@ -2262,6 +2262,7 @@ def obtener_movimientos_cuenta_corriente(cliente, desde=None, hasta=None):
             "fecha": flete.fecha_viaje_cereal,
             "comprobante": f"Flete Nro {str(flete.id).zfill(5)}",
             "detalle": f"{flete.tipo_cereal} - {toneladas} tn (CTG {flete.codigo_trazabilidad_granos})",
+            "items": [],
             "debe": Decimal(flete.total_bruto or 0),
             "haber": Decimal(0),
             "orden": ORDEN_MOVIMIENTO["flete"],
@@ -2279,6 +2280,7 @@ def obtener_movimientos_cuenta_corriente(cliente, desde=None, hasta=None):
             "fecha": timezone.localtime(cobro.fecha_pago).date() if timezone.is_aware(cobro.fecha_pago) else cobro.fecha_pago.date(),
             "comprobante": "Recibo",
             "detalle": f"Cobro del flete Nro {str(cobro.id).zfill(5)}",
+            "items": [],
             "debe": Decimal(0),
             "haber": Decimal(cobro.total_bruto or 0),
             "orden": ORDEN_MOVIMIENTO["cobro_flete"],

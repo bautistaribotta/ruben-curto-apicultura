@@ -367,9 +367,9 @@ def _salida_pdf(documento, path=None):
 # Grilla del resumen sobre A4 vertical (210 x 297 mm): margenes de 12 mm dejan
 # 186 mm utiles, repartidos entre las seis columnas del libro.
 MARGEN = 12
-X_FECHA = MARGEN            # 22 mm
-X_COMPROBANTE = 34          # 34 mm
-X_DETALLE = 68              # 58 mm
+X_FECHA = MARGEN            # 19 mm
+X_COMPROBANTE = 31          # 29 mm
+X_DETALLE = 60              # 66 mm, la mas ancha: adentro entran los productos
 X_DEBE = 126                # 24 mm
 X_HABER = 150               # 24 mm
 X_SALDO = 174               # 24 mm
@@ -378,12 +378,19 @@ ANCHO_IMPORTE = 24
 # Donde arranca la segunda columna del bloque de datos del cliente (CUIT/telefono)
 X_DATOS_DERECHA = 120
 
+# Sangria de los productos dentro de la columna DETALLE y ancho reservado a su
+# subtotal: van dentro de esa columna y no en Debe/Haber, que quedan para el
+# importe de la operacion y no se ensucian con los parciales
+SANGRIA_ITEM = 5
+ANCHO_SUBTOTAL_ITEM = 17
+
 # Alturas fijas: donde arranca la grilla, donde cortan las filas para dejar sitio
 # al recuadro de totales, y cuanto mide cada renglon
 Y_GRILLA = 40
 Y_CABECERA_TABLA = 48
 Y_LIMITE_FILAS = 262
 ALTO_FILA = 7
+ALTO_ITEM = 4.5
 
 # Verde pino del isologo, en RGB, para el filete del membrete
 PINO = (22, 52, 44)
@@ -529,6 +536,20 @@ class ResumenCuenta(FPDF):
                 y = Y_CABECERA_TABLA
             self._dibujar_fila(y, movimiento)
             y += ALTO_FILA
+
+            # Los productos se despliegan debajo de su operacion. Una operacion
+            # larga puede cortarse entre paginas; al retomar repito el numero de
+            # comprobante para que ningun producto quede sin referencia arriba.
+            for item in movimiento.get("items", ()):
+                if y + ALTO_ITEM > Y_LIMITE_FILAS:
+                    self.add_page()
+                    y = Y_CABECERA_TABLA
+                    self._dibujar_continuacion(y, movimiento)
+                    y += ALTO_ITEM
+                self._dibujar_item(y, item)
+                y += ALTO_ITEM
+
+            self._separador(y)
         return y
 
     def _cerrar_tabla(self, y_final):
@@ -560,6 +581,7 @@ class ResumenCuenta(FPDF):
         self.cell(X_DETALLE - X_COMPROBANTE - 2, ALTO_FILA,
                   self._recortar(movimiento['comprobante'], X_DETALLE - X_COMPROBANTE - 2), 0, 0, 'L')
 
+        self.set_font('Arial', '', 8)
         self.set_xy(X_DETALLE + 1, y)
         self.set_text_color(*GRIS_DATO)
         self.cell(X_DEBE - X_DETALLE - 2, ALTO_FILA,
@@ -576,10 +598,44 @@ class ResumenCuenta(FPDF):
         self.set_xy(X_SALDO, y)
         self.cell(ANCHO_IMPORTE - 2, ALTO_FILA, saldo, 0, 0, 'R')
 
-        # Renglon: gris claro para que separe sin competir con los filetes de la caja
+    def _dibujar_item(self, y, item):
+        """Escribe un producto de la operacion: nombre a la izquierda y su
+        subtotal a la derecha, ambos dentro de la columna DETALLE."""
+        x_texto = X_DETALLE + SANGRIA_ITEM
+        x_subtotal = X_DEBE - 2 - ANCHO_SUBTOTAL_ITEM
+        ancho_texto = x_subtotal - x_texto - 2
+
+        self.set_text_color(*GRIS_DATO)
+        self.set_font('Arial', '', 7)
+        self.set_xy(x_texto, y)
+        self.cell(ancho_texto, ALTO_ITEM, self._recortar(item['texto'], ancho_texto), 0, 0, 'L')
+
+        subtotal = _formato_importe(item['subtotal'])
+        self._fuente_que_entra(subtotal, ANCHO_SUBTOTAL_ITEM, '', 7)
+        self.set_xy(x_subtotal, y)
+        self.cell(ANCHO_SUBTOTAL_ITEM, ALTO_ITEM, subtotal, 0, 0, 'R')
+        self.set_text_color(0, 0, 0)
+
+    def _dibujar_continuacion(self, y, movimiento):
+        """Reencabeza los productos de una operacion que sigue en otra pagina."""
+        self.set_font('Arial', 'I', 7)
+        self.set_text_color(*GRIS_DATO)
+        self.set_xy(X_COMPROBANTE + 1, y)
+        self.cell(X_DEBE - X_COMPROBANTE - 2, ALTO_ITEM,
+                  f"{movimiento['comprobante']} (continúa)", 0, 0, 'L')
+        self.set_text_color(0, 0, 0)
+
+    def _separador(self, y):
+        """Renglon gris claro que cierra el movimiento con todos sus productos.
+
+        Va debajo del ultimo producto y no de la fila de la operacion, asi el
+        encabezado y su detalle se leen como un solo bloque.
+        """
+        if y >= Y_LIMITE_FILAS:
+            return
         self.set_draw_color(*GRIS_LINEA)
         self.set_line_width(0.1)
-        self.line(MARGEN, y + ALTO_FILA, X_FIN, y + ALTO_FILA)
+        self.line(MARGEN, y, X_FIN, y)
         self.set_draw_color(0, 0, 0)
 
     def _importe(self, x, y, valor):
