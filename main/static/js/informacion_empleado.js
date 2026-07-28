@@ -129,7 +129,8 @@ function abrirModalPagoEmpleado() {
     contenedor.classList.add("abierto");
     document.body.classList.add("con-modal-abierto");
 
-    // El monto es lo unico que hay que decidir, asi que arranca con el foco puesto
+    // El monto es el dato que siempre hay que cargar (la fecha ya viene con la
+    // de hoy), asi que el foco arranca ahi
     document.getElementById("monto-pago").focus();
 }
 

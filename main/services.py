@@ -1224,14 +1224,29 @@ def obtener_viajes_empleado(empleado, tipo="todos", desde=None, hasta=None):
     return filas, conteos
 
 
-def crear_pago_empleado(id_empleado, monto, observaciones=""):
-    """Registra un pago a un empleado con la fecha del dia.
+def crear_pago_empleado(id_empleado, monto, observaciones="", fecha=None):
+    """Registra un pago a un empleado.
 
-    El modal solo pide monto y observacion: la fecha la pone el servidor para
-    que no dependa del reloj del navegador ni se pueda mandar una fecha armada
-    a mano en el POST.
+    La fecha llega del modal en formato "YYYY-MM-DD" y puede ser de hoy o de
+    cualquier dia anterior, para poder cargar pagos que se hicieron y no se
+    anotaron en el momento. Si no viene nada, queda la fecha de hoy. Un pago
+    con fecha futura no tiene sentido, asi que se rechaza aca y no solo con el
+    max del input, que el navegador puede saltearse.
     """
     empleado = get_object_or_404(Empleado, id=id_empleado, activo=True)
+
+    hoy = timezone.localdate()
+
+    if fecha in (None, ""):
+        fecha = hoy
+    else:
+        try:
+            fecha = datetime.strptime(str(fecha).strip(), "%Y-%m-%d").date()
+        except (ValueError, TypeError):
+            raise ValueError("La fecha del pago no es válida.")
+
+        if fecha > hoy:
+            raise ValueError("La fecha del pago no puede ser posterior a hoy.")
 
     try:
         monto = Decimal(str(monto).strip())
@@ -1253,7 +1268,7 @@ def crear_pago_empleado(id_empleado, monto, observaciones=""):
 
     return PagosEmpleados.objects.create(
         empleado=empleado,
-        fecha=timezone.localdate(),
+        fecha=fecha,
         monto=monto,
         observaciones=observaciones,
     )

@@ -215,6 +215,7 @@ def informacion_empleado(request, id_empleado):
                     empleado.id,
                     request.POST.get("monto"),
                     request.POST.get("observaciones", ""),
+                    request.POST.get("fecha"),
                 )
                 messages.success(request, "Pago registrado correctamente")
                 return redirect("informacion_empleado", id_empleado=empleado.id)

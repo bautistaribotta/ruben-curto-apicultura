@@ -394,17 +394,16 @@ body.con-modal-abierto #contenido-principal {
   display: block;
 }
 
-.campo-monto__fecha {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  margin-top: 0.15rem;
-  font-size: var(--text-xs);
-  color: var(--text-subtle);
+/* --- Fecha del pago --- */
+/* El resto del campo sale de .grupo-input (empleados.css). Aca solo se acomoda
+   el picker nativo, que sin esto queda gris y sin cursor de click. */
+#fecha-pago::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.6;
 }
 
-.campo-monto__fecha .material-symbols-outlined {
-  font-size: 1rem;
+#fecha-pago::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
 }
 
 /* --- Observacion --- */

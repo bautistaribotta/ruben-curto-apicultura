@@ -148,7 +148,8 @@
   </div>
 
   <!-- MODAL AÑADIR PAGO
-       La fecha no se pide: la pone el servidor con el dia actual. -->
+       La fecha viene con el dia de hoy puesta, pero se puede cambiar por
+       cualquier fecha anterior para cargar un pago que no se anoto en el dia. -->
   <div id="contenedor-modal-pago">
     <div id="fondo-modal-pago" onclick="cerrarModalPagoEmpleado()"></div>
 
@@ -187,10 +188,16 @@
                      required pattern="[1-9][0-9]{0,2}(\.[0-9]{3})*(,[0-9]{1,2})?|0,(0[1-9]|[1-9][0-9]?)">
             </div>
             <span class="mensaje-error">Ingrese un monto mayor a cero</span>
-            <p class="campo-monto__fecha">
-              <span class="material-symbols-outlined">event</span>
-              Se registra con fecha de hoy, {% now "d/m/Y" %}
-            </p>
+          </div>
+
+          {% comment %}
+            El max corta las fechas futuras: un pago se registra el dia que se
+            hizo o mas tarde, nunca antes. El servidor vuelve a validarlo.
+          {% endcomment %}
+          <div class="grupo-input">
+            <label for="fecha-pago">Fecha</label>
+            <input type="date" id="fecha-pago" name="fecha" required
+                   value="{% now 'Y-m-d' %}" max="{% now 'Y-m-d' %}">
           </div>
 
           <div class="grupo-input">
