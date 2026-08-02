@@ -1,3 +1,6 @@
+from datetime import date
+from decimal import Decimal
+
 from django.db import models
 from django.db.models import Sum, F, Subquery, OuterRef, DecimalField, Value
 from django.db.models.functions import Coalesce
@@ -553,3 +556,162 @@ class GastoViajeCereal(GastoBase):
 
     def __str__(self):
         return f"Gasto {self.gasto} de {self.monto} pesos (Viaje cereal: {self.viaje_cereal})"
+
+
+# ==========================================================================
+#  ALQUILERES
+# ==========================================================================
+
+def periodo_actual():
+    """Primer dia del mes en curso.
+
+    Todo el modulo de alquileres identifica un mes por su dia 1: asi el periodo
+    entra en un DateField comun, se ordena y se compara sin trucos, y "julio de
+    2026" es siempre el mismo valor lo escriba quien lo escriba.
+    """
+    hoy = timezone.localdate()
+    return date(hoy.year, hoy.month, 1)
+
+
+class CasaQuerySet(models.QuerySet):
+    def con_pago_del_mes(self, periodo=None):
+        """Anota cuanto se cobro de cada casa en el periodo pedido (por defecto, el mes en curso).
+
+        Sin esto, pintar el estado de cada fila del listado dispara una query por
+        casa (el mismo N+1 que evita Operacion.con_totales).
+
+        Un mes tiene a lo sumo un pago, asi que la suma devuelve ese unico monto
+        y el cero significa que todavia no se cobro. Sumo en vez de preguntar si
+        existe porque el listado tambien muestra cuanto entro, no solo si entro.
+        """
+        periodo = periodo or periodo_actual()
+        pagos_periodo = (
+            PagoAlquiler.objects.filter(casa=OuterRef("pk"), periodo=periodo)
+            .values("casa")
+            .annotate(total=Sum("monto"))
+            .values("total")
+        )
+        return self.annotate(
+            _pagado_periodo_anotado=Coalesce(
+                Subquery(pagos_periodo, output_field=DecimalField()),
+                Value(0),
+                output_field=DecimalField(),
+            ),
+        )
+
+
+class Casa(models.Model):
+    """Propiedad que la empresa da en alquiler.
+
+    Ningun dato es obligatorio: una casa se puede dar de alta con el nombre solo
+    y completarse despues, asi que todos los campos admiten null menos los dos
+    booleanos, que siempre tienen un valor definido.
+    """
+    objects = CasaQuerySet.as_manager()
+
+    nombre = models.CharField(max_length=60, null=True, blank=True)
+    localidad = models.CharField(max_length=60, null=True, blank=True)
+    direccion = models.CharField(max_length=120, null=True, blank=True)
+    # Alquiler mensual pactado. Es el valor con el que se compara lo cobrado del
+    # mes para decidir si el periodo esta pago, parcial o impago.
+    precio = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    # Comision de la inmobiliaria expresada en porcentaje del alquiler (0 a 100):
+    # si sube el precio, la comision acompaña sola y no hay que reescribirla.
+    comision_inmobiliaria = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    alquilada = models.BooleanField(default=False)
+    # Baja logica, igual que en el resto del sistema: la casa sale de los listados
+    # pero sus pagos historicos quedan intactos.
+    activa = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = "casas"
+        verbose_name_plural = "Casas"
+        ordering = ["nombre", "id"]
+
+    @property
+    def comision_monto(self):
+        # Cuanto se lleva la inmobiliaria por mes. Sin precio cargado no hay nada
+        # que calcular; sin comision cargada, la casa se administra sola y es cero.
+        if self.precio is None:
+            return None
+        porcentaje = self.comision_inmobiliaria or Decimal("0")
+        return (self.precio * porcentaje / Decimal("100")).quantize(Decimal("0.01"))
+
+    @property
+    def neto_mensual(self):
+        # Lo que le queda a la empresa una vez descontada la inmobiliaria
+        if self.precio is None:
+            return None
+        return self.precio - self.comision_monto
+
+    @property
+    def total_pagado_periodo(self):
+        # Cobrado del mes en curso. Si el queryset vino de con_pago_del_mes() uso
+        # ese valor ya calculado para no consultar una vez por casa en el listado.
+        if hasattr(self, "_pagado_periodo_anotado"):
+            return self._pagado_periodo_anotado or Decimal("0")
+        return self.pagos.filter(periodo=periodo_actual()).aggregate(total=Sum("monto"))["total"] or Decimal("0")
+
+    @property
+    def cobrada_en_el_periodo(self):
+        # El alquiler se cobra entero o no se cobra, asi que alcanza con saber si
+        # hay un pago cargado en el mes: no hay monto que comparar contra el precio.
+        return self.total_pagado_periodo > 0
+
+    @property
+    def estado_mes(self):
+        """Estado del alquiler del mes en curso.
+
+        Tres estados y ninguno se guarda en un campo: salen de si hay un pago con
+        periodo igual al mes actual. Por eso, al cambiar el mes, la casa vuelve
+        sola a "Pendiente de cobro" sin que nadie tenga que resetear nada.
+
+        No existe el estado parcial: un alquiler se paga completo. Si el mes tiene
+        pago, esta cobrado.
+        """
+        if not self.alquilada:
+            return "Sin alquilar"
+        return "Cobrado" if self.cobrada_en_el_periodo else "Pendiente de cobro"
+
+    def __str__(self):
+        return self.nombre or f"Casa {self.id}"
+
+
+class PagoAlquiler(models.Model):
+    """Cobro del alquiler de una casa. Cubre un mes entero.
+
+    Guardo por separado cuando entro la plata (fecha) y que mes cubre (periodo)
+    porque no siempre coinciden: el alquiler de julio se puede cobrar el 3 de
+    agosto. Si el estado del mes se dedujera de la fecha del pago, julio quedaria
+    pendiente para siempre y agosto figuraria cobrado sin estarlo.
+
+    Un mes se paga una sola vez, y de eso se encarga la restriccion unica de
+    abajo: si el alquiler se cobra completo, dos pagos del mismo mes para la
+    misma casa no son un cobro en cuotas sino un error de carga.
+    """
+    casa = models.ForeignKey(Casa, on_delete=models.CASCADE, related_name="pagos", db_column="id_casa")
+    # default (y no auto_now_add) para poder cargar un cobro que se hizo hace unos dias
+    fecha = models.DateField(default=timezone.now)
+    # Mes que cubre el pago, siempre normalizado al dia 1 (ver periodo_actual)
+    periodo = models.DateField(default=periodo_actual)
+    monto = models.DecimalField(max_digits=12, decimal_places=2)
+
+    class Meta:
+        db_table = "pagos_alquileres"
+        verbose_name_plural = "Pagos de alquileres"
+        # Del mes mas nuevo al mas viejo; el id desempata los que caen el mismo dia
+        ordering = ["-periodo", "-fecha", "-id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["casa", "periodo"], name="unique_pago_alquiler_casa_periodo"
+            ),
+        ]
+
+    @property
+    def periodo_label(self):
+        # "07/2026". El nombre del mes lo arma la plantilla con el filtro date,
+        # aca dejo algo corto y sin depender del locale para listados y logs.
+        return self.periodo.strftime("%m/%Y")
+
+    def __str__(self):
+        return f"Pago de {self.monto} del periodo {self.periodo_label} ({self.casa})"
