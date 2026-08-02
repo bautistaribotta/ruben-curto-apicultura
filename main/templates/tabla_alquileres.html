@@ -139,9 +139,14 @@
     Mostrando <span>{{ casas.start_index }}-{{ casas.end_index }}</span>
     de <span>{{ casas.paginator.count }}</span> casas
   </div>
+  {% comment %}
+    El href relativo reemplaza la query entera, no la completa, asi que el mes
+    que se esta mirando tiene que viajar en cada enlace o paginar te devuelve
+    al mes en curso.
+  {% endcomment %}
   <div class="paginacion-botones">
     {% if casas.has_previous %}
-      <a href="?page={{ casas.previous_page_number }}{% if estado %}&estado={{ estado }}{% endif %}">
+      <a href="?page={{ casas.previous_page_number }}&amp;mes={{ periodo|date:'Y-m' }}{% if estado %}&amp;estado={{ estado }}{% endif %}">
         <button class="boton-paginacion">Anterior</button>
       </a>
     {% else %}
@@ -149,7 +154,7 @@
     {% endif %}
 
     {% if casas.has_next %}
-      <a href="?page={{ casas.next_page_number }}{% if estado %}&estado={{ estado }}{% endif %}">
+      <a href="?page={{ casas.next_page_number }}&amp;mes={{ periodo|date:'Y-m' }}{% if estado %}&amp;estado={{ estado }}{% endif %}">
         <button class="boton-paginacion">Siguiente</button>
       </a>
     {% else %}

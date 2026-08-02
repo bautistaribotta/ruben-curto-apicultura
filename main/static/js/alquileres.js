@@ -1,13 +1,14 @@
 // =============================================
 //  ALQUILERES
 //
-//  Tres cosas viven aca:
-//    1. Chips de estado y paginacion por AJAX sobre la tabla. El medidor del
-//       mes queda afuera a proposito: mide el mes entero y no se mueve con los
-//       filtros.
-//    2. Panel de casa (alta y edicion).
-//    3. Panel de cobro, que se abre tanto desde el boton de la fila como desde
-//       una celda del medidor, y que ademas lista los ultimos pagos para poder
+//  Cuatro cosas viven aca:
+//    1. Navegador de mes de la cabecera. Cambiar de mes recarga la pagina (los
+//       totales de arriba y la tabla se mueven juntos), asi que las flechas son
+//       enlaces comunes; el JS solo agrega la grilla para saltar mas lejos.
+//    2. Chips de estado y paginacion por AJAX sobre la tabla. La cabecera queda
+//       afuera a proposito: mide el mes entero y no se mueve con los filtros.
+//    3. Panel de casa (alta y edicion).
+//    4. Panel de cobro, que ademas lista los ultimos pagos para poder
 //       corregirlos mientras la casa no tenga perfil propio.
 //
 //  El slide-over y el "mantener presionado" del borrado los aporta paneles.js;
@@ -30,6 +31,77 @@ function comoPesos(valor) {
     const numero = Number(valor);
     return Number.isNaN(numero) ? '—' : formateadorPesos.format(numero);
 }
+
+// =============================================
+//  NAVEGADOR DE MES
+// =============================================
+
+const navMes = document.getElementById('alq-nav');
+const selectorMes = document.getElementById('alq-selector');
+const botonMes = document.getElementById('alq-nav-mes');
+const grillaMeses = document.getElementById('alq-selector-grilla');
+const etiquetaAnio = document.getElementById('alq-selector-anio');
+
+// "ene", "feb"... Recortados a tres letras porque el locale devuelve "sept" con
+// punto incluido y en una grilla de doce el largo disparejo se nota.
+const NOMBRES_MES = Array.from({ length: 12 }, (_, i) =>
+    new Date(2000, i, 1).toLocaleDateString('es-AR', { month: 'short' }).replace('.', '').slice(0, 3));
+
+// El año que muestra la grilla se mueve solo, sin ir al servidor: recien al
+// elegir un mes se navega.
+let anioMostrado = Number(navMes.dataset.mesVisto.slice(0, 4));
+
+function pintarGrillaMeses() {
+    etiquetaAnio.textContent = anioMostrado;
+
+    const estado = navMes.dataset.estado;
+    const sufijo = estado ? `&estado=${estado}` : '';
+
+    grillaMeses.innerHTML = NOMBRES_MES.map((nombre, indice) => {
+        const clave = `${anioMostrado}-${String(indice + 1).padStart(2, '0')}`;
+        const clases = ['alq-selector__mes'];
+        // El mes que se esta mirando y el mes en curso son dos cosas distintas
+        // y pueden no coincidir: cada uno tiene su marca.
+        if (clave === navMes.dataset.mesVisto) clases.push('es-visto');
+        if (clave === navMes.dataset.mesActual) clases.push('es-actual');
+        return `<a class="${clases.join(' ')}" href="?mes=${clave}${sufijo}">${nombre}</a>`;
+    }).join('');
+}
+
+function cerrarSelectorMes() {
+    selectorMes.hidden = true;
+    botonMes.setAttribute('aria-expanded', 'false');
+}
+
+botonMes.addEventListener('click', () => {
+    if (selectorMes.hidden) {
+        // Siempre abre en el año del mes que se esta viendo, no donde quedo
+        anioMostrado = Number(navMes.dataset.mesVisto.slice(0, 4));
+        pintarGrillaMeses();
+        selectorMes.hidden = false;
+        botonMes.setAttribute('aria-expanded', 'true');
+    } else {
+        cerrarSelectorMes();
+    }
+});
+
+selectorMes.querySelectorAll('.alq-selector__paso').forEach((paso) => {
+    paso.addEventListener('click', () => {
+        anioMostrado += Number(paso.dataset.paso);
+        pintarGrillaMeses();
+    });
+});
+
+document.addEventListener('click', (evento) => {
+    if (!selectorMes.hidden && !navMes.contains(evento.target)) cerrarSelectorMes();
+});
+
+document.addEventListener('keydown', (evento) => {
+    if (evento.key === 'Escape' && !selectorMes.hidden) {
+        cerrarSelectorMes();
+        botonMes.focus();
+    }
+});
 
 // =============================================
 //  FILTROS Y PAGINACION
@@ -209,8 +281,8 @@ function cargarHistorial(idCasa) {
         });
 }
 
-// 'origen' es el boton de la fila o la celda del medidor: los dos traen los
-// mismos data-* con el estado de la casa en el mes en curso.
+// 'origen' es el boton de cobro de la fila, con los data-* del estado de la
+// casa en el mes que se esta mirando.
 function abrirCobro(origen) {
     const formulario = document.getElementById('form-cobro');
     formulario.reset();
@@ -329,11 +401,6 @@ if (contenedorTablaCasas) {
         }
     });
 }
-
-// Celdas del medidor: el hueco que se ve es el que se clickea
-document.querySelectorAll('.alq-celda').forEach((celda) => {
-    celda.addEventListener('click', () => abrirCobro(celda));
-});
 
 // Historial del panel de cobro (se pinta desde JS)
 document.getElementById('alq-historial').addEventListener('click', (evento) => {

@@ -21,44 +21,83 @@
 
 {% block area-trabajo %}
 <section id="area-trabajo">
-  <section class="alq-mes">
-    <div class="alq-mes__cifras">
-      <p class="alq-mes__eyebrow">Cobranza de</p>
-      <h3 class="alq-mes__titulo">
-        {{ periodo|date:"F" }} <span class="alq-mes__anio">{{ periodo|date:"Y" }}</span>
-      </h3>
-      <p class="alq-mes__monto">
-        ${{ resumen.cobrado|floatformat:"0"|intcomma }}
-        <span class="alq-mes__esperado">de ${{ resumen.esperado|floatformat:"0"|intcomma }}</span>
-      </p>
-    </div>
+  {% comment %}
+    El mes no es un filtro de la tabla: es el marco de toda la pantalla (los
+    totales de aca, el estado de cada fila y el mes que propone el panel de
+    cobro cuelgan de el). Por eso el control vive en el titulo y no al lado de
+    los chips de estado, que si filtran la lista.
 
-    <div class="alq-mes__medidor">
-      <div class="alq-celdas">
-        {% for casa in casas_mes %}
-          <button type="button"
-                  class="alq-celda{% if casa.cobrada_en_el_periodo %} alq-celda--cobrada{% endif %}{% if not casa.alquilada %} alq-celda--libre{% endif %}"
-                  title="{{ casa.nombre|default:'Sin nombre' }} — {{ casa.estado_mes }}"
-                  {% if casa.cobrada_en_el_periodo or not casa.alquilada %}disabled{% endif %}
-                  data-id="{{ casa.id }}"
-                  data-nombre="{{ casa.nombre|default:'Sin nombre' }}"
-                  data-precio="{{ casa.precio|default_if_none:''|unlocalize }}"
-                  data-estado="{{ casa.estado_mes }}"
-                  data-cobrado="{{ casa.total_pagado_periodo|unlocalize }}">
-            <span class="alq-celda__relleno"></span>
-            <span class="alq-celda__nombre">{{ casa.nombre|default:"Sin nombre" }}</span>
-          </button>
-        {% empty %}
-          <p class="alq-celdas__vacio">Cargá la primera casa para empezar a seguir la cobranza del mes.</p>
-        {% endfor %}
+    Las flechas son enlaces de verdad, asi que cambiar de mes anda sin
+    JavaScript y se puede abrir en otra pestaña. La grilla del selector la
+    monta alquileres.js encima.
+  {% endcomment %}
+  <section class="alq-mes">
+    <div class="alq-mes__periodo">
+      <p class="alq-mes__eyebrow">Cobranza de</p>
+
+      <div class="alq-nav" id="alq-nav"
+           data-mes-visto="{{ periodo|date:'Y-m' }}"
+           data-mes-actual="{{ mes_actual|date:'Y-m' }}"
+           data-estado="{{ estado }}">
+        <a class="alq-nav__paso"
+           href="?mes={{ periodo_anterior|date:'Y-m' }}{% if estado %}&amp;estado={{ estado }}{% endif %}"
+           title="{{ periodo_anterior|date:'F \d\e Y' }}" aria-label="Mes anterior">
+          <span class="material-symbols-outlined">chevron_left</span>
+        </a>
+
+        <button type="button" class="alq-nav__mes" id="alq-nav-mes"
+                aria-haspopup="dialog" aria-expanded="false" aria-controls="alq-selector">
+          <span class="alq-nav__nombre">{{ periodo|date:"F" }}</span>
+          <span class="alq-nav__anio">{{ periodo|date:"Y" }}</span>
+          <span class="material-symbols-outlined alq-nav__flecha">expand_more</span>
+        </button>
+
+        <a class="alq-nav__paso"
+           href="?mes={{ periodo_siguiente|date:'Y-m' }}{% if estado %}&amp;estado={{ estado }}{% endif %}"
+           title="{{ periodo_siguiente|date:'F \d\e Y' }}" aria-label="Mes siguiente">
+          <span class="material-symbols-outlined">chevron_right</span>
+        </a>
+
+        <div class="alq-selector" id="alq-selector" role="dialog" aria-label="Elegir mes" hidden>
+          <div class="alq-selector__anio">
+            <button type="button" class="alq-selector__paso" data-paso="-1" aria-label="Año anterior">
+              <span class="material-symbols-outlined">chevron_left</span>
+            </button>
+            <span class="alq-selector__valor" id="alq-selector-anio"></span>
+            <button type="button" class="alq-selector__paso" data-paso="1" aria-label="Año siguiente">
+              <span class="material-symbols-outlined">chevron_right</span>
+            </button>
+          </div>
+          <div class="alq-selector__grilla" id="alq-selector-grilla"></div>
+        </div>
       </div>
 
-      <p class="alq-mes__leyenda">
-        <span class="alq-leyenda__dato">{{ resumen.alquiladas }} alquiladas</span>
-        <span class="alq-leyenda__sep">·</span>
-        <span class="alq-leyenda__dato alq-leyenda__dato--pendiente">{{ resumen.pendientes }} pendientes de cobro</span>
-        <span class="alq-leyenda__sep">·</span>
-        <span class="alq-leyenda__dato">{{ resumen.sin_alquilar }} sin alquilar</span>
+      {% comment %}
+        Mirando otro mes, el camino de vuelta tiene que estar a la vista: sin
+        esto hay que contar flechas para volver, y cargar un pago creyendo que
+        se esta en el mes en curso es justo el error que hay que evitar.
+      {% endcomment %}
+      {% if not es_mes_actual %}
+        <a class="alq-mes__volver" href="{% url 'alquileres' %}{% if estado %}?estado={{ estado }}{% endif %}">
+          <span class="material-symbols-outlined">undo</span>
+          Volver a {{ mes_actual|date:"F" }}
+        </a>
+      {% endif %}
+    </div>
+
+    <div class="alq-mes__cifras">
+      <p class="alq-cifra alq-cifra--cobrado">
+        <span class="alq-cifra__valor">${{ resumen.cobrado|floatformat:"0"|intcomma }}</span>
+        <span class="alq-cifra__rotulo">cobrado</span>
+      </p>
+      <p class="alq-cifra{% if not resumen.pendientes %} es-cero{% endif %}">
+        <span class="alq-cifra__valor">${{ resumen.monto_pendiente|floatformat:"0"|intcomma }}</span>
+        <span class="alq-cifra__rotulo">
+          falta cobrar
+          {% if resumen.pendientes %}
+            <span class="alq-cifra__casas">· {{ resumen.pendientes }} casa{{ resumen.pendientes|pluralize }}</span>
+          {% endif %}
+        </span>
       </p>
     </div>
   </section>

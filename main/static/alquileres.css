@@ -22,18 +22,32 @@
 }
 
 /* ============================================================
-   MEDIDOR DEL MES
+   CABECERA DEL MES
+
+   Un solo bloque oscuro con dos cosas: que mes se esta mirando
+   (y como cambiarlo) y la plata de ese mes. El mes es el sujeto
+   de la pantalla entera, no un filtro de la tabla, por eso el
+   control es el titulo mismo.
    ============================================================ */
 .alq-mes {
-  display: grid;
-  grid-template-columns: minmax(13rem, auto) 1fr;
-  gap: 2.5rem;
-  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.5rem 2.5rem;
   padding: 1.5rem 1.75rem;
   border-radius: var(--radius-xl);
   background-color: var(--pine-900);
   color: var(--sand-50);
   box-shadow: var(--shadow-lg);
+}
+
+.alq-mes__periodo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  min-width: 0;
 }
 
 .alq-mes__eyebrow {
@@ -44,156 +58,272 @@
   color: var(--sand-400);
 }
 
-.alq-mes__titulo {
-  /* El mes es el titulo real de la pantalla: manda sobre el h2 de la cabecera,
-     porque todo lo que se ve abajo esta medido contra el. */
-  margin-top: 0.15rem;
+/* ---------- Navegador de mes ---------- */
+.alq-nav {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  /* Las flechas se cuelgan del margen para que el nombre del mes quede
+     alineado con el eyebrow y con el resto de la columna */
+  margin-left: -0.5rem;
+}
+
+.alq-nav__paso {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-md);
+  color: var(--sand-400);
+  text-decoration: none;
+  transition: background-color var(--dur-fast) var(--ease-standard),
+              color var(--dur-fast) var(--ease-standard);
+}
+
+.alq-nav__paso:hover {
+  background-color: var(--blanco-transparente-12);
+  color: var(--sand-50);
+}
+
+.alq-nav__paso:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.alq-nav__paso .material-symbols-outlined {
+  font-size: 1.35rem;
+}
+
+/* El mes es el titulo real de la pantalla: manda sobre el h2 de la cabecera,
+   porque todo lo que se ve abajo esta medido contra el. */
+.alq-nav__mes {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  padding: 0.15rem 0.5rem;
+  border: none;
+  border-radius: var(--radius-md);
+  background-color: transparent;
+  font-family: inherit;
   font-size: var(--text-2xl);
   font-weight: var(--weight-extra);
   letter-spacing: var(--tracking-tight);
   line-height: 1.1;
   text-transform: capitalize;
   color: var(--sand-50);
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-standard);
 }
 
-.alq-mes__anio {
+.alq-nav__mes:hover,
+.alq-nav__mes[aria-expanded="true"] {
+  background-color: var(--blanco-transparente-12);
+}
+
+.alq-nav__mes:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.alq-nav__anio {
   font-weight: var(--weight-regular);
   color: var(--sand-400);
 }
 
-.alq-mes__monto {
-  margin-top: 0.75rem;
-  font-size: var(--text-xl);
-  font-weight: var(--weight-bold);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: var(--tracking-tight);
-  color: var(--honey-500);
-  white-space: nowrap;
-}
-
-.alq-mes__esperado {
-  display: block;
-  margin-top: 0.15rem;
-  font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
-  letter-spacing: var(--tracking-normal);
+.alq-nav__flecha {
+  align-self: center;
+  font-size: 1.25rem;
   color: var(--sand-400);
+  transition: transform var(--dur-fast) var(--ease-standard);
 }
 
-.alq-mes__medidor {
+.alq-nav__mes[aria-expanded="true"] .alq-nav__flecha {
+  transform: rotate(180deg);
+}
+
+/* ---------- Selector de mes ---------- */
+.alq-selector[hidden] {
+  display: none;
+}
+
+.alq-selector {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0.5rem;
+  z-index: 30;
+  width: 17rem;
+  padding: 0.75rem;
+  border: 1px solid var(--sand-200);
+  border-radius: var(--radius-lg);
+  background-color: var(--sand-50);
+  box-shadow: var(--shadow-xl);
+  animation: alq-selector-in var(--dur-fast) var(--ease-standard);
+}
+
+@keyframes alq-selector-in {
+  from {
+    opacity: 0;
+    transform: translateY(-0.35rem);
+  }
+}
+
+.alq-selector__anio {
   display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.6rem;
 }
 
-/* Las celdas se reparten el ancho en partes iguales: con quince o veinte casas
-   el mes entra completo en una fila y la proporcion de huecos se lee sola. */
-.alq-celdas {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-}
-
-.alq-celdas__vacio {
-  font-size: var(--text-sm);
-  color: var(--sand-400);
-}
-
-.alq-celda {
-  position: relative;
-  flex: 1 1 2rem;
-  min-width: 2rem;
-  max-width: 5rem;
-  height: 3.25rem;
+.alq-selector__paso {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
   padding: 0;
-  border: 1px solid var(--blanco-transparente-12);
+  border: none;
   border-radius: var(--radius-sm);
-  background-color: var(--blanco-transparente-6);
+  background-color: transparent;
+  color: var(--text-muted);
   cursor: pointer;
-  overflow: hidden;
-  transition: transform var(--dur-normal) var(--ease-standard),
-              border-color var(--dur-normal) var(--ease-standard);
+  transition: background-color var(--dur-fast) var(--ease-standard);
 }
 
-.alq-celda:hover {
-  transform: translateY(-2px);
-  border-color: var(--honey-500);
+.alq-selector__paso:hover {
+  background-color: var(--sand-100);
+  color: var(--text-strong);
 }
 
-.alq-celda:focus-visible {
+.alq-selector__paso:focus-visible {
   outline: none;
-  border-color: var(--honey-500);
   box-shadow: var(--ring);
 }
 
-/* El relleno crece desde abajo, como se llena un tambor. Solo tiene dos
-   posiciones, vacio y lleno: el alquiler se cobra completo, no por partes. */
-.alq-celda__relleno {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 0;
-  background-color: var(--honey-500);
-  transition: height var(--dur-slow) var(--ease-standard);
+.alq-selector__paso .material-symbols-outlined {
+  font-size: 1.15rem;
 }
 
-.alq-celda--cobrada .alq-celda__relleno {
-  height: 100%;
+.alq-selector__valor {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-strong);
 }
 
-/* Sin inquilino no se espera ningun pago: la celda sigue estando (la casa
-   existe) pero se corre del primer plano y no cuenta como hueco. */
-.alq-celda--libre {
-  border-style: dashed;
-  border-color: var(--blanco-transparente-6);
+.alq-selector__grilla {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.3rem;
+}
+
+/* Son enlaces, no botones: cada mes tiene su URL y se puede abrir aparte */
+.alq-selector__mes {
+  display: block;
+  padding: 0.5rem 0.25rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
   background-color: transparent;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  text-align: center;
+  text-transform: capitalize;
+  text-decoration: none;
+  color: var(--text-body);
+  transition: background-color var(--dur-fast) var(--ease-standard);
 }
 
-/* Celda llena o sin inquilino: en un caso el mes ya se cobro y en el otro no
-   hay nada que cobrar. La cobrada conserva la miel (es el estado logrado) pero
-   ninguna de las dos se comporta ya como un boton. */
-.alq-celda:disabled {
-  cursor: default;
+.alq-selector__mes:hover {
+  background-color: var(--sand-100);
 }
 
-.alq-celda:disabled:hover {
-  transform: none;
-  border-color: var(--blanco-transparente-12);
+.alq-selector__mes:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
 }
 
-/* La punteada se queda punteada tambien apagada: es su marca de "sin inquilino" */
-.alq-celda--libre:disabled:hover {
-  border-color: var(--blanco-transparente-6);
+/* El mes que se esta mirando va lleno; el mes en curso solo marcado, para
+   poder distinguir "donde estoy" de "donde vive el presente". */
+.alq-selector__mes.es-visto {
+  background-color: var(--pine-900);
+  color: var(--sand-50);
 }
 
-/* El nombre viaja para el lector de pantalla; en pantalla lo da el title */
-.alq-celda__nombre {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
+.alq-selector__mes.es-actual {
+  border-color: var(--honey-500);
 }
 
-.alq-mes__leyenda {
+/* ---------- Volver al mes en curso ---------- */
+.alq-mes__volver {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.15rem;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--honey-500);
+  text-decoration: none;
+}
+
+.alq-mes__volver:hover {
+  text-decoration: underline;
+}
+
+.alq-mes__volver:focus-visible {
+  outline: none;
+  border-radius: var(--radius-xs);
+  box-shadow: var(--ring);
+}
+
+.alq-mes__volver .material-symbols-outlined {
+  font-size: 1.05rem;
+}
+
+/* ---------- Cifras del mes ---------- */
+.alq-mes__cifras {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: var(--text-sm);
-  color: var(--sand-300);
+  gap: 2.5rem;
 }
 
-.alq-leyenda__sep {
+.alq-cifra {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.alq-cifra__valor {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--tracking-tight);
+  line-height: 1.1;
+  white-space: nowrap;
+  color: var(--sand-50);
+}
+
+/* Miel para lo que ya entro: es el color que la pantalla viene usando para
+   la plata cobrada. Lo que falta va en blanco, mismo tamaño y otra
+   temperatura; en rojo seria una alarma, y un alquiler impago el dia 3 no
+   tiene nada de anormal. */
+.alq-cifra--cobrado .alq-cifra__valor {
+  color: var(--honey-500);
+}
+
+/* Nada pendiente: el cero se apaga y el mes se lee cerrado de un vistazo */
+.alq-cifra.es-cero .alq-cifra__valor {
   color: var(--sand-600);
 }
 
-.alq-leyenda__dato--pendiente {
-  font-weight: var(--weight-bold);
-  color: var(--honey-500);
+.alq-cifra__rotulo {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--sand-400);
+}
+
+.alq-cifra__casas {
+  color: var(--sand-300);
 }
 
 /* ============================================================
@@ -1154,11 +1284,11 @@
 }
 
 @media (max-width: 1100px) {
-  /* El medidor pasa a dos filas: las cifras arriba y las celdas abajo,
-     ocupando todo el ancho, que es donde mejor se leen. */
+  /* Al envolverse, las cifras arrancan alineadas con el mes y no colgadas
+     del borde derecho */
   .alq-mes {
-    grid-template-columns: 1fr;
-    gap: 1.35rem;
+    align-items: flex-start;
+    gap: 1.35rem 2.5rem;
   }
 }
 
@@ -1183,6 +1313,19 @@
 }
 
 @media (max-width: 600px) {
+  /* Las dos cifras conviven en una fila con menos aire antes de apilarse */
+  .alq-mes__cifras {
+    gap: 1.5rem;
+  }
+  .alq-nav__mes,
+  .alq-cifra__valor {
+    font-size: var(--text-xl);
+  }
+  /* El selector se ancla al borde del bloque para no salirse de pantalla */
+  .alq-selector {
+    left: 0;
+    width: min(17rem, calc(100vw - 3.5rem));
+  }
   .alq-slide-panel {
     max-width: 100%;
   }
@@ -1197,8 +1340,11 @@
 
 /* Sin animaciones para quien las tiene desactivadas en el sistema */
 @media (prefers-reduced-motion: reduce) {
-  .alq-celda,
-  .alq-celda__relleno,
+  .alq-nav__paso,
+  .alq-nav__mes,
+  .alq-nav__flecha,
+  .alq-selector__paso,
+  .alq-selector__mes,
   .alq-slide-panel,
   .alq-slide-fondo,
   .tabla-alquileres tbody tr,
@@ -1206,7 +1352,7 @@
   .alq-chip {
     transition: none;
   }
-  .alq-celda:hover {
-    transform: none;
+  .alq-selector {
+    animation: none;
   }
 }
