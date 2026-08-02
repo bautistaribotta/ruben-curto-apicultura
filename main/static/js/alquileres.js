@@ -104,6 +104,73 @@ document.addEventListener('keydown', (evento) => {
 });
 
 // =============================================
+//  CASILLA DE COBRO
+//
+//  El POST lo hace pago_viaje.js, compartido con reparto y cereal. Aca solo se
+//  acomoda lo que en esta pantalla depende del cobro y que vive fuera de la
+//  casilla: la pildora de la fila y los totales de la cabecera.
+//
+//  La fila NO se reordena. El listado ordena por urgencia, asi que al tildar la
+//  casa saltaria de grupo y se movería justo debajo del cursor. Se queda donde
+//  esta y se reacomoda en la proxima carga, como cualquier checklist.
+// =============================================
+
+const CLASE_PILDORA = {
+    'Cobrado': 'alq-pildora--cobrada',
+    'Pendiente de cobro': 'alq-pildora--pendiente',
+    'Sin alquilar': 'alq-pildora--libre',
+};
+
+document.addEventListener('pago:cambiado', (evento) => {
+    const { casilla, datos } = evento.detail;
+
+    const fila = casilla.closest('tr');
+
+    const pildora = fila && fila.querySelector('.alq-pildora');
+    if (pildora && datos.estado) {
+        pildora.className = 'alq-pildora ' + (CLASE_PILDORA[datos.estado] || '');
+        pildora.innerHTML = '<span class="alq-pildora__punto"></span>' + datos.estado;
+    }
+
+    // Un mes cobrado no admite un segundo pago, asi que el boton de cobro
+    // acompaña a la casilla en vez de abrir un panel que va a ser rechazado.
+    const cobrar = fila && fila.querySelector('.alq-boton-icono.cobrar');
+    if (cobrar) {
+        cobrar.disabled = datos.pagado;
+        cobrar.dataset.estado = datos.estado || '';
+        cobrar.title = datos.pagado
+            ? 'El alquiler de este mes ya está cobrado'
+            : 'Registrar pago';
+    }
+
+    if (!datos.resumen) return;
+
+    const cobrado = document.querySelector('.alq-cifra--cobrado .alq-cifra__valor');
+    if (cobrado) cobrado.textContent = '$' + datos.resumen.cobrado;
+
+    // La segunda cifra es la de pendiente: valor, contador de casas y el gris
+    // de "no queda nada" tienen que moverse juntos.
+    const bloquePendiente = document.querySelectorAll('.alq-cifra')[1];
+    if (!bloquePendiente) return;
+
+    bloquePendiente.querySelector('.alq-cifra__valor').textContent = '$' + datos.resumen.pendiente;
+    bloquePendiente.classList.toggle('es-cero', !datos.resumen.pendientes);
+
+    const casas = bloquePendiente.querySelector('.alq-cifra__casas');
+    if (datos.resumen.pendientes) {
+        const texto = `· ${datos.resumen.pendientes} casa${datos.resumen.pendientes === 1 ? '' : 's'}`;
+        if (casas) {
+            casas.textContent = texto;
+        } else {
+            bloquePendiente.querySelector('.alq-cifra__rotulo')
+                .insertAdjacentHTML('beforeend', ` <span class="alq-cifra__casas">${texto}</span>`);
+        }
+    } else if (casas) {
+        casas.remove();
+    }
+});
+
+// =============================================
 //  FILTROS Y PAGINACION
 // =============================================
 

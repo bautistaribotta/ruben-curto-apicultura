@@ -1342,7 +1342,8 @@
     overflow-x: auto;
   }
   .tabla-alquileres {
-    min-width: 46rem;
+    /* 46rem de las cinco columnas originales mas la de la casilla de cobro */
+    min-width: 51rem;
   }
 }
 

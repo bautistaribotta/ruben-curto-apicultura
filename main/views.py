@@ -13,6 +13,9 @@ from django.http import JsonResponse, HttpResponse
 from django.db import transaction
 from django.utils import timezone
 from django.utils.dateparse import parse_date
+from django.utils.formats import date_format
+from django.contrib.humanize.templatetags.humanize import intcomma
+from django.template.defaultfilters import floatformat
 
 from .models import (Cliente, Producto, Operacion, DetalleOperacion, Pago, Cotizaciones, Empleado, PagosEmpleados,
                      Vehiculo, Viaje, ViajeCereal, ViajeReparto, periodo_actual)
@@ -38,7 +41,8 @@ from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo
                        obtener_casas, obtener_datos_casa, crear_casa, editar_casa, eliminar_casa,
                        obtener_resumen_alquileres, crear_pago_alquiler, editar_pago_alquiler,
                        eliminar_pago_alquiler, obtener_datos_pago_alquiler, listar_pagos_casa,
-                       resolver_periodo, mes_desplazado, FILTROS_ALQUILERES)
+                       marcar_pago_alquiler, resolver_periodo, mes_desplazado,
+                       FILTROS_ALQUILERES)
 
 
 def _pagado_del_formulario(request):
@@ -1727,6 +1731,65 @@ def obtener_pago_alquiler_json(request, id_pago):
 def listar_pagos_casa_json(request, id_casa):
     # Los ultimos pagos de la casa, para el historial del panel de cobro
     return JsonResponse({"pagos": listar_pagos_casa(id_casa)})
+
+
+def _pesos(monto):
+    """Monto en el mismo formato que la plantilla: sin centavos y con puntos."""
+    return intcomma(floatformat(monto, 0))
+
+
+def marcar_pago_alquiler_ajax(request, id_casa, periodo):
+    """Casilla de cobro de la tabla de alquileres: carga o borra el pago del mes.
+
+    Habla el mismo protocolo que las casillas de reparto y cereal (POST con
+    'pagado' 1/0, respuesta con el estado que quedo) para poder reusar tal cual
+    pago_viaje.js. La diferencia es que el mes no se deduce: viaja en la URL,
+    porque la tabla puede estar mostrando cualquier periodo.
+
+    Ademas devuelve 'mensaje', porque aca desmarcar borra un registro y el aviso
+    generico no alcanza para avisarlo.
+    """
+    if request.method != "POST":
+        return JsonResponse({"error": "Método no permitido"}, status=405)
+
+    if not request.user.is_staff:
+        return JsonResponse({"error": "No tenés permiso para registrar cobros."}, status=403)
+
+    try:
+        resultado = marcar_pago_alquiler(id_casa, periodo, request.POST.get("pagado") == "1")
+    except ValueError as e:
+        return JsonResponse({"error": str(e)}, status=400)
+
+    periodo = resultado["periodo"]
+    mes = date_format(periodo, "F \\d\\e Y")
+    monto = resultado["monto"]
+
+    if resultado["pagado"]:
+        mensaje = f"Alquiler de {mes} cobrado: ${_pesos(monto)}."
+    elif monto is None:
+        mensaje = f"El alquiler de {mes} figura como pendiente."
+    else:
+        # Borro un registro, asi que digo cuanto era: si estaba cargado a mano con
+        # otro importe, es la unica pista de lo que hay que volver a cargar.
+        mensaje = f"Se borró el pago de {mes} por ${_pesos(monto)}."
+
+    # La cabecera vive fuera de la tabla y no se entera sola de que cambio el mes.
+    # Devuelvo los totales ya recalculados para que no queden mintiendo hasta la
+    # proxima recarga.
+    resumen = obtener_resumen_alquileres(obtener_casas(periodo=periodo), periodo)
+    casa = obtener_casas(periodo=periodo).filter(id=id_casa).first()
+
+    return JsonResponse({
+        "ok": True,
+        "pagado": resultado["pagado"],
+        "mensaje": mensaje,
+        "estado": casa.estado_mes if casa else "",
+        "resumen": {
+            "cobrado": _pesos(resumen["cobrado"]),
+            "pendiente": _pesos(resumen["monto_pendiente"]),
+            "pendientes": resumen["pendientes"],
+        },
+    })
 
 
 @staff_member_required(login_url="inicio")

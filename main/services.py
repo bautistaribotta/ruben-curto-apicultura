@@ -2721,6 +2721,56 @@ def eliminar_pago_alquiler(id_pago):
     return id_casa
 
 
+def marcar_pago_alquiler(id_casa, periodo, pagado):
+    """Casilla de cobro de la tabla: crea o borra el pago del mes de una tirada.
+
+    Es el atajo del caso normal, que en esta pantalla es casi el unico: el
+    alquiler entero, por el precio de la casa, cobrado hoy. Cualquier otra cosa
+    (otro monto, otra fecha) se carga desde el panel, que para eso esta.
+
+    Es idempotente: marcar lo ya marcado, o desmarcar lo que no esta cargado, no
+    hace nada y tampoco es un error. Dos clicks seguidos o dos pestañas abiertas
+    no tienen por que romper nada.
+
+    Devuelve el estado que quedo y el monto involucrado. Desmarcar borra un
+    registro de verdad, asi que la vista necesita poder decir cuanto era: si el
+    pago se habia cargado a mano con otro importe, el usuario tiene que
+    enterarse de lo que acaba de perder.
+    """
+    casa = get_object_or_404(Casa, id=id_casa, activa=True)
+    periodo = _parsear_periodo(periodo)
+    pago = PagoAlquiler.objects.filter(casa=casa, periodo=periodo).first()
+
+    if not pagado:
+        if pago is None:
+            return {"pagado": False, "monto": None, "periodo": periodo}
+        monto = pago.monto
+        pago.delete()
+        return {"pagado": False, "monto": monto, "periodo": periodo}
+
+    if pago is not None:
+        return {"pagado": True, "monto": pago.monto, "periodo": periodo}
+
+    # La casilla no puede inventar un monto: sin precio no hay pago que crear
+    if not casa.alquilada:
+        raise ValueError(
+            "La casa no figura alquilada. Marcala como alquilada antes de cobrarle el mes."
+        )
+    if not casa.precio:
+        raise ValueError(
+            "La casa no tiene precio de alquiler cargado, así que no se sabe por cuánto es "
+            "el pago. Cargalo en la casa, o usá el botón de cobro para escribir el monto."
+        )
+
+    PagoAlquiler.objects.create(
+        casa=casa,
+        periodo=periodo,
+        monto=casa.precio,
+        fecha=timezone.localdate(),
+    )
+    return {"pagado": True, "monto": casa.precio, "periodo": periodo}
+
+
 def obtener_pagos_casa(casa, desde=None, hasta=None):
     """Historial de pagos de una casa, del periodo mas nuevo al mas viejo.
 

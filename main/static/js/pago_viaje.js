@@ -59,9 +59,18 @@ document.addEventListener('change', (evento) => {
       // Me quedo con lo que confirmo el servidor, no con lo que muestra la casilla
       casilla.checked = Boolean(datos.pagado);
       casilla.disabled = false;
-      notificarExito(datos.pagado
+      // Si el servidor manda su propio aviso, gana: en alquileres destildar borra
+      // un pago y hay que decir de cuanto era, no solo que quedo pendiente.
+      notificarExito(datos.mensaje || (datos.pagado
         ? `${entidad} marcado como pagado.`
-        : `${entidad} marcado como pendiente.`);
+        : `${entidad} marcado como pendiente.`));
+
+      // Aviso por si la pantalla tiene algo mas que depende del cobro (en
+      // alquileres, la pildora de la fila y los totales del mes). Quien no lo
+      // escucha no se entera de que existe.
+      document.dispatchEvent(new CustomEvent('pago:cambiado', {
+        detail: { casilla, datos },
+      }));
     })
     .catch((error) => {
       // Vuelvo la casilla a su estado anterior: la tabla no puede mostrar un cobro

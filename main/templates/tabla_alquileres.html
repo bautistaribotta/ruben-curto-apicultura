@@ -12,6 +12,7 @@
 <table class="tabla-alquileres">
   <thead>
     <tr>
+      <th class="pago-col">Pago</th>
       <th>Casa</th>
       <th>Localidad</th>
       <th class="alq-col-monto">Alquiler</th>
@@ -22,6 +23,34 @@
   <tbody>
     {% for casa in casas %}
       <tr>
+        {% comment %}
+          Atajo del caso normal: tildar carga el alquiler entero al precio de la
+          casa con fecha de hoy, y destildar lo borra. El boton de cobro queda
+          para lo que se sale de eso (otro monto, otra fecha) y para ver el
+          historial.
+
+          No hay nada que resetear cada primero de mes: el tilde sale de si
+          existe un pago del periodo que se esta mirando, asi que al cambiar el
+          mes la casilla aparece vacia sola.
+
+          Se deshabilita para CREAR un pago que la casilla no puede armar sola:
+          sin precio no sabe el monto, sin inquilino no corresponde cobrar. En
+          cambio un pago que ya existe siempre se puede sacar, porque borrarlo
+          no necesita ninguno de esos datos. Lo unico intocable es la casa dada
+          de baja, que aparece solo como registro del mes.
+        {% endcomment %}
+        <td class="pago-celda">
+          <input
+            type="checkbox"
+            class="pago-check"
+            data-pago-url="{% url 'marcar_pago_alquiler' casa.id periodo|date:'Y-m' %}"
+            data-pago-entidad="Alquiler"
+            title="{% if not casa.activa %}La casa está dada de baja{% elif casa.cobrada_en_el_periodo %}Cobrado. Destildá para borrar el pago{% elif not casa.alquilada %}La casa no está alquilada{% elif not casa.precio %}Cargá el precio del alquiler para poder marcarlo{% else %}Marcar el alquiler de {{ periodo|date:'F' }} como cobrado{% endif %}"
+            aria-label="Alquiler de {{ periodo|date:'F \d\e Y' }} de {{ casa.nombre|default:'la casa sin nombre' }}"
+            {% if not casa.activa or not casa.cobrada_en_el_periodo and not casa.alquilada or not casa.cobrada_en_el_periodo and not casa.precio %}disabled{% endif %}
+            {% if casa.cobrada_en_el_periodo %}checked{% endif %}>
+        </td>
+
         <td>
           <div class="alq-casa">
             <span class="alq-casa__icono material-symbols-outlined">
@@ -138,7 +167,7 @@
       </tr>
     {% empty %}
       <tr class="fila-vacia">
-        <td colspan="5" class="celda-vacia">
+        <td colspan="6" class="celda-vacia">
           <span class="material-symbols-outlined">key</span>
           {% if estado %}
             No hay casas en ese estado.

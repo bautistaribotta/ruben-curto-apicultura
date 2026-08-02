@@ -9,6 +9,8 @@
 {% endblock %}
 
 {% block links %}
+  {# La casilla de cobro de la primera columna es la misma de reparto y cereal #}
+  <link rel="stylesheet" href="{% static_v 'pago_viaje.css' %}">
   <link rel="stylesheet" href="{% static_v 'alquileres.css' %}">
 {% endblock %}
 
@@ -386,5 +388,8 @@
 {% endblock %}
 
 {% block codigo-javascript %}
+  {# Casilla de cobro compartida con reparto y cereal: escucha delegada en document,
+     asi que sigue andando cuando el AJAX reemplaza la tabla entera. #}
+  <script src="{% static_v 'js/pago_viaje.js' %}"></script>
   <script src="{% static_v 'js/alquileres.js' %}"></script>
 {% endblock %}
