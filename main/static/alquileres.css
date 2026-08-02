@@ -32,7 +32,7 @@
 .alq-mes {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: 1.5rem 2.5rem;
   padding: 1.5rem 1.75rem;
@@ -266,8 +266,15 @@
   text-decoration: none;
 }
 
-.alq-mes__volver:hover {
+.alq-mes__volver-texto {
   text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 0.2em;
+  transition: text-decoration-color var(--dur-fast) var(--ease-standard);
+}
+
+.alq-mes__volver:hover .alq-mes__volver-texto {
+  text-decoration-color: currentColor;
 }
 
 .alq-mes__volver:focus-visible {
@@ -278,6 +285,13 @@
 
 .alq-mes__volver .material-symbols-outlined {
   font-size: 1.05rem;
+}
+
+/* Cuando estamos en el mes actual el enlace se oculta pero sigue
+   ocupando espacio para que la cabecera no cambie de alto */
+.alq-mes__volver.es-oculto {
+  visibility: hidden;
+  pointer-events: none;
 }
 
 /* ---------- Cifras del mes ---------- */
@@ -1349,7 +1363,8 @@
   .alq-slide-fondo,
   .tabla-alquileres tbody tr,
   .alq-boton-icono,
-  .alq-chip {
+  .alq-chip,
+  .alq-mes__volver {
     transition: none;
   }
   .alq-selector {

@@ -76,13 +76,17 @@
         Mirando otro mes, el camino de vuelta tiene que estar a la vista: sin
         esto hay que contar flechas para volver, y cargar un pago creyendo que
         se esta en el mes en curso es justo el error que hay que evitar.
+
+        El enlace se renderiza siempre para que la cabecera mantenga su alto
+        constante: cuando estamos en el mes actual se oculta con visibility
+        para que siga ocupando espacio sin ser visible ni accesible.
       {% endcomment %}
-      {% if not es_mes_actual %}
-        <a class="alq-mes__volver" href="{% url 'alquileres' %}{% if estado %}?estado={{ estado }}{% endif %}">
-          <span class="material-symbols-outlined">undo</span>
-          Volver a {{ mes_actual|date:"F" }}
-        </a>
-      {% endif %}
+      <a class="alq-mes__volver{% if es_mes_actual %} es-oculto{% endif %}"
+         href="{% url 'alquileres' %}{% if estado %}?estado={{ estado }}{% endif %}"
+         {% if es_mes_actual %}aria-hidden="true" tabindex="-1"{% endif %}>
+        <span class="material-symbols-outlined">undo</span>
+        <span class="alq-mes__volver-texto">Volver a {{ mes_actual|date:"F" }}</span>
+      </a>
     </div>
 
     <div class="alq-mes__cifras">
