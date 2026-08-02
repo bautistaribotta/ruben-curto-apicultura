@@ -175,6 +175,19 @@
             <label for="direccion-casa">Dirección</label>
             <input type="text" id="direccion-casa" name="direccion" placeholder="Ej: San Martín 123" maxlength="120">
           </div>
+
+          {% comment %}
+            Desde cuando se administra la casa. Marca a partir de que mes se le
+            puede reclamar el alquiler: sin esto, una casa cargada hoy aparecia
+            adeudando todos los meses anteriores. Arranca en hoy y se corrige si
+            la casa venia de antes.
+          {% endcomment %}
+          <div class="grupo-input">
+            <label for="fecha-alta-casa">Se administra desde</label>
+            <input type="date" id="fecha-alta-casa" name="fecha_alta"
+                   value="{{ hoy|date:'Y-m-d' }}" max="{{ hoy|date:'Y-m-d' }}">
+            <span class="texto-ayuda">Antes de este mes la casa no figura en el listado.</span>
+          </div>
         </section>
 
         <section class="seccion-bloque">

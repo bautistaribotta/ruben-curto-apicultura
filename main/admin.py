@@ -76,7 +76,7 @@ class PagoAlquilerInline(admin.TabularInline):
 @admin.register(Casa)
 class CasaAdmin(admin.ModelAdmin):
     inlines = [PagoAlquilerInline]
-    list_display = ('id', 'nombre', 'localidad', 'direccion', 'precio', 'comision_inmobiliaria', 'alquilada', 'activa')
+    list_display = ('id', 'nombre', 'localidad', 'direccion', 'precio', 'comision_inmobiliaria', 'alquilada', 'fecha_alta', 'activa')
 
 @admin.register(PagoAlquiler)
 class PagoAlquilerAdmin(admin.ModelAdmin):

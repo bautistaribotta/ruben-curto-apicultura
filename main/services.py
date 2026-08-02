@@ -2360,7 +2360,33 @@ def _decimal_opcional(valor, etiqueta, maximo=None):
     return numero
 
 
-def _validar_casa(nombre, localidad, direccion, precio, comision_inmobiliaria):
+def _parsear_fecha_alta(fecha):
+    """Desde cuando la casa se administra. Vacia es hoy; futura no existe.
+
+    Marca a partir de que mes se le puede reclamar alquiler, asi que una fecha
+    adelantada dejaria a la casa fuera de meses en los que si corresponde
+    cobrarle.
+    """
+    hoy = timezone.localdate()
+
+    if fecha in (None, ""):
+        return hoy
+
+    if isinstance(fecha, datetime):
+        fecha = fecha.date()
+
+    if not isinstance(fecha, date):
+        try:
+            fecha = datetime.strptime(str(fecha).strip(), "%Y-%m-%d").date()
+        except (ValueError, TypeError):
+            raise ValueError("La fecha de alta no es válida.")
+
+    if fecha > hoy:
+        raise ValueError("La fecha de alta no puede ser posterior a hoy.")
+    return fecha
+
+
+def _validar_casa(nombre, localidad, direccion, precio, comision_inmobiliaria, fecha_alta=None):
     """Limpia y valida los datos de una casa. Devuelve la tupla ya normalizada."""
     nombre = _texto_opcional(nombre, 60, "El nombre de la casa")
     localidad = _texto_opcional(localidad, 60, "La localidad")
@@ -2371,7 +2397,7 @@ def _validar_casa(nombre, localidad, direccion, precio, comision_inmobiliaria):
     # La comision es un porcentaje del alquiler, no un monto: mas de 100 no existe
     comision = _decimal_opcional(comision_inmobiliaria, "La comisión de la inmobiliaria", Decimal("100"))
 
-    return nombre, localidad, direccion, precio, comision
+    return nombre, localidad, direccion, precio, comision, _parsear_fecha_alta(fecha_alta)
 
 
 # Condiciones que reproducen en SQL lo que Casa.estado_mes calcula en Python.
@@ -2381,14 +2407,20 @@ def _validar_casa(nombre, localidad, direccion, precio, comision_inmobiliaria):
 # Como el alquiler se cobra completo, el estado no compara montos: mira si el
 # mes tiene pago o no. Por eso alcanza con el signo de lo cobrado y el precio
 # de la casa no entra en la cuenta.
-Q_COBRADA = Q(alquilada=True) & Q(_pagado_periodo_anotado__gt=0)
+#
+# El orden de las condiciones copia el de Casa.estado_mes y no es casual: el
+# pago se pregunta primero y le gana a "alquilada", porque es un hecho de ese
+# mes y "alquilada" es el estado de hoy. Si las dos versiones se separan, el
+# chip deja de coincidir con la pildora de la fila.
+Q_COBRADA = Q(_pagado_periodo_anotado__gt=0)
 Q_PENDIENTE = Q(alquilada=True) & Q(_pagado_periodo_anotado__lte=0)
+Q_LIBRE = Q(alquilada=False) & Q(_pagado_periodo_anotado__lte=0)
 
 # Filtros del listado. La clave viaja en la URL y la etiqueta la pinta el chip.
 FILTROS_ALQUILERES = {
     "pendientes": Q_PENDIENTE,
     "cobradas": Q_COBRADA,
-    "libres": Q(alquilada=False),
+    "libres": Q_LIBRE,
 }
 
 
@@ -2426,13 +2458,27 @@ def obtener_casas(estado="", periodo=None):
     responder que falta cobrar este mes, asi que eso va arriba sin que el usuario
     tenga que filtrar; dentro de cada grupo si ordena por nombre.
 
-    Ojo con los meses pasados: lo cobrado sale de los pagos y es un dato firme,
-    pero "alquilada" y "precio" son el estado de hoy y no tienen historia. Una
-    casa que se desocupo el mes pasado figura sin alquilar tambien en los meses
-    en que si lo estaba. Cuando eso empiece a molestar, el arreglo es una tabla
-    de contratos (casa, desde, hasta, precio), no guardar el estado por mes.
+    Que casas entran en un mes:
+
+    - Las que tienen pago cargado en ese mes, siempre. Un pago es un hecho, asi
+      que la casa aparece aunque hoy este dada de baja: si no, la plata cobrada
+      desaparecia del total del mes.
+    - Las vigentes que ya existian en ese mes. Sin la fecha de alta, una casa
+      cargada hoy figuraba adeudando todos los meses anteriores.
+
+    Lo que sigue sin tener historia es el precio: lo esperado de un mes viejo se
+    calcula con el precio de hoy. Se arregla con una tabla de contratos (casa,
+    desde, hasta, precio), no guardando el estado por mes.
     """
-    casas = Casa.objects.filter(activa=True).con_pago_del_mes(periodo)
+    periodo = periodo or periodo_actual()
+
+    # La casa existe en el mes si se dio de alta en ese mes o antes; comparo
+    # contra el primero del mes siguiente para no perder las altas del propio mes.
+    ya_existia = Q(fecha_alta__lt=mes_desplazado(periodo, 1))
+
+    casas = Casa.objects.con_pago_del_mes(periodo).filter(
+        Q_COBRADA | (Q(activa=True) & ya_existia)
+    )
 
     filtro = FILTROS_ALQUILERES.get(estado)
     if filtro is not None:
@@ -2472,15 +2518,16 @@ def obtener_datos_casa(id_casa):
                 str(casa.comision_inmobiliaria) if casa.comision_inmobiliaria is not None else ""
             ),
             "alquilada": casa.alquilada,
+            "fecha_alta": casa.fecha_alta.isoformat(),
         }
     except Casa.DoesNotExist:
         return None
 
 
 def crear_casa(nombre=None, localidad=None, direccion=None, precio=None,
-               comision_inmobiliaria=None, alquilada=False):
-    nombre, localidad, direccion, precio, comision = _validar_casa(
-        nombre, localidad, direccion, precio, comision_inmobiliaria
+               comision_inmobiliaria=None, alquilada=False, fecha_alta=None):
+    nombre, localidad, direccion, precio, comision, alta = _validar_casa(
+        nombre, localidad, direccion, precio, comision_inmobiliaria, fecha_alta
     )
 
     return Casa.objects.create(
@@ -2490,14 +2537,22 @@ def crear_casa(nombre=None, localidad=None, direccion=None, precio=None,
         precio=precio,
         comision_inmobiliaria=comision,
         alquilada=bool(alquilada),
+        fecha_alta=alta,
     )
 
 
 def editar_casa(id_casa, nombre=None, localidad=None, direccion=None, precio=None,
-                comision_inmobiliaria=None, alquilada=False):
+                comision_inmobiliaria=None, alquilada=False, fecha_alta=None):
     casa = get_object_or_404(Casa, id=id_casa)
-    nombre, localidad, direccion, precio, comision = _validar_casa(
-        nombre, localidad, direccion, precio, comision_inmobiliaria
+
+    # En un alta, la fecha vacia significa "hoy". En una edicion no: significa
+    # que el formulario no la trajo, y pisarla con hoy sacaria a la casa de
+    # todos sus meses anteriores sin que nadie lo haya pedido.
+    if fecha_alta in (None, ""):
+        fecha_alta = casa.fecha_alta
+
+    nombre, localidad, direccion, precio, comision, alta = _validar_casa(
+        nombre, localidad, direccion, precio, comision_inmobiliaria, fecha_alta
     )
 
     casa.nombre = nombre
@@ -2506,6 +2561,7 @@ def editar_casa(id_casa, nombre=None, localidad=None, direccion=None, precio=Non
     casa.precio = precio
     casa.comision_inmobiliaria = comision
     casa.alquilada = bool(alquilada)
+    casa.fecha_alta = alta
 
     casa.save()
     return casa
@@ -2719,19 +2775,31 @@ def obtener_resumen_alquileres(casas, periodo=None):
 
     for casa in casas:
         total_casas += 1
+        if casa.alquilada:
+            alquiladas += 1
+
+        pagado = casa.total_pagado_periodo
+        if pagado > 0:
+            # Lo cobrado se suma antes de mirar "alquilada": un pago cargado es
+            # plata que entro ese mes, este la casa alquilada hoy o no. Antes se
+            # salteaba el continue y la plata de una casa desocupada despues
+            # desaparecia del total del mes.
+            #
+            # Y para ese mes lo esperado fue exactamente lo que se cobro, no el
+            # precio de hoy: asi esperado sigue siendo cobrado mas pendiente.
+            cobrado += pagado
+            esperado += pagado
+            continue
+
+        # Sin pago, solo se reclama a las que hoy estan alquiladas
         if not casa.alquilada:
             continue
 
-        alquiladas += 1
+        # Sin parciales, lo que falta cobrar de una casa es su alquiler entero
         precio = casa.precio or Decimal("0")
         esperado += precio
-
-        if casa.cobrada_en_el_periodo:
-            cobrado += casa.total_pagado_periodo
-        else:
-            # Sin parciales, lo que falta cobrar de una casa es su alquiler entero
-            pendientes += 1
-            monto_pendiente += precio
+        pendientes += 1
+        monto_pendiente += precio
 
     return {
         "periodo": periodo,

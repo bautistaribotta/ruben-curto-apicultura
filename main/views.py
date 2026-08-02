@@ -1600,6 +1600,7 @@ def alquileres(request):
                     comision_inmobiliaria=request.POST.get("comision_inmobiliaria"),
                     # Un checkbox sin marcar no viaja en el POST: la ausencia es "no alquilada"
                     alquilada=request.POST.get("alquilada") is not None,
+                    fecha_alta=request.POST.get("fecha_alta"),
                 )
                 messages.success(request, "Casa registrada correctamente")
 
@@ -1612,6 +1613,7 @@ def alquileres(request):
                     precio=request.POST.get("precio"),
                     comision_inmobiliaria=request.POST.get("comision_inmobiliaria"),
                     alquilada=request.POST.get("alquilada") is not None,
+                    fecha_alta=request.POST.get("fecha_alta"),
                 )
                 messages.success(request, "Casa actualizada correctamente")
 

@@ -28,7 +28,17 @@
               {% if casa.alquilada %}home{% else %}home_work{% endif %}
             </span>
             <div class="alq-casa__datos">
-              <span class="alq-casa__nombre">{{ casa.nombre|default:"Sin nombre" }}</span>
+              <span class="alq-casa__nombre">
+                {{ casa.nombre|default:"Sin nombre" }}
+                {% comment %}
+                  Una casa dada de baja solo aparece en los meses que tienen pago
+                  cargado, para que esa plata no se pierda del total. Sin avisarlo
+                  parece que la baja no funciono.
+                {% endcomment %}
+                {% if not casa.activa %}
+                  <span class="alq-baja" title="Dada de baja. Aparece porque este mes tiene un pago cargado.">dada de baja</span>
+                {% endif %}
+              </span>
               {% if casa.direccion %}
                 <span class="alq-casa__direccion">{{ casa.direccion }}</span>
               {% endif %}
@@ -105,12 +115,20 @@
               <span class="material-symbols-outlined">payments</span>
             </button>
 
-            <button type="button" class="alq-boton-icono editar" title="Editar casa"
+            {% comment %}
+              Sobre una casa dada de baja no hay nada que hacer: la fila esta
+              solo como registro del pago de ese mes.
+            {% endcomment %}
+            <button type="button" class="alq-boton-icono editar"
+                    title="{% if casa.activa %}Editar casa{% else %}La casa está dada de baja{% endif %}"
+                    {% if not casa.activa %}disabled{% endif %}
                     data-id="{{ casa.id }}">
               <span class="material-symbols-outlined">edit</span>
             </button>
 
-            <button type="button" class="alq-boton-icono eliminar" title="Eliminar casa"
+            <button type="button" class="alq-boton-icono eliminar"
+                    title="{% if casa.activa %}Eliminar casa{% else %}La casa ya está dada de baja{% endif %}"
+                    {% if not casa.activa %}disabled{% endif %}
                     data-id="{{ casa.id }}"
                     data-nombre="{{ casa.nombre|default:'Sin nombre' }}">
               <span class="material-symbols-outlined">delete</span>

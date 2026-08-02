@@ -194,6 +194,7 @@ function abrirEditarCasa(id) {
             document.getElementById('direccion-casa').value = casa.direccion;
             document.getElementById('comision-casa').value = casa.comision_inmobiliaria;
             document.getElementById('alquilada-casa').checked = casa.alquilada;
+            document.getElementById('fecha-alta-casa').value = casa.fecha_alta;
 
             // El precio llega pelado del servidor ("120000.00"): lo paso por el
             // formato de miles para que se vea igual que en la tabla

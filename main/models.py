@@ -558,10 +558,6 @@ class GastoViajeCereal(GastoBase):
         return f"Gasto {self.gasto} de {self.monto} pesos (Viaje cereal: {self.viaje_cereal})"
 
 
-# ==========================================================================
-#  ALQUILERES
-# ==========================================================================
-
 def periodo_actual():
     """Primer dia del mes en curso.
 
@@ -619,8 +615,14 @@ class Casa(models.Model):
     # si sube el precio, la comision acompaña sola y no hay que reescribirla.
     comision_inmobiliaria = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     alquilada = models.BooleanField(default=False)
-    # Baja logica, igual que en el resto del sistema: la casa sale de los listados
-    # pero sus pagos historicos quedan intactos.
+    """
+    Desde cuando la casa existe para el sistema. Sin esto, cargar una casa hoy
+    le inventa deuda en todos los meses anteriores, porque el estado de un mes
+    pasado se reconstruye con las casas que hay ahora. Es una fecha editable y
+    no un auto_now_add a proposito: si la casa se administra desde antes de
+    cargarla, el usuario corrige el dato y los meses viejos cierran bien.
+    """
+    fecha_alta = models.DateField(default=timezone.localdate)
     activa = models.BooleanField(default=True)
 
     class Meta:
@@ -671,14 +673,20 @@ class Casa(models.Model):
         No existe el estado parcial: un alquiler se paga completo. Si el mes tiene
         pago, esta cobrado.
 
-        Limitacion conocida en meses pasados: "alquilada" es el estado de hoy y no
-        tiene historia, asi que una casa que se desocupo figura sin alquilar
-        tambien en los meses en que si lo estaba. Se arregla con una tabla de
-        contratos, no guardando el estado mes por mes.
+        El pago se pregunta primero y le gana a "alquilada". Un pago cargado es un
+        hecho de ese mes; "alquilada" es el estado de hoy y sobre el pasado es una
+        suposicion. Al reves, una casa que se desocupo hacia figurar sin alquilar
+        un mes que en realidad habia cobrado.
+
+        Lo que sigue sin tener historia es el precio: lo que se espera cobrar en un
+        mes viejo se calcula con el precio actual. Eso se arregla con una tabla de
+        contratos (casa, desde, hasta, precio), no guardando el estado mes por mes.
         """
+        if self.cobrada_en_el_periodo:
+            return "Cobrado"
         if not self.alquilada:
             return "Sin alquilar"
-        return "Cobrado" if self.cobrada_en_el_periodo else "Pendiente de cobro"
+        return "Pendiente de cobro"
 
     def __str__(self):
         return self.nombre or f"Casa {self.id}"
