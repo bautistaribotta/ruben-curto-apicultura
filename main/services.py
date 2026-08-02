@@ -2392,8 +2392,31 @@ FILTROS_ALQUILERES = {
 }
 
 
-def obtener_casas(estado=""):
-    """Listado de casas vigentes, ya anotado con lo cobrado del mes en curso.
+def resolver_periodo(valor):
+    """Mes a mostrar en la pantalla, a partir del parametro 'mes' de la URL.
+
+    Se diferencia de _parsear_periodo en que no explota: una URL escrita a mano
+    o un enlace viejo no tienen por que romper la pantalla, simplemente caen en
+    el mes en curso, que es lo que el usuario esperaba ver al entrar.
+    """
+    try:
+        return _parsear_periodo(valor)
+    except ValueError:
+        return periodo_actual()
+
+
+def mes_desplazado(periodo, meses):
+    """Corre un periodo hacia adelante o atras. Sirve para las flechas del mes.
+
+    Aritmetica sobre el indice absoluto de mes para no tener que pensar en el
+    cambio de año: enero menos uno es diciembre del año anterior.
+    """
+    indice = periodo.year * 12 + (periodo.month - 1) + meses
+    return date(indice // 12, indice % 12 + 1, 1)
+
+
+def obtener_casas(estado="", periodo=None):
+    """Listado de casas vigentes, ya anotado con lo cobrado en el periodo pedido.
 
     La anotacion viene de arranque porque el listado pinta el estado de cada
     fila: sin ella serian tantas queries como casas haya.
@@ -2402,8 +2425,14 @@ def obtener_casas(estado=""):
     cobradas y al final las que no estan alquiladas). La pantalla existe para
     responder que falta cobrar este mes, asi que eso va arriba sin que el usuario
     tenga que filtrar; dentro de cada grupo si ordena por nombre.
+
+    Ojo con los meses pasados: lo cobrado sale de los pagos y es un dato firme,
+    pero "alquilada" y "precio" son el estado de hoy y no tienen historia. Una
+    casa que se desocupo el mes pasado figura sin alquilar tambien en los meses
+    en que si lo estaba. Cuando eso empiece a molestar, el arreglo es una tabla
+    de contratos (casa, desde, hasta, precio), no guardar el estado por mes.
     """
-    casas = Casa.objects.filter(activa=True).con_pago_del_mes()
+    casas = Casa.objects.filter(activa=True).con_pago_del_mes(periodo)
 
     filtro = FILTROS_ALQUILERES.get(estado)
     if filtro is not None:
@@ -2673,13 +2702,14 @@ def listar_pagos_casa(id_casa, limite=6):
     ]
 
 
-def obtener_resumen_alquileres(casas):
-    """Totales del mes en curso para el medidor de la cabecera.
+def obtener_resumen_alquileres(casas, periodo=None):
+    """Totales del periodo para la cabecera.
 
-    Recibe siempre el listado completo, no el filtrado: el medidor mide el mes
-    entero. Si se moviera con los filtros, ver solo las cobradas lo dejaria
-    lleno y dejaria de ser un medidor.
+    Recibe siempre el listado completo, no el filtrado: la cabecera mide el mes
+    entero. Si se moviera con los filtros, ver solo las cobradas la dejaria en
+    cero pendiente y dejaria de decir la verdad.
     """
+    periodo = periodo or periodo_actual()
     total_casas = 0
     alquiladas = 0
     esperado = Decimal("0")
@@ -2704,7 +2734,7 @@ def obtener_resumen_alquileres(casas):
             monto_pendiente += precio
 
     return {
-        "periodo": periodo_actual(),
+        "periodo": periodo,
         "total_casas": total_casas,
         "alquiladas": alquiladas,
         "sin_alquilar": total_casas - alquiladas,

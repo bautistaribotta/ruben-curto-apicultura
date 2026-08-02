@@ -646,8 +646,9 @@ class Casa(models.Model):
 
     @property
     def total_pagado_periodo(self):
-        # Cobrado del mes en curso. Si el queryset vino de con_pago_del_mes() uso
-        # ese valor ya calculado para no consultar una vez por casa en el listado.
+        # Cobrado del periodo. Si el queryset vino de con_pago_del_mes() uso ese
+        # valor ya calculado, que ademas es el que fija que mes se esta mirando;
+        # suelto, sin anotacion, cae en el mes en curso.
         if hasattr(self, "_pagado_periodo_anotado"):
             return self._pagado_periodo_anotado or Decimal("0")
         return self.pagos.filter(periodo=periodo_actual()).aggregate(total=Sum("monto"))["total"] or Decimal("0")
@@ -660,14 +661,20 @@ class Casa(models.Model):
 
     @property
     def estado_mes(self):
-        """Estado del alquiler del mes en curso.
+        """Estado del alquiler en el periodo que se este mirando.
 
         Tres estados y ninguno se guarda en un campo: salen de si hay un pago con
-        periodo igual al mes actual. Por eso, al cambiar el mes, la casa vuelve
-        sola a "Pendiente de cobro" sin que nadie tenga que resetear nada.
+        periodo igual al mes en cuestion. Por eso, al cambiar el mes, la casa
+        vuelve sola a "Pendiente de cobro" sin que nadie tenga que resetear nada
+        ni corra ningun proceso el dia 1.
 
         No existe el estado parcial: un alquiler se paga completo. Si el mes tiene
         pago, esta cobrado.
+
+        Limitacion conocida en meses pasados: "alquilada" es el estado de hoy y no
+        tiene historia, asi que una casa que se desocupo figura sin alquilar
+        tambien en los meses en que si lo estaba. Se arregla con una tabla de
+        contratos, no guardando el estado mes por mes.
         """
         if not self.alquilada:
             return "Sin alquilar"

@@ -38,7 +38,7 @@ from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo
                        obtener_casas, obtener_datos_casa, crear_casa, editar_casa, eliminar_casa,
                        obtener_resumen_alquileres, crear_pago_alquiler, editar_pago_alquiler,
                        eliminar_pago_alquiler, obtener_datos_pago_alquiler, listar_pagos_casa,
-                       FILTROS_ALQUILERES)
+                       resolver_periodo, mes_desplazado, FILTROS_ALQUILERES)
 
 
 def _pagado_del_formulario(request):
@@ -1647,13 +1647,26 @@ def alquileres(request):
         except Exception as e:
             messages.error(request, f"Ocurrió un error inesperado: {e}")
 
-        return redirect("alquileres")
+        # El formulario postea a la URL actual, asi que el mes que se estaba
+        # mirando sigue en request.GET: lo devuelvo para no patear al usuario
+        # de vuelta al mes en curso despues de cargar un pago atrasado. Rearmo
+        # el parametro desde la fecha ya parseada y no desde el texto crudo.
+        destino = reverse("alquileres")
+        periodo_visto = resolver_periodo(request.GET.get("mes"))
+        if periodo_visto != periodo_actual():
+            destino = f"{destino}?mes={periodo_visto:%Y-%m}"
+        return redirect(destino)
 
     estado = request.GET.get("estado", "")
     if estado not in FILTROS_ALQUILERES:
         estado = ""
 
-    casas = obtener_casas(estado)
+    # Mes que se esta mirando. Toda la pantalla cuelga de aca: los totales de la
+    # cabecera, el estado de cada fila y el mes que el panel de cobro propone
+    # por defecto. Sin parametro es el mes en curso.
+    periodo = resolver_periodo(request.GET.get("mes"))
+
+    casas = obtener_casas(estado, periodo)
 
     paginator = Paginator(casas, 10)
     pagina_obj = paginator.get_page(request.GET.get("page"))
@@ -1661,26 +1674,28 @@ def alquileres(request):
     contexto = {
         "casas": pagina_obj,
         "estado": estado,
+        "periodo": periodo,
     }
 
-    # Los chips y la paginacion refrescan solo la tabla. El medidor queda afuera
-    # a proposito: mide el mes completo y no se mueve con el filtro.
+    # Los chips y la paginacion refrescan solo la tabla. La cabecera queda afuera
+    # a proposito: mide el mes completo y no se mueve con el filtro. Cambiar de
+    # mes si recarga la pagina, porque mueve los totales y la tabla a la vez.
     if request.headers.get("x-requested-with") == "XMLHttpRequest":
         return render(request, "tabla_alquileres.html", contexto)
 
-    # Listado completo (sin filtros) para el medidor de la cabecera
-    casas_mes = obtener_casas()
-    periodo = periodo_actual()
-    # Mes anterior, para el atajo del panel de cobro: cobrar con atraso el mes
-    # que acaba de pasar es el caso que mas se repite despues del mes en curso.
-    anterior = date(periodo.year - 1, 12, 1) if periodo.month == 1 else date(periodo.year, periodo.month - 1, 1)
+    # Listado completo (sin filtros) para los totales de la cabecera
+    casas_mes = obtener_casas(periodo=periodo)
 
     contexto.update({
-        "casas_mes": casas_mes,
-        "resumen": obtener_resumen_alquileres(casas_mes),
+        "resumen": obtener_resumen_alquileres(casas_mes, periodo),
         "hoy": timezone.localdate(),
-        "periodo": periodo,
-        "periodo_anterior": anterior,
+        "es_mes_actual": periodo == periodo_actual(),
+        "mes_actual": periodo_actual(),
+        # Para las flechas del navegador de mes y para el atajo "mes anterior"
+        # del panel de cobro, que es el caso que mas se repite despues del mes
+        # en curso: cobrar con atraso el que acaba de pasar.
+        "periodo_anterior": mes_desplazado(periodo, -1),
+        "periodo_siguiente": mes_desplazado(periodo, 1),
     })
 
     return render(request, "alquileres.html", contexto)
