@@ -15,7 +15,7 @@ from django.utils import timezone
 from django.utils.dateparse import parse_date
 
 from .models import (Cliente, Producto, Operacion, DetalleOperacion, Pago, Cotizaciones, Empleado, PagosEmpleados,
-                     Vehiculo, Viaje, ViajeCereal, ViajeReparto)
+                     Vehiculo, Viaje, ViajeCereal, ViajeReparto, periodo_actual)
 from .pdf_services import Remito, ResumenCuenta
 from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo_cliente, editar_cliente,
                        eliminar_cliente, buscar_clientes, get_cotizacion_dolar_oficial, get_cotizaciones, get_total_kilos_granel, get_articulos_granel, actualizar_cotizacion, obtener_datos_cliente,
@@ -34,7 +34,11 @@ from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo
                        editar_viaje_reparto, eliminar_viaje_reparto, crear_gasto_viaje_reparto,
                        obtener_resumen_reparto, marcar_pago_viaje_reparto,
                        obtener_destinos_reparto, crear_destino_reparto, editar_destino_reparto,
-                       eliminar_destino_reparto)
+                       eliminar_destino_reparto,
+                       obtener_casas, obtener_datos_casa, crear_casa, editar_casa, eliminar_casa,
+                       obtener_resumen_alquileres, crear_pago_alquiler, editar_pago_alquiler,
+                       eliminar_pago_alquiler, obtener_datos_pago_alquiler, listar_pagos_casa,
+                       FILTROS_ALQUILERES)
 
 
 def _pagado_del_formulario(request):
@@ -1576,7 +1580,136 @@ def deudores(request):
 
 @staff_member_required(login_url="inicio")
 def alquileres(request):
-    return render(request, "alquileres.html")
+    """Listado de casas en alquiler con el estado de cobro del mes en curso.
+
+    Un solo POST con el campo 'accion' que rutea a cada servicio, igual que en
+    destinos de reparto y flota. Por ahora concentra el ABM de casas y el de
+    pagos; cuando exista el perfil de la casa, las tres acciones de pago se
+    mudan alli sin tocar los servicios.
+    """
+    if request.method == "POST":
+        accion = request.POST.get("accion")
+
+        try:
+            if accion == "nueva_casa":
+                crear_casa(
+                    nombre=request.POST.get("nombre"),
+                    localidad=request.POST.get("localidad"),
+                    direccion=request.POST.get("direccion"),
+                    precio=request.POST.get("precio"),
+                    comision_inmobiliaria=request.POST.get("comision_inmobiliaria"),
+                    # Un checkbox sin marcar no viaja en el POST: la ausencia es "no alquilada"
+                    alquilada=request.POST.get("alquilada") is not None,
+                )
+                messages.success(request, "Casa registrada correctamente")
+
+            elif accion == "editar_casa":
+                editar_casa(
+                    request.POST.get("id_casa"),
+                    nombre=request.POST.get("nombre"),
+                    localidad=request.POST.get("localidad"),
+                    direccion=request.POST.get("direccion"),
+                    precio=request.POST.get("precio"),
+                    comision_inmobiliaria=request.POST.get("comision_inmobiliaria"),
+                    alquilada=request.POST.get("alquilada") is not None,
+                )
+                messages.success(request, "Casa actualizada correctamente")
+
+            elif accion == "eliminar_casa":
+                eliminar_casa(request.POST.get("id_casa"))
+                messages.success(request, "Casa eliminada correctamente")
+
+            elif accion == "nuevo_pago":
+                crear_pago_alquiler(
+                    request.POST.get("id_casa"),
+                    request.POST.get("monto"),
+                    request.POST.get("fecha"),
+                    request.POST.get("periodo"),
+                )
+                messages.success(request, "Pago registrado correctamente")
+
+            elif accion == "editar_pago":
+                editar_pago_alquiler(
+                    request.POST.get("id_pago"),
+                    request.POST.get("monto"),
+                    request.POST.get("fecha"),
+                    request.POST.get("periodo"),
+                )
+                messages.success(request, "Pago actualizado correctamente")
+
+            elif accion == "eliminar_pago":
+                eliminar_pago_alquiler(request.POST.get("id_pago"))
+                messages.success(request, "Pago eliminado correctamente")
+
+        except ValueError as e:
+            # Errores de validacion que llegan desde services.py
+            messages.error(request, str(e))
+        except Exception as e:
+            messages.error(request, f"Ocurrió un error inesperado: {e}")
+
+        return redirect("alquileres")
+
+    estado = request.GET.get("estado", "")
+    if estado not in FILTROS_ALQUILERES:
+        estado = ""
+
+    casas = obtener_casas(estado)
+
+    paginator = Paginator(casas, 10)
+    pagina_obj = paginator.get_page(request.GET.get("page"))
+
+    contexto = {
+        "casas": pagina_obj,
+        "estado": estado,
+    }
+
+    # Los chips y la paginacion refrescan solo la tabla. El medidor queda afuera
+    # a proposito: mide el mes completo y no se mueve con el filtro.
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        return render(request, "tabla_alquileres.html", contexto)
+
+    # Listado completo (sin filtros) para el medidor de la cabecera
+    casas_mes = obtener_casas()
+    periodo = periodo_actual()
+    # Mes anterior, para el atajo del panel de cobro: cobrar con atraso el mes
+    # que acaba de pasar es el caso que mas se repite despues del mes en curso.
+    anterior = date(periodo.year - 1, 12, 1) if periodo.month == 1 else date(periodo.year, periodo.month - 1, 1)
+
+    contexto.update({
+        "casas_mes": casas_mes,
+        "resumen": obtener_resumen_alquileres(casas_mes),
+        "hoy": timezone.localdate(),
+        "periodo": periodo,
+        "periodo_anterior": anterior,
+    })
+
+    return render(request, "alquileres.html", contexto)
+
+
+@staff_member_required(login_url="inicio")
+def obtener_casa_json(request, id_casa):
+    datos = obtener_datos_casa(id_casa)
+
+    if datos:
+        return JsonResponse(datos)
+
+    return JsonResponse({"error": "Casa no encontrada"}, status=404)
+
+
+@staff_member_required(login_url="inicio")
+def obtener_pago_alquiler_json(request, id_pago):
+    datos = obtener_datos_pago_alquiler(id_pago)
+
+    if datos:
+        return JsonResponse(datos)
+
+    return JsonResponse({"error": "Pago no encontrado"}, status=404)
+
+
+@staff_member_required(login_url="inicio")
+def listar_pagos_casa_json(request, id_casa):
+    # Los ultimos pagos de la casa, para el historial del panel de cobro
+    return JsonResponse({"pagos": listar_pagos_casa(id_casa)})
 
 
 @staff_member_required(login_url="inicio")

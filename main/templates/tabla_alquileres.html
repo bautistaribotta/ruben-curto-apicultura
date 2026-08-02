@@ -1,0 +1,159 @@
+{% load humanize %}
+{% load l10n %}
+{% comment %}
+  Tabla de casas. Es el fragmento que devuelve la vista por AJAX cuando cambian
+  el buscador, los chips o la pagina, asi que no puede depender de nada que viva
+  fuera de este archivo.
+
+  Las filas llegan ordenadas por urgencia desde el servicio (pendientes de cobro
+  primero), no alfabeticamente: la pregunta que trae al usuario a esta pantalla
+  es que falta cobrar este mes.
+{% endcomment %}
+<table class="tabla-alquileres">
+  <thead>
+    <tr>
+      <th>Casa</th>
+      <th>Localidad</th>
+      <th class="alq-col-monto">Alquiler</th>
+      <th class="alq-col-estado">Estado</th>
+      <th class="alq-col-acciones">Acciones</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for casa in casas %}
+      <tr>
+        <td>
+          <div class="alq-casa">
+            <span class="alq-casa__icono material-symbols-outlined">
+              {% if casa.alquilada %}home{% else %}home_work{% endif %}
+            </span>
+            <div class="alq-casa__datos">
+              <span class="alq-casa__nombre">{{ casa.nombre|default:"Sin nombre" }}</span>
+              {% if casa.direccion %}
+                <span class="alq-casa__direccion">{{ casa.direccion }}</span>
+              {% endif %}
+            </div>
+          </div>
+        </td>
+
+        <td>
+          {% if casa.localidad %}
+            {{ casa.localidad }}
+          {% else %}
+            <span class="alq-vacio">—</span>
+          {% endif %}
+        </td>
+
+        {% comment %}
+          El alquiler manda y la comision con el neto bajan en chico, uno por
+          linea: son el mismo dato leido de tres maneras y separarlos en tres
+          columnas obligaba a cruzar la vista para entender cuanto queda.
+        {% endcomment %}
+        <td class="alq-col-monto">
+          {% if casa.precio %}
+            <span class="alq-precio"><span class="alq-precio__signo">$</span>{{ casa.precio|floatformat:"0"|intcomma }}</span>
+            {% if casa.comision_inmobiliaria %}
+              <span class="alq-neto">−{{ casa.comision_inmobiliaria|floatformat:"-2" }}% inmobiliaria</span>
+              <span class="alq-neto">Total neto ${{ casa.neto_mensual|floatformat:"0"|intcomma }}</span>
+            {% endif %}
+          {% else %}
+            <span class="alq-vacio">Sin precio</span>
+          {% endif %}
+        </td>
+
+        {% comment %}
+          Tres estados y ninguno intermedio: el alquiler se cobra completo, asi
+          que la pildora sola ya lo dice todo y no necesita el monto al lado.
+        {% endcomment %}
+        <td class="alq-col-estado">
+          {% if casa.estado_mes == "Cobrado" %}
+            <span class="alq-pildora alq-pildora--cobrada">
+              <span class="alq-pildora__punto"></span>Cobrado
+            </span>
+          {% elif casa.estado_mes == "Pendiente de cobro" %}
+            <span class="alq-pildora alq-pildora--pendiente">
+              <span class="alq-pildora__punto"></span>Pendiente de cobro
+            </span>
+          {% else %}
+            <span class="alq-pildora alq-pildora--libre">
+              <span class="alq-pildora__punto"></span>Sin alquilar
+            </span>
+          {% endif %}
+        </td>
+
+        <td class="alq-col-acciones">
+          <div class="alq-acciones">
+            {% comment %}
+              Un mes cobrado no admite otro pago, y una casa sin alquilar no
+              genera ninguno: en los dos casos el boton queda deshabilitado en
+              vez de abrir un panel que no puede hacer nada. Consultar el cobro
+              va a vivir en el perfil de la casa, no aca.
+
+              Los montos de los data-* van sin localizar: los lee JavaScript con
+              Number(), y con el formato es-AR llegarian con coma decimal
+              ("160000,00") y darian NaN. Lo que se muestra en pantalla si va
+              localizado.
+            {% endcomment %}
+            <button type="button" class="alq-boton-icono cobrar"
+                    title="{% if casa.estado_mes == 'Cobrado' %}El alquiler de este mes ya está cobrado{% elif not casa.alquilada %}La casa no está alquilada{% else %}Registrar pago{% endif %}"
+                    {% if casa.estado_mes == "Cobrado" or not casa.alquilada %}disabled{% endif %}
+                    data-id="{{ casa.id }}"
+                    data-nombre="{{ casa.nombre|default:'Sin nombre' }}"
+                    data-precio="{{ casa.precio|default_if_none:''|unlocalize }}"
+                    data-estado="{{ casa.estado_mes }}"
+                    data-cobrado="{{ casa.total_pagado_periodo|unlocalize }}">
+              <span class="material-symbols-outlined">payments</span>
+            </button>
+
+            <button type="button" class="alq-boton-icono editar" title="Editar casa"
+                    data-id="{{ casa.id }}">
+              <span class="material-symbols-outlined">edit</span>
+            </button>
+
+            <button type="button" class="alq-boton-icono eliminar" title="Eliminar casa"
+                    data-id="{{ casa.id }}"
+                    data-nombre="{{ casa.nombre|default:'Sin nombre' }}">
+              <span class="material-symbols-outlined">delete</span>
+            </button>
+          </div>
+        </td>
+      </tr>
+    {% empty %}
+      <tr class="fila-vacia">
+        <td colspan="5" class="celda-vacia">
+          <span class="material-symbols-outlined">key</span>
+          {% if estado %}
+            No hay casas en ese estado.
+          {% else %}
+            Todavía no hay casas cargadas. Empezá con el botón "Nueva casa".
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<!-- Paginacion -->
+<div class="paginacion">
+  <div class="paginacion-info">
+    Mostrando <span>{{ casas.start_index }}-{{ casas.end_index }}</span>
+    de <span>{{ casas.paginator.count }}</span> casas
+  </div>
+  <div class="paginacion-botones">
+    {% if casas.has_previous %}
+      <a href="?page={{ casas.previous_page_number }}{% if estado %}&estado={{ estado }}{% endif %}">
+        <button class="boton-paginacion">Anterior</button>
+      </a>
+    {% else %}
+      <button class="boton-paginacion" disabled>Anterior</button>
+    {% endif %}
+
+    {% if casas.has_next %}
+      <a href="?page={{ casas.next_page_number }}{% if estado %}&estado={{ estado }}{% endif %}">
+        <button class="boton-paginacion">Siguiente</button>
+      </a>
+    {% else %}
+      <button class="boton-paginacion" disabled>Siguiente</button>
+    {% endif %}
+  </div>
+</div>
