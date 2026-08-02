@@ -45,7 +45,9 @@ function refrescarTabla(urlString = null) {
 
     let url;
     if (urlString) {
-        url = new URL(urlString, window.location.origin);
+        // La paginacion manda hrefs relativos ("?page=2"), asi que la base tiene
+        // que ser la URL actual completa: con el origin solo caian en la raiz.
+        url = new URL(urlString, window.location.href);
     } else {
         url = new URL(window.location.href);
         const estado = estadoActivo();
