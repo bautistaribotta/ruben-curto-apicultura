@@ -2895,61 +2895,16 @@ def eliminar_gasto_casa(id_gasto):
 #  PERFIL DE UNA CASA
 # ==========================================================================
 
-# Tope de meses que dibuja la tira del plazo. Un alquiler no pasa de unos pocos
-# años; el tope esta para que un fin mal tipeado (2226 en vez de 2026) no arme
-# una tira de dos mil celdas.
-MAX_MESES_TIRA = 60
-
-
-def meses_del_contrato(contrato):
-    """Un item por cada mes que cubre el contrato, con si el alquiler se cobro.
-
-    Es lo que dibuja la tira del perfil. El plazo no se muestra como dos fechas
-    sueltas sino como los meses que hay para cobrar, que es la unidad en la que
-    piensa todo el modulo: el periodo de un pago es siempre un dia 1, y de ahi
-    sale el estado de cada mes en el listado.
-
-    Los cobros se traen de una sola query y se resuelven contra un set, asi la
-    tira no dispara una consulta por celda.
-    """
-    desde = date(contrato.inicio.year, contrato.inicio.month, 1)
-    # Sin fin cargado el contrato no caduca, asi que la tira llega hasta hoy y
-    # ahi queda abierta: los meses que siguen todavia no son un compromiso. El
-    # max cubre al contrato que arranca mas adelante, que si tiene meses propios.
-    tope = contrato.fin or max(timezone.localdate(), contrato.inicio)
-    hasta = date(tope.year, tope.month, 1)
-
-    cobrados = set(
-        PagoAlquiler.objects
-        .filter(casa_id=contrato.casa_id, periodo__range=(desde, hasta))
-        .values_list("periodo", flat=True)
-    )
-
-    actual = periodo_actual()
-    meses = []
-    periodo = desde
-    while periodo <= hasta and len(meses) < MAX_MESES_TIRA:
-        meses.append({
-            "periodo": periodo,
-            "cobrado": periodo in cobrados,
-            "es_actual": periodo == actual,
-            "es_futuro": periodo > actual,
-        })
-        periodo = mes_desplazado(periodo, 1)
-
-    return meses
-
-
 def obtener_detalle_alquiler(id_casa, desde=None, hasta=None):
     """Todo lo que necesita el perfil de una casa, en una sola pasada.
 
     El desde y el hasta son solo para los gastos: el contrato y el historial no
     dependen de ningun periodo, muestran siempre lo que hay.
 
-    Reparte los contratos en dos: el que corre hoy, que es el que se muestra
-    entero y con la tira de meses, y el resto, que va al historial. En el resto
-    entran los que ya vencieron y tambien los que todavia no arrancaron, que
-    existen porque nada impide dejar cargada la renovacion antes de tiempo.
+    Reparte los contratos en dos: el que corre hoy, que se muestra entero, y el
+    resto, que va al historial. En el resto entran los que ya vencieron y
+    tambien los que todavia no arrancaron, que existen porque nada impide dejar
+    cargada la renovacion antes de tiempo.
 
     El vigente se busca en la lista ya traida y no con otra query: son un puñado
     de contratos por casa y el historial los necesita igual.
@@ -2966,8 +2921,6 @@ def obtener_detalle_alquiler(id_casa, desde=None, hasta=None):
         None,
     )
 
-    meses = meses_del_contrato(vigente) if vigente else []
-
     # Los gastos no dependen del contrato ni se renuevan con el mes: son de la
     # casa y quedan guardados para siempre. Sin filtro se muestran todos, y el
     # filtro solo recorta lo que se ve, nunca borra nada.
@@ -2981,8 +2934,6 @@ def obtener_detalle_alquiler(id_casa, desde=None, hasta=None):
     return {
         "casa": casa,
         "contrato": vigente,
-        "meses": meses,
-        "meses_cobrados": sum(1 for mes in meses if mes["cobrado"]),
         "historial": [c for c in contratos if c is not vigente],
         "gastos": gastos,
         "categorias_gasto": CATEGORIAS_GASTO_CASA,

@@ -1,11 +1,10 @@
 /* ============================================================
    Perfil de una casa en alquiler.
 
-   La pagina contesta dos preguntas: cuanto le falta al contrato
-   para vencer y que meses quedaron sin cobrar. Por eso el unico
-   bloque con peso visual es la tira del plazo, que las contesta
-   a las dos de un vistazo; todo lo demas se mantiene tranquilo
-   para no competir con ella.
+   Tres bloques: el contrato vigente, los gastos y el historial
+   de contratos. La tarjeta del contrato toma el formato de
+   "Datos generales" del detalle de viaje, y las otras dos son
+   tablas, asi que la pantalla no inventa ningun lenguaje propio.
 
    Los tres paneles (casa, contrato y eliminacion) los aporta
    alquileres.css, que esta pagina tambien carga. Aca va lo
@@ -216,14 +215,11 @@ span.casa-identidad__icono {
 }
 
 /* ============================================================
-/* ============================================================
    TARJETA DEL CONTRATO VIGENTE
 
    Toma la tarjeta de "Datos generales" del detalle de viaje:
-   cabecera con icono, un renglon por dato con su rotulo arriba
-   y el valor abajo, y un bloque aparte al pie para lo que no es
-   un dato suelto. Alli es la ruta de destinos, aca la tira de
-   meses.
+   cabecera con icono y un renglon por dato, con su rotulo arriba
+   y el valor abajo.
 
    Los selectores son propios y no los .op-card / .vd-data de esa
    pantalla: viven en informacion_operacion.css y en
@@ -356,122 +352,26 @@ span.casa-identidad__icono {
   border-left: 1px solid var(--border-subtle);
 }
 
-/* ============================================================
-   LA TIRA DEL PLAZO
-
-   Una celda por mes del contrato, llena cuando ese mes se cobro.
-   El plazo no se dibuja como una barra de progreso porque no es
-   una: el alquiler se devenga y se cobra por mes, y esa es la
-   unidad con la que trabaja todo el modulo. Contar celdas
-   contesta cuantos meses faltan y cuantos quedaron sin cobrar,
-   que es justo lo que una barra continua no deja hacer.
-
-   Va al pie de la tarjeta, en el lugar que el detalle de viaje
-   le da a la ruta de destinos.
-   ============================================================ */
-.plazo {
+/* Aviso al pie de la tarjeta, para el contrato al que le falta el vencimiento.
+   De esa fecha depende que la casa pase sola a figurar sin alquilar, asi que es
+   un dato que falta y no un detalle: el renglon de arriba dice que no esta y
+   este dice que se pierde por eso. */
+.perfil-card__nota {
   display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  padding: 1rem 1.15rem 1.15rem;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.75rem 1.15rem;
   border-top: 1px solid var(--border-subtle);
-}
-
-.plazo__rotulo {
-  font-size: 0.7rem;
-  font-weight: var(--weight-bold);
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-wide);
-  color: var(--text-subtle);
-}
-
-/* --- Las celdas --- */
-.plazo__meses {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem;
-  list-style: none;
-}
-
-.plazo__mes {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.25rem;
-  /* Crecen para repartir el ancho, con un piso que las mantiene legibles y un
-     techo para que un contrato de tres meses no arme tres bloques enormes */
-  flex: 1 1 2.4rem;
-  min-width: 2.4rem;
-  max-width: 4rem;
-}
-
-.plazo__mes-nombre {
-  font-size: 0.66rem;
-  font-weight: var(--weight-semibold);
-  text-transform: lowercase;
-  color: var(--text-muted);
-}
-
-/* Las celdas se estiran para ocupar la tarjeta, asi que la marca necesita alto
-   propio: con la altura de una linea quedarian trece hilos y no trece meses. */
-.plazo__mes-marca {
-  width: 100%;
-  height: 1.15rem;
-  border-radius: var(--radius-xs);
-  border: 1px solid transparent;
-}
-
-/* Cobrado: la plata entro */
-.es-cobrado .plazo__mes-marca {
-  background-color: var(--success-500);
-  border-color: var(--success-600);
-}
-
-/* Sin cobrar: la celda queda hueca y con el borde cortado, que se lee como un
-   casillero que falta llenar y no como un mes que todavia no llego */
-.es-adeudado .plazo__mes-marca {
-  background-color: var(--surface-card);
-  border-style: dashed;
-  border-color: var(--sand-400);
-}
-
-/* Por venir: todavia no es un compromiso, asi que apenas se insinua */
-.es-futuro .plazo__mes-marca {
-  background-color: var(--sand-200);
-}
-
-.es-futuro .plazo__mes-nombre {
-  color: var(--text-subtle);
-}
-
-/* El mes en curso, en miel: el mismo color con el que la aplicacion marca donde
-   estas parado. Va sobre la marca que corresponda, cobrada o no. */
-.es-actual .plazo__mes-marca {
-  box-shadow: 0 0 0 2px var(--honey-500);
-}
-
-.es-actual .plazo__mes-nombre {
-  color: var(--brand-active);
-  font-weight: var(--weight-bold);
-}
-
-/* Contrato sin fecha de fin: la tira no cierra */
-.plazo__mes--abierto .plazo__mes-marca {
-  background-color: transparent;
-  border-style: dashed;
-  border-color: var(--sand-300);
-}
-
-.plazo__mes--abierto .plazo__mes-nombre {
-  color: var(--text-subtle);
-}
-
-/* De esa fecha depende que la casa pase sola a figurar sin alquilar, asi que
-   falta un dato y no un detalle. Va como renglon suelto y no como cartel: es
-   una aclaracion de la tira de arriba, que ya lo muestra quedando abierta. */
-.plazo__nota {
+  background-color: var(--honey-50);
   font-size: var(--text-xs);
-  color: var(--text-muted);
+  line-height: 1.5;
+  color: var(--sand-700);
+}
+
+.perfil-card__nota span.material-symbols-outlined {
+  flex: none;
+  font-size: 1.1rem;
+  color: var(--brand-active);
 }
 
 /* ============================================================
@@ -580,9 +480,8 @@ span.casa-identidad__icono {
 /* ============================================================
    GASTOS
 
-   La seccion es una tabla y nada mas. La pagina ya gasto su
-   unico bloque con peso visual en la tira del plazo, asi que
-   los gastos se leen como el historial: fila, monto y acciones.
+   La seccion es una tabla y nada mas: los gastos se leen igual
+   que el historial de contratos, con fila, monto y acciones.
    ============================================================ */
 .etiqueta-gasto {
   display: inline-block;
