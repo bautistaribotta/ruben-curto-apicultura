@@ -1,20 +1,19 @@
 // =============================================
 //  ALQUILERES
 //
-//  Cuatro cosas viven aca:
+//  Lo propio del listado:
 //    1. Navegador de mes de la cabecera. Cambiar de mes recarga la pagina (los
 //       totales de arriba y la tabla se mueven juntos), asi que las flechas son
 //       enlaces comunes; el JS solo agrega la grilla para saltar mas lejos.
 //    2. Chips de estado y paginacion por AJAX sobre la tabla. La cabecera queda
 //       afuera a proposito: mide el mes entero y no se mueve con los filtros.
-//    3. Panel de casa (alta y edicion): solo la propiedad.
-//    4. Modal de contrato, de donde salen el plazo, el monto y el inquilino.
+//    3. Los clicks de la tabla, que abren los paneles o el perfil de la casa.
 //
-//  El cobro no esta aca: lo hace la casilla de la primera columna, que maneja
+//  Los paneles (casa, contrato y eliminacion) no estan aca: los comparte con el
+//  perfil de una casa y viven en paneles_alquileres.js.
+//
+//  El cobro tampoco: lo hace la casilla de la primera columna, que maneja
 //  pago_viaje.js. De eso solo queda escuchar el evento para acomodar la fila.
-//
-//  El slide-over y el "mantener presionado" del borrado los aporta paneles.js;
-//  el formato de miles de los montos, formato_miles.js.
 // =============================================
 
 const contenedorTablaCasas = document.getElementById('tabla-alquileres-container');
@@ -209,162 +208,12 @@ if (contenedorChips) {
 vincularPaginacion();
 
 // =============================================
-//  PANEL DE CASA (ALTA Y EDICION)
-// =============================================
-
-function abrirNuevaCasa() {
-    document.getElementById('form-casa').reset();
-    document.getElementById('accion-casa').value = 'nueva_casa';
-    document.getElementById('id-casa-input').value = '';
-    document.getElementById('icono-casa').textContent = 'add_home';
-    document.getElementById('titulo-casa').textContent = 'Nueva casa';
-    document.getElementById('subtitulo-casa').textContent = 'Cargá lo que tengas a mano, después se completa';
-    document.getElementById('boton-guardar-casa').textContent = 'Guardar casa';
-    abrirSlideOver('slide-over-casa');
-}
-
-function abrirEditarCasa(id) {
-    fetch(`/api/casas/${id}/`)
-        .then((respuesta) => {
-            if (!respuesta.ok) throw new Error('No encontrada');
-            return respuesta.json();
-        })
-        .then((casa) => {
-            document.getElementById('form-casa').reset();
-            document.getElementById('accion-casa').value = 'editar_casa';
-            document.getElementById('id-casa-input').value = casa.id;
-            document.getElementById('nombre-casa').value = casa.nombre;
-            document.getElementById('localidad-casa').value = casa.localidad;
-            document.getElementById('direccion-casa').value = casa.direccion;
-
-            document.getElementById('icono-casa').textContent = 'edit_note';
-            document.getElementById('titulo-casa').textContent = 'Editar casa';
-            document.getElementById('subtitulo-casa').textContent = casa.nombre || 'Sin nombre';
-            document.getElementById('boton-guardar-casa').textContent = 'Guardar cambios';
-            abrirSlideOver('slide-over-casa');
-        })
-        .catch(() => abrirModalError('No se pudieron cargar los datos de la casa.'));
-}
-
-// =============================================
-//  MODAL DE CONTRATO
-//
-//  Carga siempre uno nuevo. Mientras haya contrato vigente el boton de la fila
-//  esta bloqueado, asi que llegar aca ya significa que la casa quedo sin
-//  contrato; si vencio uno, el modal precarga sus numeros, que es lo que pasa
-//  al renovar: mismo inquilino, plazo nuevo, monto que casi siempre se retoca.
-// =============================================
-
-const modalContrato = document.getElementById('modal-contrato');
-const inicioContrato = document.getElementById('ctr-inicio');
-const finContrato = document.getElementById('ctr-fin');
-
-const formateadorFecha = new Intl.DateTimeFormat('es-AR', { dateStyle: 'short' });
-
-// "2026-01-15" -> "15/1/26". Parseo a mano y no con new Date(texto): eso lo lee
-// como UTC y en Argentina devuelve el dia anterior.
-function comoFecha(iso) {
-    const [anio, mes, dia] = iso.split('-').map(Number);
-    return formateadorFecha.format(new Date(anio, mes - 1, dia));
-}
-
-function cerrarModalContrato() {
-    modalContrato.classList.remove('abierto');
-    document.body.style.overflow = 'auto';
-}
-
-function pintarContratoAnterior(anterior) {
-    const bloque = document.getElementById('ctr-anterior');
-    if (!anterior) {
-        bloque.hidden = true;
-        return;
-    }
-    document.getElementById('ctr-anterior-detalle').textContent =
-        `${comoFecha(anterior.inicio)} – ${comoFecha(anterior.fin)} · $${Number(anterior.monto_mensual).toLocaleString('es-AR', { maximumFractionDigits: 0 })}`;
-    bloque.hidden = false;
-}
-
-// Deja el formulario cargado con un contrato, o vacio si viene null
-function ponerContratoEnFormulario(contrato) {
-    inicioContrato.value = contrato ? contrato.inicio : '';
-    finContrato.value = contrato ? contrato.fin : '';
-    document.getElementById('ctr-comision').value = contrato ? contrato.comision_inmobiliaria : '';
-    document.getElementById('ctr-inquilino').value = contrato ? contrato.nombre_inquilino : '';
-    ponerValorMiles(document.getElementById('ctr-monto'), contrato ? contrato.monto_mensual : '');
-}
-
-function abrirContrato(idCasa) {
-    fetch(`/api/casas/${idCasa}/contrato/`)
-        .then((respuesta) => {
-            if (!respuesta.ok) throw new Error('No encontrada');
-            return respuesta.json();
-        })
-        .then((datos) => {
-            // El boton llega bloqueado cuando hay contrato vigente, pero la tabla
-            // se refresca por AJAX y podria estar vieja: el servidor manda igual el
-            // vigente y aca se corta antes de abrir un formulario que va a rebotar.
-            if (datos.vigente) {
-                abrirModalError('La casa ya tiene un contrato vigente. Vas a poder cargar '
-                              + 'el próximo cuando ese se venza.');
-                return;
-            }
-
-            document.getElementById('form-contrato').reset();
-            document.getElementById('ctr-id-casa').value = datos.casa.id;
-            document.getElementById('ctr-casa').textContent = datos.casa.nombre;
-
-            // Renovar es casi siempre el mismo inquilino con otro plazo y otro
-            // monto: precargo lo que se repite y dejo las fechas en blanco, que es
-            // justo lo que hay que decidir.
-            ponerContratoEnFormulario(datos.anterior);
-            inicioContrato.value = '';
-            finContrato.value = '';
-            pintarContratoAnterior(datos.anterior);
-
-            modalContrato.classList.add('abierto');
-            document.body.style.overflow = 'hidden';
-            inicioContrato.focus();
-        })
-        .catch(() => abrirModalError('No se pudo cargar el contrato de la casa.'));
-}
-
-document.addEventListener('keydown', (evento) => {
-    if (evento.key === 'Escape' && modalContrato.classList.contains('abierto')) {
-        cerrarModalContrato();
-    }
-});
-
-// =============================================
-//  ELIMINACION DE UNA CASA
-// =============================================
-
-function abrirModalEliminar({ accion, idCasa = '', titulo, texto }) {
-    document.getElementById('accion-eliminar').value = accion;
-    document.getElementById('id-casa-eliminar').value = idCasa;
-    document.getElementById('titulo-eliminar-alquiler').textContent = titulo;
-    document.getElementById('texto-eliminar-alquiler').innerHTML = texto;
-
-    document.getElementById('modal-eliminar-alquiler').classList.add('abierto');
-    document.body.style.overflow = 'hidden';
-}
-
-function cerrarModalEliminarAlquiler() {
-    document.getElementById('modal-eliminar-alquiler').classList.remove('abierto');
-    document.body.style.overflow = 'auto';
-
-    // Reseteo el boton de "mantener apretado" por si quedo a medias
-    const boton = document.getElementById('boton-confirmar-eliminar');
-    if (boton) {
-        boton.classList.remove('manteniendo');
-        const etiqueta = boton.querySelector('span');
-        if (etiqueta && boton.dataset.textoOriginal) {
-            etiqueta.innerText = boton.dataset.textoOriginal;
-        }
-    }
-}
-
-// =============================================
 //  DELEGACION DE EVENTOS
+//
+//  La fila entera lleva al perfil de la casa, pero la primera celda y la de
+//  acciones no: ahi el click ya significa otra cosa. Por eso el enlace no
+//  envuelve la fila (un <a> no puede contener la casilla ni los botones) sino
+//  que el salto se resuelve aca, descartando primero esos dos casos.
 // =============================================
 
 // La tabla se reemplaza por AJAX, asi que los clicks se escuchan en el contenedor
@@ -377,18 +226,25 @@ if (contenedorTablaCasas) {
         const eliminar = evento.target.closest('.alq-boton-icono.eliminar');
 
         if (contrato) {
-            abrirContrato(contrato.dataset.id);
-        } else if (editar) {
-            abrirEditarCasa(editar.dataset.id);
-        } else if (eliminar) {
-            abrirModalEliminar({
-                accion: 'eliminar_casa',
-                idCasa: eliminar.dataset.id,
-                titulo: 'Eliminar casa',
-                texto: `¿Seguro que querés eliminar <b>${eliminar.dataset.nombre}</b>? `
-                     + 'Sale del listado, pero sus pagos quedan guardados.',
-            });
+            abrirContratoNuevo(contrato.dataset.id);
+            return;
         }
+        if (editar) {
+            abrirEditarCasa(editar.dataset.id);
+            return;
+        }
+        if (eliminar) {
+            abrirEliminarCasa(eliminar.dataset.id, eliminar.dataset.nombre);
+            return;
+        }
+
+        // Cualquier otro punto de la fila abre el perfil. La casilla de cobro y
+        // los botones ya salieron arriba; la celda de la casilla se descarta
+        // entera para que el click al costado del tilde no navegue.
+        if (evento.target.closest('.pago-celda, .alq-col-acciones')) return;
+
+        const fila = evento.target.closest('tr[data-perfil]');
+        if (fila) window.location.href = fila.dataset.perfil;
     });
 }
 

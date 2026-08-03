@@ -21,7 +21,16 @@
   </thead>
   <tbody>
     {% for casa in casas %}
-      <tr>
+      {% comment %}
+        La fila entera lleva al perfil de la casa (lo resuelve alquileres.js:
+        un <a> no puede envolver un <tr> ni contener la casilla y los botones).
+        El mes y el filtro viajan con ella para que el enlace de vuelta del
+        perfil devuelva a la pantalla exacta de la que se salio.
+
+        La casa dada de baja no tiene perfil: aparece solo como registro del
+        pago de ese mes, y el perfil solo trabaja con casas vigentes.
+      {% endcomment %}
+      <tr {% if casa.activa %}class="alq-fila-perfil" data-perfil="{% url 'informacion_alquileres' casa.id %}?mes={{ periodo|date:'Y-m' }}{% if estado %}&amp;estado={{ estado }}{% endif %}"{% endif %}>
         {% comment %}
           Unica via de carga del cobro: tildar guarda el alquiler entero al precio
           de la casa con fecha de hoy, y destildar lo borra.
@@ -53,7 +62,17 @@
             <span class="alq-casa__icono material-symbols-outlined">home_work</span>
             <div class="alq-casa__datos">
               <span class="alq-casa__nombre">
-                {{ casa.nombre|default:"Sin nombre" }}
+                {% comment %}
+                  El nombre es un enlace de verdad y no solo la fila clickeable:
+                  sin el, al perfil no se llega con el teclado ni se puede abrir
+                  en otra pestaña.
+                {% endcomment %}
+                {% if casa.activa %}
+                  <a class="alq-casa__enlace"
+                     href="{% url 'informacion_alquileres' casa.id %}?mes={{ periodo|date:'Y-m' }}{% if estado %}&amp;estado={{ estado }}{% endif %}">{{ casa.nombre|default:"Sin nombre" }}</a>
+                {% else %}
+                  {{ casa.nombre|default:"Sin nombre" }}
+                {% endif %}
                 {% comment %}
                   Una casa dada de baja solo aparece en los meses que tienen pago
                   cargado, para que esa plata no se pierda del total. Sin avisarlo

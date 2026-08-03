@@ -459,6 +459,32 @@
   color: var(--text-strong);
 }
 
+/* La fila entera lleva al perfil de la casa. La casa dada de baja no lo tiene:
+   aparece solo como registro del pago del mes, y su fila no lleva la clase. */
+.alq-fila-perfil {
+  cursor: pointer;
+}
+
+/* El nombre es ademas un enlace de verdad, que es como se llega con el teclado.
+   Sin subrayado: el que subraya la fila entera al pasar el mouse es el hover de
+   la tabla, y dos señales para el mismo destino ensucian la lista. */
+.alq-casa__enlace {
+  color: inherit;
+  text-decoration: none;
+}
+
+.alq-fila-perfil:hover .alq-casa__enlace,
+.alq-casa__enlace:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.alq-casa__enlace:focus-visible {
+  outline: none;
+  border-radius: var(--radius-xs);
+  box-shadow: var(--ring);
+}
+
 .alq-casa__direccion {
   font-size: var(--text-xs);
   color: var(--text-muted);
@@ -883,83 +909,6 @@
   border-color: var(--color-rojo-eliminacion);
 }
 
-/* --- TOGGLE "ESTA ALQUILADA" --- */
-.fila-toggle {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.85rem 1rem;
-  background-color: var(--surface-sunken);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-}
-
-.texto-toggle {
-  display: flex;
-  flex-direction: column;
-}
-
-.titulo-toggle {
-  font-size: var(--text-sm);
-  font-weight: var(--weight-semibold);
-  color: var(--text-strong);
-}
-
-.subtitulo-toggle {
-  font-size: var(--text-xs);
-  color: var(--text-muted);
-  margin-top: 1px;
-}
-
-.switch {
-  position: relative;
-  display: inline-block;
-  width: 44px;
-  height: 24px;
-  flex: none;
-}
-
-.switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.slider {
-  position: absolute;
-  cursor: pointer;
-  inset: 0;
-  background-color: var(--sand-300);
-  transition: background-color var(--dur-normal) var(--ease-standard);
-  border-radius: var(--radius-pill);
-}
-
-.slider:before {
-  position: absolute;
-  content: "";
-  height: 18px;
-  width: 18px;
-  left: 3px;
-  bottom: 3px;
-  background-color: var(--color-blanco);
-  box-shadow: var(--shadow-sm);
-  transition: transform var(--dur-normal) var(--ease-standard);
-  border-radius: 50%;
-}
-
-.switch input:checked + .slider {
-  background-color: var(--brand);
-}
-
-.switch input:checked + .slider:before {
-  transform: translateX(20px);
-}
-
-.switch input:focus-visible + .slider {
-  box-shadow: var(--ring);
-}
-
 /* --- PIE DEL PANEL --- */
 .panel-pie {
   padding: 1rem 1.5rem;
@@ -1154,12 +1103,6 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
-}
-
-.ctr-nota {
-  margin-top: 0.5rem;
-  font-size: var(--text-xs);
-  color: var(--text-muted);
 }
 
 .ctr-fila {

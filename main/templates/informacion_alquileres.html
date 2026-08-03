@@ -1,0 +1,504 @@
+{% extends "base.html" %}
+{% load static %}
+{% load static_version %}
+{% load humanize %}
+{% load l10n %}
+
+{% comment %}
+  Perfil de una casa en alquiler.
+
+  Tres bloques, de lo que hay que resolver hoy a lo que ya paso: el contrato
+  vigente, los gastos que la casa se come y el historial de contratos.
+
+  El contrato no se muestra como dos fechas sueltas sino como los meses que hay
+  para cobrar, cada uno pintado segun si entro la plata. Esa es la unidad en la
+  que piensa todo el modulo (el periodo de un pago es siempre un dia 1) y de un
+  vistazo contesta las dos preguntas que traen a esta pantalla: cuanto falta
+  para que venza y cuantos meses quedaron sin cobrar.
+
+  A diferencia del listado, esta pagina no depende de ningun mes: muestra el
+  contrato que corre hoy. El mes del que se venia viaja en la URL y se usa solo
+  para el enlace de vuelta.
+{% endcomment %}
+
+{% block nombre-pestaña %}
+  <title> {{ casa.nombre|default:"Casa" }} </title>
+{% endblock %}
+
+{% block links %}
+  {% comment %}
+    alquileres.css trae los tres paneles compartidos con el listado (casa,
+    contrato y eliminacion); lo propio del perfil va en su hoja.
+  {% endcomment %}
+  <link rel="stylesheet" href="{% static_v 'alquileres.css' %}">
+  {# El chip + popover de fechas que filtra los gastos, el mismo de deudores #}
+  <link rel="stylesheet" href="{% static_v 'filtro_fechas.css' %}">
+  <link rel="stylesheet" href="{% static_v 'informacion_alquileres.css' %}">
+{% endblock %}
+
+{% block cabecera %}
+  <a href="{{ volver_url }}" class="boton-volver">
+    <span class="material-symbols-outlined">arrow_back</span>
+    Volver a Alquileres
+  </a>
+{% endblock %}
+
+{% block area-trabajo %}
+<div id="perfil-casa">
+
+  <!-- IDENTIDAD DE LA CASA + ACCIONES
+       La casa guarda solo cuatro datos y todos entran aca: una tarjeta aparte
+       para tres renglones seria mas marco que contenido. -->
+  <header class="casa-cabecera">
+    <div class="casa-identidad">
+      <span class="casa-identidad__icono material-symbols-outlined">home_work</span>
+      <div class="casa-identidad__datos">
+        <h2 class="casa-identidad__nombre">{{ casa.nombre|default:"Sin nombre" }}</h2>
+        <p class="casa-identidad__meta">
+          {% if casa.direccion %}
+            <span class="casa-dato">
+              <span class="material-symbols-outlined">location_on</span>
+              {{ casa.direccion }}{% if casa.localidad %}, {{ casa.localidad }}{% endif %}
+            </span>
+          {% elif casa.localidad %}
+            <span class="casa-dato">
+              <span class="material-symbols-outlined">location_on</span>
+              {{ casa.localidad }}
+            </span>
+          {% else %}
+            <span class="casa-dato es-vacio">Sin dirección cargada</span>
+          {% endif %}
+
+          {% comment %}
+            El estado del mes en curso: es el mismo que muestra el listado y
+            evita tener que volver para saber si ya se cobró.
+          {% endcomment %}
+          {% if casa.estado_mes == "Cobrado" %}
+            <span class="alq-pildora alq-pildora--cobrada">
+              <span class="alq-pildora__punto"></span>Cobrado este mes
+            </span>
+          {% elif casa.estado_mes == "Pendiente de cobro" %}
+            <span class="alq-pildora alq-pildora--pendiente">
+              <span class="alq-pildora__punto"></span>Pendiente de cobro
+            </span>
+          {% else %}
+            <span class="alq-pildora alq-pildora--libre">
+              <span class="alq-pildora__punto"></span>Sin alquilar
+            </span>
+          {% endif %}
+        </p>
+      </div>
+    </div>
+
+    <div class="casa-acciones">
+      <button type="button" class="boton-accion boton-editar" id="boton-editar-casa"
+              data-id="{{ casa.id }}">
+        <span class="material-symbols-outlined">edit</span>
+        Editar casa
+      </button>
+      <button type="button" class="boton-accion boton-cancelar" id="boton-eliminar-casa"
+              data-id="{{ casa.id }}" data-nombre="{{ casa.nombre|default:'Sin nombre' }}">
+        <span class="material-symbols-outlined">delete</span>
+        Eliminar casa
+      </button>
+    </div>
+  </header>
+
+  {% comment %}
+    ================= CONTRATO VIGENTE =================
+    Tres cosas y nada mas: cuanto es, quien y por cuanto tiempo. Las acciones
+    van como iconos en el titulo de la seccion, como en las filas de la tabla,
+    asi la tarjeta queda con datos solamente.
+  {% endcomment %}
+  <section class="perfil-seccion">
+    <div class="seccion-info-header seccion-info-header--con-accion">
+      <h4><span class="material-symbols-outlined">contract</span> Contrato vigente</h4>
+
+      {% if contrato %}
+        {% comment %}
+          Los montos van sin localizar: el locale es-ar los escribe con coma
+          ("5,00") y asi un input type="number" los rechaza y el campo queda
+          vacio. El formato para mostrarlos lo pone despues formato_miles.js.
+        {% endcomment %}
+        <div class="alq-acciones">
+          <button type="button" class="alq-boton-icono editar boton-contrato-editar"
+                  title="Editar contrato"
+                  data-contrato="{{ contrato.id }}"
+                  data-casa="{{ casa.nombre|default:'Sin nombre' }}"
+                  data-inicio="{{ contrato.inicio|date:'Y-m-d' }}"
+                  data-fin="{{ contrato.fin|date:'Y-m-d' }}"
+                  data-monto="{{ contrato.monto_mensual|unlocalize }}"
+                  data-comision="{{ contrato.comision_inmobiliaria|unlocalize|default_if_none:'' }}"
+                  data-inquilino="{{ contrato.nombre_inquilino|default_if_none:'' }}">
+            <span class="material-symbols-outlined">edit</span>
+          </button>
+          <button type="button" class="alq-boton-icono eliminar boton-contrato-eliminar"
+                  title="Eliminar contrato"
+                  data-contrato="{{ contrato.id }}"
+                  data-plazo="del {{ contrato.inicio|date:'d/m/Y' }}{% if contrato.fin %} al {{ contrato.fin|date:'d/m/Y' }}{% endif %}">
+            <span class="material-symbols-outlined">delete</span>
+          </button>
+        </div>
+      {% endif %}
+    </div>
+
+    {% if contrato %}
+      <article class="contrato-tarjeta">
+
+        {% comment %}
+          El alquiler es el numero del que cuelga todo lo demas, asi que va solo
+          y grande. Lo que sigue es el mismo dato leido de otra manera, en un
+          renglon y sin rotulos: cada valor trae su unidad y se explica solo.
+        {% endcomment %}
+        <p class="contrato-monto"><span class="contrato-monto__signo">$</span>{{ contrato.monto_mensual|floatformat:"0"|intcomma }}</p>
+
+        <p class="contrato-meta">
+          <span>por mes</span>
+          {% if contrato.comision_inmobiliaria %}
+            <span>{{ contrato.comision_inmobiliaria|floatformat:"-2" }}% inmobiliaria</span>
+            <span>${{ contrato.neto_mensual|floatformat:"0"|intcomma }} neto</span>
+          {% endif %}
+          {% if contrato.nombre_inquilino %}
+            <span>{{ contrato.nombre_inquilino }}</span>
+          {% endif %}
+        </p>
+
+        {% comment %}
+          LA TIRA DEL PLAZO.
+
+          Una celda por mes del contrato, llena cuando ese mes se cobro, con las
+          dos fechas en los extremos. El contrato se lee entero de una: cuando
+          arranco, cuanto le falta y que meses quedaron sin cobrar.
+
+          Sin leyenda a proposito: el verde lleno frente al hueco punteado ya se
+          entiende, y cada celda dice su mes y su estado al pasar el mouse.
+        {% endcomment %}
+        <div class="plazo">
+          <div class="plazo__extremos">
+            <span class="plazo__fecha">{{ contrato.inicio|date:"d/m/Y" }}</span>
+            <span class="plazo__fecha">
+              {% if contrato.fin %}
+                {{ contrato.fin|date:"d/m/Y" }}
+              {% else %}
+                <span class="es-vacio">Sin vencimiento</span>
+              {% endif %}
+            </span>
+          </div>
+
+          <ol class="plazo__meses">
+            {% for mes in meses %}
+              <li class="plazo__mes{% if mes.cobrado %} es-cobrado{% elif mes.es_futuro %} es-futuro{% else %} es-adeudado{% endif %}{% if mes.es_actual %} es-actual{% endif %}"
+                  title="{{ mes.periodo|date:'F \d\e Y'|capfirst }}: {% if mes.cobrado %}cobrado{% elif mes.es_futuro %}todavía no vence{% else %}sin cobrar{% endif %}">
+                <span class="plazo__mes-nombre">{{ mes.periodo|date:"M" }}</span>
+                <span class="plazo__mes-marca"></span>
+              </li>
+            {% endfor %}
+
+            {% comment %}
+              Sin fin cargado la tira no termina: queda abierta para que se vea
+              que al contrato le falta la fecha de la que depende que la casa
+              pase sola a figurar sin alquilar.
+            {% endcomment %}
+            {% if not contrato.fin %}
+              <li class="plazo__mes plazo__mes--abierto" title="El contrato no tiene fecha de fin, así que no vence nunca">
+                <span class="plazo__mes-nombre">…</span>
+                <span class="plazo__mes-marca"></span>
+              </li>
+            {% endif %}
+          </ol>
+
+          {% if not contrato.fin %}
+            <p class="plazo__nota">Sin fecha de fin no vence nunca, así que la casa no va a pasar sola a figurar sin alquilar.</p>
+          {% endif %}
+        </div>
+      </article>
+
+    {% else %}
+      {% comment %}
+        Sin contrato la casa no tiene precio ni se le puede cobrar el mes, asi que
+        el vacio es una instruccion y no un aviso.
+      {% endcomment %}
+      <div class="estado-vacio estado-vacio--tarjeta">
+        <span class="material-symbols-outlined">contract</span>
+        <h4>La casa no tiene contrato vigente</h4>
+        <p>
+          Sin contrato no hay alquiler que cobrar ni precio que mostrar.
+          {% if casa.fin_contrato_anterior %}
+            El anterior venció el {{ casa.fin_contrato_anterior|date:"d/m/Y" }}.
+          {% endif %}
+        </p>
+        <button type="button" class="boton-nuevo" id="boton-nuevo-contrato" data-id="{{ casa.id }}">
+          <span class="material-symbols-outlined">contract</span>
+          Cargar contrato
+        </button>
+      </div>
+    {% endif %}
+  </section>
+
+  {% comment %}
+    ================= GASTOS =================
+    Lo que la casa se come. Cuelgan de la casa y no del contrato: el impuesto y
+    el arreglo del techo se pagan este alquilada o vacia.
+
+    No se renuevan con el mes: quedan guardados para siempre y por defecto se
+    listan todos. El filtro de fechas solo recorta lo que se ve, y el total del
+    pie es siempre la suma exacta de lo que quedo en pantalla.
+  {% endcomment %}
+  <section class="perfil-seccion">
+    <div class="seccion-info-header seccion-info-header--con-accion">
+      <h4><span class="material-symbols-outlined">receipt_long</span> Gastos</h4>
+
+      <div class="seccion-controles">
+        {% comment %}
+          El mismo chip de deudores y viajes, pidiendo el modo mes: un gasto se
+          mira casi siempre de a un mes ("el inmobiliario de julio"), y con el
+          modo dia habria que tipear las dos puntas para eso.
+        {% endcomment %}
+        {% include "filtro_fechas.html" with modos="mes,rango" %}
+
+        <button type="button" class="boton-nuevo" id="boton-nuevo-gasto">
+          <span class="material-symbols-outlined">add</span>
+          Nuevo gasto
+        </button>
+      </div>
+    </div>
+
+    {% if gastos %}
+      <div class="tabla-contenedor">
+        <table class="tabla-perfil">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Categoría</th>
+              <th>Detalle</th>
+              <th class="texto-derecha">Monto</th>
+              <th class="texto-centro">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for gasto in gastos %}
+              <tr>
+                <td class="celda-fecha">{{ gasto.fecha|date:"d/m/Y" }}</td>
+                <td><span class="etiqueta-gasto">{{ gasto.categoria }}</span></td>
+                <td>{{ gasto.detalle|default:"—" }}</td>
+                <td class="texto-derecha celda-monto">${{ gasto.monto|floatformat:"0"|intcomma }}</td>
+                <td class="texto-centro">
+                  {% comment %}
+                    El monto va sin localizar, igual que en los contratos: el
+                    locale es-ar lo escribe con coma y el formato para mostrarlo
+                    lo pone despues formato_miles.js.
+                  {% endcomment %}
+                  <div class="alq-acciones">
+                    <button type="button" class="alq-boton-icono editar boton-gasto-editar"
+                            title="Editar gasto"
+                            data-gasto="{{ gasto.id }}"
+                            data-fecha="{{ gasto.fecha|date:'Y-m-d' }}"
+                            data-categoria="{{ gasto.categoria }}"
+                            data-detalle="{{ gasto.detalle|default_if_none:'' }}"
+                            data-monto="{{ gasto.monto|unlocalize }}">
+                      <span class="material-symbols-outlined">edit</span>
+                    </button>
+                    <button type="button" class="alq-boton-icono eliminar boton-gasto-eliminar"
+                            title="Eliminar gasto"
+                            data-gasto="{{ gasto.id }}"
+                            data-resumen="{{ gasto.categoria|lower }} del {{ gasto.fecha|date:'d/m/Y' }} por ${{ gasto.monto|floatformat:'0'|intcomma }}">
+                      <span class="material-symbols-outlined">delete</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="3">
+                Total de {{ gastos|length }} gasto{{ gastos|length|pluralize }}
+                {% if gastos_filtrados %}<span class="celda-meses">en {{ fecha_label|lower }}</span>{% endif %}
+              </td>
+              <td class="texto-derecha celda-monto">${{ total_gastos|floatformat:"0"|intcomma }}</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    {% elif gastos_filtrados %}
+      {% comment %}
+        Con el filtro puesto, "no hay gastos cargados" seria mentira: puede haber
+        muchos y ninguno en ese periodo. El vacio tiene que decir cual de las dos
+        cosas es.
+      {% endcomment %}
+      <div class="estado-vacio estado-vacio--tarjeta">
+        <span class="material-symbols-outlined">search_off</span>
+        <h4>No hay gastos en {{ fecha_label|lower }}</h4>
+        <p>Probá con otro período o quitá el filtro para ver todos.</p>
+      </div>
+    {% else %}
+      <div class="estado-vacio estado-vacio--tarjeta">
+        <span class="material-symbols-outlined">receipt_long</span>
+        <h4>Todavía no hay gastos cargados</h4>
+        <p>Impuestos, tasas, arreglos y servicios de la casa. Cargá el primero con "Nuevo gasto".</p>
+      </div>
+    {% endif %}
+  </section>
+
+  <!-- ================= HISTORIAL DE CONTRATOS ================= -->
+  <section class="perfil-seccion">
+    <div class="seccion-info-header">
+      <h4><span class="material-symbols-outlined">history</span> Historial de contratos</h4>
+    </div>
+
+    {% if historial %}
+      <div class="tabla-contenedor">
+        <table class="tabla-perfil">
+          <thead>
+            <tr>
+              <th>Plazo</th>
+              <th>Inquilino</th>
+              <th class="texto-derecha">Alquiler</th>
+              <th class="texto-centro">Estado</th>
+              <th class="texto-centro">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for viejo in historial %}
+              <tr>
+                <td class="celda-fecha">
+                  {{ viejo.inicio|date:"d/m/Y" }} – {% if viejo.fin %}{{ viejo.fin|date:"d/m/Y" }}{% else %}<span class="es-vacio">sin fin</span>{% endif %}
+                  {% if viejo.meses %}<span class="celda-meses">{{ viejo.meses }} mes{{ viejo.meses|pluralize:"es" }}</span>{% endif %}
+                </td>
+                <td>{{ viejo.nombre_inquilino|default:"—" }}</td>
+                <td class="texto-derecha celda-monto">${{ viejo.monto_mensual|floatformat:"0"|intcomma }}</td>
+                <td class="texto-centro">
+                  {% comment %}
+                    Nada impide dejar cargada la renovacion antes de tiempo, asi
+                    que en el historial no todo es pasado: el que todavia no
+                    arranco tiene que decirlo o parece que esta corriendo.
+                  {% endcomment %}
+                  {% if viejo.vencido %}
+                    <span class="alq-pildora alq-pildora--libre">
+                      <span class="alq-pildora__punto"></span>Vencido
+                    </span>
+                  {% else %}
+                    <span class="alq-pildora alq-pildora--pendiente">
+                      <span class="alq-pildora__punto"></span>Por empezar
+                    </span>
+                  {% endif %}
+                </td>
+                <td class="texto-centro">
+                  <div class="alq-acciones">
+                    <button type="button" class="alq-boton-icono editar boton-contrato-editar"
+                            title="Editar contrato"
+                            data-contrato="{{ viejo.id }}"
+                            data-casa="{{ casa.nombre|default:'Sin nombre' }}"
+                            data-inicio="{{ viejo.inicio|date:'Y-m-d' }}"
+                            data-fin="{{ viejo.fin|date:'Y-m-d' }}"
+                            data-monto="{{ viejo.monto_mensual|unlocalize }}"
+                            data-comision="{{ viejo.comision_inmobiliaria|unlocalize|default_if_none:'' }}"
+                            data-inquilino="{{ viejo.nombre_inquilino|default_if_none:'' }}">
+                      <span class="material-symbols-outlined">edit</span>
+                    </button>
+                    <button type="button" class="alq-boton-icono eliminar boton-contrato-eliminar"
+                            title="Eliminar contrato"
+                            data-contrato="{{ viejo.id }}"
+                            data-plazo="del {{ viejo.inicio|date:'d/m/Y' }}{% if viejo.fin %} al {{ viejo.fin|date:'d/m/Y' }}{% endif %}">
+                      <span class="material-symbols-outlined">delete</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="estado-vacio estado-vacio--tarjeta">
+        <span class="material-symbols-outlined">history</span>
+        <h4>Todavía no hay contratos anteriores</h4>
+        <p>Cuando renueves, el contrato que vence queda guardado acá con su plazo y su monto.</p>
+      </div>
+    {% endif %}
+  </section>
+
+</div>
+
+{% comment %}
+  Los paneles de casa, contrato y eliminacion son los mismos del listado.
+{% endcomment %}
+{% include "paneles_alquileres.html" %}
+
+{% comment %}
+  MODAL DE GASTO (alta y edicion).
+
+  Mismo formulario para los dos, como el de contrato: lo unico que cambia es la
+  accion del POST, el titulo y de donde salen los valores.
+
+  La categoria arranca sin elegir, con la opcion vacia deshabilitada: son seis
+  y ninguna es el caso comun, asi que dejar una puesta invita a guardar un gasto
+  mal clasificado sin darse cuenta.
+{% endcomment %}
+<div id="modal-gasto">
+  <div class="ctr-fondo" onclick="cerrarModalGasto()"></div>
+  <div class="ctr-panel" role="dialog" aria-modal="true" aria-labelledby="gasto-titulo">
+    <form id="form-gasto" method="post" autocomplete="off">
+      {% csrf_token %}
+      <input type="hidden" name="accion" id="gasto-accion" value="nuevo_gasto">
+      <input type="hidden" name="id_gasto" id="gasto-id">
+
+      <header class="ctr-cabecera">
+        <div class="ctr-cabecera__texto">
+          <h3 id="gasto-titulo">Nuevo gasto</h3>
+          <p>{{ casa.nombre|default:"Sin nombre" }}</p>
+        </div>
+        <button type="button" class="ctr-cerrar" onclick="cerrarModalGasto()" aria-label="Cerrar">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </header>
+
+      <div class="ctr-cuerpo">
+        <div class="ctr-campo">
+          <label for="gasto-categoria">Categoría</label>
+          <select id="gasto-categoria" name="categoria" required>
+            <option value="" disabled selected>Elegí una categoría</option>
+            {% for categoria in categorias_gasto %}
+              <option value="{{ categoria }}">{{ categoria }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="ctr-fila">
+          <div class="ctr-campo">
+            <label for="gasto-monto">Monto</label>
+            <div class="input-con-icono">
+              <span>$</span>
+              <input type="text" id="gasto-monto" name="monto" placeholder="0" required
+                     class="input-miles-decimal" inputmode="decimal" autocomplete="off">
+            </div>
+          </div>
+
+          <div class="ctr-campo">
+            <label for="gasto-fecha">Fecha</label>
+            <input type="date" id="gasto-fecha" name="fecha" required value="{% now 'Y-m-d' %}">
+          </div>
+        </div>
+
+        <div class="ctr-campo">
+          <label for="gasto-detalle">Detalle <span class="ctr-opcional">opcional</span></label>
+          <input type="text" id="gasto-detalle" name="detalle" maxlength="120"
+                 placeholder="Ej: inmobiliario provincial, cuota 4">
+        </div>
+      </div>
+
+      <footer class="ctr-pie">
+        <button type="submit" class="boton-primario" id="gasto-guardar">Guardar gasto</button>
+        <button type="button" class="boton-secundario" onclick="cerrarModalGasto()">Cancelar</button>
+      </footer>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block codigo-javascript %}
+  <script src="{% static_v 'js/paneles_alquileres.js' %}"></script>
+  <script src="{% static_v 'js/filtro_fechas.js' %}"></script>
+  <script src="{% static_v 'js/informacion_alquileres.js' %}"></script>
+{% endblock %}

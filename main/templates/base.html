@@ -140,7 +140,7 @@
           </a>
         </li>
         <li>
-          <a href="{% url 'alquileres' %}" class="item-menu {% if request.resolver_match.url_name == 'alquileres' %} activo {% endif %}">
+          <a href="{% url 'alquileres' %}" class="item-menu {% if request.resolver_match.url_name == 'alquileres' or request.resolver_match.url_name == 'informacion_alquileres' %} activo {% endif %}">
             <span class="material-symbols-outlined">key</span>
             Alquileres
           </a>

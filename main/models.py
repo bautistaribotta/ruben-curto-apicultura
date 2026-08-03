@@ -804,15 +804,21 @@ class Contrato(models.Model):
     guardar uno nuevo, no editar el viejo: por eso el del año pasado sigue entero
     y los meses de entonces se calculan con el monto de entonces.
 
-    El fin admite null y significa "sin vencimiento cargado", que es el contrato
-    que no caduca. El formulario si lo pide, porque de esa fecha depende que la
-    casa pase sola a figurar sin alquilar; el null existe para los contratos que
-    vinieron de la migracion y todavia no se completaron.
+    Las dos fechas son obligatorias: de ellas cuelga el estado de la casa mes a
+    mes, y sin fin el contrato no vence nunca, asi que la casa jamas pasaria sola
+    a figurar sin alquilar. Lo piden el formulario, el servicio y el admin.
+
+    La columna todavia acepta null por una sola razon: los contratos que trajo la
+    migracion desde la tabla de casas quedaron sin fin, porque la casa no guardaba
+    esa fecha. Es un estado heredado y no una opcion; cuando esos contratos tengan
+    su vencimiento, el null se saca de la base con una migracion.
     """
     casa = models.ForeignKey(Casa, on_delete=models.CASCADE, related_name="contratos",
                              db_column="id_casa")
     inicio = models.DateField()
-    fin = models.DateField(null=True, blank=True)
+    # Sin blank: el admin es la unica pantalla que quedaba dejando guardar un
+    # contrato sin vencimiento, y con esto tambien lo exige
+    fin = models.DateField(null=True)
     monto_mensual = models.DecimalField(max_digits=12, decimal_places=2)
     comision_inmobiliaria = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     # Opcional: el contrato sirve igual sin saber el nombre del inquilino
@@ -829,6 +835,25 @@ class Contrato(models.Model):
         return self.fin is not None and self.fin < timezone.localdate()
 
     @property
+    def comision_monto(self):
+        """Cuanto se lleva la inmobiliaria por mes, en pesos.
+
+        La misma cuenta que Casa.comision_monto, pero sobre el contrato en si.
+        La de la casa sale de las anotaciones del mes que se este mirando y solo
+        sirve para el listado; esta vale para cualquier contrato, incluso los del
+        historial, que es lo que necesita el perfil.
+
+        Sin comision cargada la casa se administra sola y no se lleva nada.
+        """
+        porcentaje = self.comision_inmobiliaria or Decimal("0")
+        return (self.monto_mensual * porcentaje / Decimal("100")).quantize(Decimal("0.01"))
+
+    @property
+    def neto_mensual(self):
+        # Lo que le queda a la empresa una vez descontada la inmobiliaria
+        return self.monto_mensual - self.comision_monto
+
+    @property
     def meses(self):
         """Duracion en meses, redondeada hacia arriba, o None si no tiene fin.
 
@@ -843,6 +868,48 @@ class Contrato(models.Model):
     def __str__(self):
         hasta = self.fin.strftime("%d/%m/%Y") if self.fin else "sin vencimiento"
         return f"Contrato de {self.casa} desde {self.inicio:%d/%m/%Y} hasta {hasta}"
+
+
+class GastoCasa(models.Model):
+    """Plata que la casa se come: impuestos, tasas, arreglos, servicios.
+
+    Cuelga de la casa y no del contrato, a proposito: el impuesto inmobiliario y
+    el arreglo del techo se pagan este alquilada o vacia, y siguen siendo de la
+    casa cuando el inquilino cambia.
+
+    No hereda de GastoBase, que es el gasto de un viaje, porque no le sirve
+    ninguno de los tres campos: la fecha es auto_now_add y aca hay que poder
+    cargar una boleta de la semana pasada, el monto es entero y estos llevan
+    centavos, y las categorias son de ruta (combustible, peaje, hotel).
+    """
+    CATEGORIAS = [
+        ("Impuestos", "Impuestos"),
+        ("Tasas municipales", "Tasas municipales"),
+        ("Mantenimiento", "Mantenimiento"),
+        ("Servicios", "Servicios"),
+        ("Seguro", "Seguro"),
+        ("Otros", "Otros"),
+    ]
+
+    casa = models.ForeignKey(Casa, on_delete=models.CASCADE, related_name="gastos",
+                             db_column="id_casa")
+    # default y no auto_now_add: el gasto se carga cuando se puede, no el dia que
+    # se pago, y la fecha de la boleta es la que vale
+    fecha = models.DateField(default=timezone.localdate)
+    categoria = models.CharField(max_length=30, choices=CATEGORIAS)
+    # Opcional: la categoria ya ubica el gasto, el detalle solo lo aclara
+    detalle = models.CharField(max_length=120, null=True, blank=True)
+    monto = models.DecimalField(max_digits=12, decimal_places=2)
+
+    class Meta:
+        db_table = "gastos_casas"
+        verbose_name = "Gasto de casa"
+        verbose_name_plural = "Gastos de casas"
+        # Del mas nuevo al mas viejo; el id desempata los del mismo dia
+        ordering = ["-fecha", "-id"]
+
+    def __str__(self):
+        return f"{self.categoria} de {self.monto} el {self.fecha:%d/%m/%Y} ({self.casa})"
 
 
 class PagoAlquiler(models.Model):

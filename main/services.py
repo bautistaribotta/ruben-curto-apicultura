@@ -15,7 +15,7 @@ from django.core.cache import cache
 from .models import (Producto, Cliente, Operacion, DetalleOperacion, Pago, Cotizaciones, Empleado, PagosEmpleados,
                      Vehiculo, Viaje, DetalleViaje, Gasto, ViajeCereal, DetalleViajeCereal, GastoViajeCereal,
                      ViajeReparto, GastoViajeReparto, DestinoViajeReparto, Casa, Contrato, PagoAlquiler,
-                     contratos_del_periodo, periodo_actual)
+                     GastoCasa, contratos_del_periodo, periodo_actual)
 
 
 def _aplicar_estado_pago(viaje, pagado):
@@ -2633,6 +2633,24 @@ def editar_contrato(id_contrato, inicio=None, fin=None, monto_mensual=None,
     return contrato
 
 
+def eliminar_contrato(id_contrato):
+    """Borra un contrato. Es para el que se cargo mal, no para el que se termino.
+
+    Un contrato terminado no se borra: vence solo el dia que pasa su fin y queda
+    en el historial, que es justamente para lo que existe la tabla. Por eso el
+    borrado es de verdad y no logico: lo unico que llega hasta aca es un registro
+    equivocado, y guardarlo solo ensuciaria la cadena.
+
+    Los pagos cuelgan de la casa y no del contrato, asi que no se van con el. Los
+    meses que cubria pasan a figurar sin alquilar, pero los que tenian cobro
+    cargado lo conservan y siguen sumando al total de su mes.
+    """
+    contrato = get_object_or_404(Contrato, id=id_contrato)
+    id_casa = contrato.casa_id
+    contrato.delete()
+    return id_casa
+
+
 def _contrato_en_dict(contrato):
     if contrato is None:
         return None
@@ -2812,4 +2830,163 @@ def obtener_resumen_alquileres(casas, periodo=None):
         "cobrado": cobrado,
         "pendientes": pendientes,
         "monto_pendiente": monto_pendiente,
+    }
+
+
+# ==========================================================================
+#  GASTOS DE UNA CASA
+# ==========================================================================
+
+# Las categorias vienen del modelo para no tener dos listas que se separen: el
+# formulario dibuja estas mismas opciones y la validacion corta contra ellas.
+CATEGORIAS_GASTO_CASA = [clave for clave, _ in GastoCasa.CATEGORIAS]
+
+
+def _validar_gasto_casa(categoria, fecha, monto, detalle):
+    """Limpia y valida un gasto. Devuelve la tupla ya normalizada.
+
+    Los tres primeros son obligatorios: un gasto sin monto no es un gasto, y sin
+    fecha ni categoria no hay forma de ordenarlo ni de saber de que es. El
+    detalle si es opcional, porque la categoria ya ubica el gasto.
+    """
+    categoria = _texto_opcional(categoria, 30, "La categoría del gasto")
+    if categoria not in CATEGORIAS_GASTO_CASA:
+        raise ValueError("Elegí una categoría de la lista.")
+
+    fecha = _fecha_obligatoria(fecha, "La fecha del gasto")
+
+    # Tope por DecimalField(max_digits=12, decimal_places=2): 10 enteros
+    monto = _decimal_opcional(monto, "El monto del gasto", Decimal("9999999999.99"))
+    if not monto:
+        raise ValueError("El monto del gasto es obligatorio y tiene que ser mayor a cero.")
+
+    return categoria, fecha, monto, _texto_opcional(detalle, 120, "El detalle del gasto")
+
+
+def crear_gasto_casa(id_casa, categoria=None, fecha=None, monto=None, detalle=None):
+    casa = get_object_or_404(Casa, id=id_casa, activa=True)
+    categoria, fecha, monto, detalle = _validar_gasto_casa(categoria, fecha, monto, detalle)
+    return GastoCasa.objects.create(casa=casa, categoria=categoria, fecha=fecha,
+                                    monto=monto, detalle=detalle)
+
+
+def editar_gasto_casa(id_gasto, categoria=None, fecha=None, monto=None, detalle=None):
+    gasto = get_object_or_404(GastoCasa, id=id_gasto)
+    gasto.categoria, gasto.fecha, gasto.monto, gasto.detalle = _validar_gasto_casa(
+        categoria, fecha, monto, detalle
+    )
+    gasto.save()
+    return gasto
+
+
+def eliminar_gasto_casa(id_gasto):
+    """Borrado de verdad y no logico: un gasto mal cargado no es historia.
+
+    A diferencia de la casa, el gasto no tiene nada colgando que se pierda al
+    borrarlo, asi que no hace falta la baja logica que usa el resto del sistema.
+    """
+    gasto = get_object_or_404(GastoCasa, id=id_gasto)
+    id_casa = gasto.casa_id
+    gasto.delete()
+    return id_casa
+
+
+# ==========================================================================
+#  PERFIL DE UNA CASA
+# ==========================================================================
+
+# Tope de meses que dibuja la tira del plazo. Un alquiler no pasa de unos pocos
+# años; el tope esta para que un fin mal tipeado (2226 en vez de 2026) no arme
+# una tira de dos mil celdas.
+MAX_MESES_TIRA = 60
+
+
+def meses_del_contrato(contrato):
+    """Un item por cada mes que cubre el contrato, con si el alquiler se cobro.
+
+    Es lo que dibuja la tira del perfil. El plazo no se muestra como dos fechas
+    sueltas sino como los meses que hay para cobrar, que es la unidad en la que
+    piensa todo el modulo: el periodo de un pago es siempre un dia 1, y de ahi
+    sale el estado de cada mes en el listado.
+
+    Los cobros se traen de una sola query y se resuelven contra un set, asi la
+    tira no dispara una consulta por celda.
+    """
+    desde = date(contrato.inicio.year, contrato.inicio.month, 1)
+    # Sin fin cargado el contrato no caduca, asi que la tira llega hasta hoy y
+    # ahi queda abierta: los meses que siguen todavia no son un compromiso. El
+    # max cubre al contrato que arranca mas adelante, que si tiene meses propios.
+    tope = contrato.fin or max(timezone.localdate(), contrato.inicio)
+    hasta = date(tope.year, tope.month, 1)
+
+    cobrados = set(
+        PagoAlquiler.objects
+        .filter(casa_id=contrato.casa_id, periodo__range=(desde, hasta))
+        .values_list("periodo", flat=True)
+    )
+
+    actual = periodo_actual()
+    meses = []
+    periodo = desde
+    while periodo <= hasta and len(meses) < MAX_MESES_TIRA:
+        meses.append({
+            "periodo": periodo,
+            "cobrado": periodo in cobrados,
+            "es_actual": periodo == actual,
+            "es_futuro": periodo > actual,
+        })
+        periodo = mes_desplazado(periodo, 1)
+
+    return meses
+
+
+def obtener_detalle_alquiler(id_casa, desde=None, hasta=None):
+    """Todo lo que necesita el perfil de una casa, en una sola pasada.
+
+    El desde y el hasta son solo para los gastos: el contrato y el historial no
+    dependen de ningun periodo, muestran siempre lo que hay.
+
+    Reparte los contratos en dos: el que corre hoy, que es el que se muestra
+    entero y con la tira de meses, y el resto, que va al historial. En el resto
+    entran los que ya vencieron y tambien los que todavia no arrancaron, que
+    existen porque nada impide dejar cargada la renovacion antes de tiempo.
+
+    El vigente se busca en la lista ya traida y no con otra query: son un puñado
+    de contratos por casa y el historial los necesita igual.
+    """
+    casa = obtener_casa(id_casa)
+    hoy = timezone.localdate()
+
+    # El orden del modelo es del mas nuevo al mas viejo, que es como los quiere
+    # el historial
+    contratos = list(casa.contratos.all())
+    vigente = next(
+        (c for c in contratos
+         if c.inicio <= hoy and (c.fin is None or c.fin >= hoy)),
+        None,
+    )
+
+    meses = meses_del_contrato(vigente) if vigente else []
+
+    # Los gastos no dependen del contrato ni se renuevan con el mes: son de la
+    # casa y quedan guardados para siempre. Sin filtro se muestran todos, y el
+    # filtro solo recorta lo que se ve, nunca borra nada.
+    #
+    # La suma se hace en Python sobre la lista ya traida, que es la misma que
+    # pinta la tabla, asi el total no puede discrepar con lo que se ve.
+    gastos = list(_acotar_rango(casa.gastos.all(), "fecha", desde, hasta,
+                                es_fecha_hora=False))
+
+    return {
+        "casa": casa,
+        "contrato": vigente,
+        "meses": meses,
+        "meses_cobrados": sum(1 for mes in meses if mes["cobrado"]),
+        "historial": [c for c in contratos if c is not vigente],
+        "gastos": gastos,
+        "total_gastos": sum((g.monto for g in gastos), Decimal("0")),
+        "categorias_gasto": CATEGORIAS_GASTO_CASA,
+        # Para poder decir "no hay gastos en ese periodo" en vez de "no hay
+        # gastos", que con un filtro puesto seria mentira
+        "gastos_filtrados": bool(desde or hasta),
     }

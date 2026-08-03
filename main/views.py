@@ -1,5 +1,5 @@
 import json
-from datetime import date
+from datetime import date, timedelta
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
@@ -39,7 +39,9 @@ from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo
                        obtener_destinos_reparto, crear_destino_reparto, editar_destino_reparto,
                        eliminar_destino_reparto,
                        obtener_casas, obtener_datos_casa, crear_casa, editar_casa, eliminar_casa,
-                       crear_contrato, editar_contrato, obtener_contrato_de_casa,
+                       crear_contrato, editar_contrato, eliminar_contrato, obtener_contrato_de_casa,
+                       obtener_detalle_alquiler,
+                       crear_gasto_casa, editar_gasto_casa, eliminar_gasto_casa,
                        obtener_resumen_alquileres, marcar_pago_alquiler, resolver_periodo,
                        mes_desplazado, FILTROS_ALQUILERES)
 
@@ -87,6 +89,27 @@ def _rango_fechas(request):
         "hasta": hasta.isoformat() if hasta else "",
         "fecha_label": fecha_label,
     }
+    return desde, hasta, ctx
+
+
+def _rango_gastos(request):
+    """Igual que _rango_fechas pero etiquetando el mes entero por su nombre.
+
+    Los gastos de una casa se miran casi siempre de a un mes, y ahi "Julio 2026"
+    se lee mejor que "01/07 – 31/07/2026". Como el popover manda el mes expandido
+    a sus dos extremos, el mes entero se reconoce por las fechas y no hace falta
+    ningun parametro nuevo.
+
+    Va aparte y no dentro de _rango_fechas para no cambiarle la etiqueta a
+    deudores y a viajes, que no ofrecen el modo mes.
+    """
+    desde, hasta, ctx = _rango_fechas(request)
+
+    if (desde and hasta and desde.day == 1
+            and (desde.year, desde.month) == (hasta.year, hasta.month)
+            and hasta + timedelta(days=1) == mes_desplazado(desde, 1)):
+        ctx["fecha_label"] = date_format(desde, "F Y").capitalize()
+
     return desde, hasta, ctx
 
 
@@ -1692,6 +1715,122 @@ def alquileres(request):
     })
 
     return render(request, "alquileres.html", contexto)
+
+
+@staff_member_required(login_url="inicio")
+def informacion_alquileres(request, id_casa):
+    """Perfil de una casa: la propiedad, su contrato vigente y el historial.
+
+    Comparte los tres paneles con el listado (casa, contrato y eliminacion), asi
+    que tambien comparte las acciones del POST. La diferencia esta en a donde
+    vuelve cada una: todas recargan este mismo perfil, salvo la baja de la casa,
+    que lo deja sin sujeto y devuelve al listado.
+
+    El mes y el filtro con los que se venia mirando el listado viajan en la URL y
+    solo se usan para armar el enlace de vuelta: el perfil no depende de un mes,
+    muestra el contrato que corre hoy.
+    """
+    volver = reverse("alquileres")
+    parametros = []
+    periodo_visto = resolver_periodo(request.GET.get("mes"))
+    if periodo_visto != periodo_actual():
+        parametros.append(f"mes={periodo_visto:%Y-%m}")
+    estado = request.GET.get("estado", "")
+    if estado in FILTROS_ALQUILERES:
+        parametros.append(f"estado={estado}")
+    if parametros:
+        volver = f"{volver}?{'&'.join(parametros)}"
+
+    if request.method == "POST":
+        accion = request.POST.get("accion")
+
+        try:
+            if accion == "editar_casa":
+                editar_casa(
+                    id_casa,
+                    nombre=request.POST.get("nombre"),
+                    localidad=request.POST.get("localidad"),
+                    direccion=request.POST.get("direccion"),
+                )
+                messages.success(request, "Casa actualizada correctamente")
+
+            elif accion == "eliminar_casa":
+                eliminar_casa(id_casa)
+                messages.success(request, "Casa eliminada correctamente")
+                # La casa ya no existe para el perfil: el unico destino posible
+                # es el listado, y ahi tampoco va a aparecer
+                return redirect(volver)
+
+            elif accion == "nuevo_contrato":
+                crear_contrato(
+                    id_casa,
+                    inicio=request.POST.get("inicio"),
+                    fin=request.POST.get("fin"),
+                    monto_mensual=request.POST.get("monto_mensual"),
+                    comision_inmobiliaria=request.POST.get("comision_inmobiliaria"),
+                    nombre_inquilino=request.POST.get("nombre_inquilino"),
+                )
+                messages.success(request, "Contrato guardado correctamente")
+
+            elif accion == "editar_contrato":
+                editar_contrato(
+                    request.POST.get("id_contrato"),
+                    inicio=request.POST.get("inicio"),
+                    fin=request.POST.get("fin"),
+                    monto_mensual=request.POST.get("monto_mensual"),
+                    comision_inmobiliaria=request.POST.get("comision_inmobiliaria"),
+                    nombre_inquilino=request.POST.get("nombre_inquilino"),
+                )
+                messages.success(request, "Contrato actualizado correctamente")
+
+            elif accion == "eliminar_contrato":
+                eliminar_contrato(request.POST.get("id_contrato"))
+                messages.success(request, "Contrato eliminado correctamente")
+
+            elif accion == "nuevo_gasto":
+                crear_gasto_casa(
+                    id_casa,
+                    categoria=request.POST.get("categoria"),
+                    fecha=request.POST.get("fecha"),
+                    monto=request.POST.get("monto"),
+                    detalle=request.POST.get("detalle"),
+                )
+                messages.success(request, "Gasto guardado correctamente")
+
+            elif accion == "editar_gasto":
+                editar_gasto_casa(
+                    request.POST.get("id_gasto"),
+                    categoria=request.POST.get("categoria"),
+                    fecha=request.POST.get("fecha"),
+                    monto=request.POST.get("monto"),
+                    detalle=request.POST.get("detalle"),
+                )
+                messages.success(request, "Gasto actualizado correctamente")
+
+            elif accion == "eliminar_gasto":
+                eliminar_gasto_casa(request.POST.get("id_gasto"))
+                messages.success(request, "Gasto eliminado correctamente")
+
+        except ValueError as e:
+            messages.error(request, str(e))
+        except Exception as e:
+            messages.error(request, f"Ocurrió un error inesperado: {e}")
+
+        # Vuelve al perfil conservando el rastro del listado, para que el enlace
+        # de vuelta siga apuntando al mes desde el que se entro
+        destino = reverse("informacion_alquileres", args=[id_casa])
+        consulta = request.GET.urlencode()
+        return redirect(f"{destino}?{consulta}" if consulta else destino)
+
+    # El rango solo recorta los gastos; el contrato y el historial no dependen
+    # de ningun periodo. Viaja en la URL, asi que el filtro sobrevive al POST de
+    # cualquier accion y se puede compartir el enlace ya filtrado.
+    desde, hasta, ctx_fechas = _rango_gastos(request)
+
+    contexto = obtener_detalle_alquiler(id_casa, desde, hasta)
+    contexto.update(ctx_fechas)
+    contexto["volver_url"] = volver
+    return render(request, "informacion_alquileres.html", contexto)
 
 
 @staff_member_required(login_url="inicio")
