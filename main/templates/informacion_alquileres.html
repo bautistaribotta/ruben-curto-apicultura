@@ -106,84 +106,133 @@
 
   {% comment %}
     ================= CONTRATO VIGENTE =================
-    Tres cosas y nada mas: cuanto es, quien y por cuanto tiempo. Las acciones
-    van como iconos en el titulo de la seccion, como en las filas de la tabla,
-    asi la tarjeta queda con datos solamente.
+    Toma la tarjeta de "Datos generales" del detalle de viaje: cabecera con
+    icono, un renglon por dato con su rotulo arriba, y un bloque aparte abajo
+    para lo que no es un dato suelto (alli la ruta de destinos, aca la tira de
+    meses). Mismo lenguaje, otra pantalla.
+
+    La tarjeta trae su propia cabecera, asi que esta seccion no lleva el titulo
+    de afuera: seria el mismo texto dos veces.
   {% endcomment %}
   <section class="perfil-seccion">
-    <div class="seccion-info-header seccion-info-header--con-accion">
-      <h4><span class="material-symbols-outlined">contract</span> Contrato vigente</h4>
-
-      {% if contrato %}
-        {% comment %}
-          Los montos van sin localizar: el locale es-ar los escribe con coma
-          ("5,00") y asi un input type="number" los rechaza y el campo queda
-          vacio. El formato para mostrarlos lo pone despues formato_miles.js.
-        {% endcomment %}
-        <div class="alq-acciones">
-          <button type="button" class="alq-boton-icono editar boton-contrato-editar"
-                  title="Editar contrato"
-                  data-contrato="{{ contrato.id }}"
-                  data-casa="{{ casa.nombre|default:'Sin nombre' }}"
-                  data-inicio="{{ contrato.inicio|date:'Y-m-d' }}"
-                  data-fin="{{ contrato.fin|date:'Y-m-d' }}"
-                  data-monto="{{ contrato.monto_mensual|unlocalize }}"
-                  data-comision="{{ contrato.comision_inmobiliaria|unlocalize|default_if_none:'' }}"
-                  data-inquilino="{{ contrato.nombre_inquilino|default_if_none:'' }}">
-            <span class="material-symbols-outlined">edit</span>
-          </button>
-          <button type="button" class="alq-boton-icono eliminar boton-contrato-eliminar"
-                  title="Eliminar contrato"
-                  data-contrato="{{ contrato.id }}"
-                  data-plazo="del {{ contrato.inicio|date:'d/m/Y' }}{% if contrato.fin %} al {{ contrato.fin|date:'d/m/Y' }}{% endif %}">
-            <span class="material-symbols-outlined">delete</span>
-          </button>
-        </div>
-      {% endif %}
-    </div>
-
     {% if contrato %}
-      <article class="contrato-tarjeta">
+      <article class="perfil-card">
+        <div class="perfil-card__head">
+          <span class="material-symbols-outlined">contract</span>
+          <h4>Contrato vigente</h4>
 
-        {% comment %}
-          El alquiler es el numero del que cuelga todo lo demas, asi que va solo
-          y grande. Lo que sigue es el mismo dato leido de otra manera, en un
-          renglon y sin rotulos: cada valor trae su unidad y se explica solo.
-        {% endcomment %}
-        <p class="contrato-monto"><span class="contrato-monto__signo">$</span>{{ contrato.monto_mensual|floatformat:"0"|intcomma }}</p>
+          {% comment %}
+            Los montos van sin localizar: el locale es-ar los escribe con coma
+            ("5,00") y asi un input type="number" los rechaza y el campo queda
+            vacio. El formato para mostrarlos lo pone despues formato_miles.js.
+          {% endcomment %}
+          <div class="alq-acciones perfil-card__acciones">
+            <button type="button" class="alq-boton-icono editar boton-contrato-editar"
+                    title="Editar contrato"
+                    data-contrato="{{ contrato.id }}"
+                    data-casa="{{ casa.nombre|default:'Sin nombre' }}"
+                    data-inicio="{{ contrato.inicio|date:'Y-m-d' }}"
+                    data-fin="{{ contrato.fin|date:'Y-m-d' }}"
+                    data-monto="{{ contrato.monto_mensual|unlocalize }}"
+                    data-comision="{{ contrato.comision_inmobiliaria|unlocalize|default_if_none:'' }}"
+                    data-inquilino="{{ contrato.nombre_inquilino|default_if_none:'' }}">
+              <span class="material-symbols-outlined">edit</span>
+            </button>
+            <button type="button" class="alq-boton-icono eliminar boton-contrato-eliminar"
+                    title="Eliminar contrato"
+                    data-contrato="{{ contrato.id }}"
+                    data-plazo="del {{ contrato.inicio|date:'d/m/Y' }}{% if contrato.fin %} al {{ contrato.fin|date:'d/m/Y' }}{% endif %}">
+              <span class="material-symbols-outlined">delete</span>
+            </button>
+          </div>
+        </div>
 
-        <p class="contrato-meta">
-          <span>por mes</span>
+        <div class="dato-lista">
+          {% comment %}
+            Las dos fechas comparten renglon, como la salida y el regreso de un
+            viaje: un contrato es antes que nada un periodo y las puntas se leen
+            juntas.
+          {% endcomment %}
+          <div class="dato-par">
+            <div class="dato-fila">
+              <span class="dato-ico"><span class="material-symbols-outlined">event_available</span></span>
+              <div class="dato-meta">
+                <div class="dato-rotulo">Inicio</div>
+                <div class="dato-valor">{{ contrato.inicio|date:"d/m/Y" }}</div>
+              </div>
+            </div>
+            <div class="dato-fila">
+              <span class="dato-ico"><span class="material-symbols-outlined">event_busy</span></span>
+              <div class="dato-meta">
+                <div class="dato-rotulo">Vencimiento</div>
+                <div class="dato-valor">
+                  {% if contrato.fin %}
+                    {{ contrato.fin|date:"d/m/Y" }}
+                  {% else %}
+                    <span class="es-vacio">Sin vencimiento</span>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {% comment %}
+            La comision va como pastilla al lado del alquiler, igual que la
+            patente al lado del vehiculo: es un dato del monto, no un monto
+            aparte.
+          {% endcomment %}
+          <div class="dato-fila dato-fila--sep">
+            <span class="dato-ico"><span class="material-symbols-outlined">payments</span></span>
+            <div class="dato-meta">
+              <div class="dato-rotulo">Alquiler mensual</div>
+              <div class="dato-valor">
+                ${{ contrato.monto_mensual|floatformat:"0"|intcomma }}
+                {% if contrato.comision_inmobiliaria %}
+                  <span class="dato-chip">{{ contrato.comision_inmobiliaria|floatformat:"-2" }}% inmobiliaria</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          {% comment %}
+            Sin inmobiliaria el neto es el alquiler, asi que el renglon no
+            aportaria nada y no se dibuja.
+          {% endcomment %}
           {% if contrato.comision_inmobiliaria %}
-            <span>{{ contrato.comision_inmobiliaria|floatformat:"-2" }}% inmobiliaria</span>
-            <span>${{ contrato.neto_mensual|floatformat:"0"|intcomma }} neto</span>
+            <div class="dato-fila">
+              <span class="dato-ico"><span class="material-symbols-outlined">savings</span></span>
+              <div class="dato-meta">
+                <div class="dato-rotulo">Neto mensual</div>
+                <div class="dato-valor">${{ contrato.neto_mensual|floatformat:"0"|intcomma }}</div>
+              </div>
+            </div>
           {% endif %}
-          {% if contrato.nombre_inquilino %}
-            <span>{{ contrato.nombre_inquilino }}</span>
-          {% endif %}
-        </p>
+
+          <div class="dato-fila">
+            <span class="dato-ico"><span class="material-symbols-outlined">person</span></span>
+            <div class="dato-meta">
+              <div class="dato-rotulo">Inquilino</div>
+              <div class="dato-valor">
+                {% if contrato.nombre_inquilino %}
+                  {{ contrato.nombre_inquilino }}
+                {% else %}
+                  <span class="es-vacio">Sin cargar</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
 
         {% comment %}
-          LA TIRA DEL PLAZO.
+          LA TIRA DEL PLAZO, en el bloque de abajo de la tarjeta, donde el viaje
+          pone la ruta de destinos: no es un dato suelto sino una linea de tiempo.
 
-          Una celda por mes del contrato, llena cuando ese mes se cobro, con las
-          dos fechas en los extremos. El contrato se lee entero de una: cuando
-          arranco, cuanto le falta y que meses quedaron sin cobrar.
-
+          Una celda por mes que cubre el contrato, llena cuando ese mes se cobro.
           Sin leyenda a proposito: el verde lleno frente al hueco punteado ya se
           entiende, y cada celda dice su mes y su estado al pasar el mouse.
         {% endcomment %}
         <div class="plazo">
-          <div class="plazo__extremos">
-            <span class="plazo__fecha">{{ contrato.inicio|date:"d/m/Y" }}</span>
-            <span class="plazo__fecha">
-              {% if contrato.fin %}
-                {{ contrato.fin|date:"d/m/Y" }}
-              {% else %}
-                <span class="es-vacio">Sin vencimiento</span>
-              {% endif %}
-            </span>
-          </div>
+          <div class="plazo__rotulo">Meses a cobrar</div>
 
           <ol class="plazo__meses">
             {% for mes in meses %}
