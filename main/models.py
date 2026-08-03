@@ -2,7 +2,8 @@ from datetime import date
 from decimal import Decimal
 
 from django.db import models
-from django.db.models import Sum, F, Subquery, OuterRef, Exists, DecimalField, DateField, Value, Q
+from django.db.models import (Sum, F, Subquery, OuterRef, Exists, DecimalField, IntegerField,
+                              DateField, Value, Q)
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 
@@ -635,9 +636,9 @@ class CasaQuerySet(models.QuerySet):
             ),
             _contrato_periodo_anotado=Subquery(vigente.values("id")[:1]),
             _monto_periodo_anotado=Subquery(vigente.values("monto_mensual")[:1],
-                                            output_field=DecimalField()),
+                                            output_field=IntegerField()),
             _comision_periodo_anotado=Subquery(vigente.values("comision_inmobiliaria")[:1],
-                                               output_field=DecimalField()),
+                                               output_field=IntegerField()),
             _fin_anterior_anotado=Subquery(anterior.values("fin")[:1], output_field=DateField()),
             _contrato_hoy_anotado=Exists(corriendo),
         )
@@ -740,7 +741,7 @@ class Casa(models.Model):
         # que calcular; sin comision cargada, la casa se administra sola y es cero.
         if self.precio is None:
             return None
-        porcentaje = self.comision_inmobiliaria or Decimal("0")
+        porcentaje = self.comision_inmobiliaria or 0
         return (self.precio * porcentaje / Decimal("100")).quantize(Decimal("0.01"))
 
     @property
@@ -819,8 +820,11 @@ class Contrato(models.Model):
     # Sin blank: el admin es la unica pantalla que quedaba dejando guardar un
     # contrato sin vencimiento, y con esto tambien lo exige
     fin = models.DateField(null=True)
-    monto_mensual = models.DecimalField(max_digits=12, decimal_places=2)
-    comision_inmobiliaria = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    # Enteros los dos, como el resto de los montos del sistema: un alquiler se
+    # pacta en pesos redondos y una comision en puntos enteros, y los centavos
+    # solo daban ruido en pantalla
+    monto_mensual = models.PositiveIntegerField()
+    comision_inmobiliaria = models.PositiveIntegerField(null=True, blank=True)
     # Opcional: el contrato sirve igual sin saber el nombre del inquilino
     nombre_inquilino = models.CharField(max_length=60, null=True, blank=True)
 
@@ -845,7 +849,7 @@ class Contrato(models.Model):
 
         Sin comision cargada la casa se administra sola y no se lleva nada.
         """
-        porcentaje = self.comision_inmobiliaria or Decimal("0")
+        porcentaje = self.comision_inmobiliaria or 0
         return (self.monto_mensual * porcentaje / Decimal("100")).quantize(Decimal("0.01"))
 
     @property

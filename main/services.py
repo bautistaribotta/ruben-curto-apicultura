@@ -2362,6 +2362,39 @@ def _decimal_opcional(valor, etiqueta, maximo=None):
     return numero
 
 
+def _entero_opcional(valor, etiqueta, maximo=None):
+    """Como _decimal_opcional pero para los campos que no llevan centavos.
+
+    Lo usan el alquiler mensual y la comision de la inmobiliaria, que se pactan
+    en numeros redondos. Un valor con coma o punto decimal no se redondea por
+    las buenas: corto con un mensaje, porque redondear en silencio cambiaria el
+    monto que el usuario cree haber cargado.
+    """
+    if valor in (None, ""):
+        return None
+
+    texto = str(valor).strip().replace(" ", "")
+    # El navegador manda "1500.00" cuando el input arranca con un valor viejo de
+    # la base; esos ceros no son un decimal cargado a mano y se pueden tirar
+    if "." in texto or "," in texto:
+        entera, _, decimales = texto.replace(",", ".").partition(".")
+        if decimales.strip("0"):
+            raise ValueError(f"{etiqueta} tiene que ser un número entero, sin decimales.")
+        texto = entera
+
+    try:
+        numero = int(texto)
+    except ValueError:
+        raise ValueError(f"{etiqueta} no es un número válido.")
+
+    if numero < 0:
+        raise ValueError(f"{etiqueta} no puede ser negativo.")
+
+    if maximo is not None and numero > maximo:
+        raise ValueError(f"{etiqueta} es demasiado grande.")
+    return numero
+
+
 def _parsear_dia(fecha, etiqueta):
     """Convierte a date lo que llega de un <input type="date">, o None si vino vacio."""
     if fecha in (None, ""):
@@ -2560,13 +2593,14 @@ def _validar_contrato(inicio, fin, monto_mensual, comision_inmobiliaria, nombre_
     if fin < inicio:
         raise ValueError("El fin del contrato no puede ser anterior a su inicio.")
 
-    # Tope por DecimalField(max_digits=12, decimal_places=2): 10 enteros
-    monto = _decimal_opcional(monto_mensual, "El alquiler mensual", Decimal("9999999999.99"))
+    # Entero y sin centavos, como se pacta un alquiler. El tope lo pone el
+    # PositiveIntegerField de la columna, que en MySQL llega hasta 4294967295
+    monto = _entero_opcional(monto_mensual, "El alquiler mensual", 999999999)
     if not monto:
         raise ValueError("El alquiler mensual es obligatorio y tiene que ser mayor a cero.")
 
     # La comision es un porcentaje del alquiler, no un monto: mas de 100 no existe
-    comision = _decimal_opcional(comision_inmobiliaria, "La comisión de la inmobiliaria", Decimal("100"))
+    comision = _entero_opcional(comision_inmobiliaria, "La comisión de la inmobiliaria", 100)
     return inicio, fin, monto, comision, _texto_opcional(nombre_inquilino, 60, "El nombre del inquilino")
 
 
