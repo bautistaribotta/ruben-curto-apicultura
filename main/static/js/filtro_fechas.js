@@ -6,6 +6,10 @@
  * contenedor #filtro-fechas (fuente de verdad). Al aplicar o limpiar dispara el
  * evento 'filtrofechas:cambio' en document; cada vista lo engancha a su propia
  * busqueda AJAX y lee esos data-* para armar la URL.
+ *
+ * Tres modos posibles (dia, mes y rango) y cada vista elige cuales muestra al
+ * incluir la plantilla. Los tres terminan en lo mismo: un desde y un hasta. El
+ * mes no es un parametro aparte, es el rango del 1 al ultimo dia.
  * -----------------------------------------------------------------------------
  */
 document.addEventListener('DOMContentLoaded', () => {
@@ -19,18 +23,50 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const segOpts = pop.querySelectorAll('.ff-seg__opt');
   const inputDia = document.getElementById('filtro-fechas-dia');
+  const inputMes = document.getElementById('filtro-fechas-mes');
   const inputDesde = document.getElementById('filtro-fechas-desde');
   const inputHasta = document.getElementById('filtro-fechas-hasta');
   const btnAplicar = document.getElementById('filtro-fechas-aplicar');
   const btnLimpiar = document.getElementById('filtro-fechas-limpiar');
 
+  // Modo por defecto: el primero que la vista haya pedido, no siempre "dia".
+  const modoInicial = segOpts.length ? segOpts[0].dataset.modo : 'dia';
+
+  const NOMBRES_MES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio',
+                       'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+
   // ISO (yyyy-mm-dd) -> dd/mm/yyyy y version corta dd/mm.
   const fmt = (iso) => { const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}`; };
   const fmtCorto = (iso) => { const [, m, d] = iso.split('-'); return `${d}/${m}`; };
 
-  // Mismo criterio de etiqueta que el server: un dia, rango cerrado o rango
-  // abierto con un solo extremo.
+  // Ultimo dia de un mes. El dia 0 del mes siguiente es el ultimo del anterior,
+  // asi que los años bisiestos salen solos.
+  const ultimoDia = (anio, mes) => new Date(anio, mes, 0).getDate();
+
+  // Si el rango es un mes entero devuelve "yyyy-mm"; si no, null. Sirve tanto
+  // para etiquetarlo por su nombre como para rehidratar el popover en modo mes.
+  const comoMes = (desde, hasta) => {
+    if (!desde || !hasta) return null;
+    const [ad, md, dd] = desde.split('-').map(Number);
+    const [ah, mh, dh] = hasta.split('-').map(Number);
+    if (ad !== ah || md !== mh) return null;
+    if (dd !== 1 || dh !== ultimoDia(ad, md)) return null;
+    return desde.slice(0, 7);
+  };
+
+  // Mismo criterio de etiqueta que el server: mes entero, un dia, rango cerrado
+  // o rango abierto con un solo extremo.
+  //
+  // El nombre del mes solo se usa donde el modo existe. En las vistas que no lo
+  // ofrecen, un rango que casualmente cubre un mes entero se sigue etiquetando
+  // como rango, que es lo que renderiza el server y lo que ya venian mostrando.
   const armarLabel = (desde, hasta) => {
+    const mes = inputMes ? comoMes(desde, hasta) : null;
+    if (mes) {
+      const [anio, numero] = mes.split('-').map(Number);
+      const nombre = NOMBRES_MES[numero - 1];
+      return `${nombre.charAt(0).toUpperCase()}${nombre.slice(1)} ${anio}`;
+    }
     if (desde && hasta && desde === hasta) return fmt(desde);
     if (desde && hasta) return `${fmtCorto(desde)} – ${fmt(hasta)}`;
     if (desde) return `Desde ${fmt(desde)}`;
@@ -40,7 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const modoActivo = () => {
     const opt = pop.querySelector('.ff-seg__opt.is-active');
-    return opt ? opt.dataset.modo : 'dia';
+    return opt ? opt.dataset.modo : modoInicial;
   };
 
   const setModo = (modo) => {
@@ -88,13 +124,24 @@ document.addEventListener('DOMContentLoaded', () => {
   const aplicar = () => {
     let desde = '';
     let hasta = '';
-    if (modoActivo() === 'dia') {
+    const modo = modoActivo();
+
+    if (modo === 'dia') {
       desde = inputDia.value;
       hasta = inputDia.value;
+    } else if (modo === 'mes') {
+      // El mes se expande a sus dos extremos: el server no sabe de meses, solo
+      // de rangos, y asi "julio" y "del 1 al 31 de julio" son la misma consulta.
+      if (inputMes.value) {
+        const [anio, numero] = inputMes.value.split('-').map(Number);
+        desde = `${inputMes.value}-01`;
+        hasta = `${inputMes.value}-${String(ultimoDia(anio, numero)).padStart(2, '0')}`;
+      }
     } else {
       desde = inputDesde.value;
       hasta = inputHasta.value;
     }
+
     // Normalizo el rango invertido para que el label coincida con el server.
     if (desde && hasta && desde > hasta) {
       [desde, hasta] = [hasta, desde];
@@ -106,6 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const limpiar = () => {
     if (inputDia) inputDia.value = '';
+    if (inputMes) inputMes.value = '';
     if (inputDesde) inputDesde.value = '';
     if (inputHasta) inputHasta.value = '';
     setEstado('', '');
@@ -113,19 +161,26 @@ document.addEventListener('DOMContentLoaded', () => {
     notificar();
   };
 
-  // Rehidrato el popover con el estado que vino del server: infiero el modo a
-  // partir de si las dos fechas coinciden (un dia) o no (rango).
+  // Rehidrato el popover con el estado que vino del server, infiriendo el modo
+  // del rango: un mes entero si coincide con sus extremos, un dia si las dos
+  // fechas son la misma, y rango en cualquier otro caso. El mes se prueba
+  // primero porque tambien cumple la condicion de rango.
   const dIni = cont.dataset.desde;
   const hIni = cont.dataset.hasta;
-  if (dIni && hIni && dIni === hIni) {
+  const mesIni = comoMes(dIni, hIni);
+
+  if (mesIni && inputMes) {
+    setModo('mes');
+    inputMes.value = mesIni;
+  } else if (dIni && hIni && dIni === hIni && inputDia) {
     setModo('dia');
-    if (inputDia) inputDia.value = dIni;
+    inputDia.value = dIni;
   } else if (dIni || hIni) {
     setModo('rango');
     if (inputDesde) inputDesde.value = dIni;
     if (inputHasta) inputHasta.value = hIni;
   } else {
-    setModo('dia');
+    setModo(modoInicial);
   }
 
   // El chip abre/cierra el popover; si el click cae en la "x", limpia en su lugar.

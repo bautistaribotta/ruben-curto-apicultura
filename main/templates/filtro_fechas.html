@@ -6,7 +6,16 @@
   los inputs del popover son solo el borrador hasta tocar "Aplicar". El JS
   (filtro_fechas.js) administra el popover y dispara el evento 'filtrofechas:cambio'
   en document al aplicar o limpiar, que cada vista engancha a su propia busqueda AJAX.
+
+  Que modos ofrece se elige al incluirlo, con la variable "modos":
+
+    {% templatetag openblock %} include "filtro_fechas.html" with modos="mes,rango" {% templatetag closeblock %}
+
+  Sin la variable quedan "dia,rango", que es lo que ya usaban viajes y deudores.
+  El modo "mes" no agrega ningun parametro nuevo: elegir julio es exactamente el
+  rango del 1 al 31 de julio, asi que el servidor sigue recibiendo desde y hasta.
 {% endcomment %}
+{% with modos=modos|default:"dia,rango" %}
 <div class="ff" id="filtro-fechas" data-desde="{{ desde }}" data-hasta="{{ hasta }}">
   <button type="button"
           class="ff-trigger {% if desde or hasta %}is-active{% endif %}"
@@ -20,28 +29,52 @@
   </button>
 
   <div class="ff-pop" id="filtro-fechas-pop" role="dialog" aria-label="Filtrar por fecha" hidden>
+    {% comment %}
+      El primero de la lista arranca activo; el JS lo resuelve solo, asi que aca
+      ninguno lleva is-active puesto a mano.
+    {% endcomment %}
     <div class="ff-seg" role="tablist" aria-label="Tipo de filtro">
-      <button type="button" class="ff-seg__opt is-active" data-modo="dia" role="tab">Un día</button>
-      <button type="button" class="ff-seg__opt" data-modo="rango" role="tab">Rango</button>
+      {% if "dia" in modos %}
+        <button type="button" class="ff-seg__opt" data-modo="dia" role="tab">Un día</button>
+      {% endif %}
+      {% if "mes" in modos %}
+        <button type="button" class="ff-seg__opt" data-modo="mes" role="tab">Mes</button>
+      {% endif %}
+      {% if "rango" in modos %}
+        <button type="button" class="ff-seg__opt" data-modo="rango" role="tab">Rango</button>
+      {% endif %}
     </div>
 
-    <div class="ff-panel" data-panel="dia">
-      <label class="ff-campo">
-        <span class="ff-campo__lbl">Fecha</span>
-        <input type="date" class="ff-campo__input" id="filtro-fechas-dia">
-      </label>
-    </div>
+    {% if "dia" in modos %}
+      <div class="ff-panel" data-panel="dia" hidden>
+        <label class="ff-campo">
+          <span class="ff-campo__lbl">Fecha</span>
+          <input type="date" class="ff-campo__input" id="filtro-fechas-dia">
+        </label>
+      </div>
+    {% endif %}
 
-    <div class="ff-panel" data-panel="rango" hidden>
-      <label class="ff-campo">
-        <span class="ff-campo__lbl">Desde</span>
-        <input type="date" class="ff-campo__input" id="filtro-fechas-desde">
-      </label>
-      <label class="ff-campo">
-        <span class="ff-campo__lbl">Hasta</span>
-        <input type="date" class="ff-campo__input" id="filtro-fechas-hasta">
-      </label>
-    </div>
+    {% if "mes" in modos %}
+      <div class="ff-panel" data-panel="mes" hidden>
+        <label class="ff-campo">
+          <span class="ff-campo__lbl">Mes</span>
+          <input type="month" class="ff-campo__input" id="filtro-fechas-mes">
+        </label>
+      </div>
+    {% endif %}
+
+    {% if "rango" in modos %}
+      <div class="ff-panel" data-panel="rango" hidden>
+        <label class="ff-campo">
+          <span class="ff-campo__lbl">Desde</span>
+          <input type="date" class="ff-campo__input" id="filtro-fechas-desde">
+        </label>
+        <label class="ff-campo">
+          <span class="ff-campo__lbl">Hasta</span>
+          <input type="date" class="ff-campo__input" id="filtro-fechas-hasta">
+        </label>
+      </div>
+    {% endif %}
 
     <div class="ff-acciones">
       <button type="button" class="ff-btn ff-btn--aplicar" id="filtro-fechas-aplicar">Aplicar</button>
@@ -49,3 +82,4 @@
     </div>
   </div>
 </div>
+{% endwith %}
