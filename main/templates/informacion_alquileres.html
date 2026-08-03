@@ -268,9 +268,14 @@
         <div class="tabla-scroll">
         <table class="tabla-perfil">
           <thead>
+            {% comment %}
+              La categoria va centrada: es una pildora de ancho variable, y
+              alineada a la izquierda cada una arranca donde termina la anterior
+              y la columna queda con el borde derecho dentado.
+            {% endcomment %}
             <tr>
               <th>Fecha</th>
-              <th>Categoría</th>
+              <th class="texto-centro">Categoría</th>
               <th>Detalle</th>
               <th class="texto-derecha">Monto</th>
               <th class="texto-centro">Acciones</th>
@@ -280,7 +285,7 @@
             {% for gasto in gastos %}
               <tr>
                 <td class="celda-fecha">{{ gasto.fecha|date:"d/m/Y" }}</td>
-                <td><span class="etiqueta-gasto">{{ gasto.categoria }}</span></td>
+                <td class="texto-centro"><span class="etiqueta-gasto">{{ gasto.categoria }}</span></td>
                 <td>{{ gasto.detalle|default:"—" }}</td>
                 <td class="texto-derecha celda-monto">${{ gasto.monto|floatformat:"0"|intcomma }}</td>
                 <td class="texto-centro">

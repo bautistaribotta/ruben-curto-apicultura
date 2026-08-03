@@ -436,6 +436,17 @@ span.casa-identidad__icono {
   border-bottom: none;
 }
 
+/* Realce de la fila bajo el mouse, el mismo tono que la tabla del listado.
+   Aca la fila no lleva a ningun lado, asi que no cambia el cursor: es solo para
+   no perder el renglon al cruzar la vista de la fecha al monto. */
+.tabla-perfil tbody tr {
+  transition: background-color var(--dur-normal) var(--ease-standard);
+}
+
+.tabla-perfil tbody tr:hover {
+  background-color: var(--surface-hover);
+}
+
 .texto-derecha {
   text-align: right;
 }
@@ -596,7 +607,8 @@ span.casa-identidad__icono {
 /* Sin animaciones para quien las tiene desactivadas en el sistema */
 @media (prefers-reduced-motion: reduce) {
   .boton-accion,
-  .ctr-campo select {
+  .ctr-campo select,
+  .tabla-perfil tbody tr {
     transition: none;
   }
 }
