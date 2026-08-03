@@ -2,7 +2,6 @@
 {% load static %}
 {% load static_version %}
 {% load humanize %}
-{% load l10n %}
 
 {% block nombre-pestaña %}
   <title> Alquileres </title>
@@ -25,7 +24,7 @@
 <section id="area-trabajo">
   {% comment %}
     El mes no es un filtro de la tabla: es el marco de toda la pantalla (los
-    totales de aca, el estado de cada fila y el mes que propone el panel de
+    totales de aca, el estado de cada fila y el mes que carga la casilla de
     cobro cuelgan de el). Por eso el control vive en el titulo y no al lado de
     los chips de estado, que si filtran la lista.
 
@@ -130,6 +129,9 @@
 
 {% comment %}
   PANEL DE CASA (alta y edicion).
+  Solo la propiedad: donde esta y como se llama. El alquiler no vive aca sino en
+  el contrato, porque una casa tiene varios a lo largo del tiempo.
+
   Ningun campo es obligatorio: una casa se puede dar de alta con el nombre solo
   y completarse mas adelante, asi que no lleva required.
 {% endcomment %}
@@ -178,53 +180,10 @@
             <input type="text" id="direccion-casa" name="direccion" placeholder="Ej: San Martín 123" maxlength="120">
           </div>
 
-          {% comment %}
-            Desde cuando se administra la casa. Marca a partir de que mes se le
-            puede reclamar el alquiler: sin esto, una casa cargada hoy aparecia
-            adeudando todos los meses anteriores. Arranca en hoy y se corrige si
-            la casa venia de antes.
-          {% endcomment %}
-          <div class="grupo-input">
-            <label for="fecha-alta-casa">Se administra desde</label>
-            <input type="date" id="fecha-alta-casa" name="fecha_alta"
-                   value="{{ hoy|date:'Y-m-d' }}" max="{{ hoy|date:'Y-m-d' }}">
-            <span class="texto-ayuda">Antes de este mes la casa no figura en el listado.</span>
-          </div>
-        </section>
-
-        <section class="seccion-bloque">
-          <div class="subtitulo-formulario">
-            <span class="material-symbols-outlined">payments</span>
-            <h4>Alquiler</h4>
-          </div>
-
-          <div class="grupo-input">
-            <label for="precio-casa">Alquiler mensual</label>
-            <div class="input-con-icono">
-              <span>$</span>
-              <input type="text" id="precio-casa" name="precio" placeholder="0"
-                     class="input-miles-decimal" inputmode="decimal" autocomplete="off">
-            </div>
-          </div>
-
-          <div class="grupo-input">
-            <label for="comision-casa">Comisión de la inmobiliaria</label>
-            <div class="input-con-icono input-con-icono--sufijo">
-              <span>%</span>
-              <input type="number" id="comision-casa" name="comision_inmobiliaria" placeholder="0"
-                     min="0" max="100" step="1" inputmode="decimal" autocomplete="off">
-            </div>
-          </div>
-
-          <div class="fila-toggle">
-            <div class="texto-toggle">
-              <span class="titulo-toggle">¿La casa está alquilada?</span>
-            </div>
-            <label class="switch">
-              <input type="checkbox" id="alquilada-casa" name="alquilada">
-              <span class="slider"></span>
-            </label>
-          </div>
+          <span class="texto-ayuda">
+            El alquiler, el plazo y el inquilino van en el contrato, con el botón
+            de la fila.
+          </span>
         </section>
       </main>
 
@@ -237,128 +196,98 @@
 </div>
 
 {% comment %}
-  PANEL DE COBRO.
-  Hace una sola cosa: la cobranza de una casa. Arriba se carga el pago y abajo
-  se ven los ultimos ya cargados, que es donde se corrigen mientras la casa no
-  tenga perfil propio.
-{% endcomment %}
-<div id="slide-over-cobro">
-  <div class="alq-slide-fondo" onclick="cerrarSlideOver('slide-over-cobro')"></div>
-  <div class="alq-slide-panel">
-    <form id="form-cobro" method="post" autocomplete="off">
-      {% csrf_token %}
-      <input type="hidden" name="accion" id="accion-cobro" value="nuevo_pago">
-      <input type="hidden" name="id_casa" id="id-casa-cobro">
-      <input type="hidden" name="id_pago" id="id-pago-cobro">
+  MODAL DE CONTRATO (alta y correccion).
 
-      <header class="panel-cabecera">
-        <div class="panel-titulo-fila">
-          <div class="icono-contenedor">
-            <span class="material-symbols-outlined">payments</span>
-          </div>
-          <div class="texto-cabecera">
-            <h3 id="titulo-cobro">Cobrar alquiler</h3>
-            <p id="subtitulo-cobro">Casa</p>
-          </div>
+  El plazo va arriba y armado como un tramo y no como dos campos sueltos: un
+  contrato es antes que nada un periodo, y los meses que dura es el numero que
+  uno chequea al firmar. Por eso las dos fechas se leen unidas y la duracion se
+  calcula sola en el medio.
+
+  Cuando la casa viene de un contrato vencido, arriba aparece el anterior en
+  gris: deja ver que esto es la continuacion de una cadena y no una carga desde
+  cero, y de ahi salen los valores precargados.
+
+  A diferencia de la casa, aca casi todo es obligatorio: de estas fechas y este
+  monto cuelga el estado de la casa mes a mes.
+{% endcomment %}
+<div id="modal-contrato">
+  <div class="ctr-fondo" onclick="cerrarModalContrato()"></div>
+  <div class="ctr-panel" role="dialog" aria-modal="true" aria-labelledby="ctr-titulo">
+    <form id="form-contrato" method="post" autocomplete="off">
+      {% csrf_token %}
+      <input type="hidden" name="accion" id="ctr-accion" value="nuevo_contrato">
+      <input type="hidden" name="id_casa" id="ctr-id-casa">
+      <input type="hidden" name="id_contrato" id="ctr-id-contrato">
+
+      <header class="ctr-cabecera">
+        <div class="ctr-cabecera__texto">
+          <h3 id="ctr-titulo">Nuevo contrato</h3>
+          <p id="ctr-casa">Casa</p>
         </div>
-        <button type="button" class="boton-cerrar" onclick="cerrarSlideOver('slide-over-cobro')">
+        <button type="button" class="ctr-cerrar" onclick="cerrarModalContrato()" aria-label="Cerrar">
           <span class="material-symbols-outlined">close</span>
         </button>
       </header>
 
-      <main class="panel-cuerpo">
-        {% comment %}
-          Como viene la casa este mes. Lo rellena alquileres.js al abrir. Con el
-          cobro completo no hay saldo que mostrar: alcanza con el alquiler y si
-          el mes ya esta cobrado o no.
-        {% endcomment %}
-        <div class="alq-estado-casa" id="alq-estado-casa">
-          <div class="alq-estado-casa__dato">
-            <span class="alq-estado-casa__label">Alquiler mensual</span>
-            <span class="alq-estado-casa__valor" id="cobro-alquiler">—</span>
+      <div class="ctr-cuerpo">
+        <!-- Contrato anterior: lo muestra alquileres.js cuando hay uno vencido -->
+        <div class="ctr-anterior" id="ctr-anterior" hidden>
+          <span class="ctr-anterior__rotulo">Venció el anterior</span>
+          <span class="ctr-anterior__detalle" id="ctr-anterior-detalle"></span>
+        </div>
+
+        <fieldset class="ctr-plazo">
+          <legend class="ctr-rotulo">Plazo</legend>
+          <div class="ctr-plazo__tramo">
+            <div class="ctr-campo">
+              <label for="ctr-inicio">Desde</label>
+              <input type="date" id="ctr-inicio" name="inicio" required>
+            </div>
+            <div class="ctr-campo">
+              <label for="ctr-fin">Hasta</label>
+              <input type="date" id="ctr-fin" name="fin" required>
+            </div>
           </div>
-          <div class="alq-estado-casa__dato">
-            <span class="alq-estado-casa__label">Este mes</span>
-            <span class="alq-estado-casa__valor" id="cobro-estado">—</span>
+        </fieldset>
+
+        <div class="ctr-fila">
+          <div class="ctr-campo">
+            <label for="ctr-monto">Alquiler mensual</label>
+            <div class="input-con-icono">
+              <span>$</span>
+              <input type="text" id="ctr-monto" name="monto_mensual" placeholder="0" required
+                     class="input-miles-decimal" inputmode="decimal" autocomplete="off">
+            </div>
+          </div>
+
+          <div class="ctr-campo">
+            <label for="ctr-comision">Comisión</label>
+            <div class="input-con-icono input-con-icono--sufijo">
+              <span>%</span>
+              <input type="number" id="ctr-comision" name="comision_inmobiliaria" placeholder="0"
+                     min="0" max="100" step="1" inputmode="decimal" autocomplete="off">
+            </div>
           </div>
         </div>
 
-        {% comment %}
-          Aviso solo cuando el mes ya esta cobrado: cargar otro pago del mismo mes
-          lo rechaza la base, asi que conviene decirlo antes y no despues del error.
-        {% endcomment %}
-        <p class="alq-aviso" id="alq-aviso-cobrado" hidden>
-          <span class="material-symbols-outlined">info</span>
-          Este mes ya está cobrado. Para corregirlo, editá el pago de abajo en vez
-          de cargar uno nuevo.
-        </p>
+        <div class="ctr-campo">
+          <label for="ctr-inquilino">Inquilino <span class="ctr-opcional">opcional</span></label>
+          <input type="text" id="ctr-inquilino" name="nombre_inquilino"
+                 placeholder="Ej: Marcela Ferreyra" maxlength="60">
+        </div>
+      </div>
 
-        <section class="seccion-bloque">
-          <div class="subtitulo-formulario">
-            <span class="material-symbols-outlined">add_card</span>
-            <h4>El pago</h4>
-          </div>
-
-          <div class="grupo-input">
-            <label for="monto-cobro">Monto</label>
-            <div class="input-con-icono">
-              <span>$</span>
-              <input type="text" id="monto-cobro" name="monto" placeholder="0" required
-                     class="input-miles-decimal" inputmode="decimal" autocomplete="off">
-            </div>
-            <span class="alq-ayuda">Viene cargado con el alquiler completo. Cambialo si cobraste otro importe.</span>
-          </div>
-
-          <div class="grupo-input">
-            <label for="periodo-cobro">Mes que cubre</label>
-            {% comment %}
-              El mes que cubre el pago no es la fecha en que entro la plata: el
-              alquiler de julio se puede cobrar el 3 de agosto. Los dos atajos
-              resuelven los dos casos que se repiten y el selector queda para
-              el resto.
-            {% endcomment %}
-            <div class="alq-atajos">
-              <button type="button" class="alq-atajo" data-periodo="{{ periodo|date:'Y-m' }}">
-                {{ periodo|date:"F" }}
-              </button>
-              <button type="button" class="alq-atajo" data-periodo="{{ periodo_anterior|date:'Y-m' }}">
-                {{ periodo_anterior|date:"F" }}
-              </button>
-            </div>
-            <input type="month" id="periodo-cobro" name="periodo" required
-                   value="{{ periodo|date:'Y-m' }}" placeholder="AAAA-MM" pattern="\d{4}-\d{2}">
-            <span class="mensaje-error">Escribí el mes con el formato AAAA-MM.</span>
-          </div>
-
-          <div class="grupo-input">
-            <label for="fecha-cobro">Fecha del cobro</label>
-            <input type="date" id="fecha-cobro" name="fecha" required
-                   value="{{ hoy|date:'Y-m-d' }}" max="{{ hoy|date:'Y-m-d' }}">
-          </div>
-        </section>
-
-        <!-- Historial: lo llena alquileres.js con /api/casas/<id>/pagos/ -->
-        <section class="seccion-bloque">
-          <div class="subtitulo-formulario">
-            <span class="material-symbols-outlined">history</span>
-            <h4>Últimos pagos</h4>
-          </div>
-          <div class="alq-historial" id="alq-historial"></div>
-        </section>
-      </main>
-
-      <footer class="panel-pie">
-        <button type="submit" class="boton-primario" id="boton-guardar-cobro">Registrar pago</button>
-        <button type="button" class="boton-secundario" onclick="cerrarSlideOver('slide-over-cobro')">Cancelar</button>
+      <footer class="ctr-pie">
+        <button type="submit" class="boton-primario" id="ctr-guardar">Guardar contrato</button>
+        <button type="button" class="boton-secundario" onclick="cerrarModalContrato()">Cancelar</button>
       </footer>
     </form>
   </div>
 </div>
 
 {% comment %}
-  MODAL DE ELIMINACION, compartido por casas y pagos: el formulario es uno solo
-  y alquileres.js cambia la accion y el id segun lo que se este borrando. El
-  "mantener presionado" lo maneja paneles.js sobre #boton-confirmar-eliminar.
+  MODAL DE ELIMINACION de una casa. El "mantener presionado" lo maneja paneles.js
+  sobre #boton-confirmar-eliminar.
 {% endcomment %}
 <div id="modal-eliminar-alquiler">
   <div class="modal-eliminar-fondo" onclick="cerrarModalEliminarAlquiler()"></div>
@@ -375,7 +304,6 @@
       {% csrf_token %}
       <input type="hidden" name="accion" id="accion-eliminar">
       <input type="hidden" name="id_casa" id="id-casa-eliminar">
-      <input type="hidden" name="id_pago" id="id-pago-eliminar">
       <div class="modal-eliminar-acciones">
         <button type="button" class="boton-secundario" onclick="cerrarModalEliminarAlquiler()">No, volver</button>
         <button type="button" id="boton-confirmar-eliminar" class="boton-eliminar-confirmar">

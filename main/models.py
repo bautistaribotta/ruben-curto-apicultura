@@ -2,7 +2,7 @@ from datetime import date
 from decimal import Decimal
 
 from django.db import models
-from django.db.models import Sum, F, Subquery, OuterRef, DecimalField, Value
+from django.db.models import Sum, F, Subquery, OuterRef, DecimalField, DateField, Value, Q
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 
@@ -561,7 +561,7 @@ class GastoViajeCereal(GastoBase):
 def periodo_actual():
     """Primer dia del mes en curso.
 
-    Todo el modulo de alquileres identifica un mes por su dia 1: asi el periodo
+    Txdo el modulo de alquileres identifica un mes por su dia 1: asi el periodo
     entra en un DateField comun, se ordena y se compara sin trucos, y "julio de
     2026" es siempre el mismo valor lo escriba quien lo escriba.
     """
@@ -569,16 +569,43 @@ def periodo_actual():
     return date(hoy.year, hoy.month, 1)
 
 
-class CasaQuerySet(models.QuerySet):
-    def con_pago_del_mes(self, periodo=None):
-        """Anota cuanto se cobro de cada casa en el periodo pedido (por defecto, el mes en curso).
+def mes_siguiente(periodo):
+    """Primero del mes que sigue al periodo. Sirve para comparar con un "menor que"
+    y quedarse con txdo el mes, sin tener que averiguar si tiene 28, 30 o 31 dias.
+    """
+    return date(periodo.year + periodo.month // 12, periodo.month % 12 + 1, 1)
 
-        Sin esto, pintar el estado de cada fila del listado dispara una query por
-        casa (el mismo N+1 que evita Operacion.con_totales).
+
+def contratos_del_periodo(periodo):
+    """Filtro de los contratos que cubren un mes, del mas nuevo al mas viejo.
+
+    Un contrato cubre el mes si ya habia empezado (arranco antes del mes siguiente)
+    y todavia no habia terminado. Que el fin se compare contra el dia 1 y no contra
+    el ultimo es a proposito: el contrato que vence el 15 de agosto cubre agosto
+    entero, porque el alquiler de ese mes se devengo igual.
+
+    El fin vacio es un contrato sin vencimiento cargado y no caduca nunca.
+    """
+    return (Contrato.objects
+            .filter(Q(fin__isnull=True) | Q(fin__gte=periodo), inicio__lt=mes_siguiente(periodo))
+            .order_by("-inicio", "-id"))
+
+
+class CasaQuerySet(models.QuerySet):
+    def con_estado_del_mes(self, periodo=None):
+        """Anota txdo lo que del estado de una casa depende del mes que se mira.
+
+        Son cuatro datos: cuanto se cobro y, del contrato que cubria ese mes, si
+        existio y con que numeros. Sin esto, pintar el estado de cada fila dispara
+        varias queries por casa (el mismo N+1 que evita Operacion.con_totales).
 
         Un mes tiene a lo sumo un pago, asi que la suma devuelve ese unico monto
         y el cero significa que todavia no se cobro. Sumo en vez de preguntar si
         existe porque el listado tambien muestra cuanto entro, no solo si entro.
+
+        Los numeros del alquiler se leen del contrato de ESE mes y no del ultimo
+        cargado: asi un mes viejo se calcula con el precio que regia entonces, que
+        es lo que antes no tenia arreglo mientras el precio vivia en la casa.
         """
         periodo = periodo or periodo_actual()
         pagos_periodo = (
@@ -587,48 +614,102 @@ class CasaQuerySet(models.QuerySet):
             .annotate(total=Sum("monto"))
             .values("total")
         )
+        vigente = contratos_del_periodo(periodo).filter(casa=OuterRef("pk"))
+        # El ultimo contrato que ya habia terminado antes de este mes. Solo se usa
+        # para poder decir "contrato vencido" en vez de dejar la casa muda.
+        anterior = (Contrato.objects.filter(casa=OuterRef("pk"), fin__lt=periodo)
+                    .order_by("-fin", "-id"))
+
         return self.annotate(
             _pagado_periodo_anotado=Coalesce(
                 Subquery(pagos_periodo, output_field=DecimalField()),
                 Value(0),
                 output_field=DecimalField(),
             ),
+            _contrato_periodo_anotado=Subquery(vigente.values("id")[:1]),
+            _monto_periodo_anotado=Subquery(vigente.values("monto_mensual")[:1],
+                                            output_field=DecimalField()),
+            _comision_periodo_anotado=Subquery(vigente.values("comision_inmobiliaria")[:1],
+                                               output_field=DecimalField()),
+            _fin_anterior_anotado=Subquery(anterior.values("fin")[:1], output_field=DateField()),
         )
 
 
 class Casa(models.Model):
     """Propiedad que la empresa da en alquiler.
 
+    Guarda solo lo que es de la casa y no cambia con el inquilino: donde esta y
+    como se llama. Txdo lo del alquiler (plazo, monto, comision, inquilino) vive
+    en Contrato, porque una casa tiene varios a lo largo del tiempo y el de hoy
+    no puede pisar al del año pasado.
+
     Ningun dato es obligatorio: una casa se puede dar de alta con el nombre solo
-    y completarse despues, asi que todos los campos admiten null menos los dos
-    booleanos, que siempre tienen un valor definido.
+    y completarse despues.
     """
     objects = CasaQuerySet.as_manager()
 
     nombre = models.CharField(max_length=60, null=True, blank=True)
     localidad = models.CharField(max_length=60, null=True, blank=True)
     direccion = models.CharField(max_length=120, null=True, blank=True)
-    # Alquiler mensual pactado. Es el valor con el que se compara lo cobrado del
-    # mes para decidir si el periodo esta pago, parcial o impago.
-    precio = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
-    # Comision de la inmobiliaria expresada en porcentaje del alquiler (0 a 100):
-    # si sube el precio, la comision acompaña sola y no hay que reescribirla.
-    comision_inmobiliaria = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
-    alquilada = models.BooleanField(default=False)
-    """
-    Desde cuando la casa existe para el sistema. Sin esto, cargar una casa hoy
-    le inventa deuda en todos los meses anteriores, porque el estado de un mes
-    pasado se reconstruye con las casas que hay ahora. Es una fecha editable y
-    no un auto_now_add a proposito: si la casa se administra desde antes de
-    cargarla, el usuario corrige el dato y los meses viejos cierran bien.
-    """
-    fecha_alta = models.DateField(default=timezone.localdate)
     activa = models.BooleanField(default=True)
 
     class Meta:
         db_table = "casas"
         verbose_name_plural = "Casas"
         ordering = ["nombre", "id"]
+
+    @property
+    def contrato_del_periodo(self):
+        """Contrato que cubre el mes que se esta mirando, o None.
+
+        Si la casa vino de con_estado_del_mes() no vuelve a la base: las columnas
+        que hacen falta ya llegaron anotadas. Suelta si consulta, y cachea, porque
+        de este contrato cuelgan tres propiedades y seria una query cada una.
+        """
+        if not hasattr(self, "_contrato_cacheado"):
+            self._contrato_cacheado = (
+                contratos_del_periodo(periodo_actual()).filter(casa=self).first()
+            )
+        return self._contrato_cacheado
+
+    @property
+    def alquilada(self):
+        """Si en el mes que se mira habia contrato. Reemplaza al viejo booleano.
+
+        No hay nada que marcar a mano ni que apagar cuando un contrato vence: el
+        dia que deja de haber contrato que cubra el mes, la casa figura sin
+        alquilar sola. Y un mes pasado dice lo que pasaba entonces, no hoy.
+        """
+        if hasattr(self, "_contrato_periodo_anotado"):
+            return self._contrato_periodo_anotado is not None
+        return self.contrato_del_periodo is not None
+
+    @property
+    def precio(self):
+        # Alquiler mensual del contrato de ese mes. Sin contrato no hay precio: la
+        # casa no esta alquilada y no hay nada que cobrar.
+        if hasattr(self, "_monto_periodo_anotado"):
+            return self._monto_periodo_anotado
+        contrato = self.contrato_del_periodo
+        return contrato.monto_mensual if contrato else None
+
+    @property
+    def comision_inmobiliaria(self):
+        # Porcentaje del alquiler (0 a 100) que se lleva la inmobiliaria. Se guarda
+        # como porcentaje y no como monto para que acompañe solo a cada aumento.
+        if hasattr(self, "_comision_periodo_anotado"):
+            return self._comision_periodo_anotado
+        contrato = self.contrato_del_periodo
+        return contrato.comision_inmobiliaria if contrato else None
+
+    @property
+    def fin_contrato_anterior(self):
+        # Cuando termino el ultimo contrato, si es que ya termino antes de este mes.
+        # Es lo que separa "se le vencio el contrato" de "nunca estuvo alquilada".
+        if hasattr(self, "_fin_anterior_anotado"):
+            return self._fin_anterior_anotado
+        ultimo = self.contratos.filter(fin__lt=periodo_actual()).order_by("-fin", "-id").first()
+        return ultimo.fin if ultimo else None
 
     @property
     def comision_monto(self):
@@ -648,7 +729,7 @@ class Casa(models.Model):
 
     @property
     def total_pagado_periodo(self):
-        # Cobrado del periodo. Si el queryset vino de con_pago_del_mes() uso ese
+        # Cobrado del periodo. Si el queryset vino de con_estado_del_mes() uso ese
         # valor ya calculado, que ademas es el que fija que mes se esta mirando;
         # suelto, sin anotacion, cae en el mes en curso.
         if hasattr(self, "_pagado_periodo_anotado"):
@@ -673,14 +754,15 @@ class Casa(models.Model):
         No existe el estado parcial: un alquiler se paga completo. Si el mes tiene
         pago, esta cobrado.
 
-        El pago se pregunta primero y le gana a "alquilada". Un pago cargado es un
-        hecho de ese mes; "alquilada" es el estado de hoy y sobre el pasado es una
-        suposicion. Al reves, una casa que se desocupo hacia figurar sin alquilar
-        un mes que en realidad habia cobrado.
+        El pago se pregunta primero y le gana al contrato. Un pago cargado es un
+        hecho de ese mes; el contrato dice lo que se habia pactado, y si alguien
+        cobro igual, se cobro. Al reves, una casa que se desocupo hacia figurar
+        sin alquilar un mes que en realidad habia cobrado.
 
-        Lo que sigue sin tener historia es el precio: lo que se espera cobrar en un
-        mes viejo se calcula con el precio actual. Eso se arregla con una tabla de
-        contratos (casa, desde, hasta, precio), no guardando el estado mes por mes.
+        Un contrato vencido cae en "Sin alquilar" y no en un estado propio: para el
+        mes que se esta mirando significan lo mismo, que no hay alquiler que
+        reclamar. La tabla si lo aclara al lado del nombre, porque el motivo no es
+        el mismo y de eso depende que el usuario renueve.
         """
         if self.cobrada_en_el_periodo:
             return "Cobrado"
@@ -690,6 +772,55 @@ class Casa(models.Model):
 
     def __str__(self):
         return self.nombre or f"Casa {self.id}"
+
+
+class Contrato(models.Model):
+    """Alquiler pactado de una casa por un plazo: quien, cuanto y hasta cuando.
+
+    Una casa tiene varios a lo largo del tiempo y nunca dos a la vez. Renovar es
+    guardar uno nuevo, no editar el viejo: por eso el del año pasado sigue entero
+    y los meses de entonces se calculan con el monto de entonces.
+
+    El fin admite null y significa "sin vencimiento cargado", que es el contrato
+    que no caduca. El formulario si lo pide, porque de esa fecha depende que la
+    casa pase sola a figurar sin alquilar; el null existe para los contratos que
+    vinieron de la migracion y todavia no se completaron.
+    """
+    casa = models.ForeignKey(Casa, on_delete=models.CASCADE, related_name="contratos",
+                             db_column="id_casa")
+    inicio = models.DateField()
+    fin = models.DateField(null=True, blank=True)
+    monto_mensual = models.DecimalField(max_digits=12, decimal_places=2)
+    # Porcentaje del alquiler (0 a 100), no un monto: asi acompaña sola a cada aumento
+    comision_inmobiliaria = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    # Opcional: el contrato sirve igual sin saber el nombre del inquilino
+    nombre_inquilino = models.CharField(max_length=60, null=True, blank=True)
+
+    class Meta:
+        db_table = "contratos"
+        verbose_name_plural = "Contratos"
+        # Del mas nuevo al mas viejo; el id desempata los que arrancan el mismo dia
+        ordering = ["-inicio", "-id"]
+
+    @property
+    def vencido(self):
+        return self.fin is not None and self.fin < timezone.localdate()
+
+    @property
+    def meses(self):
+        """Duracion en meses, redondeada hacia arriba, o None si no tiene fin.
+
+        Cuenta meses arrancados y no completos: del 15/01 al 14/01 son doce meses
+        de alquiler, aunque el ultimo no llegue a cerrar el dia.
+        """
+        if self.fin is None:
+            return None
+        cuenta = (self.fin.year - self.inicio.year) * 12 + (self.fin.month - self.inicio.month)
+        return cuenta + 1 if self.fin.day >= self.inicio.day else cuenta
+
+    def __str__(self):
+        hasta = self.fin.strftime("%d/%m/%Y") if self.fin else "sin vencimiento"
+        return f"Contrato de {self.casa} desde {self.inicio:%d/%m/%Y} hasta {hasta}"
 
 
 class PagoAlquiler(models.Model):

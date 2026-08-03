@@ -8,12 +8,14 @@ from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.http import Http404
 from django.db import transaction
-from django.db.models import Sum, F, Value, Count, Q, Subquery, OuterRef, Case, When, IntegerField
+from django.db.models import (Sum, F, Value, Count, Q, Subquery, OuterRef, Exists, Case, When,
+                              IntegerField)
 from django.db.models.functions import Coalesce
 from django.core.cache import cache
 from .models import (Producto, Cliente, Operacion, DetalleOperacion, Pago, Cotizaciones, Empleado, PagosEmpleados,
                      Vehiculo, Viaje, DetalleViaje, Gasto, ViajeCereal, DetalleViajeCereal, GastoViajeCereal,
-                     ViajeReparto, GastoViajeReparto, DestinoViajeReparto, Casa, PagoAlquiler, periodo_actual)
+                     ViajeReparto, GastoViajeReparto, DestinoViajeReparto, Casa, Contrato, PagoAlquiler,
+                     contratos_del_periodo, periodo_actual)
 
 
 def _aplicar_estado_pago(viaje, pagado):
@@ -588,8 +590,8 @@ def editar_operacion(id_operacion, items, metodo_pago, fecha=None, cotizaciones_
     Los detalles de productos dados de baja (activo=False) quedan congelados:
     no se revierten ni se reemplazan, y el carrito debe traerlos idénticos.
 
-    Pagos: si la operación no tiene pagos, el método es editable y "contado"
-    genera el pago automático por el nuevo total. Si ya tiene pagos, el método
+    Pagos: si la operación no tiene pagos, el métxdo es editable y "contado"
+    genera el pago automático por el nuevo total. Si ya tiene pagos, el métxdo
     no se puede cambiar y los pagos se conservan; el único caso especial es el
     contado puro (un único pago que cubría el total), donde ese pago se ajusta
     al nuevo total para que la operación siga saldada.
@@ -685,7 +687,7 @@ def editar_operacion(id_operacion, items, metodo_pago, fecha=None, cotizaciones_
         monto_nuevo = operacion.monto_total
 
         if cantidad_pagos == 0:
-            # Sin pagos: el método es editable y contado salda la operación
+            # Sin pagos: el métxdo es editable y contado salda la operación
             if (metodo_pago or "").lower() == "contado":
                 Pago.objects.create(
                     operacion=operacion,
@@ -774,7 +776,7 @@ def obtener_listado_deudores(q="", tipo="", desde=None, hasta=None):
 
     # Filtro por fecha de la operacion. 'fecha' es un DateTimeField, asi que en vez
     # del lookup __date (que en MySQL usa CONVERT_TZ para pasar de UTC a la zona
-    # local antes de extraer la fecha, y devuelve NULL -> descarta todo- si el
+    # local antes de extraer la fecha, y devuelve NULL -> descarta txdo- si el
     # servidor no tiene cargadas las tablas de zona horaria) comparo contra los
     # limites del dia como datetimes aware: el inicio del dia 'desde' y el fin del
     # dia 'hasta', en la zona horaria local. El caso "un solo dia" llega como
@@ -1173,7 +1175,7 @@ def obtener_viajes_empleado(empleado, tipo="todos", desde=None, hasta=None):
 
     Los tres modelos no comparten tabla ni nombres de campo, asi que cada viaje se
     normaliza a un diccionario con las columnas que muestra el perfil y despues se
-    ordena todo junto por fecha. Son las filas de un solo empleado, asi que
+    ordena txdo junto por fecha. Son las filas de un solo empleado, asi que
     ordenar en Python sale mas barato que armar una UNION entre tres tablas.
 
     Devuelve (filas, conteos), donde conteos trae el total por tipo para las
@@ -1656,7 +1658,7 @@ def obtener_resumen_cereal(viajes):
     """Totales para las tarjetas de resumen de la vista de viajes de cereal.
 
     'viajes' es el listado ya filtrado (texto, fecha), de modo que las tarjetas
-    reflejan los mismos filtros que la tabla. Se calcula sobre todo ese conjunto,
+    reflejan los mismos filtros que la tabla. Se calcula sobre txdo ese conjunto,
     no solo la pagina visible.
 
     Total   = suma de (toneladas * precio_tonelada) de cada viaje (total_bruto).
@@ -2003,7 +2005,7 @@ def obtener_resumen_reparto(viajes):
     """Totales para las tarjetas de resumen de la vista de repartos.
 
     'viajes' es el listado ya filtrado (texto, fecha), de modo que las tarjetas
-    reflejan los mismos filtros que la tabla. Se calcula sobre todo ese conjunto,
+    reflejan los mismos filtros que la tabla. Se calcula sobre txdo ese conjunto,
     no solo la pagina visible.
 
     Re-scopeo por pk a una base limpia: 'viajes' puede venir con un JOIN a los
@@ -2360,44 +2362,32 @@ def _decimal_opcional(valor, etiqueta, maximo=None):
     return numero
 
 
-def _parsear_fecha_alta(fecha):
-    """Desde cuando la casa se administra. Vacia es hoy; futura no existe.
-
-    Marca a partir de que mes se le puede reclamar alquiler, asi que una fecha
-    adelantada dejaria a la casa fuera de meses en los que si corresponde
-    cobrarle.
-    """
-    hoy = timezone.localdate()
-
+def _parsear_dia(fecha, etiqueta):
+    """Convierte a date lo que llega de un <input type="date">, o None si vino vacio."""
     if fecha in (None, ""):
-        return hoy
+        return None
 
     if isinstance(fecha, datetime):
-        fecha = fecha.date()
+        return fecha.date()
 
-    if not isinstance(fecha, date):
-        try:
-            fecha = datetime.strptime(str(fecha).strip(), "%Y-%m-%d").date()
-        except (ValueError, TypeError):
-            raise ValueError("La fecha de alta no es válida.")
+    if isinstance(fecha, date):
+        return fecha
 
-    if fecha > hoy:
-        raise ValueError("La fecha de alta no puede ser posterior a hoy.")
-    return fecha
+    try:
+        return datetime.strptime(str(fecha).strip(), "%Y-%m-%d").date()
+    except (ValueError, TypeError):
+        raise ValueError(f"{etiqueta} no es válida.")
 
 
-def _validar_casa(nombre, localidad, direccion, precio, comision_inmobiliaria, fecha_alta=None):
-    """Limpia y valida los datos de una casa. Devuelve la tupla ya normalizada."""
-    nombre = _texto_opcional(nombre, 60, "El nombre de la casa")
-    localidad = _texto_opcional(localidad, 60, "La localidad")
-    direccion = _texto_opcional(direccion, 120, "La dirección")
+def _validar_casa(nombre, localidad, direccion):
+    """Limpia y valida los datos de una casa. Devuelve la tupla ya normalizada.
 
-    # Tope por DecimalField(max_digits=12, decimal_places=2): 10 enteros
-    precio = _decimal_opcional(precio, "El precio del alquiler", Decimal("9999999999.99"))
-    # La comision es un porcentaje del alquiler, no un monto: mas de 100 no existe
-    comision = _decimal_opcional(comision_inmobiliaria, "La comisión de la inmobiliaria", Decimal("100"))
-
-    return nombre, localidad, direccion, precio, comision, _parsear_fecha_alta(fecha_alta)
+    Son tres campos porque la casa ya no guarda nada del alquiler: el plazo, el
+    monto, la comision y el inquilino son del contrato.
+    """
+    return (_texto_opcional(nombre, 60, "El nombre de la casa"),
+            _texto_opcional(localidad, 60, "La localidad"),
+            _texto_opcional(direccion, 120, "La dirección"))
 
 
 # Condiciones que reproducen en SQL lo que Casa.estado_mes calcula en Python.
@@ -2409,12 +2399,16 @@ def _validar_casa(nombre, localidad, direccion, precio, comision_inmobiliaria, f
 # de la casa no entra en la cuenta.
 #
 # El orden de las condiciones copia el de Casa.estado_mes y no es casual: el
-# pago se pregunta primero y le gana a "alquilada", porque es un hecho de ese
-# mes y "alquilada" es el estado de hoy. Si las dos versiones se separan, el
-# chip deja de coincidir con la pildora de la fila.
+# pago se pregunta primero y le gana al contrato, porque es un hecho de ese mes.
+# Si las dos versiones se separan, el chip deja de coincidir con la pildora.
+#
+# Cuelgan de las anotaciones de con_estado_del_mes y no de campos de la casa:
+# son las unicas que saben de que mes estamos hablando. Estar alquilada es tener
+# contrato que cubra ese mes, asi que un contrato vencido ya cuenta como libre
+# sin necesidad de una condicion aparte.
 Q_COBRADA = Q(_pagado_periodo_anotado__gt=0)
-Q_PENDIENTE = Q(alquilada=True) & Q(_pagado_periodo_anotado__lte=0)
-Q_LIBRE = Q(alquilada=False) & Q(_pagado_periodo_anotado__lte=0)
+Q_PENDIENTE = Q(_contrato_periodo_anotado__isnull=False) & Q(_pagado_periodo_anotado__lte=0)
+Q_LIBRE = Q(_contrato_periodo_anotado__isnull=True) & Q(_pagado_periodo_anotado__lte=0)
 
 # Filtros del listado. La clave viaja en la URL y la etiqueta la pinta el chip.
 FILTROS_ALQUILERES = {
@@ -2463,22 +2457,26 @@ def obtener_casas(estado="", periodo=None):
     - Las que tienen pago cargado en ese mes, siempre. Un pago es un hecho, asi
       que la casa aparece aunque hoy este dada de baja: si no, la plata cobrada
       desaparecia del total del mes.
-    - Las vigentes que ya existian en ese mes. Sin la fecha de alta, una casa
-      cargada hoy figuraba adeudando todos los meses anteriores.
+    - En el mes en curso y en los que vienen, todas las vigentes. Aunque no tengan
+      contrato: es justamente la pantalla donde hay que poder cargarles uno.
+    - En los meses pasados, solo las que ya tenian algun contrato empezado. Sin
+      esto, una casa cargada hoy reaparece en todos los meses anteriores.
 
-    Lo que sigue sin tener historia es el precio: lo esperado de un mes viejo se
-    calcula con el precio de hoy. Se arregla con una tabla de contratos (casa,
-    desde, hasta, precio), no guardando el estado por mes.
+    El vencimiento no saca a la casa del listado, a proposito: sigue existiendo y
+    hay que poder verla para renovarla. Lo que cambia es que pasa a "Sin alquilar"
+    y deja de sumar a lo pendiente.
     """
     periodo = periodo or periodo_actual()
 
-    # La casa existe en el mes si se dio de alta en ese mes o antes; comparo
-    # contra el primero del mes siguiente para no perder las altas del propio mes.
-    ya_existia = Q(fecha_alta__lt=mes_desplazado(periodo, 1))
+    vigentes = Q(activa=True)
+    if periodo < periodo_actual():
+        # Ya tenia contrato si alguno arranco en ese mes o antes; comparo contra el
+        # primero del mes siguiente para no perder los que arrancan en el propio mes.
+        vigentes &= Q(Exists(
+            Contrato.objects.filter(casa=OuterRef("pk"), inicio__lt=mes_desplazado(periodo, 1))
+        ))
 
-    casas = Casa.objects.con_pago_del_mes(periodo).filter(
-        Q_COBRADA | (Q(activa=True) & ya_existia)
-    )
+    casas = Casa.objects.con_estado_del_mes(periodo).filter(Q_COBRADA | vigentes)
 
     filtro = FILTROS_ALQUILERES.get(estado)
     if filtro is not None:
@@ -2496,14 +2494,14 @@ def obtener_casas(estado="", periodo=None):
 
 def obtener_casa(id_casa):
     """Casa vigente con su pago del mes ya anotado, para el perfil."""
-    casa = Casa.objects.filter(activa=True).con_pago_del_mes().filter(id=id_casa).first()
+    casa = Casa.objects.filter(activa=True).con_estado_del_mes().filter(id=id_casa).first()
     if casa is None:
         raise Http404("La casa no existe o fue dada de baja.")
     return casa
 
 
 def obtener_datos_casa(id_casa):
-    """Datos de la casa en dict, para rellenar el modal de edicion via JSON."""
+    """Datos de la casa en dict, para rellenar el panel de edicion via JSON."""
     try:
         casa = Casa.objects.get(id=id_casa, activa=True)
         return {
@@ -2511,58 +2509,19 @@ def obtener_datos_casa(id_casa):
             "nombre": casa.nombre or "",
             "localidad": casa.localidad or "",
             "direccion": casa.direccion or "",
-            # Mando los montos como texto plano (sin separadores) para que el
-            # input del modal los acepte tal cual vienen
-            "precio": str(casa.precio) if casa.precio is not None else "",
-            "comision_inmobiliaria": (
-                str(casa.comision_inmobiliaria) if casa.comision_inmobiliaria is not None else ""
-            ),
-            "alquilada": casa.alquilada,
-            "fecha_alta": casa.fecha_alta.isoformat(),
         }
     except Casa.DoesNotExist:
         return None
 
 
-def crear_casa(nombre=None, localidad=None, direccion=None, precio=None,
-               comision_inmobiliaria=None, alquilada=False, fecha_alta=None):
-    nombre, localidad, direccion, precio, comision, alta = _validar_casa(
-        nombre, localidad, direccion, precio, comision_inmobiliaria, fecha_alta
-    )
-
-    return Casa.objects.create(
-        nombre=nombre,
-        localidad=localidad,
-        direccion=direccion,
-        precio=precio,
-        comision_inmobiliaria=comision,
-        alquilada=bool(alquilada),
-        fecha_alta=alta,
-    )
+def crear_casa(nombre=None, localidad=None, direccion=None):
+    nombre, localidad, direccion = _validar_casa(nombre, localidad, direccion)
+    return Casa.objects.create(nombre=nombre, localidad=localidad, direccion=direccion)
 
 
-def editar_casa(id_casa, nombre=None, localidad=None, direccion=None, precio=None,
-                comision_inmobiliaria=None, alquilada=False, fecha_alta=None):
+def editar_casa(id_casa, nombre=None, localidad=None, direccion=None):
     casa = get_object_or_404(Casa, id=id_casa)
-
-    # En un alta, la fecha vacia significa "hoy". En una edicion no: significa
-    # que el formulario no la trajo, y pisarla con hoy sacaria a la casa de
-    # todos sus meses anteriores sin que nadie lo haya pedido.
-    if fecha_alta in (None, ""):
-        fecha_alta = casa.fecha_alta
-
-    nombre, localidad, direccion, precio, comision, alta = _validar_casa(
-        nombre, localidad, direccion, precio, comision_inmobiliaria, fecha_alta
-    )
-
-    casa.nombre = nombre
-    casa.localidad = localidad
-    casa.direccion = direccion
-    casa.precio = precio
-    casa.comision_inmobiliaria = comision
-    casa.alquilada = bool(alquilada)
-    casa.fecha_alta = alta
-
+    casa.nombre, casa.localidad, casa.direccion = _validar_casa(nombre, localidad, direccion)
     casa.save()
     return casa
 
@@ -2576,25 +2535,141 @@ def eliminar_casa(id_casa):
     return casa
 
 
-def _parsear_fecha_pago(fecha):
-    """Fecha en que entro la plata. Vacia es hoy; futura no existe."""
+# ==========================================================================
+#  CONTRATOS
+# ==========================================================================
+
+def _fecha_obligatoria(fecha, etiqueta):
+    """Como _parsear_dia pero sin permitir el vacio."""
+    dia = _parsear_dia(fecha, etiqueta)
+    if dia is None:
+        raise ValueError(f"{etiqueta} es obligatoria.")
+    return dia
+
+
+def _validar_contrato(inicio, fin, monto_mensual, comision_inmobiliaria, nombre_inquilino):
+    """Limpia y valida los datos de un contrato. Devuelve la tupla normalizada.
+
+    A diferencia de la casa, aca casi txdo es obligatorio: un contrato sin plazo
+    ni monto no dice nada, y de esas tres fechas y ese numero cuelga el estado de
+    la casa mes a mes. Lo unico opcional es el inquilino, que es un dato de
+    agenda, y la comision, que no siempre hay inmobiliaria.
+    """
+    inicio = _fecha_obligatoria(inicio, "La fecha de inicio del contrato")
+    fin = _fecha_obligatoria(fin, "La fecha de fin del contrato")
+    if fin < inicio:
+        raise ValueError("El fin del contrato no puede ser anterior a su inicio.")
+
+    # Tope por DecimalField(max_digits=12, decimal_places=2): 10 enteros
+    monto = _decimal_opcional(monto_mensual, "El alquiler mensual", Decimal("9999999999.99"))
+    if not monto:
+        raise ValueError("El alquiler mensual es obligatorio y tiene que ser mayor a cero.")
+
+    # La comision es un porcentaje del alquiler, no un monto: mas de 100 no existe
+    comision = _decimal_opcional(comision_inmobiliaria, "La comisión de la inmobiliaria", Decimal("100"))
+    return inicio, fin, monto, comision, _texto_opcional(nombre_inquilino, 60, "El nombre del inquilino")
+
+
+def _validar_plazo_libre(casa, inicio, fin, excluir_id=None):
+    """Corta si el plazo pisa a otro contrato de la misma casa.
+
+    Una casa no puede estar alquilada dos veces al mismo tiempo, y si lo estuviera
+    no habria forma de decidir con que monto se cobra el mes. MySQL no tiene
+    constraint de exclusion para rangos, asi que el corte vive aca.
+
+    Dos plazos se pisan si cada uno empieza antes de que termine el otro. El fin
+    vacio es un contrato sin vencimiento: se pisa con txdo lo que venga despues.
+    """
+    otros = casa.contratos.filter(Q(fin__isnull=True) | Q(fin__gte=inicio), inicio__lte=fin)
+    if excluir_id:
+        otros = otros.exclude(id=excluir_id)
+
+    choque = otros.order_by("inicio").first()
+    if choque is None:
+        return
+
+    hasta = choque.fin.strftime("%d/%m/%Y") if choque.fin else "sin vencimiento"
+    raise ValueError(
+        f"Esas fechas se pisan con el contrato del {choque.inicio:%d/%m/%Y} al {hasta}. "
+        "Una casa no puede tener dos contratos a la vez."
+    )
+
+
+def crear_contrato(id_casa, inicio=None, fin=None, monto_mensual=None,
+                   comision_inmobiliaria=None, nombre_inquilino=None):
+    """Nuevo contrato de una casa. Renovar es esto: el anterior no se toca."""
+    casa = get_object_or_404(Casa, id=id_casa, activa=True)
+    inicio, fin, monto, comision, inquilino = _validar_contrato(
+        inicio, fin, monto_mensual, comision_inmobiliaria, nombre_inquilino
+    )
+    _validar_plazo_libre(casa, inicio, fin)
+
+    return Contrato.objects.create(casa=casa, inicio=inicio, fin=fin, monto_mensual=monto,
+                                   comision_inmobiliaria=comision, nombre_inquilino=inquilino)
+
+
+def editar_contrato(id_contrato, inicio=None, fin=None, monto_mensual=None,
+                    comision_inmobiliaria=None, nombre_inquilino=None):
+    """Corrige un contrato ya cargado. Es para arreglar lo que se tipeo mal.
+
+    Renovar no pasa por aca: eso es un contrato nuevo. Si se corre el plazo de uno
+    viejo, los meses que dejan de estar cubiertos pasan a figurar sin alquilar, que
+    es lo correcto, pero los pagos que tuvieran cargados no se borran.
+    """
+    contrato = get_object_or_404(Contrato, id=id_contrato)
+    inicio, fin, monto, comision, inquilino = _validar_contrato(
+        inicio, fin, monto_mensual, comision_inmobiliaria, nombre_inquilino
+    )
+    _validar_plazo_libre(contrato.casa, inicio, fin, excluir_id=contrato.id)
+
+    contrato.inicio, contrato.fin = inicio, fin
+    contrato.monto_mensual, contrato.comision_inmobiliaria = monto, comision
+    contrato.nombre_inquilino = inquilino
+    contrato.save()
+    return contrato
+
+
+def _contrato_en_dict(contrato):
+    if contrato is None:
+        return None
+    return {
+        "id": contrato.id,
+        "inicio": contrato.inicio.isoformat(),
+        # Vacio y no null: lo lee un input date, que espera un string
+        "fin": contrato.fin.isoformat() if contrato.fin else "",
+        # Monto pelado, sin separadores, para que el input lo acepte tal cual
+        "monto_mensual": str(contrato.monto_mensual),
+        "comision_inmobiliaria": (
+            str(contrato.comision_inmobiliaria) if contrato.comision_inmobiliaria is not None else ""
+        ),
+        "nombre_inquilino": contrato.nombre_inquilino or "",
+        "vencido": contrato.vencido,
+        "meses": contrato.meses,
+    }
+
+
+def obtener_contrato_de_casa(id_casa):
+    """Lo que el modal necesita saber de una casa antes de abrirse.
+
+    Manda dos contratos y no uno porque el modal hace dos cosas segun el caso:
+
+    - 'vigente' es el contrato que cubre hoy. Si existe, el modal lo edita: crear
+      un segundo contrato solapado seria invalido de todos modos.
+    - 'anterior' es el ultimo que ya termino. Si no hay vigente, el modal crea uno
+      nuevo precargado con esos numeros, que es lo que pasa al renovar: mismo
+      inquilino, plazo nuevo, monto que casi siempre se retoca.
+    """
+    casa = get_object_or_404(Casa, id=id_casa, activa=True)
     hoy = timezone.localdate()
 
-    if fecha in (None, ""):
-        return hoy
+    vigente = casa.contratos.filter(Q(fin__isnull=True) | Q(fin__gte=hoy), inicio__lte=hoy).first()
+    anterior = casa.contratos.filter(fin__lt=hoy).order_by("-fin", "-id").first()
 
-    if isinstance(fecha, datetime):
-        fecha = fecha.date()
-
-    if not isinstance(fecha, date):
-        try:
-            fecha = datetime.strptime(str(fecha).strip(), "%Y-%m-%d").date()
-        except (ValueError, TypeError):
-            raise ValueError("La fecha del pago no es válida.")
-
-    if fecha > hoy:
-        raise ValueError("La fecha del pago no puede ser posterior a hoy.")
-    return fecha
+    return {
+        "casa": {"id": casa.id, "nombre": casa.nombre or "Sin nombre"},
+        "vigente": _contrato_en_dict(vigente),
+        "anterior": _contrato_en_dict(anterior),
+    }
 
 
 def _parsear_periodo(periodo):
@@ -2624,109 +2699,12 @@ def _parsear_periodo(periodo):
     raise ValueError("El período del pago no es válido.")
 
 
-def _validar_pago_alquiler(monto, fecha, periodo):
-    """Valida los tres datos de un pago y los devuelve listos para guardar."""
-    try:
-        monto = Decimal(str(monto).strip().replace(" ", ""))
-    except (InvalidOperation, AttributeError, TypeError):
-        raise ValueError("El monto del pago no es un número válido.")
-
-    if monto <= 0:
-        raise ValueError("El monto del pago debe ser mayor a cero.")
-
-    # DecimalField(max_digits=12, decimal_places=2): 10 enteros como maximo
-    monto = monto.quantize(Decimal("0.01"))
-    if monto >= Decimal("10000000000"):
-        raise ValueError("El monto del pago es demasiado grande.")
-
-    return monto, _parsear_fecha_pago(fecha), _parsear_periodo(periodo)
-
-
-def _validar_mes_libre(casa, periodo, excluir_id=None):
-    """Corta si la casa ya tiene cargado el alquiler de ese mes.
-
-    El alquiler se cobra completo, asi que un segundo pago del mismo mes no es
-    una cuota sino un error de carga. La base lo impide igual con la restriccion
-    unica; esto existe para avisarlo con un mensaje entendible en vez de dejar
-    que reviente con un IntegrityError.
-    """
-    repetido = PagoAlquiler.objects.filter(casa=casa, periodo=periodo)
-    if excluir_id:
-        repetido = repetido.exclude(id=excluir_id)
-
-    if repetido.exists():
-        raise ValueError(
-            f"El alquiler de {periodo.strftime('%m/%Y')} ya está cargado para esta casa. "
-            "Editá el pago existente en vez de cargar uno nuevo."
-        )
-
-
-def crear_pago_alquiler(id_casa, monto, fecha=None, periodo=None):
-    """Registra el cobro del alquiler de un mes.
-
-    Un mes se cobra entero y una sola vez: si ya hay un pago para ese periodo,
-    el servicio lo rechaza en lugar de acumular montos.
-
-    Una casa sin inquilino no genera alquiler: la pantalla ya deshabilita el
-    boton, pero el corte vive aca para que ninguna via de carga la deje pasar.
-    """
-    casa = get_object_or_404(Casa, id=id_casa, activa=True)
-    if not casa.alquilada:
-        raise ValueError(
-            "La casa no está alquilada, así que no puede tener pagos de alquiler. "
-            "Marcala como alquilada antes de registrar el cobro."
-        )
-
-    monto, fecha, periodo = _validar_pago_alquiler(monto, fecha, periodo)
-    _validar_mes_libre(casa, periodo)
-
-    return PagoAlquiler.objects.create(casa=casa, monto=monto, fecha=fecha, periodo=periodo)
-
-
-def editar_pago_alquiler(id_pago, monto, fecha=None, periodo=None):
-    pago = get_object_or_404(PagoAlquiler, id=id_pago)
-    monto, fecha, periodo = _validar_pago_alquiler(monto, fecha, periodo)
-    # Mover un pago al mes de otro pago ya cargado dejaria dos cobros del mismo mes
-    _validar_mes_libre(pago.casa, periodo, excluir_id=pago.id)
-
-    pago.monto, pago.fecha, pago.periodo = monto, fecha, periodo
-    pago.save()
-    return pago
-
-
-def obtener_datos_pago_alquiler(id_pago):
-    """Datos del pago en dict, para rellenar el modal de edicion via JSON."""
-    try:
-        pago = PagoAlquiler.objects.get(id=id_pago)
-        return {
-            "id": pago.id,
-            "id_casa": pago.casa_id,
-            "monto": str(pago.monto),
-            "fecha": pago.fecha.isoformat(),
-            # El input month espera "YYYY-MM", no la fecha completa
-            "periodo": pago.periodo.strftime("%Y-%m"),
-        }
-    except PagoAlquiler.DoesNotExist:
-        return None
-
-
-def eliminar_pago_alquiler(id_pago):
-    """Borrado real: un pago mal cargado no es historia que valga la pena guardar.
-
-    Devuelvo el id de la casa para que la vista sepa a que perfil volver.
-    """
-    pago = get_object_or_404(PagoAlquiler, id=id_pago)
-    id_casa = pago.casa_id
-    pago.delete()
-    return id_casa
-
-
 def marcar_pago_alquiler(id_casa, periodo, pagado):
     """Casilla de cobro de la tabla: crea o borra el pago del mes de una tirada.
 
-    Es el atajo del caso normal, que en esta pantalla es casi el unico: el
-    alquiler entero, por el precio de la casa, cobrado hoy. Cualquier otra cosa
-    (otro monto, otra fecha) se carga desde el panel, que para eso esta.
+    Es la unica via de carga de la pantalla, y alcanza porque el alquiler no
+    tiene medias tintas: se cobra entero, por el monto del contrato que cubria ese
+    mes, en el mes que se esta mirando. La fecha del cobro es la de hoy.
 
     Es idempotente: marcar lo ya marcado, o desmarcar lo que no esta cargado, no
     hace nada y tampoco es un error. Dos clicks seguidos o dos pestañas abiertas
@@ -2734,8 +2712,8 @@ def marcar_pago_alquiler(id_casa, periodo, pagado):
 
     Devuelve el estado que quedo y el monto involucrado. Desmarcar borra un
     registro de verdad, asi que la vista necesita poder decir cuanto era: si el
-    pago se habia cargado a mano con otro importe, el usuario tiene que
-    enterarse de lo que acaba de perder.
+    precio cambio desde que se cargo, el usuario tiene que enterarse de lo que
+    acaba de perder.
     """
     casa = get_object_or_404(Casa, id=id_casa, activa=True)
     periodo = _parsear_periodo(periodo)
@@ -2751,61 +2729,27 @@ def marcar_pago_alquiler(id_casa, periodo, pagado):
     if pago is not None:
         return {"pagado": True, "monto": pago.monto, "periodo": periodo}
 
-    # La casilla no puede inventar un monto: sin precio no hay pago que crear
-    if not casa.alquilada:
+    # La casilla no puede inventar un monto: sin contrato no hay pago que crear
+    contrato = contratos_del_periodo(periodo).filter(casa=casa).first()
+    if contrato is None:
+        anterior = casa.contratos.filter(fin__lt=periodo).order_by("-fin").first()
+        if anterior is not None:
+            raise ValueError(
+                f"El contrato venció el {anterior.fin:%d/%m/%Y}, así que ese mes no corresponde "
+                "cobrarlo. Cargá el contrato nuevo para poder seguir."
+            )
         raise ValueError(
-            "La casa no figura alquilada. Marcala como alquilada antes de cobrarle el mes."
-        )
-    if not casa.precio:
-        raise ValueError(
-            "La casa no tiene precio de alquiler cargado, así que no se sabe por cuánto es "
-            "el pago. Cargalo en la casa, o usá el botón de cobro para escribir el monto."
+            "La casa no tiene contrato en ese mes, así que no se sabe por cuánto es el pago. "
+            "Cargale un contrato desde el botón de la fila."
         )
 
     PagoAlquiler.objects.create(
         casa=casa,
         periodo=periodo,
-        monto=casa.precio,
+        monto=contrato.monto_mensual,
         fecha=timezone.localdate(),
     )
-    return {"pagado": True, "monto": casa.precio, "periodo": periodo}
-
-
-def obtener_pagos_casa(casa, desde=None, hasta=None):
-    """Historial de pagos de una casa, del periodo mas nuevo al mas viejo.
-
-    El rango filtra por periodo (el mes que cubre el pago) y no por la fecha de
-    cobro: cuando alguien pregunta que se pago en 2026 quiere los meses de 2026,
-    no la plata que entro ese año.
-    """
-    pagos = PagoAlquiler.objects.filter(casa=casa)
-    if desde:
-        pagos = pagos.filter(periodo__gte=desde)
-    if hasta:
-        pagos = pagos.filter(periodo__lte=hasta)
-    return pagos
-
-
-def listar_pagos_casa(id_casa, limite=6):
-    """Ultimos pagos de una casa, en dicts listos para el JSON del panel de cobro.
-
-    Sin perfil de casa todavia, el panel de cobro es el unico lugar donde se ven
-    y se corrigen los pagos ya cargados, asi que muestra los ultimos y no todos.
-    """
-    casa = get_object_or_404(Casa, id=id_casa, activa=True)
-    pagos = obtener_pagos_casa(casa)[:limite]
-
-    return [
-        {
-            "id": pago.id,
-            "monto": str(pago.monto),
-            "fecha": pago.fecha.isoformat(),
-            "periodo": pago.periodo.strftime("%Y-%m"),
-            # Etiqueta ya armada para no repetir el formateo de fecha en el front
-            "periodo_label": pago.periodo_label,
-        }
-        for pago in pagos
-    ]
+    return {"pagado": True, "monto": contrato.monto_mensual, "periodo": periodo}
 
 
 def obtener_resumen_alquileres(casas, periodo=None):
@@ -2825,6 +2769,8 @@ def obtener_resumen_alquileres(casas, periodo=None):
 
     for casa in casas:
         total_casas += 1
+        # "Alquilada" es tener contrato que cubra ese mes, asi que el vencido ya
+        # queda afuera: la misma regla que aplica Casa.estado_mes.
         if casa.alquilada:
             alquiladas += 1
 
@@ -2841,7 +2787,7 @@ def obtener_resumen_alquileres(casas, periodo=None):
             esperado += pagado
             continue
 
-        # Sin pago, solo se reclama a las que hoy estan alquiladas
+        # Sin pago, solo se reclama a las que tenian contrato ese mes
         if not casa.alquilada:
             continue
 

@@ -466,7 +466,8 @@
 
 /* Marca de la casa dada de baja que reaparece en un mes con pago. Va en gris y
    no en rojo: no es un error, es un registro historico. */
-.alq-baja {
+.alq-baja,
+.alq-vencido {
   display: inline-block;
   margin-left: 0.35rem;
   padding: 0.05rem 0.4rem;
@@ -476,6 +477,13 @@
   font-weight: var(--weight-medium);
   color: var(--text-muted);
   vertical-align: middle;
+}
+
+/* El contrato vencido si pide algo del usuario (renovarlo), asi que a diferencia
+   de la baja lleva color. Miel y no rojo: nadie hizo nada mal, hay que actuar. */
+.alq-vencido {
+  background-color: var(--honey-tint-10);
+  color: var(--brand-active);
 }
 
 .alq-vacio {
@@ -589,13 +597,14 @@
   font-size: 19px;
 }
 
-/* Cobrar entra plata: toma el verde de la pildora de cobrado */
-.alq-boton-icono.cobrar:hover:not(:disabled) {
-  background-color: var(--success-50);
-  color: var(--success-600);
+/* El contrato es de donde sale todo lo demas de la fila: lleva el miel, que en
+   esta pantalla marca justamente lo que tiene que ver con contratos */
+.alq-boton-icono.contrato:hover:not(:disabled) {
+  background-color: var(--honey-tint-10);
+  color: var(--brand-active);
 }
 
-/* Mes ya cobrado: no hay nada que cargar hasta que empiece el siguiente */
+/* Casa dada de baja: no hay nada que editar ni que volver a borrar */
 .alq-boton-icono:disabled {
   color: var(--sand-300);
   cursor: not-allowed;
@@ -617,10 +626,9 @@
 }
 
 /* ============================================================
-   PANELES LATERALES (casa y cobro)
+   PANEL LATERAL DE LA CASA (alta y edicion)
    ============================================================ */
-#slide-over-casa,
-#slide-over-cobro {
+#slide-over-casa {
   position: fixed;
   inset: 0;
   z-index: 1100;
@@ -632,8 +640,7 @@
   transition: visibility var(--dur-slow);
 }
 
-#slide-over-casa.slide-over-abierto,
-#slide-over-cobro.slide-over-abierto {
+#slide-over-casa.slide-over-abierto {
   visibility: visible;
   pointer-events: auto;
   transition: none;
@@ -673,8 +680,7 @@
   transform: translateX(0);
 }
 
-#form-casa,
-#form-cobro {
+#form-casa {
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -786,95 +792,34 @@
   letter-spacing: var(--tracking-wide);
 }
 
-/* Como viene la casa este mes, arriba del formulario de cobro */
-.alq-estado-casa {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.75rem;
-  padding: 0.9rem 1rem;
-  background-color: var(--surface-sunken);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-}
-
-.alq-estado-casa__dato {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  min-width: 0;
-}
-
-.alq-estado-casa__label {
-  font-size: var(--text-xs);
-  color: var(--text-muted);
-}
-
-.alq-estado-casa__valor {
-  font-size: var(--text-sm);
-  font-weight: var(--weight-bold);
-  font-variant-numeric: tabular-nums;
-  color: var(--text-strong);
-}
-
-/* El estado del mes toma el color de su pildora en la tabla, para que el panel
-   y el listado no digan lo mismo de dos maneras distintas. */
-.alq-estado-casa__valor--cobrado {
-  color: var(--success-600);
-}
-
-.alq-estado-casa__valor--pendiente {
-  color: var(--danger-600);
-}
-
-.alq-estado-casa__valor--libre {
-  color: var(--text-muted);
-}
-
-/* Aviso de mes ya cobrado, arriba del formulario */
-.alq-aviso {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
-  padding: 0.75rem 0.9rem;
-  border: 1px solid var(--honey-200);
-  border-radius: var(--radius-md);
-  background-color: var(--honey-50);
-  font-size: var(--text-xs);
-  line-height: 1.45;
-  color: var(--sand-700);
-}
-
-.alq-aviso[hidden] {
-  display: none;
-}
-
-.alq-aviso .material-symbols-outlined {
-  flex: none;
-  font-size: 1.1rem;
-  color: var(--brand-active);
-}
-
-/* --- INPUTS --- */
-.grupo-input {
+/* --- INPUTS ---
+   .ctr-campo es el campo del modal de contrato. Comparte todas las reglas con
+   el del panel para que los dos formularios se vean iguales: si se separan,
+   cambia el alto de los inputs entre una pantalla y la otra. */
+.grupo-input,
+.ctr-campo {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
 }
 
-.grupo-input label {
+.grupo-input label,
+.ctr-campo label {
   font-size: var(--text-sm);
   font-weight: var(--weight-medium);
   color: var(--text-body);
 }
 
-.etiqueta-opcional {
+.etiqueta-opcional,
+.ctr-opcional {
   margin-left: 0.35rem;
   font-size: var(--text-xs);
   font-weight: var(--weight-medium);
   color: var(--text-subtle);
 }
 
-.grupo-input input {
+.grupo-input input,
+.ctr-campo input {
   width: 100%;
   padding: 0.625rem 0.75rem;
   background-color: var(--surface-card);
@@ -888,11 +833,13 @@
   transition: all var(--dur-normal) var(--ease-standard);
 }
 
-.grupo-input input::placeholder {
+.grupo-input input::placeholder,
+.ctr-campo input::placeholder {
   color: var(--text-subtle);
 }
 
-.grupo-input input:focus {
+.grupo-input input:focus,
+.ctr-campo input:focus {
   border-color: var(--brand);
   box-shadow: var(--ring);
 }
@@ -926,66 +873,14 @@
   padding-right: 2.25rem;
 }
 
-.alq-ayuda {
-  font-size: var(--text-xs);
-  color: var(--text-muted);
-}
-
-/* Atajos del mes que cubre el pago */
-.alq-atajos {
-  display: flex;
-  gap: 0.4rem;
-}
-
-.alq-atajo {
-  padding: 0.3rem 0.7rem;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-pill);
-  background-color: var(--surface-card);
-  font-family: inherit;
-  font-size: var(--text-xs);
-  font-weight: var(--weight-semibold);
-  color: var(--text-muted);
-  text-transform: capitalize;
-  cursor: pointer;
-  transition: all var(--dur-normal) var(--ease-standard);
-}
-
-.alq-atajo:hover {
-  background-color: var(--surface-hover);
-  color: var(--text-strong);
-}
-
-.alq-atajo.es-activo {
-  background-color: var(--honey-tint-10);
-  border-color: var(--honey-300);
-  color: var(--brand-active);
-}
-
-.alq-atajo:focus-visible {
-  outline: none;
-  box-shadow: var(--ring);
-}
-
 /* Aclaracion bajo un campo cuyo efecto no se ve en el propio campo */
 .texto-ayuda {
   font-size: var(--text-xs);
   color: var(--text-muted);
 }
 
-.mensaje-error {
-  display: none;
-  color: var(--color-rojo-eliminacion);
-  font-size: var(--text-xs);
-  font-weight: var(--weight-medium);
-}
-
 .grupo-input input:invalid:not(:placeholder-shown) {
   border-color: var(--color-rojo-eliminacion);
-}
-
-.grupo-input input:invalid:not(:placeholder-shown) ~ .mensaje-error {
-  display: block;
 }
 
 /* --- TOGGLE "ESTA ALQUILADA" --- */
@@ -1065,58 +960,6 @@
   box-shadow: var(--ring);
 }
 
-/* --- HISTORIAL DE PAGOS DEL PANEL DE COBRO --- */
-.alq-historial {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.alq-historial__vacio {
-  padding: 0.85rem 1rem;
-  border: 1px dashed var(--border-default);
-  border-radius: var(--radius-md);
-  font-size: var(--text-sm);
-  color: var(--text-muted);
-  text-align: center;
-}
-
-.alq-pago {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.6rem 0.75rem;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  background-color: var(--surface-card);
-}
-
-.alq-pago__datos {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  margin-right: auto;
-}
-
-.alq-pago__periodo {
-  font-size: var(--text-sm);
-  font-weight: var(--weight-semibold);
-  color: var(--text-strong);
-}
-
-.alq-pago__fecha {
-  font-size: var(--text-xs);
-  color: var(--text-muted);
-}
-
-.alq-pago__monto {
-  font-size: var(--text-sm);
-  font-weight: var(--weight-bold);
-  font-variant-numeric: tabular-nums;
-  color: var(--text-strong);
-  white-space: nowrap;
-}
-
 /* --- PIE DEL PANEL --- */
 .panel-pie {
   padding: 1rem 1.5rem;
@@ -1169,7 +1012,175 @@
 }
 
 /* ============================================================
-   MODAL DE ELIMINACION (casas y pagos)
+   MODAL DE CONTRATO
+   ============================================================ */
+#modal-contrato {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+#modal-contrato.abierto {
+  display: flex;
+}
+
+.ctr-fondo {
+  position: absolute;
+  inset: 0;
+  background-color: var(--overlay-ink);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+.ctr-panel {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 34rem;
+  max-height: 100%;
+  overflow-y: auto;
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  animation: ctr-in var(--dur-normal) var(--ease-standard);
+}
+
+@keyframes ctr-in {
+  from { opacity: 0; transform: translateY(0.5rem); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.ctr-cabecera {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.ctr-cabecera h3 {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  color: var(--text-strong);
+}
+
+/* El nombre de la casa: el modal no dice de cual es si no es por aca */
+.ctr-cabecera p {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.ctr-cerrar {
+  flex: none;
+  background: none;
+  border: none;
+  color: var(--sand-400);
+  cursor: pointer;
+  padding: 0.375rem;
+  border-radius: var(--radius-sm);
+  display: flex;
+  transition: all var(--dur-normal) var(--ease-standard);
+}
+
+.ctr-cerrar:hover {
+  background-color: var(--surface-hover);
+  color: var(--text-muted);
+}
+
+.ctr-cerrar:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.ctr-cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.5rem;
+}
+
+/* Contrato anterior. Va apagado y con la barra al costado para que se lea como
+   un tramo ya cerrado del que este es la continuacion, y no como un campo mas. */
+.ctr-anterior {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.6rem 0.85rem;
+  border-left: 2px solid var(--sand-300);
+  background-color: var(--surface-sunken);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+
+.ctr-anterior[hidden] {
+  display: none;
+}
+
+.ctr-anterior__rotulo {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--text-subtle);
+}
+
+.ctr-anterior__detalle {
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.ctr-rotulo {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--text-strong);
+  margin-bottom: 0.6rem;
+}
+
+.ctr-plazo {
+  border: none;
+}
+
+/* Las dos fechas van juntas: un contrato es antes que nada un periodo, y leerlas
+   en renglones separados obliga a reconstruirlo de memoria. */
+.ctr-plazo__tramo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.ctr-nota {
+  margin-top: 0.5rem;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.ctr-fila {
+  display: grid;
+  /* El alquiler pide mas lugar que un porcentaje de dos digitos */
+  grid-template-columns: 1.6fr 1fr;
+  gap: 1rem;
+}
+
+.ctr-pie {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--border-subtle);
+  background-color: var(--surface-sunken);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+
+/* ============================================================
+   MODAL DE ELIMINACION DE UNA CASA
    ============================================================ */
 #modal-eliminar-alquiler {
   display: none;
@@ -1365,11 +1376,19 @@
     max-width: 100%;
   }
   .panel-pie,
-  .modal-eliminar-acciones {
+  .modal-eliminar-acciones,
+  .ctr-fila {
     grid-template-columns: 1fr;
   }
-  .alq-estado-casa {
+  .ctr-plazo__tramo {
     grid-template-columns: 1fr;
+  }
+  /* Apilados, el de guardar queda arriba porque ya viene primero en el HTML */
+  .ctr-pie {
+    flex-direction: column;
+  }
+  .ctr-pie button {
+    width: 100%;
   }
 }
 
@@ -1385,10 +1404,12 @@
   .tabla-alquileres tbody tr,
   .alq-boton-icono,
   .alq-chip,
-  .alq-mes__volver {
+  .alq-mes__volver,
+  .ctr-cerrar {
     transition: none;
   }
-  .alq-selector {
+  .alq-selector,
+  .ctr-panel {
     animation: none;
   }
 }

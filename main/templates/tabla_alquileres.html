@@ -1,5 +1,4 @@
 {% load humanize %}
-{% load l10n %}
 {% comment %}
   Tabla de casas. Es el fragmento que devuelve la vista por AJAX cuando cambian
   el buscador, los chips o la pagina, asi que no puede depender de nada que viva
@@ -24,20 +23,18 @@
     {% for casa in casas %}
       <tr>
         {% comment %}
-          Atajo del caso normal: tildar carga el alquiler entero al precio de la
-          casa con fecha de hoy, y destildar lo borra. El boton de cobro queda
-          para lo que se sale de eso (otro monto, otra fecha) y para ver el
-          historial.
+          Unica via de carga del cobro: tildar guarda el alquiler entero al precio
+          de la casa con fecha de hoy, y destildar lo borra.
 
           No hay nada que resetear cada primero de mes: el tilde sale de si
           existe un pago del periodo que se esta mirando, asi que al cambiar el
           mes la casilla aparece vacia sola.
 
-          Se deshabilita para CREAR un pago que la casilla no puede armar sola:
-          sin precio no sabe el monto, sin inquilino no corresponde cobrar. En
-          cambio un pago que ya existe siempre se puede sacar, porque borrarlo
-          no necesita ninguno de esos datos. Lo unico intocable es la casa dada
-          de baja, que aparece solo como registro del mes.
+          Se deshabilita para CREAR un pago que la casilla no puede armar sola: sin
+          contrato que cubra el mes no hay monto que cobrar ni con que respaldarlo.
+          En cambio un pago que ya existe siempre se puede sacar, porque borrarlo
+          no necesita ese dato. Lo unico intocable es la casa dada de baja, que
+          aparece solo como registro del mes.
         {% endcomment %}
         <td class="pago-celda">
           <input
@@ -45,17 +42,15 @@
             class="pago-check"
             data-pago-url="{% url 'marcar_pago_alquiler' casa.id periodo|date:'Y-m' %}"
             data-pago-entidad="Alquiler"
-            title="{% if not casa.activa %}La casa está dada de baja{% elif casa.cobrada_en_el_periodo %}Cobrado. Destildá para borrar el pago{% elif not casa.alquilada %}La casa no está alquilada{% elif not casa.precio %}Cargá el precio del alquiler para poder marcarlo{% else %}Marcar el alquiler de {{ periodo|date:'F' }} como cobrado{% endif %}"
+            title="{% if not casa.activa %}La casa está dada de baja{% elif casa.cobrada_en_el_periodo %}Cobrado. Destildá para borrar el pago{% elif casa.fin_contrato_anterior %}El contrato venció el {{ casa.fin_contrato_anterior|date:'d/m/Y' }}. Cargá el nuevo para poder cobrar{% elif not casa.alquilada %}La casa no tiene contrato en este mes{% else %}Marcar el alquiler de {{ periodo|date:'F' }} como cobrado{% endif %}"
             aria-label="Alquiler de {{ periodo|date:'F \d\e Y' }} de {{ casa.nombre|default:'la casa sin nombre' }}"
-            {% if not casa.activa or not casa.cobrada_en_el_periodo and not casa.alquilada or not casa.cobrada_en_el_periodo and not casa.precio %}disabled{% endif %}
+            {% if not casa.activa %}disabled{% elif casa.cobrada_en_el_periodo %}{% elif not casa.alquilada %}disabled{% endif %}
             {% if casa.cobrada_en_el_periodo %}checked{% endif %}>
         </td>
 
         <td>
           <div class="alq-casa">
-            <span class="alq-casa__icono material-symbols-outlined">
-              {% if casa.alquilada %}home{% else %}home_work{% endif %}
-            </span>
+            <span class="alq-casa__icono material-symbols-outlined">home_work</span>
             <div class="alq-casa__datos">
               <span class="alq-casa__nombre">
                 {{ casa.nombre|default:"Sin nombre" }}
@@ -66,6 +61,14 @@
                 {% endcomment %}
                 {% if not casa.activa %}
                   <span class="alq-baja" title="Dada de baja. Aparece porque este mes tiene un pago cargado.">dada de baja</span>
+                {% comment %}
+                  Sin esta marca la casa dice "Sin alquilar" y no se entiende por
+                  que: el inquilino puede seguir viviendo ahi y lo que falta es
+                  cargar el contrato nuevo. Y distingue el vencimiento de la casa
+                  que nunca estuvo alquilada, que es otra cosa.
+                {% endcomment %}
+                {% elif not casa.alquilada and casa.fin_contrato_anterior %}
+                  <span class="alq-vencido" title="El contrato venció el {{ casa.fin_contrato_anterior|date:'d/m/Y' }}. Hasta que cargues el nuevo no se le reclama el alquiler.">contrato vencido</span>
                 {% endif %}
               </span>
               {% if casa.direccion %}
@@ -123,25 +126,16 @@
         <td class="alq-col-acciones">
           <div class="alq-acciones">
             {% comment %}
-              Un mes cobrado no admite otro pago, y una casa sin alquilar no
-              genera ninguno: en los dos casos el boton queda deshabilitado en
-              vez de abrir un panel que no puede hacer nada. Consultar el cobro
-              va a vivir en el perfil de la casa, no aca.
-
-              Los montos de los data-* van sin localizar: los lee JavaScript con
-              Number(), y con el formato es-AR llegarian con coma decimal
-              ("160000,00") y darian NaN. Lo que se muestra en pantalla si va
-              localizado.
+              El contrato va primero porque es de donde sale todo lo demas: sin
+              el, la casa no tiene precio ni se le puede cobrar el mes. Un solo
+              boton para las dos cosas, y el modal decide cual segun lo que haya:
+              corrige el contrato vigente, o carga el que sigue si ya vencio.
             {% endcomment %}
-            <button type="button" class="alq-boton-icono cobrar"
-                    title="{% if casa.estado_mes == 'Cobrado' %}El alquiler de este mes ya está cobrado{% elif not casa.alquilada %}La casa no está alquilada{% else %}Registrar pago{% endif %}"
-                    {% if casa.estado_mes == "Cobrado" or not casa.alquilada %}disabled{% endif %}
-                    data-id="{{ casa.id }}"
-                    data-nombre="{{ casa.nombre|default:'Sin nombre' }}"
-                    data-precio="{{ casa.precio|default_if_none:''|unlocalize }}"
-                    data-estado="{{ casa.estado_mes }}"
-                    data-cobrado="{{ casa.total_pagado_periodo|unlocalize }}">
-              <span class="material-symbols-outlined">payments</span>
+            <button type="button" class="alq-boton-icono contrato"
+                    title="{% if not casa.activa %}La casa está dada de baja{% else %}Contrato de alquiler{% endif %}"
+                    {% if not casa.activa %}disabled{% endif %}
+                    data-id="{{ casa.id }}">
+              <span class="material-symbols-outlined">contract</span>
             </button>
 
             {% comment %}

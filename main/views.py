@@ -39,10 +39,9 @@ from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo
                        obtener_destinos_reparto, crear_destino_reparto, editar_destino_reparto,
                        eliminar_destino_reparto,
                        obtener_casas, obtener_datos_casa, crear_casa, editar_casa, eliminar_casa,
-                       obtener_resumen_alquileres, crear_pago_alquiler, editar_pago_alquiler,
-                       eliminar_pago_alquiler, obtener_datos_pago_alquiler, listar_pagos_casa,
-                       marcar_pago_alquiler, resolver_periodo, mes_desplazado,
-                       FILTROS_ALQUILERES)
+                       crear_contrato, editar_contrato, obtener_contrato_de_casa,
+                       obtener_resumen_alquileres, marcar_pago_alquiler, resolver_periodo,
+                       mes_desplazado, FILTROS_ALQUILERES)
 
 
 def _pagado_del_formulario(request):
@@ -94,7 +93,7 @@ def _rango_fechas(request):
 def _rango_fechas_empleado(request):
     """Igual que _rango_fechas pero con el año en curso como valor por defecto.
 
-    El perfil del empleado arranca mostrando el año actual, no todo el historial.
+    El perfil del empleado arranca mostrando el año actual, no txdo el historial.
     Para poder distinguir "recien entre a la pagina" de "vacie el filtro a mano"
     miro si los parametros vinieron en la URL: informacion_empleado.js los manda
     siempre, aunque esten vacios, justamente para poder ver el historial completo.
@@ -758,7 +757,7 @@ def contar_movimientos_cuenta_json(request, id_cliente):
 def _contexto_edicion(operacion):
     """
     Arma los datos que el front necesita para precargar el carrito al editar
-    una operación: ítems (con stock ajustado), fecha y método de pago inferido.
+    una operación: ítems (con stock ajustado), fecha y métxdo de pago inferido.
     """
     es_venta = operacion.tipo_operacion == "venta"
 
@@ -791,7 +790,7 @@ def _contexto_edicion(operacion):
                 "bloqueado": not d.producto.activo,
             })
 
-    # El método de pago no se guarda: se infiere de los pagos. Con pagos
+    # El métxdo de pago no se guarda: se infiere de los pagos. Con pagos
     # registrados queda bloqueado (regla de edición)
     cantidad_pagos = operacion.pago_set.count()
     total_pagado = operacion.total_pagado or 0
@@ -1587,9 +1586,9 @@ def alquileres(request):
     """Listado de casas en alquiler con el estado de cobro del mes en curso.
 
     Un solo POST con el campo 'accion' que rutea a cada servicio, igual que en
-    destinos de reparto y flota. Por ahora concentra el ABM de casas y el de
-    pagos; cuando exista el perfil de la casa, las tres acciones de pago se
-    mudan alli sin tocar los servicios.
+    destinos de reparto y flota. Concentra el ABM de casas y el alta y correccion
+    de contratos; los cobros no pasan por aca, los carga la casilla de la tabla
+    contra su propio endpoint AJAX.
     """
     if request.method == "POST":
         accion = request.POST.get("accion")
@@ -1600,11 +1599,6 @@ def alquileres(request):
                     nombre=request.POST.get("nombre"),
                     localidad=request.POST.get("localidad"),
                     direccion=request.POST.get("direccion"),
-                    precio=request.POST.get("precio"),
-                    comision_inmobiliaria=request.POST.get("comision_inmobiliaria"),
-                    # Un checkbox sin marcar no viaja en el POST: la ausencia es "no alquilada"
-                    alquilada=request.POST.get("alquilada") is not None,
-                    fecha_alta=request.POST.get("fecha_alta"),
                 )
                 messages.success(request, "Casa registrada correctamente")
 
@@ -1614,10 +1608,6 @@ def alquileres(request):
                     nombre=request.POST.get("nombre"),
                     localidad=request.POST.get("localidad"),
                     direccion=request.POST.get("direccion"),
-                    precio=request.POST.get("precio"),
-                    comision_inmobiliaria=request.POST.get("comision_inmobiliaria"),
-                    alquilada=request.POST.get("alquilada") is not None,
-                    fecha_alta=request.POST.get("fecha_alta"),
                 )
                 messages.success(request, "Casa actualizada correctamente")
 
@@ -1625,27 +1615,27 @@ def alquileres(request):
                 eliminar_casa(request.POST.get("id_casa"))
                 messages.success(request, "Casa eliminada correctamente")
 
-            elif accion == "nuevo_pago":
-                crear_pago_alquiler(
+            elif accion == "nuevo_contrato":
+                crear_contrato(
                     request.POST.get("id_casa"),
-                    request.POST.get("monto"),
-                    request.POST.get("fecha"),
-                    request.POST.get("periodo"),
+                    inicio=request.POST.get("inicio"),
+                    fin=request.POST.get("fin"),
+                    monto_mensual=request.POST.get("monto_mensual"),
+                    comision_inmobiliaria=request.POST.get("comision_inmobiliaria"),
+                    nombre_inquilino=request.POST.get("nombre_inquilino"),
                 )
-                messages.success(request, "Pago registrado correctamente")
+                messages.success(request, "Contrato guardado correctamente")
 
-            elif accion == "editar_pago":
-                editar_pago_alquiler(
-                    request.POST.get("id_pago"),
-                    request.POST.get("monto"),
-                    request.POST.get("fecha"),
-                    request.POST.get("periodo"),
+            elif accion == "editar_contrato":
+                editar_contrato(
+                    request.POST.get("id_contrato"),
+                    inicio=request.POST.get("inicio"),
+                    fin=request.POST.get("fin"),
+                    monto_mensual=request.POST.get("monto_mensual"),
+                    comision_inmobiliaria=request.POST.get("comision_inmobiliaria"),
+                    nombre_inquilino=request.POST.get("nombre_inquilino"),
                 )
-                messages.success(request, "Pago actualizado correctamente")
-
-            elif accion == "eliminar_pago":
-                eliminar_pago_alquiler(request.POST.get("id_pago"))
-                messages.success(request, "Pago eliminado correctamente")
+                messages.success(request, "Contrato actualizado correctamente")
 
         except ValueError as e:
             # Errores de validacion que llegan desde services.py
@@ -1655,8 +1645,8 @@ def alquileres(request):
 
         # El formulario postea a la URL actual, asi que el mes que se estaba
         # mirando sigue en request.GET: lo devuelvo para no patear al usuario
-        # de vuelta al mes en curso despues de cargar un pago atrasado. Rearmo
-        # el parametro desde la fecha ya parseada y no desde el texto crudo.
+        # de vuelta al mes en curso despues de editar una casa. Rearmo el
+        # parametro desde la fecha ya parseada y no desde el texto crudo.
         destino = reverse("alquileres")
         periodo_visto = resolver_periodo(request.GET.get("mes"))
         if periodo_visto != periodo_actual():
@@ -1668,8 +1658,8 @@ def alquileres(request):
         estado = ""
 
     # Mes que se esta mirando. Toda la pantalla cuelga de aca: los totales de la
-    # cabecera, el estado de cada fila y el mes que el panel de cobro propone
-    # por defecto. Sin parametro es el mes en curso.
+    # cabecera, el estado de cada fila y el mes que carga la casilla de cobro.
+    # Sin parametro es el mes en curso.
     periodo = resolver_periodo(request.GET.get("mes"))
 
     casas = obtener_casas(estado, periodo)
@@ -1694,12 +1684,9 @@ def alquileres(request):
 
     contexto.update({
         "resumen": obtener_resumen_alquileres(casas_mes, periodo),
-        "hoy": timezone.localdate(),
         "es_mes_actual": periodo == periodo_actual(),
         "mes_actual": periodo_actual(),
-        # Para las flechas del navegador de mes y para el atajo "mes anterior"
-        # del panel de cobro, que es el caso que mas se repite despues del mes
-        # en curso: cobrar con atraso el que acaba de pasar.
+        # Para las flechas del navegador de mes
         "periodo_anterior": mes_desplazado(periodo, -1),
         "periodo_siguiente": mes_desplazado(periodo, 1),
     })
@@ -1718,19 +1705,10 @@ def obtener_casa_json(request, id_casa):
 
 
 @staff_member_required(login_url="inicio")
-def obtener_pago_alquiler_json(request, id_pago):
-    datos = obtener_datos_pago_alquiler(id_pago)
-
-    if datos:
-        return JsonResponse(datos)
-
-    return JsonResponse({"error": "Pago no encontrado"}, status=404)
-
-
-@staff_member_required(login_url="inicio")
-def listar_pagos_casa_json(request, id_casa):
-    # Los ultimos pagos de la casa, para el historial del panel de cobro
-    return JsonResponse({"pagos": listar_pagos_casa(id_casa)})
+def obtener_contrato_casa_json(request, id_casa):
+    # Lo que el modal de contrato necesita antes de abrirse: el vigente para
+    # corregirlo, o el anterior para precargar la renovacion.
+    return JsonResponse(obtener_contrato_de_casa(id_casa))
 
 
 def _pesos(monto):
@@ -1748,6 +1726,10 @@ def marcar_pago_alquiler_ajax(request, id_casa, periodo):
 
     Ademas devuelve 'mensaje', porque aca desmarcar borra un registro y el aviso
     generico no alcanza para avisarlo.
+
+    Es la unica via de carga de cobros de la pantalla, asi que los rechazos que
+    devuelve (casa sin precio, sin inquilino, contrato vencido) son los que ve el
+    usuario: tienen que decir que hacer, no solo que fallo.
     """
     if request.method != "POST":
         return JsonResponse({"error": "Método no permitido"}, status=405)

@@ -7,9 +7,11 @@
 //       enlaces comunes; el JS solo agrega la grilla para saltar mas lejos.
 //    2. Chips de estado y paginacion por AJAX sobre la tabla. La cabecera queda
 //       afuera a proposito: mide el mes entero y no se mueve con los filtros.
-//    3. Panel de casa (alta y edicion).
-//    4. Panel de cobro, que ademas lista los ultimos pagos para poder
-//       corregirlos mientras la casa no tenga perfil propio.
+//    3. Panel de casa (alta y edicion): solo la propiedad.
+//    4. Modal de contrato, de donde salen el plazo, el monto y el inquilino.
+//
+//  El cobro no esta aca: lo hace la casilla de la primera columna, que maneja
+//  pago_viaje.js. De eso solo queda escuchar el evento para acomodar la fila.
 //
 //  El slide-over y el "mantener presionado" del borrado los aporta paneles.js;
 //  el formato de miles de los montos, formato_miles.js.
@@ -17,20 +19,6 @@
 
 const contenedorTablaCasas = document.getElementById('tabla-alquileres-container');
 const contenedorChips = document.getElementById('alq-chips');
-
-const formateadorPesos = new Intl.NumberFormat('es-AR', {
-    style: 'currency',
-    currency: 'ARS',
-    maximumFractionDigits: 0,
-});
-
-// "60000.00" (como lo manda el servidor) -> "$ 60.000". El vacio es un dato que
-// no esta cargado, no un cero.
-function comoPesos(valor) {
-    if (valor === '' || valor === null || valor === undefined) return '—';
-    const numero = Number(valor);
-    return Number.isNaN(numero) ? '—' : formateadorPesos.format(numero);
-}
 
 // =============================================
 //  NAVEGADOR DE MES
@@ -130,17 +118,6 @@ document.addEventListener('pago:cambiado', (evento) => {
     if (pildora && datos.estado) {
         pildora.className = 'alq-pildora ' + (CLASE_PILDORA[datos.estado] || '');
         pildora.innerHTML = '<span class="alq-pildora__punto"></span>' + datos.estado;
-    }
-
-    // Un mes cobrado no admite un segundo pago, asi que el boton de cobro
-    // acompaña a la casilla en vez de abrir un panel que va a ser rechazado.
-    const cobrar = fila && fila.querySelector('.alq-boton-icono.cobrar');
-    if (cobrar) {
-        cobrar.disabled = datos.pagado;
-        cobrar.dataset.estado = datos.estado || '';
-        cobrar.title = datos.pagado
-            ? 'El alquiler de este mes ya está cobrado'
-            : 'Registrar pago';
     }
 
     if (!datos.resumen) return;
@@ -259,13 +236,6 @@ function abrirEditarCasa(id) {
             document.getElementById('nombre-casa').value = casa.nombre;
             document.getElementById('localidad-casa').value = casa.localidad;
             document.getElementById('direccion-casa').value = casa.direccion;
-            document.getElementById('comision-casa').value = casa.comision_inmobiliaria;
-            document.getElementById('alquilada-casa').checked = casa.alquilada;
-            document.getElementById('fecha-alta-casa').value = casa.fecha_alta;
-
-            // El precio llega pelado del servidor ("120000.00"): lo paso por el
-            // formato de miles para que se vea igual que en la tabla
-            ponerValorMiles(document.getElementById('precio-casa'), casa.precio);
 
             document.getElementById('icono-casa').textContent = 'edit_note';
             document.getElementById('titulo-casa').textContent = 'Editar casa';
@@ -277,148 +247,105 @@ function abrirEditarCasa(id) {
 }
 
 // =============================================
-//  PANEL DE COBRO
+//  MODAL DE CONTRATO
+//
+//  Un solo boton para dos casos. El servidor dice cual: si la casa tiene un
+//  contrato que cubre hoy, se edita ese (crear un segundo solapado seria
+//  invalido igual); si vencio, se crea el que sigue precargado con lo del
+//  anterior, que es lo que pasa al renovar.
 // =============================================
 
-// Clase de color por estado, para que el panel hable el mismo idioma que la
-// pildora de la tabla
-const CLASE_POR_ESTADO = {
-    'Cobrado': 'alq-estado-casa__valor--cobrado',
-    'Pendiente de cobro': 'alq-estado-casa__valor--pendiente',
-    'Sin alquilar': 'alq-estado-casa__valor--libre',
-};
+const modalContrato = document.getElementById('modal-contrato');
+const inicioContrato = document.getElementById('ctr-inicio');
+const finContrato = document.getElementById('ctr-fin');
 
-function pintarEstadoCasa(datos) {
-    document.getElementById('cobro-alquiler').textContent = comoPesos(datos.precio);
+const formateadorFecha = new Intl.DateTimeFormat('es-AR', { dateStyle: 'short' });
 
-    const estado = document.getElementById('cobro-estado');
-    // Si el mes esta cobrado, el dato util es cuanto entro, no la palabra sola
-    estado.textContent = datos.estado === 'Cobrado'
-        ? `Cobrado · ${comoPesos(datos.cobrado)}`
-        : datos.estado;
-    estado.className = 'alq-estado-casa__valor ' + (CLASE_POR_ESTADO[datos.estado] || '');
-
-    // Cargar un segundo pago del mismo mes lo rechaza la base: lo aviso antes
-    document.getElementById('alq-aviso-cobrado').hidden = datos.estado !== 'Cobrado';
+// "2026-01-15" -> "15/1/26". Parseo a mano y no con new Date(texto): eso lo lee
+// como UTC y en Argentina devuelve el dia anterior.
+function comoFecha(iso) {
+    const [anio, mes, dia] = iso.split('-').map(Number);
+    return formateadorFecha.format(new Date(anio, mes - 1, dia));
 }
 
-function marcarAtajoPeriodo(valor) {
-    document.querySelectorAll('.alq-atajo').forEach((atajo) => {
-        atajo.classList.toggle('es-activo', atajo.dataset.periodo === valor);
-    });
+function cerrarModalContrato() {
+    modalContrato.classList.remove('abierto');
+    document.body.style.overflow = 'auto';
 }
 
-function pintarHistorial(pagos) {
-    const contenedor = document.getElementById('alq-historial');
-
-    if (!pagos.length) {
-        contenedor.innerHTML = '<p class="alq-historial__vacio">Todavía no hay pagos cargados para esta casa.</p>';
+function pintarContratoAnterior(anterior) {
+    const bloque = document.getElementById('ctr-anterior');
+    if (!anterior) {
+        bloque.hidden = true;
         return;
     }
-
-    contenedor.innerHTML = pagos.map((pago) => `
-        <div class="alq-pago">
-          <div class="alq-pago__datos">
-            <span class="alq-pago__periodo">Mes ${pago.periodo_label}</span>
-            <span class="alq-pago__fecha">Cobrado el ${pago.fecha.split('-').reverse().join('/')}</span>
-          </div>
-          <span class="alq-pago__monto">${comoPesos(pago.monto)}</span>
-          <button type="button" class="alq-boton-icono editar" title="Editar pago"
-                  data-pago="${pago.id}" data-monto="${pago.monto}"
-                  data-fecha="${pago.fecha}" data-periodo="${pago.periodo}">
-            <span class="material-symbols-outlined">edit</span>
-          </button>
-          <button type="button" class="alq-boton-icono eliminar" title="Eliminar pago"
-                  data-pago="${pago.id}" data-etiqueta="${pago.periodo_label}">
-            <span class="material-symbols-outlined">delete</span>
-          </button>
-        </div>
-    `).join('');
+    document.getElementById('ctr-anterior-detalle').textContent =
+        `${comoFecha(anterior.inicio)} – ${comoFecha(anterior.fin)} · $${Number(anterior.monto_mensual).toLocaleString('es-AR', { maximumFractionDigits: 0 })}`;
+    bloque.hidden = false;
 }
 
-function cargarHistorial(idCasa) {
-    document.getElementById('alq-historial').innerHTML =
-        '<p class="alq-historial__vacio">Cargando pagos…</p>';
-
-    fetch(`/api/casas/${idCasa}/pagos/`)
-        .then((respuesta) => respuesta.json())
-        .then((datos) => pintarHistorial(datos.pagos))
-        .catch(() => {
-            document.getElementById('alq-historial').innerHTML =
-                '<p class="alq-historial__vacio">No se pudieron cargar los pagos.</p>';
-        });
+// Deja el formulario cargado con un contrato, o vacio si viene null
+function ponerContratoEnFormulario(contrato) {
+    inicioContrato.value = contrato ? contrato.inicio : '';
+    finContrato.value = contrato ? contrato.fin : '';
+    document.getElementById('ctr-comision').value = contrato ? contrato.comision_inmobiliaria : '';
+    document.getElementById('ctr-inquilino').value = contrato ? contrato.nombre_inquilino : '';
+    ponerValorMiles(document.getElementById('ctr-monto'), contrato ? contrato.monto_mensual : '');
 }
 
-// 'origen' es el boton de cobro de la fila, con los data-* del estado de la
-// casa en el mes que se esta mirando.
-function abrirCobro(origen) {
-    const formulario = document.getElementById('form-cobro');
-    formulario.reset();
+function abrirContrato(idCasa) {
+    fetch(`/api/casas/${idCasa}/contrato/`)
+        .then((respuesta) => {
+            if (!respuesta.ok) throw new Error('No encontrada');
+            return respuesta.json();
+        })
+        .then((datos) => {
+            document.getElementById('form-contrato').reset();
+            document.getElementById('ctr-id-casa').value = datos.casa.id;
+            document.getElementById('ctr-casa').textContent = datos.casa.nombre;
 
-    document.getElementById('accion-cobro').value = 'nuevo_pago';
-    document.getElementById('id-casa-cobro').value = origen.dataset.id;
-    document.getElementById('id-pago-cobro').value = '';
-    document.getElementById('titulo-cobro').textContent = 'Cobrar alquiler';
-    document.getElementById('subtitulo-cobro').textContent = origen.dataset.nombre;
-    document.getElementById('boton-guardar-cobro').textContent = 'Registrar pago';
+            if (datos.vigente) {
+                // Hay contrato corriendo: esto es una correccion, no una renovacion
+                document.getElementById('ctr-accion').value = 'editar_contrato';
+                document.getElementById('ctr-id-contrato').value = datos.vigente.id;
+                document.getElementById('ctr-titulo').textContent = 'Contrato vigente';
+                document.getElementById('ctr-guardar').textContent = 'Guardar cambios';
+                ponerContratoEnFormulario(datos.vigente);
+                pintarContratoAnterior(null);
+            } else {
+                document.getElementById('ctr-accion').value = 'nuevo_contrato';
+                document.getElementById('ctr-id-contrato').value = '';
+                document.getElementById('ctr-titulo').textContent = 'Nuevo contrato';
+                document.getElementById('ctr-guardar').textContent = 'Guardar contrato';
+                // Renovar es casi siempre el mismo inquilino con otro plazo y otro
+                // monto: precargo lo que se repite y dejo las fechas en blanco,
+                // que es justo lo que hay que decidir.
+                ponerContratoEnFormulario(datos.anterior);
+                inicioContrato.value = '';
+                finContrato.value = '';
+                pintarContratoAnterior(datos.anterior);
+            }
 
-    pintarEstadoCasa(origen.dataset);
+            modalContrato.classList.add('abierto');
+            document.body.style.overflow = 'hidden';
+            inicioContrato.focus();
+        })
+        .catch(() => abrirModalError('No se pudo cargar el contrato de la casa.'));
+}
 
-    // El alquiler se cobra completo, asi que el monto arranca en el precio de la
-    // casa: en el caso normal alcanza con abrir y guardar. Sin precio cargado
-    // queda vacio para que el usuario escriba.
-    const inputMonto = document.getElementById('monto-cobro');
-    const precio = origen.dataset.precio;
-    if (precio && Number(precio) > 0) {
-        ponerValorMiles(inputMonto, precio);
-    } else {
-        inputMonto.value = '';
+document.addEventListener('keydown', (evento) => {
+    if (evento.key === 'Escape' && modalContrato.classList.contains('abierto')) {
+        cerrarModalContrato();
     }
-
-    const periodo = document.getElementById('periodo-cobro');
-    periodo.value = periodo.defaultValue;
-    marcarAtajoPeriodo(periodo.value);
-
-    cargarHistorial(origen.dataset.id);
-    abrirSlideOver('slide-over-cobro');
-}
-
-function prepararEditarPago(boton) {
-    document.getElementById('accion-cobro').value = 'editar_pago';
-    document.getElementById('id-pago-cobro').value = boton.dataset.pago;
-    document.getElementById('titulo-cobro').textContent = 'Editar pago';
-    document.getElementById('boton-guardar-cobro').textContent = 'Guardar cambios';
-    // Editar es justamente lo que propone el aviso: una vez aca ya no aporta
-    document.getElementById('alq-aviso-cobrado').hidden = true;
-
-    ponerValorMiles(document.getElementById('monto-cobro'), boton.dataset.monto);
-    document.getElementById('fecha-cobro').value = boton.dataset.fecha;
-    document.getElementById('periodo-cobro').value = boton.dataset.periodo;
-    marcarAtajoPeriodo(boton.dataset.periodo);
-
-    document.getElementById('monto-cobro').focus();
-}
-
-// Atajos del mes que cubre el pago
-document.querySelectorAll('.alq-atajo').forEach((atajo) => {
-    atajo.addEventListener('click', () => {
-        document.getElementById('periodo-cobro').value = atajo.dataset.periodo;
-        marcarAtajoPeriodo(atajo.dataset.periodo);
-    });
-});
-
-document.getElementById('periodo-cobro').addEventListener('change', (evento) => {
-    marcarAtajoPeriodo(evento.target.value);
 });
 
 // =============================================
-//  ELIMINACION (casas y pagos comparten el modal)
+//  ELIMINACION DE UNA CASA
 // =============================================
 
-function abrirModalEliminar({ accion, idCasa = '', idPago = '', titulo, texto }) {
+function abrirModalEliminar({ accion, idCasa = '', titulo, texto }) {
     document.getElementById('accion-eliminar').value = accion;
     document.getElementById('id-casa-eliminar').value = idCasa;
-    document.getElementById('id-pago-eliminar').value = idPago;
     document.getElementById('titulo-eliminar-alquiler').textContent = titulo;
     document.getElementById('texto-eliminar-alquiler').innerHTML = texto;
 
@@ -448,14 +375,14 @@ function cerrarModalEliminarAlquiler() {
 // La tabla se reemplaza por AJAX, asi que los clicks se escuchan en el contenedor
 if (contenedorTablaCasas) {
     contenedorTablaCasas.addEventListener('click', (evento) => {
-        // Los botones deshabilitados (mes ya cobrado) no disparan click, asi que
-        // no hace falta filtrarlos aca
-        const cobrar = evento.target.closest('.alq-boton-icono.cobrar');
+        // Los botones deshabilitados (casa dada de baja) no disparan click, asi
+        // que no hace falta filtrarlos aca
+        const contrato = evento.target.closest('.alq-boton-icono.contrato');
         const editar = evento.target.closest('.alq-boton-icono.editar');
         const eliminar = evento.target.closest('.alq-boton-icono.eliminar');
 
-        if (cobrar) {
-            abrirCobro(cobrar);
+        if (contrato) {
+            abrirContrato(contrato.dataset.id);
         } else if (editar) {
             abrirEditarCasa(editar.dataset.id);
         } else if (eliminar) {
@@ -469,23 +396,5 @@ if (contenedorTablaCasas) {
         }
     });
 }
-
-// Historial del panel de cobro (se pinta desde JS)
-document.getElementById('alq-historial').addEventListener('click', (evento) => {
-    const editar = evento.target.closest('.alq-boton-icono.editar');
-    const eliminar = evento.target.closest('.alq-boton-icono.eliminar');
-
-    if (editar) {
-        prepararEditarPago(editar);
-    } else if (eliminar) {
-        abrirModalEliminar({
-            accion: 'eliminar_pago',
-            idPago: eliminar.dataset.pago,
-            titulo: 'Eliminar pago',
-            texto: `¿Seguro que querés eliminar el pago del mes <b>${eliminar.dataset.etiqueta}</b>? `
-                 + 'El mes vuelve a figurar como no cobrado.',
-        });
-    }
-});
 
 document.getElementById('boton-nueva-casa').addEventListener('click', abrirNuevaCasa);

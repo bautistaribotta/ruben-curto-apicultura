@@ -3,7 +3,7 @@ from .models import (
     Cliente, Producto, Operacion, DetalleOperacion, Pago, Cotizaciones,
     Empleado, PagosEmpleados, Vehiculo, Viaje, DetalleViaje, Gasto,
     ViajeReparto, DetalleViajeReparto, DestinoViajeReparto, ViajeCereal, DetalleViajeCereal,
-    GastoViajeCereal, Casa, PagoAlquiler,
+    GastoViajeCereal, Casa, Contrato, PagoAlquiler,
 )
 
 admin.site.register(Cliente)
@@ -73,10 +73,19 @@ class PagoAlquilerInline(admin.TabularInline):
     model = PagoAlquiler
     extra = 1
 
+class ContratoInline(admin.TabularInline):
+    model = Contrato
+    extra = 1
+
 @admin.register(Casa)
 class CasaAdmin(admin.ModelAdmin):
-    inlines = [PagoAlquilerInline]
-    list_display = ('id', 'nombre', 'localidad', 'direccion', 'precio', 'comision_inmobiliaria', 'alquilada', 'fecha_alta', 'activa')
+    inlines = [ContratoInline, PagoAlquilerInline]
+    list_display = ('id', 'nombre', 'localidad', 'direccion', 'activa')
+
+@admin.register(Contrato)
+class ContratoAdmin(admin.ModelAdmin):
+    list_display = ('id', 'casa', 'inicio', 'fin', 'monto_mensual', 'comision_inmobiliaria', 'nombre_inquilino')
+    list_filter = ('casa',)
 
 @admin.register(PagoAlquiler)
 class PagoAlquilerAdmin(admin.ModelAdmin):

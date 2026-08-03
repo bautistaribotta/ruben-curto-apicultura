@@ -7,8 +7,7 @@ from main.views import (login, inicio, actualizar_cotizacion_ajax,
                         alquileres, combustible, marcar_pago_reparto_ajax, marcar_pago_cereal_ajax,
                         destinos_reparto, empleados, obtener_empleado_json, informacion_empleado,
                         generar_resumen_cuenta, contar_movimientos_cuenta_json,
-                        obtener_casa_json, obtener_pago_alquiler_json, listar_pagos_casa_json,
-                        marcar_pago_alquiler_ajax)
+                        obtener_casa_json, obtener_contrato_casa_json, marcar_pago_alquiler_ajax)
 
 """
 La sentencia name="nombre_del_archivo" se usa 
@@ -42,10 +41,9 @@ urlpatterns = [
     path('deudores/', deudores, name="deudores"),
     path('alquileres/', alquileres, name="alquileres"),
     path('api/casas/<int:id_casa>/', obtener_casa_json, name="obtener_casa_json"),
-    path('api/casas/<int:id_casa>/pagos/', listar_pagos_casa_json, name="listar_pagos_casa_json"),
+    path('api/casas/<int:id_casa>/contrato/', obtener_contrato_casa_json, name="obtener_contrato_casa_json"),
     # El mes va en la URL porque la tabla puede estar mostrando cualquier periodo
     path('api/casas/<int:id_casa>/pagado/<str:periodo>/', marcar_pago_alquiler_ajax, name="marcar_pago_alquiler"),
-    path('api/pagos_alquiler/<int:id_pago>/', obtener_pago_alquiler_json, name="obtener_pago_alquiler_json"),
     path('combustible/', combustible, name="combustible"),
     path('mercado_libre/', mercado_libre, name="mercado_libre"),
     path('destinos_reparto/', destinos_reparto, name="destinos_reparto"),
