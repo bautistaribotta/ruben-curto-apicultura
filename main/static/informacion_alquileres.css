@@ -397,6 +397,12 @@ span.casa-identidad__icono {
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
   overflow: hidden;
+}
+
+/* El scroll horizontal va en un envoltorio interno y no en la tarjeta: si lo
+   llevara la tarjeta, la barra de paginacion se correria junto con la tabla y
+   los botones se irian de pantalla justo cuando hacen falta. */
+.tabla-scroll {
   overflow-x: auto;
 }
 
@@ -428,14 +434,6 @@ span.casa-identidad__icono {
 
 .tabla-perfil tbody tr:last-child td {
   border-bottom: none;
-}
-
-.tabla-perfil tfoot td {
-  padding: 0.85rem 1.25rem;
-  border-top: 1px solid var(--border-default);
-  background-color: var(--surface-sunken);
-  font-weight: var(--weight-bold);
-  color: var(--text-strong);
 }
 
 .texto-derecha {

@@ -1829,6 +1829,18 @@ def informacion_alquileres(request, id_casa):
 
     contexto = obtener_detalle_alquiler(id_casa, desde, hasta)
     contexto.update(ctx_fechas)
+
+    # Los gastos se acumulan para siempre, asi que se paginan de a cinco. El
+    # contrato y el historial no: son un puñado y entran enteros.
+    contexto["gastos"] = Paginator(contexto["gastos"], 5).get_page(request.GET.get("page"))
+
+    # Todo lo que hay en la URL menos la pagina, para que los enlaces de
+    # anterior y siguiente no se lleven puesto el filtro de fechas ni el rastro
+    # del listado
+    filtros = request.GET.copy()
+    filtros.pop("page", None)
+    contexto["filtros_url"] = filtros.urlencode()
+
     contexto["volver_url"] = volver
     return render(request, "informacion_alquileres.html", contexto)
 

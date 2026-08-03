@@ -2972,10 +2972,11 @@ def obtener_detalle_alquiler(id_casa, desde=None, hasta=None):
     # casa y quedan guardados para siempre. Sin filtro se muestran todos, y el
     # filtro solo recorta lo que se ve, nunca borra nada.
     #
-    # La suma se hace en Python sobre la lista ya traida, que es la misma que
-    # pinta la tabla, asi el total no puede discrepar con lo que se ve.
-    gastos = list(_acotar_rango(casa.gastos.all(), "fecha", desde, hasta,
-                                es_fecha_hora=False))
+    # Va como queryset y no como lista porque la vista lo pagina: asi la pagina
+    # que se pide se trae con un LIMIT y no se levantan de la base todos los
+    # gastos de la casa para mostrar cinco.
+    gastos = _acotar_rango(casa.gastos.all(), "fecha", desde, hasta,
+                           es_fecha_hora=False)
 
     return {
         "casa": casa,
@@ -2984,7 +2985,6 @@ def obtener_detalle_alquiler(id_casa, desde=None, hasta=None):
         "meses_cobrados": sum(1 for mes in meses if mes["cobrado"]),
         "historial": [c for c in contratos if c is not vigente],
         "gastos": gastos,
-        "total_gastos": sum((g.monto for g in gastos), Decimal("0")),
         "categorias_gasto": CATEGORIAS_GASTO_CASA,
         # Para poder decir "no hay gastos en ese periodo" en vez de "no hay
         # gastos", que con un filtro puesto seria mentira

@@ -244,7 +244,7 @@
     listan todos. El filtro de fechas solo recorta lo que se ve, y el total del
     pie es siempre la suma exacta de lo que quedo en pantalla.
   {% endcomment %}
-  <section class="perfil-seccion">
+  <section class="perfil-seccion" id="seccion-gastos">
     <div class="seccion-info-header seccion-info-header--con-accion">
       <h4><span class="material-symbols-outlined">receipt_long</span> Gastos</h4>
 
@@ -265,6 +265,7 @@
 
     {% if gastos %}
       <div class="tabla-contenedor">
+        <div class="tabla-scroll">
         <table class="tabla-perfil">
           <thead>
             <tr>
@@ -309,17 +310,38 @@
               </tr>
             {% endfor %}
           </tbody>
-          <tfoot>
-            <tr>
-              <td colspan="3">
-                Total de {{ gastos|length }} gasto{{ gastos|length|pluralize }}
-                {% if gastos_filtrados %}<span class="celda-meses">en {{ fecha_label|lower }}</span>{% endif %}
-              </td>
-              <td class="texto-derecha celda-monto">${{ total_gastos|floatformat:"0"|intcomma }}</td>
-              <td></td>
-            </tr>
-          </tfoot>
         </table>
+        </div>
+
+        {% comment %}
+          Paginacion de a cinco, la misma barra que el resto del software. Los
+          enlaces arrastran filtros_url para no perder el filtro de fechas ni el
+          rastro del listado, y el ancla devuelve a la seccion en vez de al
+          principio de la pagina.
+        {% endcomment %}
+        <div class="paginacion">
+          <div class="paginacion-info">
+            Mostrando <span>{{ gastos.start_index }}-{{ gastos.end_index }}</span>
+            de <span>{{ gastos.paginator.count }}</span> gasto{{ gastos.paginator.count|pluralize }}
+          </div>
+          <div class="paginacion-botones">
+            {% if gastos.has_previous %}
+              <a href="?page={{ gastos.previous_page_number }}{% if filtros_url %}&amp;{{ filtros_url }}{% endif %}#seccion-gastos">
+                <button class="boton-paginacion">Anterior</button>
+              </a>
+            {% else %}
+              <button class="boton-paginacion" disabled>Anterior</button>
+            {% endif %}
+
+            {% if gastos.has_next %}
+              <a href="?page={{ gastos.next_page_number }}{% if filtros_url %}&amp;{{ filtros_url }}{% endif %}#seccion-gastos">
+                <button class="boton-paginacion">Siguiente</button>
+              </a>
+            {% else %}
+              <button class="boton-paginacion" disabled>Siguiente</button>
+            {% endif %}
+          </div>
+        </div>
       </div>
     {% elif gastos_filtrados %}
       {% comment %}
@@ -349,6 +371,7 @@
 
     {% if historial %}
       <div class="tabla-contenedor">
+        <div class="tabla-scroll">
         <table class="tabla-perfil">
           <thead>
             <tr>
@@ -409,6 +432,7 @@
             {% endfor %}
           </tbody>
         </table>
+        </div>
       </div>
     {% else %}
       <div class="estado-vacio estado-vacio--tarjeta">
