@@ -2615,6 +2615,10 @@ def editar_contrato(id_contrato, inicio=None, fin=None, monto_mensual=None,
     Renovar no pasa por aca: eso es un contrato nuevo. Si se corre el plazo de uno
     viejo, los meses que dejan de estar cubiertos pasan a figurar sin alquilar, que
     es lo correcto, pero los pagos que tuvieran cargados no se borran.
+
+    Hoy ningun boton de la pantalla lo dispara: el de la fila solo carga contratos
+    nuevos y se bloquea mientras haya uno vigente. Se llega por la accion
+    'editar_contrato' del POST o por el admin.
     """
     contrato = get_object_or_404(Contrato, id=id_contrato)
     inicio, fin, monto, comision, inquilino = _validar_contrato(
@@ -2651,13 +2655,15 @@ def _contrato_en_dict(contrato):
 def obtener_contrato_de_casa(id_casa):
     """Lo que el modal necesita saber de una casa antes de abrirse.
 
-    Manda dos contratos y no uno porque el modal hace dos cosas segun el caso:
+    Manda dos contratos y no uno:
 
-    - 'vigente' es el contrato que cubre hoy. Si existe, el modal lo edita: crear
-      un segundo contrato solapado seria invalido de todos modos.
-    - 'anterior' es el ultimo que ya termino. Si no hay vigente, el modal crea uno
-      nuevo precargado con esos numeros, que es lo que pasa al renovar: mismo
-      inquilino, plazo nuevo, monto que casi siempre se retoca.
+    - 'vigente' es el contrato que cubre hoy. Si existe, el modal ni se abre: no
+      hay contrato nuevo que cargar y el que se cargara se solaparia. El boton de
+      la fila ya viene bloqueado, pero la tabla se refresca por AJAX y puede estar
+      vieja, asi que el dato viaja igual como ultimo control.
+    - 'anterior' es el ultimo que ya termino. Con el se precarga el formulario,
+      que es lo que pasa al renovar: mismo inquilino, plazo nuevo, monto que casi
+      siempre se retoca.
     """
     casa = get_object_or_404(Casa, id=id_casa, activa=True)
     hoy = timezone.localdate()

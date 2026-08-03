@@ -181,8 +181,7 @@
           </div>
 
           <span class="texto-ayuda">
-            El alquiler, el plazo y el inquilino van en el contrato, con el botón
-            de la fila.
+            El alquiler, el plazo y el inquilino van en el contrato.
           </span>
         </section>
       </main>
@@ -196,12 +195,12 @@
 </div>
 
 {% comment %}
-  MODAL DE CONTRATO (alta y correccion).
+  MODAL DE CONTRATO.
 
-  El plazo va arriba y armado como un tramo y no como dos campos sueltos: un
-  contrato es antes que nada un periodo, y los meses que dura es el numero que
-  uno chequea al firmar. Por eso las dos fechas se leen unidas y la duracion se
-  calcula sola en el medio.
+  Carga siempre uno nuevo: mientras haya vigente, el boton de la fila esta
+  bloqueado. El plazo va arriba y con las dos fechas juntas porque un contrato
+  es antes que nada un periodo, y leerlas en renglones separados obliga a
+  reconstruirlo de memoria.
 
   Cuando la casa viene de un contrato vencido, arriba aparece el anterior en
   gris: deja ver que esto es la continuacion de una cadena y no una carga desde
@@ -212,16 +211,15 @@
 {% endcomment %}
 <div id="modal-contrato">
   <div class="ctr-fondo" onclick="cerrarModalContrato()"></div>
-  <div class="ctr-panel" role="dialog" aria-modal="true" aria-labelledby="ctr-titulo">
+  <div class="ctr-panel" role="dialog" aria-modal="true" aria-label="Nuevo contrato">
     <form id="form-contrato" method="post" autocomplete="off">
       {% csrf_token %}
-      <input type="hidden" name="accion" id="ctr-accion" value="nuevo_contrato">
+      <input type="hidden" name="accion" value="nuevo_contrato">
       <input type="hidden" name="id_casa" id="ctr-id-casa">
-      <input type="hidden" name="id_contrato" id="ctr-id-contrato">
 
       <header class="ctr-cabecera">
         <div class="ctr-cabecera__texto">
-          <h3 id="ctr-titulo">Nuevo contrato</h3>
+          <h3>Nuevo contrato</h3>
           <p id="ctr-casa">Casa</p>
         </div>
         <button type="button" class="ctr-cerrar" onclick="cerrarModalContrato()" aria-label="Cerrar">
@@ -278,7 +276,7 @@
       </div>
 
       <footer class="ctr-pie">
-        <button type="submit" class="boton-primario" id="ctr-guardar">Guardar contrato</button>
+        <button type="submit" class="boton-primario">Guardar contrato</button>
         <button type="button" class="boton-secundario" onclick="cerrarModalContrato()">Cancelar</button>
       </footer>
     </form>

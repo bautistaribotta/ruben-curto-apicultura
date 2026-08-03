@@ -2,7 +2,7 @@ from datetime import date
 from decimal import Decimal
 
 from django.db import models
-from django.db.models import Sum, F, Subquery, OuterRef, DecimalField, DateField, Value, Q
+from django.db.models import Sum, F, Subquery, OuterRef, Exists, DecimalField, DateField, Value, Q
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 
@@ -619,6 +619,13 @@ class CasaQuerySet(models.QuerySet):
         # para poder decir "contrato vencido" en vez de dejar la casa muda.
         anterior = (Contrato.objects.filter(casa=OuterRef("pk"), fin__lt=periodo)
                     .order_by("-fin", "-id"))
+        # Contrato corriendo HOY, que no es lo mismo que el del mes que se mira:
+        # el boton de contrato carga siempre el que sigue al de hoy, asi que se
+        # bloquea o no segun la fecha real y no segun el mes que este en pantalla.
+        hoy = timezone.localdate()
+        corriendo = Contrato.objects.filter(
+            Q(fin__isnull=True) | Q(fin__gte=hoy), casa=OuterRef("pk"), inicio__lte=hoy
+        )
 
         return self.annotate(
             _pagado_periodo_anotado=Coalesce(
@@ -632,6 +639,7 @@ class CasaQuerySet(models.QuerySet):
             _comision_periodo_anotado=Subquery(vigente.values("comision_inmobiliaria")[:1],
                                                output_field=DecimalField()),
             _fin_anterior_anotado=Subquery(anterior.values("fin")[:1], output_field=DateField()),
+            _contrato_hoy_anotado=Exists(corriendo),
         )
 
 
@@ -701,6 +709,21 @@ class Casa(models.Model):
             return self._comision_periodo_anotado
         contrato = self.contrato_del_periodo
         return contrato.comision_inmobiliaria if contrato else None
+
+    @property
+    def tiene_contrato_vigente(self):
+        """Si hoy hay un contrato corriendo. Distinto de 'alquilada', que habla del
+        mes que se esta mirando en pantalla.
+
+        De esto depende que el boton de contrato este bloqueado: mientras haya uno
+        vigente no hay ninguno nuevo que cargar, y el que se cargara se solaparia.
+        """
+        if hasattr(self, "_contrato_hoy_anotado"):
+            return bool(self._contrato_hoy_anotado)
+        hoy = timezone.localdate()
+        return self.contratos.filter(
+            Q(fin__isnull=True) | Q(fin__gte=hoy), inicio__lte=hoy
+        ).exists()
 
     @property
     def fin_contrato_anterior(self):

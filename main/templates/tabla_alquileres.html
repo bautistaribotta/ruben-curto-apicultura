@@ -127,13 +127,17 @@
           <div class="alq-acciones">
             {% comment %}
               El contrato va primero porque es de donde sale todo lo demas: sin
-              el, la casa no tiene precio ni se le puede cobrar el mes. Un solo
-              boton para las dos cosas, y el modal decide cual segun lo que haya:
-              corrige el contrato vigente, o carga el que sigue si ya vencio.
+              el, la casa no tiene precio ni se le puede cobrar el mes.
+
+              Con un contrato corriendo el boton se bloquea: no hay nada nuevo que
+              cargar y el que se cargara se solaparia. Se habilita solo cuando el
+              vigente se vence, que es cuando toca renovar. Ojo que mira la fecha
+              de hoy y no el mes que se este viendo en pantalla: el contrato que
+              carga es siempre el que sigue al de hoy.
             {% endcomment %}
             <button type="button" class="alq-boton-icono contrato"
-                    title="{% if not casa.activa %}La casa está dada de baja{% else %}Contrato de alquiler{% endif %}"
-                    {% if not casa.activa %}disabled{% endif %}
+                    title="{% if not casa.activa %}La casa está dada de baja{% elif casa.tiene_contrato_vigente %}Ya tiene un contrato vigente{% else %}Cargar contrato{% endif %}"
+                    {% if not casa.activa or casa.tiene_contrato_vigente %}disabled{% endif %}
                     data-id="{{ casa.id }}">
               <span class="material-symbols-outlined">contract</span>
             </button>

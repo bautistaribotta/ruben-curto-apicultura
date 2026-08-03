@@ -249,10 +249,10 @@ function abrirEditarCasa(id) {
 // =============================================
 //  MODAL DE CONTRATO
 //
-//  Un solo boton para dos casos. El servidor dice cual: si la casa tiene un
-//  contrato que cubre hoy, se edita ese (crear un segundo solapado seria
-//  invalido igual); si vencio, se crea el que sigue precargado con lo del
-//  anterior, que es lo que pasa al renovar.
+//  Carga siempre uno nuevo. Mientras haya contrato vigente el boton de la fila
+//  esta bloqueado, asi que llegar aca ya significa que la casa quedo sin
+//  contrato; si vencio uno, el modal precarga sus numeros, que es lo que pasa
+//  al renovar: mismo inquilino, plazo nuevo, monto que casi siempre se retoca.
 // =============================================
 
 const modalContrato = document.getElementById('modal-contrato');
@@ -300,31 +300,26 @@ function abrirContrato(idCasa) {
             return respuesta.json();
         })
         .then((datos) => {
+            // El boton llega bloqueado cuando hay contrato vigente, pero la tabla
+            // se refresca por AJAX y podria estar vieja: el servidor manda igual el
+            // vigente y aca se corta antes de abrir un formulario que va a rebotar.
+            if (datos.vigente) {
+                abrirModalError('La casa ya tiene un contrato vigente. Vas a poder cargar '
+                              + 'el próximo cuando ese se venza.');
+                return;
+            }
+
             document.getElementById('form-contrato').reset();
             document.getElementById('ctr-id-casa').value = datos.casa.id;
             document.getElementById('ctr-casa').textContent = datos.casa.nombre;
 
-            if (datos.vigente) {
-                // Hay contrato corriendo: esto es una correccion, no una renovacion
-                document.getElementById('ctr-accion').value = 'editar_contrato';
-                document.getElementById('ctr-id-contrato').value = datos.vigente.id;
-                document.getElementById('ctr-titulo').textContent = 'Contrato vigente';
-                document.getElementById('ctr-guardar').textContent = 'Guardar cambios';
-                ponerContratoEnFormulario(datos.vigente);
-                pintarContratoAnterior(null);
-            } else {
-                document.getElementById('ctr-accion').value = 'nuevo_contrato';
-                document.getElementById('ctr-id-contrato').value = '';
-                document.getElementById('ctr-titulo').textContent = 'Nuevo contrato';
-                document.getElementById('ctr-guardar').textContent = 'Guardar contrato';
-                // Renovar es casi siempre el mismo inquilino con otro plazo y otro
-                // monto: precargo lo que se repite y dejo las fechas en blanco,
-                // que es justo lo que hay que decidir.
-                ponerContratoEnFormulario(datos.anterior);
-                inicioContrato.value = '';
-                finContrato.value = '';
-                pintarContratoAnterior(datos.anterior);
-            }
+            // Renovar es casi siempre el mismo inquilino con otro plazo y otro
+            // monto: precargo lo que se repite y dejo las fechas en blanco, que es
+            // justo lo que hay que decidir.
+            ponerContratoEnFormulario(datos.anterior);
+            inicioContrato.value = '';
+            finContrato.value = '';
+            pintarContratoAnterior(datos.anterior);
 
             modalContrato.classList.add('abierto');
             document.body.style.overflow = 'hidden';
