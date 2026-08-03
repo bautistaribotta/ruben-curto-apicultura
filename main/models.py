@@ -814,7 +814,6 @@ class Contrato(models.Model):
     inicio = models.DateField()
     fin = models.DateField(null=True, blank=True)
     monto_mensual = models.DecimalField(max_digits=12, decimal_places=2)
-    # Porcentaje del alquiler (0 a 100), no un monto: asi acompaña sola a cada aumento
     comision_inmobiliaria = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     # Opcional: el contrato sirve igual sin saber el nombre del inquilino
     nombre_inquilino = models.CharField(max_length=60, null=True, blank=True)
