@@ -135,7 +135,7 @@
             <div class="input-con-icono">
               <span>$</span>
               <input type="text" id="ctr-monto" name="monto_mensual" placeholder="0" required
-                     class="input-miles-decimal" inputmode="decimal" autocomplete="off">
+                     class="input-miles" inputmode="numeric" autocomplete="off">
             </div>
           </div>
 
@@ -144,7 +144,8 @@
             <div class="input-con-icono input-con-icono--sufijo">
               <span>%</span>
               <input type="number" id="ctr-comision" name="comision_inmobiliaria" placeholder="0"
-                     min="0" max="100" step="1" inputmode="decimal" autocomplete="off">
+                     min="0" max="100" step="1" inputmode="numeric" pattern="\d*"
+                     autocomplete="off">
             </div>
           </div>
         </div>

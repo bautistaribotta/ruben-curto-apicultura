@@ -114,7 +114,7 @@
           {% if casa.precio %}
             <span class="alq-precio"><span class="alq-precio__signo">$</span>{{ casa.precio|floatformat:"0"|intcomma }}</span>
             {% if casa.comision_inmobiliaria %}
-              <span class="alq-neto">−{{ casa.comision_inmobiliaria|floatformat:"-2" }}% inmobiliaria</span>
+              <span class="alq-neto">−{{ casa.comision_inmobiliaria }}% inmobiliaria</span>
               <span class="alq-neto">Total neto ${{ casa.neto_mensual|floatformat:"0"|intcomma }}</span>
             {% endif %}
           {% else %}

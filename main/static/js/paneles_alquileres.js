@@ -88,6 +88,15 @@ function pintarContratoAnterior(anterior) {
     bloque.hidden = false;
 }
 
+// La comision es un porcentaje entero. El type="number" ya rebota los decimales
+// al mandar el formulario, pero recien despues de escribirlos: corto las teclas
+// que arman un decimal para que ni se puedan tipear.
+document.getElementById('ctr-comision').addEventListener('keydown', (evento) => {
+    if ([',', '.', 'e', 'E', '+', '-'].includes(evento.key)) {
+        evento.preventDefault();
+    }
+});
+
 // Deja el formulario cargado con un contrato, o vacio si viene null
 function ponerContratoEnFormulario(contrato) {
     inicioContrato.value = contrato ? contrato.inicio : '';
