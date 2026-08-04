@@ -2264,6 +2264,16 @@ def viaje_cereales(request):
 def informacion_viaje_cereal(request, id_viaje_cereal):
     viaje_cereal = obtener_datos_viaje_cereal(id_viaje_cereal)
 
+    # Al detalle se llega desde el listado de cereales o desde el perfil del cliente
+    # (?origen=cliente), y de ahi depende a donde vuelve el boton "Volver". Los
+    # formularios postean a esta misma URL, asi que el origen sobrevive al POST pero
+    # no al redirect: sin volver a pegarlo, despues de editar o de cargar un gasto el
+    # boton cambiaria de destino solo.
+    origen = request.GET.get("origen", "")
+    url_detalle = reverse("informacion_viaje_cereal", kwargs={"id_viaje_cereal": id_viaje_cereal})
+    if origen:
+        url_detalle = f"{url_detalle}?origen={origen}"
+
     if request.method == "POST":
         accion = request.POST.get("accion")
 
@@ -2271,10 +2281,14 @@ def informacion_viaje_cereal(request, id_viaje_cereal):
             try:
                 eliminar_viaje_cereal(id_viaje_cereal)
                 messages.success(request, "Viaje de cereal eliminado correctamente")
+                # Sin viaje ya no hay detalle al que volver: al que venia del perfil
+                # del cliente lo devuelvo ahi, no al listado de cereales.
+                if origen == "cliente" and viaje_cereal.cliente_id:
+                    return redirect("informacion_clientes", id_cliente=viaje_cereal.cliente_id)
                 return redirect("viajes_cereales")
             except Exception as e:
                 messages.error(request, f"{e}")
-                return redirect("informacion_viaje_cereal", id_viaje_cereal=id_viaje_cereal)
+                return redirect(url_detalle)
 
         elif accion == "editar_viaje_cereal":
             id_cliente = request.POST.get("id_cliente")
@@ -2309,7 +2323,7 @@ def informacion_viaje_cereal(request, id_viaje_cereal):
             except Exception as e:
                 messages.error(request, f"Ocurrió un error inesperado: {e}")
 
-            return redirect("informacion_viaje_cereal", id_viaje_cereal=id_viaje_cereal)
+            return redirect(url_detalle)
 
         elif accion == "nuevo_gasto_cereal":
             tipo_gasto = request.POST.get("tipo_gasto")
@@ -2323,7 +2337,7 @@ def informacion_viaje_cereal(request, id_viaje_cereal):
             except Exception as e:
                 messages.error(request, f"Ocurrió un error inesperado: {e}")
 
-            return redirect("informacion_viaje_cereal", id_viaje_cereal=id_viaje_cereal)
+            return redirect(url_detalle)
 
     contexto = {
         "viaje_cereal": viaje_cereal,

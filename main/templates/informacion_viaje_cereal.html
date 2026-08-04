@@ -24,10 +24,18 @@
 {% block area-trabajo %}
 <section id="area-trabajo" class="vd-screen">
 
+  <!-- Volver: el destino depende del origen de navegacion (?origen=) -->
+  {% if request.GET.origen == 'cliente' and viaje_cereal.cliente %}
+  <a href="{% url 'informacion_clientes' viaje_cereal.cliente.id %}" class="boton-volver">
+    <span class="material-symbols-outlined">arrow_back</span>
+    Volver al perfil de {{ viaje_cereal.cliente.nombre }} {{ viaje_cereal.cliente.apellido|default:"" }}
+  </a>
+  {% else %}
   <a href="{% url 'viajes_cereales' %}" class="boton-volver">
     <span class="material-symbols-outlined">arrow_back</span>
     Volver a Viajes de cereales
   </a>
+  {% endif %}
 
   <!-- CABECERA -->
   <div class="op-head">

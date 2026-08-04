@@ -64,7 +64,7 @@
           </a>
         </li>
         <li>
-          <a href="{% url 'clientes'%}" class="item-menu {% if request.resolver_match.url_name == 'clientes' or request.resolver_match.url_name == 'informacion_clientes' or request.resolver_match.url_name == 'nueva_operacion_venta' or request.resolver_match.url_name == 'nueva_operacion_compra' or request.resolver_match.url_name == 'informacion_operacion' and request.GET.origen != 'viaje' %} activo {% endif %}">
+          <a href="{% url 'clientes'%}" class="item-menu {% if request.resolver_match.url_name == 'clientes' or request.resolver_match.url_name == 'informacion_clientes' or request.resolver_match.url_name == 'nueva_operacion_venta' or request.resolver_match.url_name == 'nueva_operacion_compra' or request.resolver_match.url_name == 'informacion_operacion' and request.GET.origen != 'viaje' or request.resolver_match.url_name == 'informacion_viaje_cereal' and request.GET.origen == 'cliente' %} activo {% endif %}">
             <span class="material-symbols-outlined">groups</span>
             Clientes
           </a>
@@ -128,7 +128,7 @@
           </ul>
         </li>
         <li>
-          <a href="{% url 'viajes_cereales' %}" class="item-menu {% if request.resolver_match.url_name == 'viajes_cereales' or request.resolver_match.url_name == 'informacion_viaje_cereal' or request.resolver_match.url_name == 'flota' and request.GET.origen == 'cereales' %} activo {% endif %}">
+          <a href="{% url 'viajes_cereales' %}" class="item-menu {% if request.resolver_match.url_name == 'viajes_cereales' or request.resolver_match.url_name == 'informacion_viaje_cereal' and request.GET.origen != 'cliente' or request.resolver_match.url_name == 'flota' and request.GET.origen == 'cereales' %} activo {% endif %}">
             <span class="material-symbols-outlined">agriculture</span>
             Viajes cereales
           </a>
