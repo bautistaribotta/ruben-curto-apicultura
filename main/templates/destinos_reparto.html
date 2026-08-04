@@ -57,7 +57,7 @@
               </span>
             </td>
             <td class="dest-col-valor">
-              <span class="dest-tarifa"><span class="dest-tarifa__signo">$</span>{{ destino.valor_viaje|intcomma }}</span>
+              <span class="dest-tarifa"><span class="dest-tarifa__signo">$</span>{{ destino.valor_viaje|floatformat:"-2g" }}</span>
             </td>
             <td class="dest-col-viajes">{{ destino.cant_viajes|intcomma }}</td>
             <td class="dest-col-acciones">
@@ -135,15 +135,17 @@
             <div class="input-con-icono">
               <span>$</span>
               {% comment %}
-                Va como texto para poder mostrar el punto de los miles.
-                El pattern reemplaza al min/step que traia el type="number"
-                y mantiene andando el :invalid que pinta el mensaje de error.
+                Va como texto para poder mostrar el punto de los miles y la coma
+                de los centavos. El pattern reemplaza al min/step que traia el
+                type="number" y mantiene andando el :invalid que pinta el mensaje
+                de error: acepta montos de 1 para arriba con centavos opcionales,
+                o los centavos solos (de 0,01 a 0,99).
               {% endcomment %}
               <input type="text" id="valor-destino" name="valor_viaje" placeholder="0"
-                     class="input-miles" inputmode="numeric" autocomplete="off"
-                     required pattern="[1-9][0-9]{0,2}(\.[0-9]{3})*">
+                     class="input-miles-decimal" inputmode="decimal" autocomplete="off"
+                     required pattern="[1-9][0-9]{0,2}(\.[0-9]{3})*(,[0-9]{1,2})?|0,(0[1-9]|[1-9][0-9]?)">
             </div>
-            <span class="mensaje-error">Ingrese un monto entero mayor a 0.</span>
+            <span class="mensaje-error">Ingrese un monto mayor a 0.</span>
           </div>
         </section>
       </main>

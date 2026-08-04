@@ -1843,14 +1843,31 @@ def _validar_destino_reparto(localidad_destino, valor_viaje):
     if not (3 <= len(localidad) <= 60) or not REGEX_TEXTO_NUMEROS.match(localidad):
         raise ValueError("El nombre del destino debe tener entre 3 y 60 caracteres (solo letras y numeros).")
 
-    try:
-        valor_val = int(valor_viaje)
-        if valor_val <= 0 or valor_val > 2147483647:
-            raise ValueError()
-    except (ValueError, TypeError):
-        raise ValueError("El valor del viaje debe ser un numero entero positivo.")
+    return localidad, _limpiar_valor_viaje(valor_viaje)
 
-    return localidad, valor_val
+
+def _limpiar_valor_viaje(valor_viaje):
+    """Deja el valor de un viaje de reparto listo para un DecimalField(12, 2).
+
+    Acepta centavos: la tarifa puede no ser redonda. Recorto a dos decimales y
+    corto los montos que no entran en el campo antes de que los rechace la base.
+    """
+    try:
+        valor_val = Decimal(str(valor_viaje).strip().replace(",", "."))
+    except (InvalidOperation, AttributeError, TypeError):
+        raise ValueError("El valor del viaje debe ser un numero positivo.")
+
+    # is_finite() descarta el "nan" y el "inf", que Decimal acepta como texto
+    # pero despues comparan False contra cualquier limite
+    if not valor_val.is_finite() or valor_val <= 0 or valor_val >= Decimal("10000000000"):
+        raise ValueError("El valor del viaje debe ser un numero positivo.")
+
+    # Redondear a centavos puede dejar en cero un monto como "0,004"
+    valor_val = valor_val.quantize(Decimal("0.01"))
+    if valor_val <= 0:
+        raise ValueError("El valor del viaje debe ser un numero positivo.")
+
+    return valor_val
 
 
 def crear_destino_reparto(localidad_destino, valor_viaje):
@@ -1956,17 +1973,12 @@ def _validar_viaje_reparto(id_empleado, id_vehiculo, gasto_combustible,
     if destino is None:
         raise ValueError("El destino seleccionado no existe en el sistema.")
 
-    # 6. Valor del viaje: entero positivo dentro del limite de la BD. Si el formulario
-    # no lo manda, vale la tarifa del destino; si lo manda, gana lo que escribio el
-    # usuario, porque un reparto puntual puede haberse cobrado distinto.
+    # 6. Valor del viaje: numero positivo (admite centavos) dentro del limite de la BD.
+    # Si el formulario no lo manda, vale la tarifa del destino; si lo manda, gana lo
+    # que escribio el usuario, porque un reparto puntual puede haberse cobrado distinto.
     if valor_viaje in (None, ""):
         valor_viaje = destino.valor_viaje
-    try:
-        valor_val = int(valor_viaje)
-        if valor_val <= 0 or valor_val > 2147483647:
-            raise ValueError()
-    except (ValueError, TypeError):
-        raise ValueError("El valor del viaje debe ser un numero entero positivo.")
+    valor_val = _limpiar_valor_viaje(valor_viaje)
 
     # 7. Fecha del reparto: obligatoria y con formato YYYY-MM-DD
     try:
@@ -2042,7 +2054,9 @@ def obtener_resumen_reparto(viajes):
     base = ViajeReparto.objects.filter(pk__in=ids)
 
     cabecera = base.aggregate(
-        total=Coalesce(Sum("valor_viaje"), 0),
+        # El valor del viaje es decimal: el cero del Coalesce va como Decimal para
+        # no mezclar tipos en la misma expresion
+        total=Coalesce(Sum("valor_viaje"), Decimal("0")),
         combustible=Coalesce(Sum("gasto_combustible_viaje_reparto"), 0),
         empleado=Coalesce(Sum("costo_empleado"), 0),
     )
@@ -2052,7 +2066,7 @@ def obtener_resumen_reparto(viajes):
 
     total = cabecera["total"]
     gastos = cabecera["combustible"] + cabecera["empleado"] + gastos_extra
-    total_mas_iva = int(round(total * Decimal("1.21")))
+    total_mas_iva = (total * Decimal("1.21")).quantize(Decimal("0.01"))
     ganancia = total_mas_iva - gastos
 
     return {

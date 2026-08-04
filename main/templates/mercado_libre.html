@@ -134,7 +134,7 @@
                     data-valor-objetivo="valor-viaje-reparto">
               <option value="" disabled selected>Seleccione un destino</option>
               {% for destino in destinos %}
-              <option value="{{ destino.id }}" data-valor="{{ destino.valor_viaje }}">{{ destino.localidad_destino }} · $ {{ destino.valor_viaje|intcomma }}</option>
+              <option value="{{ destino.id }}" data-valor="{{ destino.valor_viaje }}">{{ destino.localidad_destino }} · $ {{ destino.valor_viaje|floatformat:"-2g" }}</option>
               {% endfor %}
             </select>
             {% comment %}
@@ -203,11 +203,11 @@
                   type="text"
                   id="valor-viaje-reparto"
                   name="valor_viaje"
-                  class="input-miles"
-                  inputmode="numeric"
+                  class="input-miles-decimal"
+                  inputmode="decimal"
                   autocomplete="off"
                   placeholder="0"
-                  pattern="[1-9][0-9]{0,2}(\.[0-9]{3})*"
+                  pattern="[1-9][0-9]{0,2}(\.[0-9]{3})*(,[0-9]{1,2})?|0,(0[1-9]|[1-9][0-9]?)"
                   required>
               </div>
               <span class="mensaje-error">Por favor, ingrese un monto valido.</span>

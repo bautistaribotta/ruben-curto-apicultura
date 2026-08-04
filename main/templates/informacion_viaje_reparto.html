@@ -125,7 +125,7 @@
       <div class="vd-caja">
         <div class="vd-caja__row vd-caja__row--head">
           <span class="vd-caja__k vd-caja__k--strong"><span class="material-symbols-outlined">request_quote</span>Valor del viaje</span>
-          <span class="vd-caja__v">${{ viaje_reparto.valor_viaje|intcomma }}</span>
+          <span class="vd-caja__v">${{ viaje_reparto.valor_viaje|floatformat:"-2g" }}</span>
         </div>
         <div class="vd-gastos">
           <div class="vd-gasto">
@@ -148,7 +148,7 @@
         </div>
         <div class="vd-caja__row vd-caja__row--total {% if viaje_reparto.ganancia < 0 %}vd-caja__row--loss{% endif %}">
           <span class="vd-caja__k"><span class="material-symbols-outlined">savings</span>Ganancia neta</span>
-          <span class="vd-caja__v">${{ viaje_reparto.ganancia|intcomma }}</span>
+          <span class="vd-caja__v">${{ viaje_reparto.ganancia|floatformat:"-2g" }}</span>
         </div>
       </div>
     </div>
@@ -323,7 +323,7 @@
               <option value="" disabled {% if not viaje_reparto.destino %}selected{% endif %}>Seleccione un destino</option>
               {% for destino in destinos %}
               <option value="{{ destino.id }}" data-valor="{{ destino.valor_viaje }}"
-                      {% if viaje_reparto.destino_id == destino.id %}selected{% endif %}>{{ destino.localidad_destino }} · $ {{ destino.valor_viaje|intcomma }}</option>
+                      {% if viaje_reparto.destino_id == destino.id %}selected{% endif %}>{{ destino.localidad_destino }} · $ {{ destino.valor_viaje|floatformat:"-2g" }}</option>
               {% endfor %}
             </select>
             {% comment %}
@@ -394,11 +394,11 @@
                   type="text"
                   id="valor-viaje-reparto-editar"
                   name="valor_viaje"
-                  class="input-miles"
-                  inputmode="numeric"
+                  class="input-miles-decimal"
+                  inputmode="decimal"
                   autocomplete="off"
                   placeholder="0"
-                  pattern="[1-9][0-9]{0,2}(\.[0-9]{3})*"
+                  pattern="[1-9][0-9]{0,2}(\.[0-9]{3})*(,[0-9]{1,2})?|0,(0[1-9]|[1-9][0-9]?)"
                   required
                   value="{{ viaje_reparto.valor_viaje }}">
               </div>

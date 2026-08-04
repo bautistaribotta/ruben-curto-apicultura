@@ -17,14 +17,14 @@
     <span class="meli-stat__label">Total</span>
     <span class="meli-stat__icon"><span class="material-symbols-outlined">payments</span></span>
   </div>
-  <span class="meli-stat__value {% if resumen.total < 0 %}meli-stat__value--neg{% else %}meli-stat__value--pos{% endif %}">${{ resumen.total|intcomma }}</span>
+  <span class="meli-stat__value {% if resumen.total < 0 %}meli-stat__value--neg{% else %}meli-stat__value--pos{% endif %}">${{ resumen.total|floatformat:"-2g" }}</span>
 </article>
 <article class="meli-stat">
   <div class="meli-stat__head">
     <span class="meli-stat__label">Total + 21%</span>
     <span class="meli-stat__icon"><span class="material-symbols-outlined">receipt_long</span></span>
   </div>
-  <span class="meli-stat__value {% if resumen.total_mas_iva < 0 %}meli-stat__value--neg{% else %}meli-stat__value--pos{% endif %}">${{ resumen.total_mas_iva|intcomma }}</span>
+  <span class="meli-stat__value {% if resumen.total_mas_iva < 0 %}meli-stat__value--neg{% else %}meli-stat__value--pos{% endif %}">${{ resumen.total_mas_iva|floatformat:"-2g" }}</span>
 </article>
 {% comment %}
   Los gastos siempre restan, asi que la tarjeta va fija en rojo y con el menos
@@ -47,6 +47,6 @@
     <span class="meli-stat__label">Ganancia</span>
     <span class="meli-stat__icon"><span class="material-symbols-outlined">trending_up</span></span>
   </div>
-  <span class="meli-stat__value {% if resumen.ganancia < 0 %}meli-stat__value--neg{% else %}meli-stat__value--pos{% endif %}">${{ resumen.ganancia|intcomma }}</span>
+  <span class="meli-stat__value {% if resumen.ganancia < 0 %}meli-stat__value--neg{% else %}meli-stat__value--pos{% endif %}">${{ resumen.ganancia|floatformat:"-2g" }}</span>
 </article>
 {% endif %}

@@ -395,7 +395,9 @@ class ViajeReparto(models.Model):
                                 db_column="id_destino", related_name="viajes")
     gasto_combustible_viaje_reparto = models.PositiveIntegerField(default=0)
     costo_empleado = models.PositiveIntegerField(default=0)
-    valor_viaje = models.PositiveIntegerField(default=0)
+    # Decimal porque la tarifa del catalogo puede tener centavos y el viaje se
+    # queda con una copia de ese monto
+    valor_viaje = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     activo = models.BooleanField(default=True)
     pagado = models.BooleanField(default=False)
     # Momento en que se registro el cobro. Queda en None mientras el viaje esta
@@ -453,7 +455,7 @@ class DestinoViajeReparto(models.Model):
     mano en cada viaje.
     """
     localidad_destino = models.CharField(max_length=60, unique=True)
-    valor_viaje = models.PositiveIntegerField(default=0)
+    valor_viaje = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     cant_viajes = models.PositiveIntegerField(default=0)
     activo = models.BooleanField(default=True)
 
