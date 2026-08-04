@@ -13,9 +13,11 @@
 
 /* --- TARJETA PRINCIPAL --- */
 /* Una sola columna: el catalogo es una lista de precios, se lee de arriba
-   a abajo y no compite con ningun otro bloque. */
+   a abajo y no compite con ningun otro bloque. Ocupa todo el ancho del area
+   de trabajo, como la tabla de flota: con un tope fijo quedaba pegada a la
+   izquierda y dejaba una franja vacia en pantallas grandes. */
 .dest-panel {
-  max-width: 60rem;
+  width: 100%;
   background-color: var(--surface-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
