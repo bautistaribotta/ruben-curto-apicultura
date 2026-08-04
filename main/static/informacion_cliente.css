@@ -1186,6 +1186,13 @@ html {
   .vcc-columna-toneladas {
     width: auto;
   }
+  /* Ninguna de las dos tablas entra entera en un telefono, y el contenedor recorta
+     por su overflow: sin esto las ultimas columnas quedan cortadas y sin manera de
+     llegar a ellas. Que scrolleen adentro de su propia tarjeta. */
+  .tabla-viajes-cereal-container,
+  .tabla-operaciones-container {
+    overflow-x: auto;
+  }
   .acciones-modal {
     grid-template-columns: 1fr;
   }
