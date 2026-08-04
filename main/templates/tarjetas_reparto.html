@@ -26,12 +26,21 @@
   </div>
   <span class="meli-stat__value {% if resumen.total_mas_iva < 0 %}meli-stat__value--neg{% else %}meli-stat__value--pos{% endif %}">${{ resumen.total_mas_iva|intcomma }}</span>
 </article>
+{% comment %}
+  Los gastos siempre restan, asi que la tarjeta va fija en rojo y con el menos
+  adelante. No se pregunta por el signo del numero como en las otras tres: el
+  monto de cada gasto es un PositiveIntegerField, la suma nunca da negativa y la
+  tarjeta terminaba siempre en verde, como si sumara.
+
+  El menos se saltea en cero porque el cero no tiene signo y "-$0" se lee como un
+  error de la vista.
+{% endcomment %}
 <article class="meli-stat">
   <div class="meli-stat__head">
     <span class="meli-stat__label">Gastos</span>
     <span class="meli-stat__icon"><span class="material-symbols-outlined">trending_down</span></span>
   </div>
-  <span class="meli-stat__value {% if resumen.gastos < 0 %}meli-stat__value--neg{% else %}meli-stat__value--pos{% endif %}">${{ resumen.gastos|intcomma }}</span>
+  <span class="meli-stat__value meli-stat__value--neg">{% if resumen.gastos %}-{% endif %}${{ resumen.gastos|intcomma }}</span>
 </article>
 <article class="meli-stat">
   <div class="meli-stat__head">

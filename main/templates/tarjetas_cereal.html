@@ -26,12 +26,21 @@
   </div>
   <span class="vjc-stat__value {% if resumen.total_mas_iva < 0 %}vjc-stat__value--neg{% else %}vjc-stat__value--pos{% endif %}">${{ resumen.total_mas_iva|intcomma }}</span>
 </article>
+{% comment %}
+  Los gastos siempre restan, asi que la tarjeta va fija en rojo y con el menos
+  adelante. No se pregunta por el signo del numero como en las otras tres: el
+  monto de cada gasto es un PositiveIntegerField, la suma nunca da negativa y la
+  tarjeta terminaba siempre en verde, como si sumara.
+
+  El menos se saltea en cero porque el cero no tiene signo y "-$0" se lee como un
+  error de la vista.
+{% endcomment %}
 <article class="vjc-stat">
   <div class="vjc-stat__head">
     <span class="vjc-stat__label">Gastos</span>
     <span class="vjc-stat__icon"><span class="material-symbols-outlined">trending_down</span></span>
   </div>
-  <span class="vjc-stat__value {% if resumen.gastos < 0 %}vjc-stat__value--neg{% else %}vjc-stat__value--pos{% endif %}">${{ resumen.gastos|intcomma }}</span>
+  <span class="vjc-stat__value vjc-stat__value--neg">{% if resumen.gastos %}-{% endif %}${{ resumen.gastos|intcomma }}</span>
 </article>
 <article class="vjc-stat">
   <div class="vjc-stat__head">
