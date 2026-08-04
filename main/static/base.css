@@ -170,6 +170,15 @@
   --tracking-tight: -0.02em;
   --tracking-normal: 0;
   --tracking-wide: 0.05em;
+  /* ---- Barra lateral ---- */
+  --ancho-barra: 280px;
+  /* ancho desplegada */
+  --ancho-riel: 4.4rem;
+  /* ancho plegada: entra solo el icono */
+  --pad-barra: 1.5rem;
+  /* padding lateral de la barra */
+  --pad-item: 1.1rem;
+  /* padding lateral de cada item */
   /* ---- Movimiento ---- */
   --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
   --dur-fast: 0.15s;
@@ -196,12 +205,12 @@ body {
 }
 
 #barra-lateral {
-  width: 280px;
+  width: var(--ancho-barra);
   background-color: var(--pine-900);
   color: var(--sand-50);
   display: flex;
   flex-direction: column;
-  padding: 2.5rem 1.5rem;
+  padding: 2.5rem var(--pad-barra);
 }
 
 #encabezado-sidebar {
@@ -212,6 +221,22 @@ body {
   margin-bottom: 2rem;
   /* Ancla de marca: queda fijo arriba y no se comprime cuando el menu scrollea */
   flex: none;
+}
+
+/* Isologo (apaisado) e isotipo (la abeja, casi cuadrada). En escritorio se
+   intercambian segun la barra este desplegada o plegada; en mobile solo existe
+   el isologo, que es como se veia siempre. */
+#isologo-sidebar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+#isotipo-sidebar {
+  display: none;
+  width: auto;
+  filter: brightness(0) invert(1);
 }
 
 #logo-principal-sidebar {
@@ -248,12 +273,15 @@ body {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  /* El ::before del item activo sobresale 1.5rem a la izquierda para apoyarse en el
-     borde de la barra, y overflow recorta al borde del padding box. Corro la lista
-     hasta ese borde y devuelvo el espacio como padding para que el indicador quede
-     adentro del area visible; los items no se mueven. */
-  margin-left: -1.5rem;
-  padding-left: 1.5rem;
+  /* Con la barra plegada el texto de cada item desborda a la derecha y lo recorta
+     esta lista; sin el hidden aparece una barra de scroll horizontal. */
+  overflow-x: hidden;
+  /* El ::before del item activo sobresale hasta el borde de la barra, y overflow
+     recorta al borde del padding box. Corro la lista hasta ese borde y devuelvo el
+     espacio como padding para que el indicador quede adentro del area visible; los
+     items no se mueven. */
+  margin-left: calc(-1 * var(--pad-barra));
+  padding-left: var(--pad-barra);
   /* Barra de scroll discreta sobre el pino, en vez de la clara del sistema */
   scrollbar-width: thin;
   scrollbar-color: var(--blanco-transparente-6) transparent;
@@ -264,17 +292,21 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 0.8rem 1.1rem;
+  padding: 0.8rem var(--pad-item);
   color: var(--sand-300);
   text-decoration: none;
   font-size: 1rem;
   font-weight: 500;
   border-radius: 0.75rem;
+  /* Plegada el item mide lo que el icono: el texto no puede partirse en dos
+     renglones ni empujar, tiene que salirse para que la lista lo recorte. */
+  white-space: nowrap;
   transition: background-color 0.2s, color 0.2s;
 }
 
 .item-menu .material-symbols-outlined {
   font-size: 1.4rem;
+  flex: none;
 }
 
 .item-menu:hover {
@@ -295,7 +327,7 @@ body {
 .item-menu.activo::before {
   content: "";
   position: absolute;
-  left: -1.5rem;
+  left: calc(-1 * var(--pad-barra));
   top: 50%;
   transform: translateY(-50%);
   width: 4px;
@@ -314,9 +346,9 @@ body {
   list-style: none;
   flex-direction: column;
   gap: 0.1rem;
-  /* La rama nace bajo el centro del icono del padre: 1.1rem del padding del item
-     mas media caja del icono de 1.4rem. */
-  margin: 0.35rem 0 0.15rem 1.8rem;
+  /* La rama nace bajo el centro del icono del padre: el padding del item mas
+     media caja del icono de 1.4rem. */
+  margin: 0.35rem 0 0.15rem calc(var(--pad-item) + 0.7rem);
   padding-left: 0.7rem;
   border-left: 1px solid var(--blanco-transparente-12);
 }
@@ -369,6 +401,106 @@ body {
   width: 2px;
   border-radius: 9999px;
   background-color: var(--honey-500);
+}
+
+/* --- BARRA PLEGADA A RIEL DE ICONOS (ESCRITORIO) ---
+   En escritorio la barra queda como un riel de iconos y se despliega sola al
+   pasar el mouse, o al tabular adentro (:focus-within), asi el teclado llega a
+   los mismos items sin depender del hover.
+
+   Se saca del flujo y se apoya encima del contenido: si empujara el layout,
+   cada hover recalcularia el ancho de toda la pagina y las tablas saltarian.
+   El contenido reserva el ancho del riel con un margen fijo.
+
+   Los paddings del riel dejan el icono centrado en su ancho: --pad-barra +
+   --pad-item + media caja del icono (0.7rem) = --ancho-riel / 2. Valen igual
+   desplegada, asi los iconos no se mueven al abrir; lo unico que entra es el
+   texto, que hasta entonces recorta el overflow de la lista.
+
+   Debajo de 1025px no aplica nada de esto: ahi manda el sidebar movil que se
+   abre con la hamburguesa. */
+@media (min-width: 1025px) {
+  #barra-lateral {
+    --pad-barra: 0.75rem;
+    --pad-item: 0.75rem;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: var(--ancho-riel);
+    z-index: 900;
+    overflow: hidden;
+    transition: width var(--dur-slow) var(--ease-standard),
+                box-shadow var(--dur-slow) var(--ease-standard);
+  }
+
+  #barra-lateral:hover,
+  #barra-lateral:focus-within {
+    width: var(--ancho-barra);
+    box-shadow: var(--shadow-xl);
+  }
+
+  #contenido-principal {
+    margin-left: var(--ancho-riel);
+  }
+
+  /* Plegada no hay lugar para la barra de scroll al lado de los iconos. La
+     rueda sigue scrolleando la lista igual. */
+  #barra-lateral:not(:hover):not(:focus-within) #menu-navegacion {
+    scrollbar-width: none;
+  }
+
+  /* Los sub-items son solo texto: plegada no quedaria mas que la rama vertical
+     colgando, asi que la seccion se abre recien con la barra desplegada. */
+  #barra-lateral:not(:hover):not(:focus-within) .item-menu.activo + .nav-sub {
+    display: none;
+  }
+
+  /* El isologo es apaisado y no entra en el riel: en su lugar va el isotipo y se
+     cruzan por opacidad. Los dos van absolutos y centrados sobre una cabecera de
+     alto fijo, para que el intercambio no mueva el menu de abajo. */
+  #encabezado-sidebar {
+    position: relative;
+    justify-content: center;
+    height: 5.5rem;
+  }
+
+  #isotipo-sidebar,
+  #isologo-sidebar {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    transition: opacity var(--dur-normal) var(--ease-standard);
+  }
+
+  #isotipo-sidebar {
+    display: block;
+    height: 2.6rem;
+  }
+
+  #isologo-sidebar {
+    width: max-content;
+    opacity: 0;
+  }
+
+  #barra-lateral:hover #isotipo-sidebar,
+  #barra-lateral:focus-within #isotipo-sidebar {
+    opacity: 0;
+  }
+
+  #barra-lateral:hover #isologo-sidebar,
+  #barra-lateral:focus-within #isologo-sidebar {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #barra-lateral,
+  #isotipo-sidebar,
+  #isologo-sidebar {
+    transition: none;
+  }
 }
 
 #contenido-principal {
@@ -849,13 +981,15 @@ body {
 }
 
 /* --- ADAPTACIÓN PARA PANTALLAS GRANDES --- */
+/* El ancho va por variable y no por width: el width de la barra lo maneja el
+   riel (plegada mide --ancho-riel), asi que aca solo se agranda el desplegado. */
 @media (min-width: 1440px) {
   html {
     font-size: 18px;
     /* Aumenta el tamaño base de la fuente (1rem = 18px) */
   }
-  #barra-lateral {
-    width: 320px;
+  :root {
+    --ancho-barra: 320px;
     /* Expande la barra lateral para mantener proporción */
   }
 }
@@ -865,8 +999,8 @@ body {
     font-size: 20px;
     /* Aumenta el tamaño base para monitores Full HD (1rem = 20px) */
   }
-  #barra-lateral {
-    width: 360px;
+  :root {
+    --ancho-barra: 360px;
   }
 }
 

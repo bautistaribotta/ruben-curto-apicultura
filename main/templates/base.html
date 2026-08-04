@@ -34,11 +34,19 @@
 
     <!-- BARRA LATERAL -->
     <nav id="barra-lateral">
+      {% comment %}
+        La abeja es la marca cuando la barra esta plegada: el isologo es apaisado
+        y no entra en el ancho de un icono. Va sin alt y oculta a lectores de
+        pantalla porque no agrega nada: el isologo de al lado ya nombra la marca.
+      {% endcomment %}
       <div id="encabezado-sidebar">
-        <img src="{% static 'icons/mrm_acopio.svg' %}" alt="MRM Acopio de Miel y Cera" id="logo-principal-sidebar">
-        <div id="logos-secundarios-sidebar">
-          <img src="{% static 'icons/del_sur_distribuciones.svg' %}" alt="Del Sur Distribuciones y Transporte" class="logo-secundario">
-          <img src="{% static 'icons/southern_honey_group.svg' %}" alt="Southern Honey Group" class="logo-secundario">
+        <img src="{% static 'icons/abeja_southern_honey_group.svg' %}" alt="" aria-hidden="true" id="isotipo-sidebar">
+        <div id="isologo-sidebar">
+          <img src="{% static 'icons/mrm_acopio.svg' %}" alt="MRM Acopio de Miel y Cera" id="logo-principal-sidebar">
+          <div id="logos-secundarios-sidebar">
+            <img src="{% static 'icons/del_sur_distribuciones.svg' %}" alt="Del Sur Distribuciones y Transporte" class="logo-secundario">
+            <img src="{% static 'icons/southern_honey_group.svg' %}" alt="Southern Honey Group" class="logo-secundario">
+          </div>
         </div>
       </div>
 
