@@ -161,10 +161,15 @@
             <h4><span class="material-symbols-outlined">history</span> Operaciones Realizadas</h4>
         </div>
         <div class="barra-operaciones">
+            {% comment %}
+              Cambiar de pestaña vuelve a la primera pagina de operaciones (page=None
+              la saca de la URL), pero conserva el resto de los parametros: la tabla
+              de viajes de cereal de mas abajo no tiene por que moverse.
+            {% endcomment %}
             <div class="tabs-operaciones">
-                <a href="?tipo=todas#seccion-operaciones" class="tab-operacion {% if tipo_actual == 'todas' %}activa{% endif %}">Todas</a>
-                <a href="?tipo=compra#seccion-operaciones" class="tab-operacion {% if tipo_actual == 'compra' %}activa{% endif %}">Compras</a>
-                <a href="?tipo=venta#seccion-operaciones" class="tab-operacion {% if tipo_actual == 'venta' %}activa{% endif %}">Ventas</a>
+                <a href="{% querystring tipo='todas' page=None %}#seccion-operaciones" class="tab-operacion {% if tipo_actual == 'todas' %}activa{% endif %}">Todas</a>
+                <a href="{% querystring tipo='compra' page=None %}#seccion-operaciones" class="tab-operacion {% if tipo_actual == 'compra' %}activa{% endif %}">Compras</a>
+                <a href="{% querystring tipo='venta' page=None %}#seccion-operaciones" class="tab-operacion {% if tipo_actual == 'venta' %}activa{% endif %}">Ventas</a>
             </div>
             <div class="grupo-botones-operacion">
                 <a href="{% url 'nueva_operacion_compra' cliente.id %}" class="boton-nuevo secundario" data-id="{{ cliente.id }}">
@@ -263,7 +268,7 @@
               </div>
               <div class="paginacion-botones">
                 {% if operaciones.has_previous %}
-                  <a href="?page={{ operaciones.previous_page_number }}&tipo={{ tipo_actual }}#seccion-operaciones">
+                  <a href="{% querystring page=operaciones.previous_page_number %}#seccion-operaciones">
                     <button class="boton-paginacion">Anterior</button>
                   </a>
                 {% else %}
@@ -271,7 +276,7 @@
                 {% endif %}
 
                 {% if operaciones.has_next %}
-                  <a href="?page={{ operaciones.next_page_number }}&tipo={{ tipo_actual }}#seccion-operaciones">
+                  <a href="{% querystring page=operaciones.next_page_number %}#seccion-operaciones">
                     <button class="boton-paginacion">Siguiente</button>
                   </a>
                 {% else %}
@@ -284,6 +289,107 @@
                 <span class="material-symbols-outlined">history_toggle_off</span>
                 <h4>No hay movimientos</h4>
                 <p>Este cliente no posee operaciones registradas.</p>
+            </div>
+            {% endif %}
+        </div>
+    </section>
+
+    {% comment %}
+      Fletes de cereal hechos a nombre del cliente. Conviven en la misma URL que
+      las operaciones de arriba, por eso cada tabla pagina con su propio parametro
+      (page / page_cereal) y los links se arman con {% templatetag openblock %} querystring {% templatetag closeblock %}: ese tag parte de
+      los parametros actuales y solo cambia el que se le pasa, asi avanzar en una
+      tabla no reinicia la otra ni pierde la pestaña activa. El ancla devuelve el
+      scroll a la seccion en la que estabas.
+
+      Sin columnas de plata: el flete se le factura al cliente aparte y lo que
+      importa aca es el historial de viajes, no el dinero.
+    {% endcomment %}
+    <section id="seccion-viajes-cereal" class="contenedor-viajes-cereal">
+        <div class="encabezado-viajes-cereal">
+            <h4><span class="material-symbols-outlined">agriculture</span> Viajes de Cereal Realizados</h4>
+        </div>
+        <div class="tabla-viajes-cereal-container">
+            {% if viajes_cereal %}
+            <table class="tabla-viajes-cereal">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Cereal</th>
+                        <th>Ruta</th>
+                        <th class="vcc-columna-toneladas">Toneladas</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for viaje in viajes_cereal %}
+                    {% comment %}
+                      ?origen=cliente: el detalle del viaje lo usa para que el boton
+                      "Volver" traiga de nuevo a este perfil en vez de al listado de
+                      cereales, que no es de donde salio el usuario.
+                    {% endcomment %}
+                    <tr class="fila-viaje-cereal" onclick="window.location.href='{% url 'informacion_viaje_cereal' viaje.id %}?origen=cliente'">
+                        <td>
+                            <span class="celda-fecha">
+                                <span class="material-symbols-outlined">event</span>
+                                {{ viaje.fecha_viaje_cereal|date:"d/m/Y" }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="cereal-pill cereal-pill--{{ viaje.tipo_cereal|lower }}">
+                                <span class="cereal-pill__dot"></span>{{ viaje.get_tipo_cereal_display }}
+                            </span>
+                        </td>
+                        {% comment %}
+                          Las paradas van encadenadas con una flecha en el medio: el
+                          orden de los destinos es el recorrido del camion, asi que la
+                          ruta se lee de corrido en vez de como una lista suelta.
+                        {% endcomment %}
+                        <td>
+                            <div class="vcc-ruta">
+                                {% for parada in viaje.destinos.all %}
+                                {% if not forloop.first %}<span class="material-symbols-outlined vcc-ruta__flecha">arrow_forward</span>{% endif %}
+                                <span class="vcc-ruta__parada">{{ parada.destino }}</span>
+                                {% empty %}
+                                <span class="vcc-ruta__vacia">Sin destinos cargados</span>
+                                {% endfor %}
+                            </div>
+                        </td>
+                        <td class="vcc-toneladas">
+                            {{ viaje.toneladas|floatformat:"-2g" }}<span class="vcc-toneladas__unidad">t</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <!-- Paginación de Viajes de Cereal -->
+            <div class="paginacion">
+              <div class="paginacion-info">
+                Mostrando <span>{{ viajes_cereal.start_index }}-{{ viajes_cereal.end_index }}</span>
+                de <span>{{ viajes_cereal.paginator.count }}</span> viajes
+              </div>
+              <div class="paginacion-botones">
+                {% if viajes_cereal.has_previous %}
+                  <a href="{% querystring page_cereal=viajes_cereal.previous_page_number %}#seccion-viajes-cereal">
+                    <button class="boton-paginacion">Anterior</button>
+                  </a>
+                {% else %}
+                  <button class="boton-paginacion" disabled>Anterior</button>
+                {% endif %}
+
+                {% if viajes_cereal.has_next %}
+                  <a href="{% querystring page_cereal=viajes_cereal.next_page_number %}#seccion-viajes-cereal">
+                    <button class="boton-paginacion">Siguiente</button>
+                  </a>
+                {% else %}
+                  <button class="boton-paginacion" disabled>Siguiente</button>
+                {% endif %}
+              </div>
+            </div>
+            {% else %}
+            <div class="estado-vacio">
+                <span class="material-symbols-outlined">agriculture</span>
+                <h4>No hay viajes de cereal</h4>
+                <p>Este cliente no tiene fletes de cereal registrados.</p>
             </div>
             {% endif %}
         </div>

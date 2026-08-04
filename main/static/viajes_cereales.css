@@ -4,25 +4,8 @@
   desde viajes.css (mismo sistema de diseno). Aca solo se define lo especifico
   del cereal: la pildora de tipo y el ajuste de columnas de esta tabla.
 */
-:root {
-  /* Paleta de la pildora de cereal, derivada del propio grano.
-     Maiz: dorado miel (reusa la familia honey).
-     Soja: verde (reusa la familia success).
-     Trigo: ambar tostado, tono propio para diferenciarlo del dorado del maiz. */
-  --cereal-maiz-bg: var(--honey-50);
-  --cereal-maiz-fg: var(--honey-700);
-  --cereal-maiz-dot: var(--honey-500);
-  --cereal-soja-bg: var(--success-50);
-  --cereal-soja-fg: var(--success-600);
-  --cereal-soja-dot: var(--success-500);
-  --cereal-trigo-bg: oklch(95.5% 0.040 74);
-  --cereal-trigo-fg: oklch(48% 0.085 60);
-  --cereal-trigo-dot: oklch(70% 0.120 66);
-  /* Mani: marron tostado, tono propio para diferenciarlo del trigo. */
-  --cereal-mani-bg: oklch(94% 0.035 55);
-  --cereal-mani-fg: oklch(45% 0.070 45);
-  --cereal-mani-dot: oklch(63% 0.100 48);
-}
+/* La pildora de cereal (.cereal-pill) y su paleta viven en base.css: las usan
+   tambien el detalle del viaje y la tabla de fletes del perfil del cliente. */
 
 /* --- BARRA DE HERRAMIENTAS ---
    Con un rango cargado, la etiqueta del chip de fechas crece y empujaba los
@@ -194,71 +177,7 @@
 /* Cereal */
 /* La celda de fecha usa .celda-fecha, el componente unificado de base.css */
 
-/* --- Pildora de tipo de cereal --- */
-.cereal-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.2rem 0.6rem;
-  border-radius: var(--radius-pill);
-  font-size: var(--text-xs);
-  font-weight: var(--weight-semibold);
-  white-space: nowrap;
-}
-
-.cereal-pill__dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  flex: none;
-}
-
-.cereal-pill--maiz {
-  background-color: var(--cereal-maiz-bg);
-  color: var(--cereal-maiz-fg);
-}
-
-.cereal-pill--maiz .cereal-pill__dot {
-  background-color: var(--cereal-maiz-dot);
-}
-
-.cereal-pill--soja {
-  background-color: var(--cereal-soja-bg);
-  color: var(--cereal-soja-fg);
-}
-
-.cereal-pill--soja .cereal-pill__dot {
-  background-color: var(--cereal-soja-dot);
-}
-
-.cereal-pill--trigo {
-  background-color: var(--cereal-trigo-bg);
-  color: var(--cereal-trigo-fg);
-}
-
-.cereal-pill--trigo .cereal-pill__dot {
-  background-color: var(--cereal-trigo-dot);
-}
-
-.cereal-pill--mani {
-  background-color: var(--cereal-mani-bg);
-  color: var(--cereal-mani-fg);
-}
-
-.cereal-pill--mani .cereal-pill__dot {
-  background-color: var(--cereal-mani-dot);
-}
-
-/* Fallback neutro por si llegara un tipo sin estilo asignado */
-.cereal-pill:not([class*="cereal-pill--"]),
-.cereal-pill--otro {
-  background-color: var(--surface-sunken);
-  color: var(--text-muted);
-}
-
-.cereal-pill--otro .cereal-pill__dot {
-  background-color: var(--sand-400);
-}
+/* La pildora de tipo de cereal (.cereal-pill) es un componente unificado de base.css */
 
 /* --- Slide-over "Nuevo acopio" ---
    Las clases internas del panel (.panel-cabecera, .grupo-input, .boton-primario,

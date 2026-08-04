@@ -370,19 +370,26 @@ html {
   color: var(--brand-active);
 }
 
-/* --- OPERACIONES --- */
-.contenedor-operaciones {
+/* --- OPERACIONES ---
+   Las dos tablas del perfil (operaciones y viajes de cereal) comparten envoltorio,
+   cabecera y densidad: son dos historiales del mismo cliente, uno abajo del otro,
+   y cualquier diferencia entre ellas se leeria como si significara algo. Por eso
+   la clase nueva se suma a los selectores que ya existian en vez de copiarlos. */
+.contenedor-operaciones,
+.contenedor-viajes-cereal {
   margin-top: 2.5rem;
 }
 
-.encabezado-operaciones {
+.encabezado-operaciones,
+.encabezado-viajes-cereal {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1.25rem;
 }
 
-.encabezado-operaciones h4 {
+.encabezado-operaciones h4,
+.encabezado-viajes-cereal h4 {
   font-size: var(--text-xs);
   font-weight: var(--weight-bold);
   text-transform: uppercase;
@@ -393,7 +400,8 @@ html {
   gap: 0.5rem;
 }
 
-.encabezado-operaciones h4 .material-symbols-outlined {
+.encabezado-operaciones h4 .material-symbols-outlined,
+.encabezado-viajes-cereal h4 .material-symbols-outlined {
   color: var(--brand-active);
 }
 
@@ -475,7 +483,8 @@ html {
   border: 1px solid var(--color-insumos-borde-etiqueta);
 }
 
-.tabla-operaciones-container {
+.tabla-operaciones-container,
+.tabla-viajes-cereal-container {
   background: var(--surface-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
@@ -483,7 +492,8 @@ html {
   box-shadow: var(--shadow-sm);
 }
 
-.tabla-operaciones {
+.tabla-operaciones,
+.tabla-viajes-cereal {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
@@ -492,21 +502,25 @@ html {
 /* Mayor especificidad que la regla unificada de cabeceras de base.css */
 /* Cabecera de tabla: estilos unificados en base.css; esta tabla mantiene su
    padding horizontal mas ancho para alinear con las celdas de 2rem */
-.tabla-operaciones-container .tabla-operaciones th {
+.tabla-operaciones-container .tabla-operaciones th,
+.tabla-viajes-cereal-container .tabla-viajes-cereal th {
   padding: 0.9rem 2rem;
 }
 
-.tabla-operaciones td {
+.tabla-operaciones td,
+.tabla-viajes-cereal td {
   padding: 1.25rem 2rem;
   border-bottom: 1px solid var(--border-subtle);
   font-size: var(--text-sm);
 }
 
-.tabla-operaciones tr:last-child td {
+.tabla-operaciones tr:last-child td,
+.tabla-viajes-cereal tr:last-child td {
   border-bottom: none;
 }
 
-.tabla-operaciones tr:hover {
+.tabla-operaciones tr:hover,
+.tabla-viajes-cereal tbody tr:hover {
   background-color: var(--surface-hover);
 }
 
@@ -542,6 +556,70 @@ html {
   font-weight: var(--weight-bold);
   color: var(--text-strong);
   font-variant-numeric: tabular-nums;
+}
+
+/* --- VIAJES DE CEREAL DEL CLIENTE --- */
+/* La fila entera lleva al detalle del viaje, igual que en el listado de cereales */
+.fila-viaje-cereal {
+  cursor: pointer;
+}
+
+/* Fecha, cereal y toneladas miden lo que su contenido; la ruta se queda con el
+   ancho sobrante porque es la unica columna que crece con los datos. */
+.tabla-viajes-cereal th:first-child,
+.tabla-viajes-cereal td:first-child {
+  width: 12rem;
+}
+
+.tabla-viajes-cereal th:nth-child(2),
+.tabla-viajes-cereal td:nth-child(2) {
+  width: 9rem;
+}
+
+.vcc-columna-toneladas {
+  width: 9rem;
+  text-align: right;
+}
+
+/* La ruta del flete: las paradas en el orden en que las recorre el camion,
+   encadenadas por flechas. La flecha es el separador y no un adorno: sin ella la
+   celda queda como una lista de localidades sueltas, sin direccion ni recorrido.
+   Envuelve cuando el viaje tiene muchas paradas en vez de estirar la columna. */
+.vcc-ruta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  color: var(--text-body);
+  font-weight: var(--weight-medium);
+}
+
+.vcc-ruta__flecha {
+  font-size: 1rem;
+  color: var(--sand-400);
+}
+
+.vcc-ruta__vacia {
+  color: var(--text-subtle);
+  font-style: italic;
+}
+
+/* Mismo tratamiento que el monto de las operaciones (tabular y fuerte) para que
+   las dos tablas rimen, con la unidad atenuada: lo que se lee es el numero. */
+.vcc-toneladas {
+  text-align: right;
+  font-size: 1.125rem;
+  font-weight: var(--weight-bold);
+  color: var(--text-strong);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.vcc-toneladas__unidad {
+  margin-left: 0.25rem;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--text-muted);
 }
 
 /* Estado vacio (.estado-vacio): estilos unificados en base.css */
@@ -1096,8 +1174,17 @@ html {
     overflow-x: auto;
   }
   /* Mas especificidad que la cabecera unificada de base.css */
-  .tabla-operaciones-container .tabla-operaciones th, .tabla-operaciones-container .tabla-operaciones td {
+  .tabla-operaciones-container .tabla-operaciones th, .tabla-operaciones-container .tabla-operaciones td,
+  .tabla-viajes-cereal-container .tabla-viajes-cereal th, .tabla-viajes-cereal-container .tabla-viajes-cereal td {
     padding: 0.875rem 1rem;
+  }
+  /* Con menos ancho las columnas fijas ahogan a la ruta: que se repartan solas */
+  .tabla-viajes-cereal th:first-child,
+  .tabla-viajes-cereal td:first-child,
+  .tabla-viajes-cereal th:nth-child(2),
+  .tabla-viajes-cereal td:nth-child(2),
+  .vcc-columna-toneladas {
+    width: auto;
   }
   .acciones-modal {
     grid-template-columns: 1fr;

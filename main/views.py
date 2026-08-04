@@ -30,7 +30,8 @@ from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo
                        editar_empleado, eliminar_empleado, obtener_datos_empleado, crear_pago_empleado,
                        obtener_gastos_empleado, obtener_viajes_empleado, TIPOS_VIAJE_EMPLEADO,
                        editar_vehiculo, eliminar_vehiculo,
-                       crear_viaje_cereal, obtener_viajes_cereales, obtener_datos_viaje_cereal,
+                       crear_viaje_cereal, obtener_viajes_cereales, obtener_viajes_cereal_de_cliente,
+                       obtener_datos_viaje_cereal,
                        editar_viaje_cereal, eliminar_viaje_cereal, crear_gasto_viaje_cereal,
                        obtener_resumen_cereal, marcar_pago_viaje_cereal,
                        crear_viaje_reparto, obtener_viajes_reparto, obtener_datos_viaje_reparto,
@@ -605,7 +606,18 @@ def informacion_clientes(request, id_cliente):
     pagina_numero = request.GET.get("page")
     pagina_obj = paginator_operaciones.get_page(pagina_numero)
 
-    contexto = {"cliente": cliente, "operaciones": pagina_obj, "tipo_actual": tipo_actual}
+    # Los fletes de cereal del cliente van en su propia tabla, tambien de a 5.
+    # Usan un parametro aparte ("page_cereal") para que avanzar de pagina en una
+    # tabla no reinicie la otra: las dos conviven en la misma URL.
+    paginator_cereal = Paginator(obtener_viajes_cereal_de_cliente(cliente), 5)
+    pagina_cereal = paginator_cereal.get_page(request.GET.get("page_cereal"))
+
+    contexto = {
+        "cliente": cliente,
+        "operaciones": pagina_obj,
+        "tipo_actual": tipo_actual,
+        "viajes_cereal": pagina_cereal,
+    }
 
     return render(request, "informacion_clientes.html", contexto)
 

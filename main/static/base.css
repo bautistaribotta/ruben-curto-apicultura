@@ -114,6 +114,23 @@
   --danger-600: oklch(54.818% 0.1821 25.563);
   --danger-500: oklch(59.655% 0.1818 24.512);
   --danger-50: oklch(95.794% 0.0163 17.441);
+  /* ---- Paleta de la pildora de cereal, derivada del propio grano ----
+     Maiz: dorado miel (reusa la familia honey).
+     Soja: verde (reusa la familia success).
+     Trigo: ambar tostado, tono propio para diferenciarlo del dorado del maiz.
+     Mani: marron tostado, tono propio para diferenciarlo del trigo. */
+  --cereal-maiz-bg: var(--honey-50);
+  --cereal-maiz-fg: var(--honey-700);
+  --cereal-maiz-dot: var(--honey-500);
+  --cereal-soja-bg: var(--success-50);
+  --cereal-soja-fg: var(--success-600);
+  --cereal-soja-dot: var(--success-500);
+  --cereal-trigo-bg: oklch(95.5% 0.040 74);
+  --cereal-trigo-fg: oklch(48% 0.085 60);
+  --cereal-trigo-dot: oklch(70% 0.120 66);
+  --cereal-mani-bg: oklch(94% 0.035 55);
+  --cereal-mani-fg: oklch(45% 0.070 45);
+  --cereal-mani-dot: oklch(63% 0.100 48);
   /* ---- Aliases semanticos ---- */
   --surface-app: var(--sand-50);
   --surface-card: var(--color-blanco);
@@ -1024,6 +1041,7 @@ body {
 .tabla-productos th,
 .tabla-flota th,
 .tabla-operaciones th,
+.tabla-viajes-cereal th,
 #tabla-viajes-meli th {
   padding: 0.9rem 1.5rem;
   font-size: var(--text-xs);
@@ -1062,6 +1080,75 @@ body {
 .celda-fecha__pendiente {
   color: var(--text-subtle);
   font-weight: var(--weight-medium);
+}
+
+/* --- PILDORA DE TIPO DE CEREAL UNIFICADA --- */
+/* Cada grano tiene su color, asi el tipo se reconoce de un vistazo sin leer.
+   Vive aca y no en viajes_cereales.css porque la usan tres vistas: el listado de
+   viajes de cereal, el detalle del viaje y la tabla de fletes del cliente. */
+.cereal-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+}
+
+.cereal-pill__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.cereal-pill--maiz {
+  background-color: var(--cereal-maiz-bg);
+  color: var(--cereal-maiz-fg);
+}
+
+.cereal-pill--maiz .cereal-pill__dot {
+  background-color: var(--cereal-maiz-dot);
+}
+
+.cereal-pill--soja {
+  background-color: var(--cereal-soja-bg);
+  color: var(--cereal-soja-fg);
+}
+
+.cereal-pill--soja .cereal-pill__dot {
+  background-color: var(--cereal-soja-dot);
+}
+
+.cereal-pill--trigo {
+  background-color: var(--cereal-trigo-bg);
+  color: var(--cereal-trigo-fg);
+}
+
+.cereal-pill--trigo .cereal-pill__dot {
+  background-color: var(--cereal-trigo-dot);
+}
+
+.cereal-pill--mani {
+  background-color: var(--cereal-mani-bg);
+  color: var(--cereal-mani-fg);
+}
+
+.cereal-pill--mani .cereal-pill__dot {
+  background-color: var(--cereal-mani-dot);
+}
+
+/* Fallback neutro por si llegara un tipo sin estilo asignado */
+.cereal-pill:not([class*="cereal-pill--"]),
+.cereal-pill--otro {
+  background-color: var(--surface-sunken);
+  color: var(--text-muted);
+}
+
+.cereal-pill--otro .cereal-pill__dot {
+  background-color: var(--sand-400);
 }
 
 /* --- AVATAR DE INICIALES UNIFICADO --- */

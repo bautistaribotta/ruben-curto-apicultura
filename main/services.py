@@ -1654,6 +1654,24 @@ def obtener_viajes_cereales():
     )
 
 
+def obtener_viajes_cereal_de_cliente(cliente):
+    """Fletes de cereal hechos a nombre de un cliente, del mas nuevo al mas viejo.
+
+    Solo los activos: un viaje dado de baja no es historial del cliente sino un
+    registro borrado. Los destinos vienen por prefetch porque la tabla los muestra
+    como ruta, y sin eso serian tantas consultas extra como filas.
+
+    Desempato por id descendente: varios fletes en la misma fecha son lo normal y,
+    sin el desempate, el orden entre ellos lo decide la base y un mismo viaje puede
+    aparecer en dos paginas distintas o en ninguna.
+    """
+    return (
+        ViajeCereal.objects.filter(cliente=cliente, activo=True)
+        .prefetch_related("destinos")
+        .order_by("-fecha_viaje_cereal", "-id")
+    )
+
+
 def obtener_resumen_cereal(viajes):
     """Totales para las tarjetas de resumen de la vista de viajes de cereal.
 
