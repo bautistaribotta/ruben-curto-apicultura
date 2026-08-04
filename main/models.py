@@ -817,15 +817,9 @@ class Contrato(models.Model):
     casa = models.ForeignKey(Casa, on_delete=models.CASCADE, related_name="contratos",
                              db_column="id_casa")
     inicio = models.DateField()
-    # Sin blank: el admin es la unica pantalla que quedaba dejando guardar un
-    # contrato sin vencimiento, y con esto tambien lo exige
     fin = models.DateField(null=True)
-    # Enteros los dos, como el resto de los montos del sistema: un alquiler se
-    # pacta en pesos redondos y una comision en puntos enteros, y los centavos
-    # solo daban ruido en pantalla
     monto_mensual = models.PositiveIntegerField()
     comision_inmobiliaria = models.PositiveIntegerField(null=True, blank=True)
-    # Opcional: el contrato sirve igual sin saber el nombre del inquilino
     nombre_inquilino = models.CharField(max_length=60, null=True, blank=True)
 
     class Meta:
@@ -937,6 +931,7 @@ class PagoAlquiler(models.Model):
 
     class Meta:
         db_table = "pagos_alquileres"
+        verbose_name = "Pago de alquiler"
         verbose_name_plural = "Pagos de alquileres"
         # Del mes mas nuevo al mas viejo; el id desempata los que caen el mismo dia
         ordering = ["-periodo", "-fecha", "-id"]
@@ -954,3 +949,18 @@ class PagoAlquiler(models.Model):
 
     def __str__(self):
         return f"Pago de {self.monto} del periodo {self.periodo_label} ({self.casa})"
+
+
+class EstacionDeServicio(models.Model):
+    nombre = models.CharField(max_length=30, unique=True)
+    activa = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = "estaciones_de_servicio"
+        verbose_name = "Estacion de servicio"
+        verbose_name_plural = "Estaciones de servicio"
+        # Alfabetico como el resto de los catalogos: el id solo desempata
+        ordering = ["nombre", "id"]
+
+    def __str__(self):
+        return self.nombre

@@ -3,7 +3,7 @@ from .models import (
     Cliente, Producto, Operacion, DetalleOperacion, Pago, Cotizaciones,
     Empleado, PagosEmpleados, Vehiculo, Viaje, DetalleViaje, Gasto,
     ViajeReparto, DetalleViajeReparto, DestinoViajeReparto, ViajeCereal, DetalleViajeCereal,
-    GastoViajeCereal, Casa, Contrato, PagoAlquiler, GastoCasa,
+    GastoViajeCereal, Casa, Contrato, PagoAlquiler, GastoCasa, EstacionDeServicio,
 )
 
 admin.site.register(Cliente)
@@ -99,3 +99,9 @@ class PagoAlquilerAdmin(admin.ModelAdmin):
 class GastoCasaAdmin(admin.ModelAdmin):
     list_display = ('id', 'casa', 'fecha', 'categoria', 'detalle', 'monto')
     list_filter = ('categoria', 'casa')
+
+@admin.register(EstacionDeServicio)
+class EstacionDeServicioAdmin(admin.ModelAdmin):
+    list_display = ('id', 'nombre', 'activa')
+    list_filter = ('activa',)
+    search_fields = ('nombre',)
