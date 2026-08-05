@@ -231,9 +231,17 @@ function revisarMontoPago() {
 document.getElementById("boton-anadir-pago")?.addEventListener("click", abrirModalPagoEmpleado);
 document.getElementById("observaciones-pago")?.addEventListener("input", actualizarContadorObservacion);
 
-document.getElementById("monto-pago")?.addEventListener("input", () => {
-    montoTocado = true;
-    revisarMontoPago();
+// El separador de miles (formato_miles.js) reformatea el campo en un listener de
+// input delegado en document. Un listener directo sobre el campo correria en fase
+// target, antes del reformateo, y veria "1000" sin puntos: eso no matchea el
+// pattern y marcaba el error en falso. Delego este tambien en document y, como
+// este archivo se carga despues de formato_miles.js, corre despues de el en la
+// fase de burbuja, cuando el campo ya tiene el "1.000" definitivo.
+document.addEventListener("input", (evento) => {
+    if (evento.target.id === "monto-pago") {
+        montoTocado = true;
+        revisarMontoPago();
+    }
 });
 
 document.getElementById("monto-pago")?.addEventListener("blur", () => {
