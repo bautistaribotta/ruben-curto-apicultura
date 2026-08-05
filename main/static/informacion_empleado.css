@@ -255,17 +255,17 @@
   width: 2rem;
   height: 2rem;
   border-radius: var(--radius-pill);
-  border: 1px solid var(--border-subtle);
-  background-color: var(--surface-card);
-  color: var(--text-body);
+  border: none;
+  background-color: var(--pine-900);
+  color: oklch(100% 0 0);
+  text-decoration: none;
   cursor: pointer;
   transition: background-color var(--dur-normal) var(--ease-standard),
-              border-color var(--dur-normal) var(--ease-standard);
+              filter var(--dur-normal) var(--ease-standard);
 }
 
 .pagos-nav__paso:hover {
-  background-color: var(--surface-hover);
-  border-color: var(--border-default);
+  filter: brightness(1.25);
 }
 
 .pagos-nav__paso .material-symbols-outlined {

@@ -12,6 +12,17 @@
   completa (preservando el resto de los filtros). El href es el respaldo sin JS.
 {% endcomment %}
 <div class="pagos-barra">
+  <div class="pagos-seg" role="tablist" aria-label="Granularidad del período">
+    <a class="pagos-seg__opt{% if pagos_granularidad == 'semana' %} es-activo{% endif %}"
+       role="tab" aria-selected="{% if pagos_granularidad == 'semana' %}true{% else %}false{% endif %}"
+       data-pagos-gran="semana"
+       href="?pagos_gran=semana&amp;pagos_ancla={{ pagos_inicio|date:'Y-m-d' }}#seccion-pagos">Semanal</a>
+    <a class="pagos-seg__opt{% if pagos_granularidad == 'mes' %} es-activo{% endif %}"
+       role="tab" aria-selected="{% if pagos_granularidad == 'mes' %}true{% else %}false{% endif %}"
+       data-pagos-gran="mes"
+       href="?pagos_gran=mes&amp;pagos_ancla={{ pagos_inicio|date:'Y-m-d' }}#seccion-pagos">Mensual</a>
+  </div>
+
   <div class="pagos-nav">
     <a class="pagos-nav__paso" data-pagos-ancla="{{ pagos_ancla_anterior|date:'Y-m-d' }}"
        href="?pagos_gran={{ pagos_granularidad }}&amp;pagos_ancla={{ pagos_ancla_anterior|date:'Y-m-d' }}#seccion-pagos"
@@ -34,17 +45,6 @@
       <span class="material-symbols-outlined">undo</span>
       Hoy
     </a>
-  </div>
-
-  <div class="pagos-seg" role="tablist" aria-label="Granularidad del período">
-    <a class="pagos-seg__opt{% if pagos_granularidad == 'semana' %} es-activo{% endif %}"
-       role="tab" aria-selected="{% if pagos_granularidad == 'semana' %}true{% else %}false{% endif %}"
-       data-pagos-gran="semana"
-       href="?pagos_gran=semana&amp;pagos_ancla={{ pagos_inicio|date:'Y-m-d' }}#seccion-pagos">Semanal</a>
-    <a class="pagos-seg__opt{% if pagos_granularidad == 'mes' %} es-activo{% endif %}"
-       role="tab" aria-selected="{% if pagos_granularidad == 'mes' %}true{% else %}false{% endif %}"
-       data-pagos-gran="mes"
-       href="?pagos_gran=mes&amp;pagos_ancla={{ pagos_inicio|date:'Y-m-d' }}#seccion-pagos">Mensual</a>
   </div>
 </div>
 
