@@ -112,4 +112,36 @@
     </span>
   </div>
   {% endif %}
+
+  {% if pagos.paginator.num_pages > 1 %}
+  <div class="paginacion">
+    <div class="paginacion-info">
+      Mostrando <span>{{ pagos.start_index }}-{{ pagos.end_index }}</span>
+      de <span>{{ pagos.paginator.count }}</span> movimientos
+    </div>
+    <div class="paginacion-botones">
+      {% if pagos.has_previous %}
+        <a class="pagos-pag" data-pagos-gran="{{ pagos_granularidad }}"
+           data-pagos-ancla="{{ pagos_inicio|date:'Y-m-d' }}"
+           data-pagos-page="{{ pagos.previous_page_number }}"
+           href="?pagos_gran={{ pagos_granularidad }}&amp;pagos_ancla={{ pagos_inicio|date:'Y-m-d' }}&amp;pagos_page={{ pagos.previous_page_number }}#seccion-pagos">
+          <button class="boton-paginacion">Anterior</button>
+        </a>
+      {% else %}
+        <button class="boton-paginacion" disabled>Anterior</button>
+      {% endif %}
+
+      {% if pagos.has_next %}
+        <a class="pagos-pag" data-pagos-gran="{{ pagos_granularidad }}"
+           data-pagos-ancla="{{ pagos_inicio|date:'Y-m-d' }}"
+           data-pagos-page="{{ pagos.next_page_number }}"
+           href="?pagos_gran={{ pagos_granularidad }}&amp;pagos_ancla={{ pagos_inicio|date:'Y-m-d' }}&amp;pagos_page={{ pagos.next_page_number }}#seccion-pagos">
+          <button class="boton-paginacion">Siguiente</button>
+        </a>
+      {% else %}
+        <button class="boton-paginacion" disabled>Siguiente</button>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
 </div>

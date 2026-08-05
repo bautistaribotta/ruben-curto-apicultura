@@ -127,13 +127,20 @@ guardarTitularGastos();
 
 const contenedorPagos = document.getElementById("seccion-pagos");
 
-function cargarPagos(gran, ancla) {
+function cargarPagos(gran, ancla, page) {
     if (!contenedorPagos) return;
 
     // Parto de la URL actual para no pisar los filtros de gastos/viajes
     const url = new URL(window.location.href);
     if (gran) url.searchParams.set("pagos_gran", gran);
     if (ancla) url.searchParams.set("pagos_ancla", ancla);
+
+    // Sin pagina explicita (cambio de periodo o granularidad) vuelvo a la primera
+    if (page) {
+        url.searchParams.set("pagos_page", page);
+    } else {
+        url.searchParams.delete("pagos_page");
+    }
 
     // frag=pagos le pide a la vista solo este bloque; no queda en la barra de
     // direcciones para que la URL siga sirviendo para recargar la pagina entera.
@@ -169,6 +176,14 @@ document.addEventListener("click", (evento) => {
     if (paso && !paso.classList.contains("es-oculto")) {
         evento.preventDefault();
         cargarPagos(paso.dataset.pagosGran, paso.dataset.pagosAncla);
+        return;
+    }
+
+    // Paginacion de la tabla de pagos (5 por pagina)
+    const pag = evento.target.closest(".pagos-pag");
+    if (pag) {
+        evento.preventDefault();
+        cargarPagos(pag.dataset.pagosGran, pag.dataset.pagosAncla, pag.dataset.pagosPage);
         return;
     }
 

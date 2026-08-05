@@ -169,12 +169,17 @@ def _contexto_pagos_empleado(request, empleado):
 
     filas, resumen = obtener_pagos_empleado(empleado, desde, hasta)
 
+    # El resumen (totales del periodo) se calcula sobre todas las filas; recien
+    # despues pagino la tabla de a 5 para no romper esos totales.
+    paginador_pagos = Paginator(filas, 5)
+    pagina_pagos = paginador_pagos.get_page(request.GET.get("pagos_page"))
+
     # Primer dia del periodo que contiene hoy: sirve para el enlace "Hoy" y para
     # saber si ya lo estamos mirando (y ocultar ese enlace).
     inicio_actual = resolver_ancla_pagos(None, granularidad)
 
     return {
-        "pagos": filas,
+        "pagos": pagina_pagos,
         "resumen_pagos": resumen,
         "pagos_granularidad": granularidad,
         "pagos_inicio": inicio,
