@@ -140,7 +140,6 @@
             <span class="vd-gasto__ico"><span class="material-symbols-outlined">local_gas_station</span></span>
             <span class="vd-gasto__name">Combustible<span class="vd-gasto__date">{{ viaje_reparto.fecha_viaje_reparto|date:"d/m/Y" }}</span></span>
             <span class="vd-gasto__amt">-${{ viaje_reparto.gasto_combustible_viaje_reparto|intcomma }}</span>
-            <span class="vd-gasto__flecha material-symbols-outlined" aria-hidden="true">chevron_right</span>
           </button>
           <button type="button" class="vd-gasto vd-gasto--editable"
                   onclick="abrirSlideOver('slide-over-reparto-editar')"
@@ -148,7 +147,6 @@
             <span class="vd-gasto__ico"><span class="material-symbols-outlined">badge</span></span>
             <span class="vd-gasto__name">Costo del empleado<span class="vd-gasto__date">{{ viaje_reparto.fecha_viaje_reparto|date:"d/m/Y" }}</span></span>
             <span class="vd-gasto__amt">-${{ viaje_reparto.costo_empleado|intcomma }}</span>
-            <span class="vd-gasto__flecha material-symbols-outlined" aria-hidden="true">chevron_right</span>
           </button>
           {% include "gastos_viaje.html" with gastos=viaje_reparto.detalle_gastos.all %}
         </div>

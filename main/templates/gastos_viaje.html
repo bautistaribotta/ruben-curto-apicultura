@@ -22,7 +22,6 @@
   <span class="vd-gasto__ico"><span class="material-symbols-outlined">{% if gasto.gasto == 'Comida' %}restaurant{% elif gasto.gasto == 'Combustible' %}local_gas_station{% elif gasto.gasto == 'Playa' %}local_parking{% elif gasto.gasto == 'Peaje' %}toll{% elif gasto.gasto == 'Hotel' %}hotel{% elif gasto.gasto == 'Viaticos personales' %}wallet{% else %}more_horiz{% endif %}</span></span>
   <span class="vd-gasto__name">{{ gasto.gasto }}<span class="vd-gasto__date">{{ gasto.fecha|date:"d/m/Y" }}</span></span>
   <span class="vd-gasto__amt">-${{ gasto.monto|intcomma }}</span>
-  <span class="vd-gasto__flecha material-symbols-outlined" aria-hidden="true">chevron_right</span>
 </button>
 {% empty %}
 {% if vacio %}<div class="vd-gastos__empty">{{ vacio }}</div>{% endif %}

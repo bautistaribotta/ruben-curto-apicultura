@@ -382,26 +382,6 @@ html {
   outline-offset: -2px;
 }
 
-.vd-gasto__flecha {
-  flex: none;
-  font-size: 1.1rem;
-  color: var(--text-subtle);
-  opacity: 0;
-  transition: opacity var(--dur-normal) var(--ease-standard);
-}
-
-.vd-gasto--editable:hover .vd-gasto__flecha,
-.vd-gasto--editable:focus-visible .vd-gasto__flecha {
-  opacity: 1;
-}
-
-/* Sin mouse no hay hover: dejo la flecha puesta, si no el gesto queda oculto */
-@media (hover: none) {
-  .vd-gasto__flecha {
-    opacity: 0.55;
-  }
-}
-
 /* Resalte del gasto recien guardado, para no tener que buscarlo en la lista */
 @keyframes vd-gasto-recien {
   from {
@@ -423,8 +403,7 @@ html {
     animation-timing-function: steps(1);
   }
 
-  .vd-gasto--editable,
-  .vd-gasto__flecha {
+  .vd-gasto--editable {
     transition: none;
   }
 }
