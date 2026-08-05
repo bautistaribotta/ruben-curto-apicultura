@@ -181,15 +181,7 @@
           <span class="vd-caja__v">${{ viaje_cereal.total_bruto|intcomma }}</span>
         </div>
         <div class="vd-gastos">
-          {% for gasto in viaje_cereal.detalle_gastos.all %}
-          <div class="vd-gasto">
-            <span class="vd-gasto__ico"><span class="material-symbols-outlined">{% if gasto.gasto == 'Comida' %}restaurant{% elif gasto.gasto == 'Combustible' %}local_gas_station{% elif gasto.gasto == 'Playa' %}local_parking{% elif gasto.gasto == 'Peaje' %}toll{% elif gasto.gasto == 'Hotel' %}hotel{% elif gasto.gasto == 'Viaticos personales' %}wallet{% else %}more_horiz{% endif %}</span></span>
-            <span class="vd-gasto__name">{{ gasto.gasto }}<span class="vd-gasto__date">{{ gasto.fecha|date:"d/m/Y" }}</span></span>
-            <span class="vd-gasto__amt">-${{ gasto.monto|intcomma }}</span>
-          </div>
-          {% empty %}
-          <div class="vd-gastos__empty">Sin gastos registrados.</div>
-          {% endfor %}
+          {% include "gastos_viaje.html" with gastos=viaje_cereal.detalle_gastos.all vacio="Sin gastos registrados." %}
         </div>
         <div class="vd-caja__row vc-row--sub">
           <span class="vd-caja__k vd-caja__k--strong"><span class="material-symbols-outlined">functions</span>Subtotal</span>
@@ -215,14 +207,20 @@
 
 </section>
 
-<!-- Panel de Nuevo Gasto -->
-<form id="formulario-gasto" method="POST">
+<!-- Panel de gasto: sirve para registrar uno nuevo y para corregir uno cargado.
+     Las acciones del POST viajan en data-* porque cada vista de viaje usa las
+     suyas; el resto del modal es identico en los tres. -->
+<form id="formulario-gasto" method="POST"
+      data-accion-nuevo="nuevo_gasto_cereal"
+      data-accion-editar="editar_gasto_cereal"
+      data-accion-eliminar="eliminar_gasto_cereal">
   {% csrf_token %}
   <div id="contenedor-modal-gasto">
     <div id="contenedor-modal-fondo-gasto" onclick="cerrarModalGasto()"></div>
 
     <div id="panel-gasto">
-      <input type="hidden" name="accion" value="nuevo_gasto_cereal">
+      <input type="hidden" name="accion" id="gasto-accion" value="nuevo_gasto_cereal">
+      <input type="hidden" name="id_gasto" id="gasto-id">
 
       <button type="button" class="boton-cerrar" onclick="cerrarModalGasto()">
         <span class="material-symbols-outlined">close</span>
@@ -232,9 +230,10 @@
         <span class="material-symbols-outlined">payments</span>
       </div>
 
-      <h3>Registrar gasto</h3>
-      <p>Seleccioná el tipo de gasto e ingresá el monto. El subtotal y el pago del empleado se recalculan solos.</p>
+      <h3 id="gasto-titulo">Registrar gasto</h3>
+      <p id="gasto-bajada">Seleccioná el tipo de gasto e ingresá el monto. El subtotal y el pago del empleado se recalculan solos.</p>
 
+      <div id="gasto-campos">
       <div class="grupo-input">
         <label for="tipo-gasto">Tipo de gasto</label>
         <select id="tipo-gasto" name="tipo_gasto" required class="vd-select">
@@ -266,10 +265,35 @@
         </div>
         <span class="vd-hint">Número entero. Los puntos se agregan solos.</span>
       </div>
+      </div>
 
-      <div class="acciones-modal">
-        <button type="submit" class="boton-primario">Guardar</button>
+      <div class="acciones-modal" id="gasto-acciones">
+        <button type="submit" class="boton-primario" id="gasto-guardar">Guardar</button>
         <button type="button" class="boton-secundario" onclick="cerrarModalGasto()">Cancelar</button>
+      </div>
+
+      {% comment %}
+        Eliminar vive adentro del modal y no en la fila: es lo raro y lo que no
+        se deshace, asi que queda un nivel mas adentro y separado de Guardar.
+      {% endcomment %}
+      <div class="gasto-borrar" id="gasto-zona-borrar" hidden>
+        <button type="button" class="op-btn op-btn--danger gasto-borrar__btn" id="gasto-borrar">
+          <span class="material-symbols-outlined">delete</span>
+          Eliminar gasto
+        </button>
+      </div>
+
+      {% comment %}
+        La confirmacion pisa el cuerpo del mismo panel en vez de abrir un segundo
+        modal encima: apilar paneles esconde el de atras y marea.
+      {% endcomment %}
+      <div class="gasto-confirmar" id="gasto-confirmar" hidden>
+        <p class="gasto-confirmar__pregunta">¿Eliminar el gasto de <b id="gasto-confirmar-resumen"></b>?</p>
+        <p class="gasto-confirmar__nota">El subtotal y el pago del empleado se recalculan. No se puede deshacer.</p>
+        <div class="acciones-modal">
+          <button type="button" class="gasto-confirmar__si" id="gasto-confirmar-si"><span>Sí, eliminar</span></button>
+          <button type="button" class="boton-secundario" id="gasto-confirmar-no">Volver</button>
+        </div>
       </div>
     </div>
   </div>
@@ -547,5 +571,6 @@
 {% block codigo-javascript %}
 <script src="{% static 'js/autocompletado_ciudades.js' %}"></script>
 <script src="{% static 'js/autocompletado_clientes.js' %}"></script>
+<script src="{% static 'js/gastos_viaje.js' %}"></script>
 <script src="{% static 'js/informacion_viaje_cereal.js' %}"></script>
 {% endblock %}

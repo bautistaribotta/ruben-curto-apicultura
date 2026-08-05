@@ -17,20 +17,8 @@ function cerrarModalEliminarViaje() {
     }
 }
 
-function abrirModalGasto() {
-    document.getElementById('contenedor-modal-gasto').classList.add('abierto');
-    document.body.style.overflow = 'hidden';
-}
-
-function cerrarModalGasto() {
-    document.getElementById('contenedor-modal-gasto').classList.remove('abierto');
-    document.body.style.overflow = 'auto';
-    // Opcional: Resetear el formulario de gasto al cerrarlo
-    const formGasto = document.getElementById('formulario-gasto');
-    if (formGasto) {
-        formGasto.reset();
-    }
-}
+// El modal de gasto (alta, edicion y borrado) vive en gastos_viaje.js, que es
+// el mismo para las tres vistas de viaje.
 
 // Tipo de operacion elegido al abrir el modal de seleccion de cliente ('venta' | 'compra')
 let tipoOperacionSeleccionada = 'venta';

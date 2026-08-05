@@ -128,23 +128,29 @@
           <span class="vd-caja__v">${{ viaje_reparto.valor_viaje|floatformat:"-2g" }}</span>
         </div>
         <div class="vd-gastos">
-          <div class="vd-gasto">
+          {% comment %}
+            El combustible y el costo del empleado parecen gastos pero no lo son:
+            son campos del viaje. Igual son clickeables, porque nadie va a
+            adivinar que estas dos filas se tocan distinto que las de abajo. Van
+            al slide-over de edicion del viaje, que es donde viven esos numeros.
+          {% endcomment %}
+          <button type="button" class="vd-gasto vd-gasto--editable"
+                  onclick="abrirSlideOver('slide-over-reparto-editar')"
+                  aria-label="Editar el combustible del reparto">
             <span class="vd-gasto__ico"><span class="material-symbols-outlined">local_gas_station</span></span>
             <span class="vd-gasto__name">Combustible<span class="vd-gasto__date">{{ viaje_reparto.fecha_viaje_reparto|date:"d/m/Y" }}</span></span>
             <span class="vd-gasto__amt">-${{ viaje_reparto.gasto_combustible_viaje_reparto|intcomma }}</span>
-          </div>
-          <div class="vd-gasto">
+            <span class="vd-gasto__flecha material-symbols-outlined" aria-hidden="true">chevron_right</span>
+          </button>
+          <button type="button" class="vd-gasto vd-gasto--editable"
+                  onclick="abrirSlideOver('slide-over-reparto-editar')"
+                  aria-label="Editar el costo del empleado">
             <span class="vd-gasto__ico"><span class="material-symbols-outlined">badge</span></span>
             <span class="vd-gasto__name">Costo del empleado<span class="vd-gasto__date">{{ viaje_reparto.fecha_viaje_reparto|date:"d/m/Y" }}</span></span>
             <span class="vd-gasto__amt">-${{ viaje_reparto.costo_empleado|intcomma }}</span>
-          </div>
-          {% for gasto in viaje_reparto.detalle_gastos.all %}
-          <div class="vd-gasto">
-            <span class="vd-gasto__ico"><span class="material-symbols-outlined">{% if gasto.gasto == 'Comida' %}restaurant{% elif gasto.gasto == 'Combustible' %}local_gas_station{% elif gasto.gasto == 'Playa' %}local_parking{% elif gasto.gasto == 'Peaje' %}toll{% elif gasto.gasto == 'Hotel' %}hotel{% elif gasto.gasto == 'Viaticos personales' %}wallet{% else %}more_horiz{% endif %}</span></span>
-            <span class="vd-gasto__name">{{ gasto.gasto }}<span class="vd-gasto__date">{{ gasto.fecha|date:"d/m/Y" }}</span></span>
-            <span class="vd-gasto__amt">-${{ gasto.monto|intcomma }}</span>
-          </div>
-          {% endfor %}
+            <span class="vd-gasto__flecha material-symbols-outlined" aria-hidden="true">chevron_right</span>
+          </button>
+          {% include "gastos_viaje.html" with gastos=viaje_reparto.detalle_gastos.all %}
         </div>
         <div class="vd-caja__row vd-caja__row--total {% if viaje_reparto.ganancia < 0 %}vd-caja__row--loss{% endif %}">
           <span class="vd-caja__k"><span class="material-symbols-outlined">savings</span>Ganancia neta</span>
@@ -158,14 +164,20 @@
 
 </section>
 
-<!-- Panel de Nuevo Gasto -->
-<form id="formulario-gasto" method="POST">
+<!-- Panel de gasto: sirve para registrar uno nuevo y para corregir uno cargado.
+     Las acciones del POST viajan en data-* porque cada vista de viaje usa las
+     suyas; el resto del modal es identico en los tres. -->
+<form id="formulario-gasto" method="POST"
+      data-accion-nuevo="nuevo_gasto_reparto"
+      data-accion-editar="editar_gasto_reparto"
+      data-accion-eliminar="eliminar_gasto_reparto">
   {% csrf_token %}
   <div id="contenedor-modal-gasto">
     <div id="contenedor-modal-fondo-gasto" onclick="cerrarModalGasto()"></div>
 
     <div id="panel-gasto">
-      <input type="hidden" name="accion" value="nuevo_gasto_reparto">
+      <input type="hidden" name="accion" id="gasto-accion" value="nuevo_gasto_reparto">
+      <input type="hidden" name="id_gasto" id="gasto-id">
 
       <button type="button" class="boton-cerrar" onclick="cerrarModalGasto()">
         <span class="material-symbols-outlined">close</span>
@@ -175,9 +187,10 @@
         <span class="material-symbols-outlined">payments</span>
       </div>
 
-      <h3>Registrar gasto</h3>
-      <p>Seleccioná el tipo de gasto e ingresá el monto. La ganancia neta se recalcula sola.</p>
+      <h3 id="gasto-titulo">Registrar gasto</h3>
+      <p id="gasto-bajada">Seleccioná el tipo de gasto e ingresá el monto. La ganancia neta se recalcula sola.</p>
 
+      <div id="gasto-campos">
       <div class="grupo-input">
         <label for="tipo-gasto">Tipo de gasto</label>
         <select id="tipo-gasto" name="tipo_gasto" required class="vd-select">
@@ -209,10 +222,35 @@
         </div>
         <span class="vd-hint">Número entero. Los puntos se agregan solos.</span>
       </div>
+      </div>
 
-      <div class="acciones-modal">
-        <button type="submit" class="boton-primario">Guardar</button>
+      <div class="acciones-modal" id="gasto-acciones">
+        <button type="submit" class="boton-primario" id="gasto-guardar">Guardar</button>
         <button type="button" class="boton-secundario" onclick="cerrarModalGasto()">Cancelar</button>
+      </div>
+
+      {% comment %}
+        Eliminar vive adentro del modal y no en la fila: es lo raro y lo que no
+        se deshace, asi que queda un nivel mas adentro y separado de Guardar.
+      {% endcomment %}
+      <div class="gasto-borrar" id="gasto-zona-borrar" hidden>
+        <button type="button" class="op-btn op-btn--danger gasto-borrar__btn" id="gasto-borrar">
+          <span class="material-symbols-outlined">delete</span>
+          Eliminar gasto
+        </button>
+      </div>
+
+      {% comment %}
+        La confirmacion pisa el cuerpo del mismo panel en vez de abrir un segundo
+        modal encima: apilar paneles esconde el de atras y marea.
+      {% endcomment %}
+      <div class="gasto-confirmar" id="gasto-confirmar" hidden>
+        <p class="gasto-confirmar__pregunta">¿Eliminar el gasto de <b id="gasto-confirmar-resumen"></b>?</p>
+        <p class="gasto-confirmar__nota">La ganancia neta del reparto se recalcula. No se puede deshacer.</p>
+        <div class="acciones-modal">
+          <button type="button" class="gasto-confirmar__si" id="gasto-confirmar-si"><span>Sí, eliminar</span></button>
+          <button type="button" class="boton-secundario" id="gasto-confirmar-no">Volver</button>
+        </div>
       </div>
     </div>
   </div>
@@ -449,6 +487,6 @@
 {% endblock %}
 
 {% block codigo-javascript %}
-<script src="{% static 'js/informacion_viaje_reparto.js' %}"></script>
+<script src="{% static 'js/gastos_viaje.js' %}"></script>
 <script src="{% static 'js/destino_reparto.js' %}"></script>
 {% endblock %}

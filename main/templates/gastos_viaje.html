@@ -1,0 +1,30 @@
+{% load humanize %}
+{% comment %}
+  Lista de gastos de un viaje, la misma para miel/cera, cereal y reparto.
+
+  Cada gasto es un boton y no un div: tocar la fila abre el modal de edicion.
+  La fila es el unico control, asi que funciona igual con mouse, teclado y dedo,
+  y no le mete dos iconos encima al monto, que es lo que el ojo viene a buscar.
+  Los datos que necesita el modal viajan en data-* y los lee gastos_viaje.js.
+
+  Parametros:
+    gastos - los gastos del viaje (el related_name detalle_gastos)
+    vacio  - texto para cuando no hay ninguno. Si no se pasa, no muestra nada,
+             que es lo que necesita reparto: ahi la lista nunca queda vacia
+             porque arriba van el combustible y el costo del empleado.
+{% endcomment %}
+{% for gasto in gastos %}
+<button type="button" class="vd-gasto vd-gasto--editable" id="gasto-{{ gasto.id }}"
+        data-gasto="{{ gasto.id }}"
+        data-tipo="{{ gasto.gasto }}"
+        data-monto="{{ gasto.monto }}"
+        data-resumen="{{ gasto.gasto|lower }} por ${{ gasto.monto|intcomma }}"
+        aria-label="Editar el gasto de {{ gasto.gasto|lower }} del {{ gasto.fecha|date:'d/m/Y' }} por ${{ gasto.monto|intcomma }}">
+  <span class="vd-gasto__ico"><span class="material-symbols-outlined">{% if gasto.gasto == 'Comida' %}restaurant{% elif gasto.gasto == 'Combustible' %}local_gas_station{% elif gasto.gasto == 'Playa' %}local_parking{% elif gasto.gasto == 'Peaje' %}toll{% elif gasto.gasto == 'Hotel' %}hotel{% elif gasto.gasto == 'Viaticos personales' %}wallet{% else %}more_horiz{% endif %}</span></span>
+  <span class="vd-gasto__name">{{ gasto.gasto }}<span class="vd-gasto__date">{{ gasto.fecha|date:"d/m/Y" }}</span></span>
+  <span class="vd-gasto__amt">-${{ gasto.monto|intcomma }}</span>
+  <span class="vd-gasto__flecha material-symbols-outlined" aria-hidden="true">chevron_right</span>
+</button>
+{% empty %}
+{% if vacio %}<div class="vd-gastos__empty">{{ vacio }}</div>{% endif %}
+{% endfor %}

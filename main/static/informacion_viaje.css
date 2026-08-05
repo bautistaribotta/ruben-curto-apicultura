@@ -354,6 +354,81 @@ html {
   color: var(--text-subtle);
 }
 
+/* ------------------------------------------------------------------
+   Fila de gasto que se puede tocar para editarla.
+
+   La lista es angosta y con scroll, asi que la fila entera es el control:
+   dos iconos por fila le sacarian peso al monto, que es lo que el ojo
+   viene a buscar. La flecha aparece al pasar por encima y en foco de
+   teclado; el lugar que ocupa esta reservado siempre para que la fila no
+   se mueva al aparecer.
+   ------------------------------------------------------------------ */
+.vd-gasto--editable {
+  width: 100%;
+  background: none;
+  border: none;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--dur-normal) var(--ease-standard);
+}
+
+.vd-gasto--editable:hover {
+  background-color: var(--surface-hover);
+}
+
+.vd-gasto--editable:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: -2px;
+}
+
+.vd-gasto__flecha {
+  flex: none;
+  font-size: 1.1rem;
+  color: var(--text-subtle);
+  opacity: 0;
+  transition: opacity var(--dur-normal) var(--ease-standard);
+}
+
+.vd-gasto--editable:hover .vd-gasto__flecha,
+.vd-gasto--editable:focus-visible .vd-gasto__flecha {
+  opacity: 1;
+}
+
+/* Sin mouse no hay hover: dejo la flecha puesta, si no el gesto queda oculto */
+@media (hover: none) {
+  .vd-gasto__flecha {
+    opacity: 0.55;
+  }
+}
+
+/* Resalte del gasto recien guardado, para no tener que buscarlo en la lista */
+@keyframes vd-gasto-recien {
+  from {
+    background-color: var(--honey-tint-20);
+  }
+
+  to {
+    background-color: transparent;
+  }
+}
+
+.vd-gasto--recien {
+  animation: vd-gasto-recien 1.6s var(--ease-standard);
+}
+
+/* Sin fundido, pero el resalte se ve igual: es informacion, no adorno */
+@media (prefers-reduced-motion: reduce) {
+  .vd-gasto--recien {
+    animation-timing-function: steps(1);
+  }
+
+  .vd-gasto--editable,
+  .vd-gasto__flecha {
+    transition: none;
+  }
+}
+
 .vd-caja__row--total {
   background-color: var(--success-50);
   border-top: 1px solid var(--success-200);
@@ -962,6 +1037,101 @@ html {
 .vd-select:focus {
   border-color: var(--brand);
   box-shadow: var(--ring);
+}
+
+/* ------------------------------------------------------------------
+   Modal de gasto: zona de borrado y confirmacion.
+
+   El hidden lo tengo que forzar porque .acciones-modal es un grid y el
+   display del autor le gana al del navegador.
+   ------------------------------------------------------------------ */
+#panel-gasto [hidden] {
+  display: none;
+}
+
+/* Eliminar queda debajo de la linea, lejos de Guardar: es lo que no se deshace */
+.gasto-borrar {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  justify-content: center;
+}
+
+/* El color, el borde y el hover salen de .op-btn--danger, el mismo boton con el
+   que se elimina un viaje. Aca solo lo estiro para que ocupe lo que ocupan
+   Guardar + Cancelar juntos, separador incluido. */
+.gasto-borrar__btn {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.gasto-borrar__btn:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* Las dos lineas ganan al "#panel-gasto p" generico del modal */
+#panel-gasto .gasto-confirmar__pregunta {
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  color: var(--text-strong);
+  margin-bottom: 0.35rem;
+}
+
+#panel-gasto .gasto-confirmar__nota {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  margin-bottom: 1.5rem;
+}
+
+/* Se mantiene apretado tres segundos, igual que el borrado de un viaje: la
+   barra que se llena de izquierda a derecha es la cuenta regresiva */
+.gasto-confirmar__si {
+  position: relative;
+  overflow: hidden;
+  padding: 0.75rem;
+  background-color: var(--danger-500);
+  color: var(--text-on-inverse);
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: background-color var(--dur-normal) var(--ease-standard);
+}
+
+.gasto-confirmar__si:hover {
+  background-color: var(--danger-600);
+}
+
+.gasto-confirmar__si span {
+  position: relative;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.gasto-confirmar__si::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  width: 0;
+  height: 100%;
+  /* Velo pino translucido y no un rojo mas oscuro: asi la barra se sigue
+     viendo cuando el hover ya oscurecio el fondo del boton */
+  background-color: oklch(20.493% 0.0261 168.787 / 0.35);
+  transition: width var(--dur-normal) ease-out;
+}
+
+.gasto-confirmar__si.manteniendo::before {
+  width: 100%;
+  transition: width 3s linear;
 }
 
 /* ============================================================
