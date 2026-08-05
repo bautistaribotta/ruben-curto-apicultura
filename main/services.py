@@ -1226,17 +1226,17 @@ def obtener_viajes_empleado(empleado, tipo="todos", desde=None, hasta=None):
     return filas, conteos
 
 
-def crear_pago_empleado(id_empleado, monto, observaciones="", fecha=None):
-    """Registra un pago a un empleado.
+def _normalizar_datos_pago(monto, observaciones="", fecha=None):
+    """Valida y normaliza los datos crudos de un pago (alta o edicion).
 
     La fecha llega del modal en formato "YYYY-MM-DD" y puede ser de hoy o de
     cualquier dia anterior, para poder cargar pagos que se hicieron y no se
     anotaron en el momento. Si no viene nada, queda la fecha de hoy. Un pago
     con fecha futura no tiene sentido, asi que se rechaza aca y no solo con el
     max del input, que el navegador puede saltearse.
-    """
-    empleado = get_object_or_404(Empleado, id=id_empleado, activo=True)
 
+    Devuelve (fecha, monto, observaciones) ya listos para guardar.
+    """
     hoy = timezone.localdate()
 
     if fecha in (None, ""):
@@ -1268,12 +1268,43 @@ def crear_pago_empleado(id_empleado, monto, observaciones="", fecha=None):
     if len(observaciones) > 250:
         raise ValueError("La observación no puede superar los 250 caracteres.")
 
+    return fecha, monto, observaciones
+
+
+def crear_pago_empleado(id_empleado, monto, observaciones="", fecha=None):
+    """Registra un pago a un empleado."""
+    empleado = get_object_or_404(Empleado, id=id_empleado, activo=True)
+    fecha, monto, observaciones = _normalizar_datos_pago(monto, observaciones, fecha)
+
     return PagosEmpleados.objects.create(
         empleado=empleado,
         fecha=fecha,
         monto=monto,
         observaciones=observaciones,
     )
+
+
+def editar_pago_empleado(id_pago, id_empleado, monto, observaciones="", fecha=None):
+    """Actualiza un pago cargado a mano.
+
+    Acota la busqueda al empleado del perfil para que un id de otro empleado no
+    permita tocar su pago. La comision de un viaje de cereal no es un
+    PagosEmpleados, asi que nunca llega por aca (no tiene botones de accion).
+    """
+    pago = get_object_or_404(PagosEmpleados, id=id_pago, empleado_id=id_empleado)
+    fecha, monto, observaciones = _normalizar_datos_pago(monto, observaciones, fecha)
+
+    pago.fecha = fecha
+    pago.monto = monto
+    pago.observaciones = observaciones
+    pago.save(update_fields=["fecha", "monto", "observaciones"])
+    return pago
+
+
+def eliminar_pago_empleado(id_pago, id_empleado):
+    """Borra un pago cargado a mano, acotado al empleado del perfil."""
+    pago = get_object_or_404(PagosEmpleados, id=id_pago, empleado_id=id_empleado)
+    pago.delete()
 
 
 # -----------------------------------------------------------------------------

@@ -110,6 +110,8 @@
       <form id="form-pago-empleado" method="POST" autocomplete="off">
         {% csrf_token %}
         <input type="hidden" name="accion" value="pago">
+        {% comment %} Vacio al dar de alta; con el id del pago al editar. {% endcomment %}
+        <input type="hidden" name="pago_id" id="pago-id" value="">
 
         <header class="panel-cabecera">
           <div class="panel-titulo-fila">
@@ -162,7 +164,7 @@
         </main>
 
         <footer class="pie-modal-pago">
-          <button type="submit" class="boton-primario">Registrar pago</button>
+          <button type="submit" class="boton-primario" id="boton-guardar-pago">Registrar pago</button>
           <button type="button" class="boton-secundario" onclick="cerrarModalPagoEmpleado()">Cancelar</button>
         </footer>
       </form>
@@ -230,7 +232,7 @@
       <div id="contenedor-panel-fondo" onclick="cerrarPanelEliminar()"> </div>
       <div id="panel-eliminar">
         <input type="hidden" id="id_eliminar" name="id_eliminar" value="">
-        <input type="hidden" name="accion" value="eliminar">
+        <input type="hidden" id="accion-eliminar" name="accion" value="eliminar">
 
         <button type="button" class="boton-cerrar" id="icono-cerrar-panel-eliminar" onclick="cerrarPanelEliminar()">
           <span class="material-symbols-outlined">close</span>

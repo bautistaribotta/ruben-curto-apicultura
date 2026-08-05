@@ -30,6 +30,7 @@ from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo
                        editar_gasto_viaje, eliminar_gasto_viaje,
                        incluir_asignado,
                        editar_empleado, eliminar_empleado, obtener_datos_empleado, crear_pago_empleado,
+                       editar_pago_empleado, eliminar_pago_empleado,
                        obtener_gastos_empleado, obtener_viajes_empleado, TIPOS_VIAJE_EMPLEADO,
                        obtener_pagos_empleado, resolver_granularidad_pagos, resolver_ancla_pagos,
                        rango_periodo_pagos, desplazar_periodo_pagos, etiqueta_periodo_pagos,
@@ -174,10 +175,6 @@ def _contexto_pagos_empleado(request, empleado):
     paginador_pagos = Paginator(filas, 5)
     pagina_pagos = paginador_pagos.get_page(request.GET.get("pagos_page"))
 
-    # Primer dia del periodo que contiene hoy: sirve para el enlace "Hoy" y para
-    # saber si ya lo estamos mirando (y ocultar ese enlace).
-    inicio_actual = resolver_ancla_pagos(None, granularidad)
-
     return {
         "pagos": pagina_pagos,
         "resumen_pagos": resumen,
@@ -187,8 +184,6 @@ def _contexto_pagos_empleado(request, empleado):
         "pagos_label": etiqueta_periodo_pagos(inicio, hasta, granularidad),
         "pagos_ancla_anterior": desplazar_periodo_pagos(inicio, granularidad, -1),
         "pagos_ancla_siguiente": desplazar_periodo_pagos(inicio, granularidad, 1),
-        "pagos_ancla_hoy": inicio_actual,
-        "pagos_es_periodo_actual": inicio == inicio_actual,
     }
 
 
@@ -298,13 +293,31 @@ def informacion_empleado(request, id_empleado):
                 return redirect("empleados")
 
             if accion == "pago":
-                crear_pago_empleado(
-                    empleado.id,
-                    request.POST.get("monto"),
-                    request.POST.get("observaciones", ""),
-                    request.POST.get("fecha"),
-                )
-                messages.success(request, "Pago registrado correctamente")
+                # El mismo modal da de alta y edita: si viene pago_id es una
+                # edicion, si no un alta.
+                pago_id = request.POST.get("pago_id")
+                if pago_id:
+                    editar_pago_empleado(
+                        pago_id,
+                        empleado.id,
+                        request.POST.get("monto"),
+                        request.POST.get("observaciones", ""),
+                        request.POST.get("fecha"),
+                    )
+                    messages.success(request, "Pago actualizado correctamente")
+                else:
+                    crear_pago_empleado(
+                        empleado.id,
+                        request.POST.get("monto"),
+                        request.POST.get("observaciones", ""),
+                        request.POST.get("fecha"),
+                    )
+                    messages.success(request, "Pago registrado correctamente")
+                return redirect("informacion_empleado", id_empleado=empleado.id)
+
+            if accion == "eliminar_pago":
+                eliminar_pago_empleado(request.POST.get("id_eliminar"), empleado.id)
+                messages.success(request, "Pago eliminado correctamente")
                 return redirect("informacion_empleado", id_empleado=empleado.id)
 
             editar_empleado(

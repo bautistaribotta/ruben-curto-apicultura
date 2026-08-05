@@ -114,6 +114,10 @@ const prepararPanelEditarEmpleado = (id) => {
 
 const prepararPanelEliminarEmpleado = (id, nombre) => {
   document.getElementById('id_eliminar').value = id;
+  // El perfil comparte este panel con el borrado de pagos, que cambia la accion;
+  // la devuelvo a 'eliminar' para no borrar un pago en vez del empleado.
+  const campoAccion = document.getElementById('accion-eliminar');
+  if (campoAccion) campoAccion.value = 'eliminar';
   document.getElementById('texto-confirmacion-eliminar').innerText = `¿Está seguro que quiere eliminar al empleado ${nombre}?`;
   if (typeof abrirPanelEliminar === 'function') abrirPanelEliminar();
 };
