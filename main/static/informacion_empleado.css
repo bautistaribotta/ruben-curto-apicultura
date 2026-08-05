@@ -187,6 +187,12 @@
   text-align: left;
 }
 
+/* Gana al text-align:left de arriba (misma cantidad de clases), asi el
+   encabezado de Monto y Acciones queda alineado con su contenido a la derecha. */
+.tabla-pagos th.texto-derecha {
+  text-align: right;
+}
+
 .tabla-pagos td {
   padding: 0.85rem 1.25rem;
   color: var(--text-body);
@@ -225,6 +231,17 @@
   font-weight: var(--weight-bold);
   color: var(--text-strong);
   font-variant-numeric: tabular-nums;
+}
+
+/* Columna angosta pegada a la derecha: solo la ocupan los dos botones. El
+   padding izquierdo va reducido para que los botones no queden tan lejos del
+   monto (que es corto y cae a la derecha de su celda). Los selectores repiten
+   el elemento (th/td) para ganarle en especificidad al padding de .tabla-pagos. */
+.tabla-pagos th.celda-acciones-th,
+.tabla-pagos td.celda-acciones-pago {
+  width: 1%;
+  white-space: nowrap;
+  padding-left: 0.35rem;
 }
 
 .panel-pagos .paginacion {
@@ -278,36 +295,6 @@
   font-weight: var(--weight-semibold);
   color: var(--text-strong);
   font-variant-numeric: tabular-nums;
-}
-
-.pagos-nav__hoy {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  margin-left: 0.35rem;
-  padding: 0.35rem 0.6rem;
-  border-radius: var(--radius-pill);
-  font-size: var(--text-xs);
-  font-weight: var(--weight-semibold);
-  color: var(--text-muted);
-  text-decoration: none;
-  cursor: pointer;
-  transition: color var(--dur-normal) var(--ease-standard),
-              background-color var(--dur-normal) var(--ease-standard);
-}
-
-.pagos-nav__hoy:hover {
-  color: var(--text-strong);
-  background-color: var(--surface-hover);
-}
-
-.pagos-nav__hoy .material-symbols-outlined {
-  font-size: 1rem;
-}
-
-/* Sigue ocupando lugar para que la barra no se mueva al aparecer y desaparecer */
-.pagos-nav__hoy.es-oculto {
-  visibility: hidden;
 }
 
 /* --- Selector Semanal / Mensual --- */

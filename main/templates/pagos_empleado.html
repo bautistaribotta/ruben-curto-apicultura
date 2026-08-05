@@ -37,14 +37,6 @@
        aria-label="Período siguiente">
       <span class="material-symbols-outlined">chevron_right</span>
     </a>
-
-    <a class="pagos-nav__hoy{% if pagos_es_periodo_actual %} es-oculto{% endif %}"
-       data-pagos-ancla="{{ pagos_ancla_hoy|date:'Y-m-d' }}"
-       href="?pagos_gran={{ pagos_granularidad }}&amp;pagos_ancla={{ pagos_ancla_hoy|date:'Y-m-d' }}#seccion-pagos"
-       {% if pagos_es_periodo_actual %}aria-hidden="true" tabindex="-1"{% endif %}>
-      <span class="material-symbols-outlined">undo</span>
-      Hoy
-    </a>
   </div>
 </div>
 
@@ -56,6 +48,7 @@
           <th>Fecha</th>
           <th>Detalle</th>
           <th class="texto-derecha">Monto</th>
+          <th class="texto-derecha celda-acciones-th">Acciones</th>
         </tr>
       </thead>
       <tbody>
@@ -74,17 +67,34 @@
             <td class="texto-derecha celda-monto-pago celda-monto-pago--comision">
               ${{ pago.monto|floatformat:"0"|intcomma }}
             </td>
+            {% comment %} La comision sale de un viaje: no se edita ni se borra desde aca. {% endcomment %}
+            <td class="celda-acciones-pago"></td>
           </tr>
           {% else %}
           <tr>
             <td class="celda-fecha-pago">{{ pago.fecha|date:"d/m/Y" }}</td>
             <td class="celda-observacion">{{ pago.observaciones|default:"Sin observación" }}</td>
             <td class="texto-derecha celda-monto-pago">${{ pago.monto|floatformat:"0"|intcomma }}</td>
+            <td class="celda-acciones-pago">
+              <div class="acciones-tabla">
+                <button type="button" class="boton-icono editar pago-editar" title="Editar pago"
+                        data-id="{{ pago.id }}"
+                        data-monto="{{ pago.monto }}"
+                        data-fecha="{{ pago.fecha|date:'Y-m-d' }}"
+                        data-observaciones="{{ pago.observaciones }}">
+                  <span class="material-symbols-outlined">edit</span>
+                </button>
+                <button type="button" class="boton-icono eliminar pago-eliminar" title="Eliminar pago"
+                        data-id="{{ pago.id }}">
+                  <span class="material-symbols-outlined">delete</span>
+                </button>
+              </div>
+            </td>
           </tr>
           {% endif %}
         {% empty %}
         <tr class="fila-vacia">
-          <td colspan="3" class="celda-vacia">
+          <td colspan="4" class="celda-vacia">
             <span class="material-symbols-outlined">payments</span>
             No hay pagos ni comisiones en este período.
           </td>

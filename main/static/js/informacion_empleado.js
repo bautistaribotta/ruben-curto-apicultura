@@ -171,9 +171,9 @@ document.addEventListener("click", (evento) => {
         return;
     }
 
-    // Flechas de periodo y el atajo "Hoy"
-    const paso = evento.target.closest(".pagos-nav__paso, .pagos-nav__hoy");
-    if (paso && !paso.classList.contains("es-oculto")) {
+    // Flechas de periodo (anterior / siguiente)
+    const paso = evento.target.closest(".pagos-nav__paso");
+    if (paso) {
         evento.preventDefault();
         cargarPagos(paso.dataset.pagosGran, paso.dataset.pagosAncla);
         return;
@@ -187,6 +187,20 @@ document.addEventListener("click", (evento) => {
         return;
     }
 
+    // Editar un pago: abre el mismo modal del alta pero con los datos cargados
+    const btnEditarPago = evento.target.closest(".pago-editar");
+    if (btnEditarPago) {
+        abrirModalPagoEdicion(btnEditarPago.dataset);
+        return;
+    }
+
+    // Eliminar un pago: usa el panel de confirmacion (el mismo del empleado)
+    const btnEliminarPago = evento.target.closest(".pago-eliminar");
+    if (btnEliminarPago) {
+        prepararEliminarPago(btnEliminarPago.dataset.id);
+        return;
+    }
+
     // Cada comision abre el detalle del viaje de cereal
     const filaComision = evento.target.closest(".fila-pago--comision");
     if (filaComision && filaComision.dataset.url) {
@@ -194,18 +208,64 @@ document.addEventListener("click", (evento) => {
     }
 });
 
-// ---------- MODAL DE PAGO ----------
+// ---------- MODAL DE PAGO (ALTA Y EDICION) ----------
+// Un solo modal para las dos cosas: el boton "Añadir pago" lo abre vacio y el
+// lapiz de cada fila lo abre con los datos. El campo oculto pago-id es lo que
+// distingue el alta (vacio) de la edicion en el servidor.
 
-function abrirModalPagoEmpleado() {
+function mostrarModalPago() {
     const contenedor = document.getElementById("contenedor-modal-pago");
     if (!contenedor) return;
 
     contenedor.classList.add("abierto");
     document.body.classList.add("con-modal-abierto");
 
-    // El monto es el dato que siempre hay que cargar (la fecha ya viene con la
-    // de hoy), asi que el foco arranca ahi
+    // El proximo modal arranca sin el error del intento anterior
+    montoTocado = false;
+    document.querySelector(".campo-monto")?.classList.remove("con-error");
+
+    // El monto es el dato que siempre hay que cargar, asi que el foco arranca ahi
     document.getElementById("monto-pago").focus();
+}
+
+function abrirModalPagoEmpleado() {
+    const form = document.getElementById("form-pago-empleado");
+    if (!form) return;
+
+    form.reset();
+    document.getElementById("pago-id").value = "";
+    document.getElementById("titulo-modal-pago").textContent = "Añadir pago";
+    document.getElementById("boton-guardar-pago").textContent = "Registrar pago";
+    actualizarContadorObservacion();
+    mostrarModalPago();
+}
+
+function abrirModalPagoEdicion(datos) {
+    const form = document.getElementById("form-pago-empleado");
+    if (!form) return;
+
+    form.reset();
+    document.getElementById("pago-id").value = datos.id;
+    document.getElementById("titulo-modal-pago").textContent = "Editar pago";
+    document.getElementById("boton-guardar-pago").textContent = "Guardar cambios";
+
+    // ponerValorMiles (formato_miles.js) escribe el monto del servidor ya con el
+    // formato es-AR que espera el pattern del input
+    ponerValorMiles(document.getElementById("monto-pago"), datos.monto);
+    document.getElementById("fecha-pago").value = datos.fecha;
+    document.getElementById("observaciones-pago").value = datos.observaciones || "";
+    actualizarContadorObservacion();
+    mostrarModalPago();
+}
+
+// Reusa el panel de confirmacion del empleado, pero cambiando la accion del POST
+// para que la vista borre el pago y no al empleado.
+function prepararEliminarPago(id) {
+    document.getElementById("id_eliminar").value = id;
+    document.getElementById("accion-eliminar").value = "eliminar_pago";
+    document.getElementById("texto-confirmacion-eliminar").innerText =
+        "¿Está seguro que quiere eliminar este pago?";
+    if (typeof abrirPanelEliminar === "function") abrirPanelEliminar();
 }
 
 function cerrarModalPagoEmpleado() {
