@@ -1,0 +1,115 @@
+{% load humanize %}
+{% comment %}
+  Bloque de pagos del perfil de empleado. Se renderiza en la pagina y tambien se
+  devuelve suelto ante frag=pagos, para refrescarlo por AJAX al cambiar el
+  periodo (semana/mes) o navegar con las flechas.
+
+  Junta en una sola tabla los pagos reales y las comisiones por viajes de cereal.
+  Las comisiones (fila-pago--comision) se distinguen a simple vista: llevan el
+  porcentaje del chofer ademas del monto en pesos.
+
+  Los enlaces de navegacion traen los datos en data-* y el JS arma la URL
+  completa (preservando el resto de los filtros). El href es el respaldo sin JS.
+{% endcomment %}
+<div class="pagos-barra">
+  <div class="pagos-nav">
+    <a class="pagos-nav__paso" data-pagos-ancla="{{ pagos_ancla_anterior|date:'Y-m-d' }}"
+       href="?pagos_gran={{ pagos_granularidad }}&amp;pagos_ancla={{ pagos_ancla_anterior|date:'Y-m-d' }}#seccion-pagos"
+       aria-label="Período anterior">
+      <span class="material-symbols-outlined">chevron_left</span>
+    </a>
+
+    <span class="pagos-nav__label">{{ pagos_label }}</span>
+
+    <a class="pagos-nav__paso" data-pagos-ancla="{{ pagos_ancla_siguiente|date:'Y-m-d' }}"
+       href="?pagos_gran={{ pagos_granularidad }}&amp;pagos_ancla={{ pagos_ancla_siguiente|date:'Y-m-d' }}#seccion-pagos"
+       aria-label="Período siguiente">
+      <span class="material-symbols-outlined">chevron_right</span>
+    </a>
+
+    <a class="pagos-nav__hoy{% if pagos_es_periodo_actual %} es-oculto{% endif %}"
+       data-pagos-ancla="{{ pagos_ancla_hoy|date:'Y-m-d' }}"
+       href="?pagos_gran={{ pagos_granularidad }}&amp;pagos_ancla={{ pagos_ancla_hoy|date:'Y-m-d' }}#seccion-pagos"
+       {% if pagos_es_periodo_actual %}aria-hidden="true" tabindex="-1"{% endif %}>
+      <span class="material-symbols-outlined">undo</span>
+      Hoy
+    </a>
+  </div>
+
+  <div class="pagos-seg" role="tablist" aria-label="Granularidad del período">
+    <a class="pagos-seg__opt{% if pagos_granularidad == 'semana' %} es-activo{% endif %}"
+       role="tab" aria-selected="{% if pagos_granularidad == 'semana' %}true{% else %}false{% endif %}"
+       data-pagos-gran="semana"
+       href="?pagos_gran=semana&amp;pagos_ancla={{ pagos_inicio|date:'Y-m-d' }}#seccion-pagos">Semanal</a>
+    <a class="pagos-seg__opt{% if pagos_granularidad == 'mes' %} es-activo{% endif %}"
+       role="tab" aria-selected="{% if pagos_granularidad == 'mes' %}true{% else %}false{% endif %}"
+       data-pagos-gran="mes"
+       href="?pagos_gran=mes&amp;pagos_ancla={{ pagos_inicio|date:'Y-m-d' }}#seccion-pagos">Mensual</a>
+  </div>
+</div>
+
+<div class="panel-pagos">
+  <div class="tabla-pagos-contenedor">
+    <table class="tabla-pagos">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Detalle</th>
+          <th class="texto-derecha">Monto</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for pago in pagos %}
+          {% if pago.es_comision %}
+          <tr class="fila-pago--comision" data-url="{% url 'informacion_viaje_cereal' pago.viaje_id %}">
+            <td class="celda-fecha-pago">{{ pago.fecha|date:"d/m/Y" }}</td>
+            <td class="celda-observacion">
+              <span class="etiqueta-comision">
+                <span class="material-symbols-outlined">agriculture</span>
+                Comisión
+              </span>
+              <span class="comision-detalle">Viaje de cereal #{{ pago.viaje_id }}</span>
+              <span class="comision-porcentaje">{{ pago.porcentaje }}%</span>
+            </td>
+            <td class="texto-derecha celda-monto-pago celda-monto-pago--comision">
+              ${{ pago.monto|floatformat:"0"|intcomma }}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td class="celda-fecha-pago">{{ pago.fecha|date:"d/m/Y" }}</td>
+            <td class="celda-observacion">{{ pago.observaciones|default:"Sin observación" }}</td>
+            <td class="texto-derecha celda-monto-pago">${{ pago.monto|floatformat:"0"|intcomma }}</td>
+          </tr>
+          {% endif %}
+        {% empty %}
+        <tr class="fila-vacia">
+          <td colspan="3" class="celda-vacia">
+            <span class="material-symbols-outlined">payments</span>
+            No hay pagos ni comisiones en este período.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if resumen_pagos.cantidad %}
+  <div class="pagos-resumen">
+    {% if resumen_pagos.total_comisiones %}
+    <span class="pagos-resumen__item">
+      <span class="pagos-resumen__rotulo">Pagos</span>
+      <span class="pagos-resumen__valor">${{ resumen_pagos.total_pagos|floatformat:"0"|intcomma }}</span>
+    </span>
+    <span class="pagos-resumen__item">
+      <span class="pagos-resumen__rotulo">Comisiones</span>
+      <span class="pagos-resumen__valor">${{ resumen_pagos.total_comisiones|floatformat:"0"|intcomma }}</span>
+    </span>
+    {% endif %}
+    <span class="pagos-resumen__item pagos-resumen__item--total">
+      <span class="pagos-resumen__rotulo">Total del período</span>
+      <span class="pagos-resumen__valor">${{ resumen_pagos.total|floatformat:"0"|intcomma }}</span>
+    </span>
+  </div>
+  {% endif %}
+</div>

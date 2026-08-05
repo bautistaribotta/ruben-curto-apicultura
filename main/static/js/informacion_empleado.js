@@ -120,6 +120,65 @@ document.addEventListener("click", (evento) => {
 repartirCintaGastos();
 guardarTitularGastos();
 
+// ---------- PAGOS (FILTRO SEMANA / MES + FLECHAS) ----------
+// El bloque de pagos (#seccion-pagos) se refresca solo, con su propio periodo,
+// sin tocar el resto de la pagina. Los enlaces traen los datos en data-* y aca
+// se arma la URL completa preservando el resto de los filtros (desde/hasta/tipo).
+
+const contenedorPagos = document.getElementById("seccion-pagos");
+
+function cargarPagos(gran, ancla) {
+    if (!contenedorPagos) return;
+
+    // Parto de la URL actual para no pisar los filtros de gastos/viajes
+    const url = new URL(window.location.href);
+    if (gran) url.searchParams.set("pagos_gran", gran);
+    if (ancla) url.searchParams.set("pagos_ancla", ancla);
+
+    // frag=pagos le pide a la vista solo este bloque; no queda en la barra de
+    // direcciones para que la URL siga sirviendo para recargar la pagina entera.
+    const urlFetch = new URL(url);
+    urlFetch.searchParams.set("frag", "pagos");
+
+    contenedorPagos.setAttribute("aria-busy", "true");
+
+    fetch(urlFetch, { headers: { "X-Requested-With": "XMLHttpRequest" } })
+        .then((respuesta) => respuesta.text())
+        .then((html) => {
+            contenedorPagos.innerHTML = html;
+            contenedorPagos.removeAttribute("aria-busy");
+            window.history.pushState({}, "", url);
+        })
+        .catch((error) => {
+            contenedorPagos.removeAttribute("aria-busy");
+            console.error("Error al cargar los pagos:", error);
+        });
+}
+
+document.addEventListener("click", (evento) => {
+    // Cambio de granularidad (Semanal / Mensual)
+    const seg = evento.target.closest(".pagos-seg__opt");
+    if (seg && !seg.classList.contains("es-activo")) {
+        evento.preventDefault();
+        cargarPagos(seg.dataset.pagosGran, seg.dataset.pagosAncla);
+        return;
+    }
+
+    // Flechas de periodo y el atajo "Hoy"
+    const paso = evento.target.closest(".pagos-nav__paso, .pagos-nav__hoy");
+    if (paso && !paso.classList.contains("es-oculto")) {
+        evento.preventDefault();
+        cargarPagos(paso.dataset.pagosGran, paso.dataset.pagosAncla);
+        return;
+    }
+
+    // Cada comision abre el detalle del viaje de cereal
+    const filaComision = evento.target.closest(".fila-pago--comision");
+    if (filaComision && filaComision.dataset.url) {
+        window.location.href = filaComision.dataset.url;
+    }
+});
+
 // ---------- MODAL DE PAGO ----------
 
 function abrirModalPagoEmpleado() {

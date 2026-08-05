@@ -1,5 +1,5 @@
 import re
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta
 import requests
 from django.utils import timezone
 from decimal import Decimal, InvalidOperation
@@ -1274,6 +1274,149 @@ def crear_pago_empleado(id_empleado, monto, observaciones="", fecha=None):
         monto=monto,
         observaciones=observaciones,
     )
+
+
+# -----------------------------------------------------------------------------
+# PERIODO DE PAGOS DEL EMPLEADO (semana a semana / mes a mes)
+#
+# El perfil mira los pagos de a un periodo por vez, con dos granularidades:
+# "semana" (lunes a domingo) y "mes" (dia 1 a fin de mes), navegables con flechas,
+# igual que el mes a mes de alquileres. El periodo se identifica siempre por su
+# primer dia (el lunes de la semana o el 1 del mes), asi entra en un DateField,
+# se ordena y se compara sin ambiguedad y no importa que dia del periodo lo
+# escriba el usuario.
+# -----------------------------------------------------------------------------
+
+GRANULARIDADES_PAGOS = ("semana", "mes")
+
+
+def resolver_granularidad_pagos(valor):
+    """Granularidad valida a partir del parametro de la URL; ante cualquier cosa
+    rara cae en 'semana', que es como arranca la pantalla."""
+    return valor if valor in GRANULARIDADES_PAGOS else "semana"
+
+
+def _inicio_periodo_pagos(ancla, granularidad):
+    """Primer dia del periodo que contiene a 'ancla' segun la granularidad.
+
+    - semana: retrocede hasta el lunes (weekday 0)
+    - mes:    el dia 1 del mes
+    """
+    if granularidad == "mes":
+        return ancla.replace(day=1)
+    return ancla - timedelta(days=ancla.weekday())
+
+
+def resolver_ancla_pagos(valor, granularidad):
+    """Primer dia del periodo a mostrar, a partir del parametro 'pagos_ancla'.
+
+    No explota si el valor viene vacio, mal escrito o pegado a mano: cae en el
+    periodo que contiene el dia de hoy, que es lo que el usuario espera al entrar.
+    """
+    try:
+        ancla = datetime.strptime(str(valor).strip(), "%Y-%m-%d").date()
+    except (ValueError, TypeError, AttributeError):
+        ancla = timezone.localdate()
+    return _inicio_periodo_pagos(ancla, granularidad)
+
+
+def rango_periodo_pagos(inicio, granularidad):
+    """(desde, hasta) inclusivos del periodo que empieza en 'inicio'."""
+    if granularidad == "mes":
+        return inicio, mes_desplazado(inicio, 1) - timedelta(days=1)
+    return inicio, inicio + timedelta(days=6)
+
+
+def desplazar_periodo_pagos(inicio, granularidad, paso):
+    """Corre el periodo 'paso' unidades hacia adelante (o atras). Sirve para las
+    flechas: una semana son 7 dias; un mes lo resuelve mes_desplazado, que ya
+    contempla el cambio de año."""
+    if granularidad == "mes":
+        return mes_desplazado(inicio, paso)
+    return inicio + timedelta(days=7 * paso)
+
+
+def etiqueta_periodo_pagos(inicio, fin, granularidad):
+    """Texto legible del periodo para la barra de navegacion.
+
+    - mes:    "Agosto 2026"
+    - semana: "1 al 7 de Ago 2026" (o cruzando meses: "28 Jul al 3 Ago 2026")
+    """
+    from django.utils.formats import date_format
+
+    if granularidad == "mes":
+        return date_format(inicio, "F Y").capitalize()
+
+    if inicio.month == fin.month:
+        return f"{inicio.day} al {date_format(fin, 'j \\d\\e M Y')}"
+    return f"{date_format(inicio, 'j M')} al {date_format(fin, 'j M Y')}"
+
+
+def obtener_pagos_empleado(empleado, desde, hasta):
+    """Movimientos a favor del empleado dentro de un periodo, unificados.
+
+    Junta dos fuentes en una sola lista ordenada por fecha:
+
+    - Pagos reales cargados a mano (PagosEmpleados), ubicados por su fecha.
+    - Comisiones por viajes de cereal: el chofer se lleva un porcentaje del viaje
+      y esa parte se muestra como un pago diferenciado. Solo entran los viajes ya
+      cobrados al cliente (pagado=True), ubicados por la fecha del cobro
+      (fecha_pago), que es cuando la comision se hace efectiva.
+
+    Devuelve (filas, resumen). Cada fila trae 'es_comision' para que la plantilla
+    la distinga; el resumen separa el total de pagos del de comisiones.
+    """
+    filas = []
+    total_pagos = Decimal("0")
+    total_comisiones = Decimal("0")
+
+    pagos = PagosEmpleados.objects.filter(empleado=empleado, fecha__gte=desde, fecha__lte=hasta)
+    for pago in pagos:
+        filas.append({
+            "es_comision": False,
+            "fecha": pago.fecha,
+            "observaciones": pago.observaciones,
+            "monto": pago.monto,
+            "id": pago.id,
+        })
+        total_pagos += pago.monto
+
+    # fecha_pago es un DateTimeField, asi que acoto por los limites del periodo
+    # como momentos (00:00 del primer dia a 23:59:59 del ultimo) en la zona local.
+    # No uso el lookup __date porque en este MySQL las tablas de zonas horarias no
+    # estan cargadas y CONVERT_TZ devuelve NULL, dejando afuera todas las filas.
+    tz = timezone.get_current_timezone()
+    inicio_dt = timezone.make_aware(datetime.combine(desde, time.min), tz)
+    fin_dt = timezone.make_aware(datetime.combine(hasta, time.max), tz)
+
+    comisiones = (ViajeCereal.objects
+                  .filter(empleado=empleado, activo=True, pagado=True,
+                          porcentaje_empleado__gt=0,
+                          fecha_pago__gte=inicio_dt, fecha_pago__lte=fin_dt)
+                  .prefetch_related("detalle_gastos"))
+    for viaje in comisiones:
+        monto = viaje.pago_empleado
+        filas.append({
+            "es_comision": True,
+            "fecha": timezone.localtime(viaje.fecha_pago).date(),
+            "porcentaje": viaje.porcentaje_empleado,
+            "monto": monto,
+            "viaje_id": viaje.id,
+            "id": 0,
+        })
+        total_comisiones += monto
+
+    # Del mas reciente al mas viejo; el id desempata los pagos del mismo dia. Las
+    # comisiones caen todas con id=0, asi que entre si desempata la fecha nomas.
+    filas.sort(key=lambda f: (f["fecha"], f["id"]), reverse=True)
+
+    resumen = {
+        "total_pagos": total_pagos,
+        "total_comisiones": total_comisiones,
+        "total": total_pagos + total_comisiones,
+        "cantidad": len(filas),
+    }
+    return filas, resumen
 
 
 def crear_vehiculo(nombre, patente):

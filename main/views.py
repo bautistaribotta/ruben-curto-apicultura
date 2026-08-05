@@ -17,7 +17,7 @@ from django.utils.formats import date_format
 from django.contrib.humanize.templatetags.humanize import intcomma
 from django.template.defaultfilters import floatformat
 
-from .models import (Cliente, Producto, Operacion, DetalleOperacion, Pago, Cotizaciones, Empleado, PagosEmpleados,
+from .models import (Cliente, Producto, Operacion, DetalleOperacion, Pago, Cotizaciones, Empleado,
                      Vehiculo, Viaje, ViajeCereal, ViajeReparto, Gasto, GastoViajeCereal, GastoViajeReparto,
                      periodo_actual)
 from .pdf_services import Remito, ResumenCuenta
@@ -31,6 +31,8 @@ from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo
                        incluir_asignado,
                        editar_empleado, eliminar_empleado, obtener_datos_empleado, crear_pago_empleado,
                        obtener_gastos_empleado, obtener_viajes_empleado, TIPOS_VIAJE_EMPLEADO,
+                       obtener_pagos_empleado, resolver_granularidad_pagos, resolver_ancla_pagos,
+                       rango_periodo_pagos, desplazar_periodo_pagos, etiqueta_periodo_pagos,
                        editar_vehiculo, eliminar_vehiculo,
                        crear_viaje_cereal, obtener_viajes_cereales, obtener_viajes_cereal_de_cliente,
                        obtener_datos_viaje_cereal,
@@ -152,6 +154,37 @@ def _rango_fechas_empleado(request):
         "fecha_label": f"Año {año}",
     }
     return desde, hasta, ctx
+
+
+def _contexto_pagos_empleado(request, empleado):
+    """Arma el bloque de pagos del perfil para el periodo pedido en la URL.
+
+    La granularidad ('semana' o 'mes') y el periodo (su primer dia, en
+    'pagos_ancla') viajan por la URL, asi el bloque es enlazable y sobrevive al
+    POST de un pago nuevo. El periodo se identifica siempre por su primer dia.
+    """
+    granularidad = resolver_granularidad_pagos(request.GET.get("pagos_gran"))
+    inicio = resolver_ancla_pagos(request.GET.get("pagos_ancla"), granularidad)
+    desde, hasta = rango_periodo_pagos(inicio, granularidad)
+
+    filas, resumen = obtener_pagos_empleado(empleado, desde, hasta)
+
+    # Primer dia del periodo que contiene hoy: sirve para el enlace "Hoy" y para
+    # saber si ya lo estamos mirando (y ocultar ese enlace).
+    inicio_actual = resolver_ancla_pagos(None, granularidad)
+
+    return {
+        "pagos": filas,
+        "resumen_pagos": resumen,
+        "pagos_granularidad": granularidad,
+        "pagos_inicio": inicio,
+        "pagos_fin": hasta,
+        "pagos_label": etiqueta_periodo_pagos(inicio, hasta, granularidad),
+        "pagos_ancla_anterior": desplazar_periodo_pagos(inicio, granularidad, -1),
+        "pagos_ancla_siguiente": desplazar_periodo_pagos(inicio, granularidad, 1),
+        "pagos_ancla_hoy": inicio_actual,
+        "pagos_es_periodo_actual": inicio == inicio_actual,
+    }
 
 
 def login(request):
@@ -313,6 +346,16 @@ def informacion_empleado(request, id_empleado):
         "activa": tipo == clave,
     } for clave, config in TIPOS_VIAJE_EMPLEADO.items()]
 
+    es_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
+
+    # El bloque de pagos se refresca solo con su propio filtro (semana/mes +
+    # flechas), asi que ante frag=pagos devuelvo unicamente ese pedazo.
+    if es_ajax and request.GET.get("frag") == "pagos":
+        return render(request, "pagos_empleado.html", {
+            "empleado": empleado,
+            **_contexto_pagos_empleado(request, empleado),
+        })
+
     contexto = {
         "empleado": empleado,
         "gastos": gastos,
@@ -325,15 +368,11 @@ def informacion_empleado(request, id_empleado):
 
     # Las pestañas de tipo, el filtro de fechas y la paginacion de viajes van por
     # AJAX: devuelvo solo el bloque de gastos + viajes, que es lo que depende de
-    # esos filtros. Los pagos no dependen del rango, asi que quedan afuera.
-    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+    # esos filtros. Los pagos tienen su propio filtro, asi que quedan afuera.
+    if es_ajax:
         return render(request, "secciones_empleado.html", contexto)
 
-    # Pagos del empleado, del mas reciente al mas viejo. El id desempata los que
-    # caen el mismo dia, porque fecha es DateField y no guarda la hora.
-    pagos = PagosEmpleados.objects.filter(empleado=empleado).order_by("-fecha", "-id")
-    paginador_pagos = Paginator(pagos, 8)
-    contexto["pagos"] = paginador_pagos.get_page(request.GET.get("page_pagos"))
+    contexto.update(_contexto_pagos_empleado(request, empleado))
 
     return render(request, "informacion_empleado.html", contexto)
 

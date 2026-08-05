@@ -67,66 +67,19 @@
       </div>
     </div>
 
-    <!-- Pagos al empleado. Datos reales del modelo PagosEmpleados. -->
-    <section class="emp-seccion" id="seccion-pagos">
+    {% comment %}
+      Pagos al empleado. Junta los pagos reales (PagosEmpleados) con las comisiones
+      por viajes de cereal. Todo lo que depende del periodo (semana/mes + flechas)
+      vive en pagos_empleado.html, que informacion_empleado.js reemplaza por AJAX.
+      El contenedor #seccion-pagos queda fijo para no perder los listeners.
+    {% endcomment %}
+    <section class="emp-seccion">
       <div class="seccion-info-header">
         <h4><span class="material-symbols-outlined">payments</span> Pagos</h4>
       </div>
 
-      <div class="panel-pagos">
-        <div class="tabla-pagos-contenedor">
-          <table class="tabla-pagos">
-            <thead>
-              <tr>
-                <th>Fecha</th>
-                <th>Observación</th>
-                <th class="texto-derecha">Monto</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for pago in pagos %}
-              <tr>
-                <td class="celda-fecha-pago">{{ pago.fecha|date:"d/m/Y" }}</td>
-                <td class="celda-observacion">{{ pago.observaciones|default:"Sin observación" }}</td>
-                <td class="texto-derecha celda-monto-pago">${{ pago.monto|floatformat:"0"|intcomma }}</td>
-              </tr>
-              {% empty %}
-              <tr class="fila-vacia">
-                <td colspan="3" class="celda-vacia">
-                  <span class="material-symbols-outlined">payments</span>
-                  Todavía no hay pagos registrados para este empleado.
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-
-        {% if pagos.paginator.num_pages > 1 %}
-        <div class="paginacion">
-          <div class="paginacion-info">
-            Mostrando <span>{{ pagos.start_index }}-{{ pagos.end_index }}</span>
-            de <span>{{ pagos.paginator.count }}</span> pagos
-          </div>
-          <div class="paginacion-botones">
-            {% if pagos.has_previous %}
-              <a href="?page_pagos={{ pagos.previous_page_number }}#seccion-pagos">
-                <button class="boton-paginacion">Anterior</button>
-              </a>
-            {% else %}
-              <button class="boton-paginacion" disabled>Anterior</button>
-            {% endif %}
-
-            {% if pagos.has_next %}
-              <a href="?page_pagos={{ pagos.next_page_number }}#seccion-pagos">
-                <button class="boton-paginacion">Siguiente</button>
-              </a>
-            {% else %}
-              <button class="boton-paginacion" disabled>Siguiente</button>
-            {% endif %}
-          </div>
-        </div>
-        {% endif %}
+      <div id="seccion-pagos">
+        {% include 'pagos_empleado.html' %}
       </div>
     </section>
 
