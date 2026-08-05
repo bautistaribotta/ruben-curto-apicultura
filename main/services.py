@@ -1487,21 +1487,55 @@ def eliminar_viaje(id_viaje):
     return viaje
 
 
-def crear_gasto(id_viaje, tipo_gasto, monto):
-    viaje = get_object_or_404(Viaje, id=id_viaje)
+# --- Gastos de viaje (miel/cera, cereal y reparto) ---
+#
+# Los tres modelos de gasto heredan de GastoBase, asi que las reglas son las
+# mismas y viven una sola vez aca. Lo unico que cambia es la tabla, que entra
+# por parametro.
 
-    # Validamos que el tipo de gasto sea correcto
-    tipos_validos = dict(Gasto.TIPO_GASTOS).keys()
+def _validar_gasto_viaje(modelo, tipo_gasto, monto):
+    """Reglas comunes a los gastos de cualquier viaje. Devuelve los valores limpios."""
+    tipos_validos = dict(modelo._meta.get_field("gasto").choices).keys()
     if tipo_gasto not in tipos_validos:
         raise ValueError(f"El tipo de gasto '{tipo_gasto}' no es válido.")
 
-    # Validamos el monto
     try:
         monto_val = int(monto)
         if monto_val <= 0:
             raise ValueError()
     except (ValueError, TypeError):
         raise ValueError("El monto debe ser un número entero positivo mayor a 0.")
+
+    return tipo_gasto, monto_val
+
+
+def editar_gasto_viaje(modelo, id_gasto, tipo_gasto, monto):
+    """Corrige el tipo y el monto de un gasto ya cargado.
+
+    La fecha no se toca: es auto_now_add, queda la del dia en que se registro.
+    Al guardar, los totales del viaje (caja, subtotal, pago del empleado,
+    ganancia) se recalculan solos, porque son properties derivadas de la suma
+    de gastos.
+    """
+    gasto = get_object_or_404(modelo, id=id_gasto)
+    gasto.gasto, gasto.monto = _validar_gasto_viaje(modelo, tipo_gasto, monto)
+    gasto.save()
+    return gasto
+
+
+def eliminar_gasto_viaje(modelo, id_gasto):
+    """Borrado de verdad y no logico, igual que el gasto de una casa.
+
+    Un gasto mal cargado no es historia y no tiene nada colgando que se pierda
+    al borrarlo, asi que no necesita la baja logica del resto del sistema.
+    """
+    gasto = get_object_or_404(modelo, id=id_gasto)
+    gasto.delete()
+
+
+def crear_gasto(id_viaje, tipo_gasto, monto):
+    viaje = get_object_or_404(Viaje, id=id_viaje)
+    tipo_gasto, monto_val = _validar_gasto_viaje(Gasto, tipo_gasto, monto)
 
     nuevo_gasto = Gasto.objects.create(
         viaje=viaje,
@@ -1807,19 +1841,7 @@ def crear_gasto_viaje_cereal(id_viaje_cereal, tipo_gasto, monto):
     # Cada gasto cargado recalcula automaticamente el subtotal y el pago del empleado, porque
     # esas propiedades del modelo se derivan de la suma de gastos del viaje.
     viaje_cereal = get_object_or_404(ViajeCereal, id=id_viaje_cereal)
-
-    # Validamos que el tipo de gasto sea correcto
-    tipos_validos = dict(GastoViajeCereal._meta.get_field("gasto").choices).keys()
-    if tipo_gasto not in tipos_validos:
-        raise ValueError(f"El tipo de gasto '{tipo_gasto}' no es válido.")
-
-    # Validamos el monto
-    try:
-        monto_val = int(monto)
-        if monto_val <= 0:
-            raise ValueError()
-    except (ValueError, TypeError):
-        raise ValueError("El monto debe ser un número entero positivo mayor a 0.")
+    tipo_gasto, monto_val = _validar_gasto_viaje(GastoViajeCereal, tipo_gasto, monto)
 
     nuevo_gasto = GastoViajeCereal.objects.create(
         viaje_cereal=viaje_cereal,
@@ -2093,19 +2115,7 @@ def crear_gasto_viaje_reparto(id_viaje_reparto, tipo_gasto, monto):
     # Cada gasto cargado recalcula la ganancia, porque la property del modelo se deriva
     # de la suma de gastos del viaje.
     viaje_reparto = get_object_or_404(ViajeReparto, id=id_viaje_reparto)
-
-    # Validamos que el tipo de gasto sea correcto
-    tipos_validos = dict(GastoViajeReparto._meta.get_field("gasto").choices).keys()
-    if tipo_gasto not in tipos_validos:
-        raise ValueError(f"El tipo de gasto '{tipo_gasto}' no es válido.")
-
-    # Validamos el monto
-    try:
-        monto_val = int(monto)
-        if monto_val <= 0:
-            raise ValueError()
-    except (ValueError, TypeError):
-        raise ValueError("El monto debe ser un número entero positivo mayor a 0.")
+    tipo_gasto, monto_val = _validar_gasto_viaje(GastoViajeReparto, tipo_gasto, monto)
 
     nuevo_gasto = GastoViajeReparto.objects.create(
         viaje_reparto=viaje_reparto,

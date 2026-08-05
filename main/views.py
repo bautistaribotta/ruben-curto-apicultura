@@ -18,7 +18,8 @@ from django.contrib.humanize.templatetags.humanize import intcomma
 from django.template.defaultfilters import floatformat
 
 from .models import (Cliente, Producto, Operacion, DetalleOperacion, Pago, Cotizaciones, Empleado, PagosEmpleados,
-                     Vehiculo, Viaje, ViajeCereal, ViajeReparto, periodo_actual)
+                     Vehiculo, Viaje, ViajeCereal, ViajeReparto, Gasto, GastoViajeCereal, GastoViajeReparto,
+                     periodo_actual)
 from .pdf_services import Remito, ResumenCuenta
 from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo_cliente, editar_cliente,
                        eliminar_cliente, buscar_clientes, get_cotizacion_dolar_oficial, get_cotizaciones, get_total_kilos_granel, get_articulos_granel, actualizar_cotizacion, obtener_datos_cliente,
@@ -26,6 +27,7 @@ from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo
                        obtener_movimientos_cuenta_corriente,
                        obtener_listado_deudores, _iniciales, filtro_nombre_apellido, filtro_tokens, crear_empleado, crear_vehiculo, crear_viaje, obtener_empleados_activos,
                        obtener_vehiculos_activos, obtener_viajes, obtener_datos_viaje, editar_viaje, eliminar_viaje, crear_gasto,
+                       editar_gasto_viaje, eliminar_gasto_viaje,
                        incluir_asignado,
                        editar_empleado, eliminar_empleado, obtener_datos_empleado, crear_pago_empleado,
                        obtener_gastos_empleado, obtener_viajes_empleado, TIPOS_VIAJE_EMPLEADO,
@@ -58,6 +60,22 @@ def _pagado_del_formulario(request):
         return None
     # Un checkbox sin marcar directamente no viaja en el POST: la ausencia es "no pagado"
     return request.POST.get("pagado") is not None
+
+
+def _url_con_gasto(url, id_gasto):
+    """Marca en la vuelta cual fue el gasto que se acaba de tocar.
+
+    Despues del POST la pagina se recarga entera y la lista de gastos vuelve al
+    principio del scroll: sin esta marca el usuario ve un cartel verde pero no
+    ve que cambio. Con el id en la URL, el front busca esa fila, la trae a la
+    vista y la resalta un segundo.
+
+    Al eliminar no hay fila que marcar, asi que la URL vuelve limpia.
+    """
+    if not id_gasto:
+        return url
+    separador = "&" if "?" in url else "?"
+    return f"{url}{separador}gasto={id_gasto}"
 
 
 def _rango_fechas(request):
@@ -1321,19 +1339,35 @@ def informacion_viaje(request, id_viaje):
 
             return redirect("informacion_viaje", id_viaje=id_viaje)
 
-        elif accion == "nuevo_gasto":
+        elif accion in ("nuevo_gasto", "editar_gasto", "eliminar_gasto"):
+            # El resumen de caja es solo del staff, igual que el boton que abre el
+            # modal: el servidor tiene que decir lo mismo que el template.
+            if accion != "nuevo_gasto" and not request.user.is_staff:
+                messages.error(request, "No tenés permiso para tocar los gastos del viaje.")
+                return redirect("informacion_viaje", id_viaje=id_viaje)
+
+            url_detalle = reverse("informacion_viaje", kwargs={"id_viaje": id_viaje})
             tipo_gasto = request.POST.get("tipo_gasto")
             monto_gasto = request.POST.get("monto_gasto")
+            id_gasto = request.POST.get("id_gasto")
+            gasto_marcado = ""
 
             try:
-                crear_gasto(id_viaje, tipo_gasto, monto_gasto)
-                messages.success(request, "Gasto registrado exitosamente.")
+                if accion == "nuevo_gasto":
+                    gasto_marcado = crear_gasto(id_viaje, tipo_gasto, monto_gasto).id
+                    messages.success(request, "Gasto registrado exitosamente.")
+                elif accion == "editar_gasto":
+                    gasto_marcado = editar_gasto_viaje(Gasto, id_gasto, tipo_gasto, monto_gasto).id
+                    messages.success(request, "Gasto actualizado correctamente.")
+                else:
+                    eliminar_gasto_viaje(Gasto, id_gasto)
+                    messages.success(request, "Gasto eliminado correctamente.")
             except ValueError as e:
                 messages.error(request, str(e))
             except Exception as e:
                 messages.error(request, f"Ocurrió un error inesperado: {e}")
 
-            return redirect("informacion_viaje", id_viaje=id_viaje)
+            return redirect(_url_con_gasto(url_detalle, gasto_marcado))
 
     # Operaciones asociadas al viaje, para el listado
     operaciones_viaje = (
@@ -2076,19 +2110,37 @@ def informacion_viaje_reparto(request, id_viaje_reparto):
 
             return redirect("informacion_viaje_reparto", id_viaje_reparto=id_viaje_reparto)
 
-        elif accion == "nuevo_gasto_reparto":
+        elif accion in ("nuevo_gasto_reparto", "editar_gasto_reparto", "eliminar_gasto_reparto"):
+            # El resultado del reparto es solo del staff, igual que el boton que abre
+            # el modal: el servidor tiene que decir lo mismo que el template.
+            if accion != "nuevo_gasto_reparto" and not request.user.is_staff:
+                messages.error(request, "No tenés permiso para tocar los gastos del reparto.")
+                return redirect("informacion_viaje_reparto", id_viaje_reparto=id_viaje_reparto)
+
+            url_detalle = reverse("informacion_viaje_reparto",
+                                  kwargs={"id_viaje_reparto": id_viaje_reparto})
             tipo_gasto = request.POST.get("tipo_gasto")
             monto_gasto = request.POST.get("monto_gasto")
+            id_gasto = request.POST.get("id_gasto")
+            gasto_marcado = ""
 
             try:
-                crear_gasto_viaje_reparto(id_viaje_reparto, tipo_gasto, monto_gasto)
-                messages.success(request, "Gasto registrado exitosamente.")
+                if accion == "nuevo_gasto_reparto":
+                    gasto_marcado = crear_gasto_viaje_reparto(id_viaje_reparto, tipo_gasto, monto_gasto).id
+                    messages.success(request, "Gasto registrado exitosamente.")
+                elif accion == "editar_gasto_reparto":
+                    gasto_marcado = editar_gasto_viaje(GastoViajeReparto, id_gasto,
+                                                       tipo_gasto, monto_gasto).id
+                    messages.success(request, "Gasto actualizado correctamente.")
+                else:
+                    eliminar_gasto_viaje(GastoViajeReparto, id_gasto)
+                    messages.success(request, "Gasto eliminado correctamente.")
             except ValueError as e:
                 messages.error(request, str(e))
             except Exception as e:
                 messages.error(request, f"Ocurrió un error inesperado: {e}")
 
-            return redirect("informacion_viaje_reparto", id_viaje_reparto=id_viaje_reparto)
+            return redirect(_url_con_gasto(url_detalle, gasto_marcado))
 
     contexto = {
         "viaje_reparto": viaje_reparto,
@@ -2325,19 +2377,35 @@ def informacion_viaje_cereal(request, id_viaje_cereal):
 
             return redirect(url_detalle)
 
-        elif accion == "nuevo_gasto_cereal":
+        elif accion in ("nuevo_gasto_cereal", "editar_gasto_cereal", "eliminar_gasto_cereal"):
+            # El calculo del flete es solo del staff, igual que el boton que abre el
+            # modal: el servidor tiene que decir lo mismo que el template.
+            if accion != "nuevo_gasto_cereal" and not request.user.is_staff:
+                messages.error(request, "No tenés permiso para tocar los gastos del viaje.")
+                return redirect(url_detalle)
+
             tipo_gasto = request.POST.get("tipo_gasto")
             monto_gasto = request.POST.get("monto_gasto")
+            id_gasto = request.POST.get("id_gasto")
+            gasto_marcado = ""
 
             try:
-                crear_gasto_viaje_cereal(id_viaje_cereal, tipo_gasto, monto_gasto)
-                messages.success(request, "Gasto registrado exitosamente.")
+                if accion == "nuevo_gasto_cereal":
+                    gasto_marcado = crear_gasto_viaje_cereal(id_viaje_cereal, tipo_gasto, monto_gasto).id
+                    messages.success(request, "Gasto registrado exitosamente.")
+                elif accion == "editar_gasto_cereal":
+                    gasto_marcado = editar_gasto_viaje(GastoViajeCereal, id_gasto,
+                                                       tipo_gasto, monto_gasto).id
+                    messages.success(request, "Gasto actualizado correctamente.")
+                else:
+                    eliminar_gasto_viaje(GastoViajeCereal, id_gasto)
+                    messages.success(request, "Gasto eliminado correctamente.")
             except ValueError as e:
                 messages.error(request, str(e))
             except Exception as e:
                 messages.error(request, f"Ocurrió un error inesperado: {e}")
 
-            return redirect(url_detalle)
+            return redirect(_url_con_gasto(url_detalle, gasto_marcado))
 
     contexto = {
         "viaje_cereal": viaje_cereal,
