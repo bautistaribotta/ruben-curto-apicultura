@@ -259,6 +259,12 @@ span.casa-identidad__icono {
   margin-left: auto;
 }
 
+/* El head pinta de miel todos sus iconos; dentro de los botones de accion el
+   icono tiene que seguir el color del boton (rojo en eliminar, cuerpo en editar). */
+.perfil-card__head .boton-accion .material-symbols-outlined {
+  color: inherit;
+}
+
 /* --- Renglones de datos --- */
 .dato-lista {
   display: flex;

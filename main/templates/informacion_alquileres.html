@@ -126,8 +126,7 @@
             vacio. El formato para mostrarlos lo pone despues formato_miles.js.
           {% endcomment %}
           <div class="alq-acciones perfil-card__acciones">
-            <button type="button" class="alq-boton-icono editar boton-contrato-editar"
-                    title="Editar contrato"
+            <button type="button" class="boton-accion boton-editar boton-contrato-editar"
                     data-contrato="{{ contrato.id }}"
                     data-casa="{{ casa.nombre|default:'Sin nombre' }}"
                     data-inicio="{{ contrato.inicio|date:'Y-m-d' }}"
@@ -136,12 +135,13 @@
                     data-comision="{{ contrato.comision_inmobiliaria|unlocalize|default_if_none:'' }}"
                     data-inquilino="{{ contrato.nombre_inquilino|default_if_none:'' }}">
               <span class="material-symbols-outlined">edit</span>
+              Editar contrato
             </button>
-            <button type="button" class="alq-boton-icono eliminar boton-contrato-eliminar"
-                    title="Eliminar contrato"
+            <button type="button" class="boton-accion boton-cancelar boton-contrato-eliminar"
                     data-contrato="{{ contrato.id }}"
                     data-plazo="del {{ contrato.inicio|date:'d/m/Y' }}{% if contrato.fin %} al {{ contrato.fin|date:'d/m/Y' }}{% endif %}">
               <span class="material-symbols-outlined">delete</span>
+              Eliminar contrato
             </button>
           </div>
         </div>
