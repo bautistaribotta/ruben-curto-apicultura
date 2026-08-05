@@ -5,9 +5,10 @@
 // filas que arma el partial gastos_viaje.html. Lo unico propio de cada vista
 // son los nombres de las acciones del POST, que llegan en data-* del form.
 //
-// Un solo modal para las tres cosas: tocar una fila lo abre en modo edicion,
-// el boton "Anadir gasto" lo abre vacio, y eliminar es un paso mas adentro del
-// mismo panel en vez de un segundo modal encima.
+// Un solo modal para todo: tocar una fila lo abre en modo edicion y el boton
+// "Anadir gasto" lo abre vacio. Para eliminar no hay un segundo modal: el
+// boton del pie se mantiene apretado tres segundos, igual que el borrado de un
+// viaje.
 
 (() => {
     const formulario = document.getElementById('formulario-gasto');
@@ -22,26 +23,18 @@
     const bajada = document.getElementById('gasto-bajada');
     const botonGuardar = document.getElementById('gasto-guardar');
     const zonaBorrar = document.getElementById('gasto-zona-borrar');
-    const confirmacion = document.getElementById('gasto-confirmar');
-    const resumen = document.getElementById('gasto-confirmar-resumen');
-    const campos = document.getElementById('gasto-campos');
-    const acciones = document.getElementById('gasto-acciones');
-    const botonEliminar = document.getElementById('gasto-confirmar-si');
-    const etiquetaEliminar = botonEliminar.querySelector('span');
+    const botonEliminar = document.getElementById('gasto-borrar');
+    const etiquetaEliminar = document.getElementById('gasto-borrar-texto');
     const textoEliminar = etiquetaEliminar.textContent;
 
     // La bajada de alta la escribe cada vista con su propio calculo (caja,
     // subtotal, ganancia), asi que me la guardo para poder volver a ponerla.
     const bajadaAlta = bajada.textContent;
 
-    // 'nuevo' | 'editar' | 'confirmar'. En 'confirmar' el cuerpo del panel se
-    // esconde y queda solo la pregunta: el modal sigue siendo el mismo gasto.
+    // 'nuevo' | 'editar'. El boton de eliminar solo aparece al editar: un gasto
+    // que todavia no existe no se puede borrar.
     function aplicarModo(modo) {
-        const confirmando = modo === 'confirmar';
-        campos.hidden = confirmando;
-        acciones.hidden = confirmando;
         zonaBorrar.hidden = modo !== 'editar';
-        confirmacion.hidden = !confirmando;
         soltarBorrado();
     }
 
@@ -71,7 +64,6 @@
         botonGuardar.textContent = 'Guardar cambios';
         campoTipo.value = datos.tipo;
         ponerValorMiles(campoMonto, datos.monto);
-        resumen.textContent = datos.resumen;
         aplicarModo('editar');
         mostrar();
     }
@@ -100,10 +92,7 @@
         }
     });
 
-    document.getElementById('gasto-borrar').addEventListener('click', () => aplicarModo('confirmar'));
-    document.getElementById('gasto-confirmar-no').addEventListener('click', () => aplicarModo('editar'));
-
-    // El "Si, eliminar" hay que mantenerlo apretado tres segundos, como el
+    // El boton de eliminar hay que mantenerlo apretado tres segundos, como el
     // borrado de un viaje: el gasto no vuelve, asi que el gesto tiene que
     // costar mas que un click de paso. Soltar antes cancela.
     let cuentaRegresiva;
@@ -119,8 +108,8 @@
         cuentaRegresiva = setTimeout(() => {
             campoAccion.value = formulario.dataset.accionEliminar;
             // submit() y no requestSubmit(): el tipo y el monto siguen siendo
-            // required y estan escondidos, asi que hay que saltear la validacion
-            // del navegador, que no puede pedir un campo que no se ve.
+            // required, asi que hay que saltear la validacion del navegador, que
+            // al borrar no tiene por que exigirlos.
             formulario.submit();
         }, 3000);
     }

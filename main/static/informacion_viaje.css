@@ -1059,12 +1059,17 @@ html {
 }
 
 /* El color, el borde y el hover salen de .op-btn--danger, el mismo boton con el
-   que se elimina un viaje. Aca solo lo estiro para que ocupe lo que ocupan
-   Guardar + Cancelar juntos, separador incluido. */
+   que se elimina un viaje. Aca lo estiro a todo el ancho y le sumo la cuenta
+   regresiva: hay que mantenerlo apretado tres segundos para borrar, sin un
+   segundo modal de confirmacion. */
 .gasto-borrar__btn {
+  position: relative;
+  overflow: hidden;
   display: flex;
   justify-content: center;
   width: 100%;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .gasto-borrar__btn:focus-visible {
@@ -1072,50 +1077,18 @@ html {
   outline-offset: 2px;
 }
 
-/* Las dos lineas ganan al "#panel-gasto p" generico del modal */
-#panel-gasto .gasto-confirmar__pregunta {
-  font-size: var(--text-base);
-  font-weight: var(--weight-semibold);
-  color: var(--text-strong);
-  margin-bottom: 0.35rem;
-}
-
-#panel-gasto .gasto-confirmar__nota {
-  font-size: var(--text-sm);
-  color: var(--text-muted);
-  margin-bottom: 1.5rem;
-}
-
-/* Se mantiene apretado tres segundos, igual que el borrado de un viaje: la
-   barra que se llena de izquierda a derecha es la cuenta regresiva */
-.gasto-confirmar__si {
-  position: relative;
-  overflow: hidden;
-  padding: 0.75rem;
-  background-color: var(--danger-500);
-  color: var(--text-on-inverse);
-  border: none;
-  border-radius: var(--radius-md);
-  font-family: inherit;
-  font-size: var(--text-sm);
-  font-weight: var(--weight-bold);
-  cursor: pointer;
-  user-select: none;
-  -webkit-user-select: none;
-  transition: background-color var(--dur-normal) var(--ease-standard);
-}
-
-.gasto-confirmar__si:hover {
-  background-color: var(--danger-600);
-}
-
-.gasto-confirmar__si span {
+/* El texto y el icono, arriba de la barra que se va llenando */
+.gasto-borrar__label {
   position: relative;
   z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   pointer-events: none;
 }
 
-.gasto-confirmar__si::before {
+/* La barra que se llena de izquierda a derecha mientras se mantiene apretado */
+.gasto-borrar__btn::before {
   content: "";
   position: absolute;
   top: 0;
@@ -1129,7 +1102,7 @@ html {
   transition: width var(--dur-normal) ease-out;
 }
 
-.gasto-confirmar__si.manteniendo::before {
+.gasto-borrar__btn.manteniendo::before {
   width: 100%;
   transition: width 3s linear;
 }

@@ -230,27 +230,18 @@
       </div>
 
       {% comment %}
-        Eliminar vive adentro del modal y no en la fila: es lo raro y lo que no
-        se deshace, asi que queda un nivel mas adentro y separado de Guardar.
+        Eliminar vive adentro del mismo modal de edicion, sin un segundo modal
+        de confirmacion: hay que mantener apretado el boton tres segundos, como
+        el resto de los borrados del sistema. La leyenda cambia mientras se
+        mantiene apretado.
       {% endcomment %}
       <div class="gasto-borrar" id="gasto-zona-borrar" hidden>
         <button type="button" class="op-btn op-btn--danger gasto-borrar__btn" id="gasto-borrar">
-          <span class="material-symbols-outlined">delete</span>
-          Eliminar gasto
+          <span class="gasto-borrar__label">
+            <span class="material-symbols-outlined">delete</span>
+            <span id="gasto-borrar-texto">Eliminar gasto</span>
+          </span>
         </button>
-      </div>
-
-      {% comment %}
-        La confirmacion pisa el cuerpo del mismo panel en vez de abrir un segundo
-        modal encima: apilar paneles esconde el de atras y marea.
-      {% endcomment %}
-      <div class="gasto-confirmar" id="gasto-confirmar" hidden>
-        <p class="gasto-confirmar__pregunta">¿Eliminar el gasto de <b id="gasto-confirmar-resumen"></b>?</p>
-        <p class="gasto-confirmar__nota">La ganancia neta del reparto se recalcula. No se puede deshacer.</p>
-        <div class="acciones-modal">
-          <button type="button" class="gasto-confirmar__si" id="gasto-confirmar-si"><span>Sí, eliminar</span></button>
-          <button type="button" class="boton-secundario" id="gasto-confirmar-no">Volver</button>
-        </div>
       </div>
     </div>
   </div>
