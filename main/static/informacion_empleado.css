@@ -386,50 +386,6 @@
    apagado.
    ----------------------------------------------------------------------------- */
 
-/* --- Firma: saldo actual, el numero grande que encabeza la seccion --- */
-.cuenta-firma {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  margin-bottom: 1rem;
-  padding: 1rem 1.25rem;
-  background-color: var(--surface-card);
-  border: 1px solid var(--border-subtle);
-  border-left: 4px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-}
-
-.cuenta-firma--favor {
-  border-left-color: var(--pine-900);
-}
-
-.cuenta-firma--contra {
-  border-left-color: var(--danger-600);
-}
-
-.cuenta-firma__monto {
-  font-size: var(--text-2xl, 1.75rem);
-  font-weight: var(--weight-bold);
-  line-height: 1.1;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-muted);
-}
-
-.cuenta-firma--favor .cuenta-firma__monto {
-  color: var(--pine-900);
-}
-
-.cuenta-firma--contra .cuenta-firma__monto {
-  color: var(--danger-600);
-}
-
-.cuenta-firma__rotulo {
-  font-size: var(--text-sm);
-  font-weight: var(--weight-semibold);
-  color: var(--text-muted);
-}
-
 /* --- Sin sueldo: la cuenta todavia no arranco --- */
 .cuenta-sin-sueldo {
   display: flex;

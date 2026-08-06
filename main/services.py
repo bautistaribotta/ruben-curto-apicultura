@@ -1501,21 +1501,6 @@ def _corte_cuenta(empleado):
     return _inicio_periodo_pagos(empleado.inicio_cuenta, "semana")
 
 
-def saldo_cuenta_corriente(empleado, hasta=None):
-    """Saldo de la cuenta al dia 'hasta' (por defecto hoy). Es el numero grande
-    del encabezado: no depende del periodo que se este mirando."""
-    corte = _corte_cuenta(empleado)
-    if corte is None:
-        return None
-    if hasta is None:
-        hasta = timezone.localdate()
-
-    esperado_semana = (empleado.sueldo / 4).quantize(Decimal("0.01"))
-    saldo = sum((e["monto"] for e in _eventos_cuenta_corriente(empleado, corte, esperado_semana, hasta)),
-                Decimal("0"))
-    return _presentar_saldo(saldo)
-
-
 def obtener_cuenta_corriente(empleado, desde, hasta):
     """Cuenta corriente del empleado acotada al periodo [desde, hasta].
 

@@ -32,7 +32,7 @@ from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo
                        editar_empleado, eliminar_empleado, obtener_datos_empleado, crear_pago_empleado, fijar_sueldo_empleado,
                        editar_pago_empleado, eliminar_pago_empleado,
                        obtener_gastos_empleado, obtener_viajes_empleado, TIPOS_VIAJE_EMPLEADO,
-                       obtener_cuenta_corriente, saldo_cuenta_corriente, resolver_granularidad_pagos, resolver_ancla_pagos,
+                       obtener_cuenta_corriente, resolver_granularidad_pagos, resolver_ancla_pagos,
                        rango_periodo_pagos, desplazar_periodo_pagos, etiqueta_periodo_pagos,
                        editar_vehiculo, eliminar_vehiculo,
                        crear_viaje_cereal, obtener_viajes_cereales, obtener_viajes_cereal_de_cliente,
@@ -386,9 +386,6 @@ def informacion_empleado(request, id_empleado):
         "tipo": tipo,
         "pestañas_viajes": pestañas_viajes,
         "total_viajes_periodo": conteos_viajes["todos"],
-        # Saldo actual de la cuenta corriente (hasta hoy): el numero grande del
-        # encabezado, que no cambia al navegar periodos en el bloque de pagos.
-        "cuenta_saldo": saldo_cuenta_corriente(empleado),
         **ctx_fechas,
     }
 
