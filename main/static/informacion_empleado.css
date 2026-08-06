@@ -496,11 +496,25 @@
 }
 
 /* --- Filas del libro --- */
+/* La celda de detalle queda como table-cell (no flex): un td flexeado se sale
+   del layout de tabla y su borde inferior cae desalineado del resto de la fila.
+   El pill y el texto se alinean inline con vertical-align. */
 .tabla-cuenta .celda-observacion {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+  line-height: 1.9;
+}
+
+.tabla-cuenta .etiqueta-mov {
+  vertical-align: middle;
+  margin-right: 0.5rem;
+}
+
+.tabla-cuenta .mov-detalle {
+  vertical-align: middle;
+}
+
+.tabla-cuenta .comision-porcentaje {
+  vertical-align: middle;
+  margin-left: 0.5rem;
 }
 
 /* El prefijo .tabla-cuenta le gana en especificidad a `.tabla-pagos td`
