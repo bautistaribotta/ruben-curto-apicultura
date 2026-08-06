@@ -237,6 +237,10 @@ class Empleado(models.Model):
     nombre = models.CharField(max_length=25)
     apellido = models.CharField(max_length=25)
     sueldo = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    # Dia desde el que arranca a contar la cuenta corriente (saldo en 0). Se fija
+    # solo la primera vez que se carga un sueldo; antes de ese dia no se devenga
+    # sueldo ni se cuentan pagos. Null mientras el empleado no tenga cuenta.
+    inicio_cuenta = models.DateField(null=True, blank=True)
     activo = models.BooleanField(default=True)
 
     class Meta:
