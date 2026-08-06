@@ -44,6 +44,20 @@
           <h2 class="nombre-empleado-titulo">{{ empleado.nombre }} {{ empleado.apellido }}</h2>
           <p class="identidad-empleado__meta">
             <span>ID {{ empleado.id }}</span>
+            {% comment %}
+              El sueldo es el dato de plata del empleado: va como pildora
+              destacada. Con sueldo en cero se muestra "Sin definir" para
+              distinguir "todavia no lo cargaron" de "cobra $0".
+            {% endcomment %}
+            <span class="pildora-sueldo {% if not empleado.sueldo %}pildora-sueldo--vacia{% endif %}">
+              <span class="material-symbols-outlined">account_balance_wallet</span>
+              <span class="pildora-sueldo__rotulo">Sueldo mensual</span>
+              {% if empleado.sueldo %}
+                <span class="pildora-sueldo__monto">${{ empleado.sueldo|floatformat:"0"|intcomma }}</span>
+              {% else %}
+                <span class="pildora-sueldo__monto">Sin definir</span>
+              {% endif %}
+            </span>
           </p>
         </div>
       </div>
@@ -52,6 +66,11 @@
         <button type="button" class="boton-nuevo" id="boton-anadir-pago">
           <span class="material-symbols-outlined">payments</span>
           Añadir pago
+        </button>
+        <button type="button" class="boton-accion boton-editar" id="boton-fijar-sueldo"
+                data-sueldo="{{ empleado.sueldo }}">
+          <span class="material-symbols-outlined">account_balance_wallet</span>
+          Fijar sueldo
         </button>
         <button type="button" class="boton-accion boton-editar" id="boton-editar-empleado"
                 data-id="{{ empleado.id }}">
@@ -166,6 +185,58 @@
         <footer class="pie-modal-pago">
           <button type="submit" class="boton-primario" id="boton-guardar-pago">Registrar pago</button>
           <button type="button" class="boton-secundario" onclick="cerrarModalPagoEmpleado()">Cancelar</button>
+        </footer>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL FIJAR SUELDO
+       Reusa el esqueleto del modal de pago (velo + tarjeta con el monto como
+       protagonista), pero con un solo campo: el sueldo mensual. Se admite 0
+       para dejarlo sin definir. -->
+  <div id="contenedor-modal-sueldo">
+    <div id="fondo-modal-sueldo" onclick="cerrarModalSueldo()"></div>
+
+    <div id="panel-modal-sueldo" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-sueldo">
+      <form id="form-sueldo-empleado" method="POST" autocomplete="off">
+        {% csrf_token %}
+        <input type="hidden" name="accion" value="sueldo">
+
+        <header class="panel-cabecera">
+          <div class="panel-titulo-fila">
+            <div class="icono-contenedor">
+              <span class="material-symbols-outlined">account_balance_wallet</span>
+            </div>
+            <div class="texto-cabecera">
+              <h3 id="titulo-modal-sueldo">Fijar sueldo</h3>
+              <p>{{ empleado.nombre }} {{ empleado.apellido }}</p>
+            </div>
+          </div>
+          <button type="button" class="boton-cerrar" onclick="cerrarModalSueldo()">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </header>
+
+        <main class="cuerpo-modal-pago">
+          <div class="campo-monto campo-sueldo">
+            <label for="monto-sueldo">Sueldo mensual</label>
+            <div class="campo-monto__caja">
+              <span class="campo-monto__signo">$</span>
+              {% comment %}
+                Mismo pattern que el monto del pago pero admitiendo el 0: un
+                sueldo sin definir se carga poniendo cero.
+              {% endcomment %}
+              <input type="text" id="monto-sueldo" name="sueldo" placeholder="0"
+                     class="input-miles-decimal" inputmode="decimal" autocomplete="off"
+                     required pattern="[0-9][0-9]{0,2}(\.[0-9]{3})*(,[0-9]{1,2})?">
+            </div>
+            <span class="mensaje-error">Ingrese un sueldo válido (0 o mayor)</span>
+          </div>
+        </main>
+
+        <footer class="pie-modal-pago">
+          <button type="submit" class="boton-primario">Guardar sueldo</button>
+          <button type="button" class="boton-secundario" onclick="cerrarModalSueldo()">Cancelar</button>
         </footer>
       </form>
     </div>

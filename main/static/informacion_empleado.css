@@ -76,6 +76,55 @@
   letter-spacing: normal;
 }
 
+/* --- Pildora de sueldo: el dato de plata del empleado ---
+   Tinte miel para marcarla como la cifra economica, separada del resto del
+   meta. El rotulo queda tenue y el monto en tabular-nums para que la cifra
+   sea lo que salta a la vista. */
+.pildora-sueldo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.7rem;
+  border-radius: var(--radius-pill);
+  background-color: var(--honey-tint-10);
+  border: 1px solid var(--honey-200);
+  letter-spacing: normal;
+}
+
+.pildora-sueldo .material-symbols-outlined {
+  font-size: 1.05rem;
+  color: var(--brand-active);
+}
+
+.pildora-sueldo__rotulo {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--text-muted);
+}
+
+.pildora-sueldo__monto {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  color: var(--text-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Sin sueldo cargado la pildora se apaga: fondo neutro y monto tenue, para que
+   "Sin definir" no compita con un valor real. */
+.pildora-sueldo--vacia {
+  background-color: var(--surface-sunken);
+  border-color: var(--border-subtle);
+}
+
+.pildora-sueldo--vacia .material-symbols-outlined {
+  color: var(--text-subtle);
+}
+
+.pildora-sueldo--vacia .pildora-sueldo__monto {
+  font-weight: var(--weight-semibold);
+  color: var(--text-subtle);
+}
+
 /* --- Acciones de la cabecera --- */
 .acciones-empleado {
   display: flex;
@@ -427,7 +476,8 @@
    grande con el signo fijo, porque es el unico dato que realmente se decide.
    ----------------------------------------------------------------------------- */
 
-#contenedor-modal-pago {
+#contenedor-modal-pago,
+#contenedor-modal-sueldo {
   position: fixed;
   inset: 0;
   z-index: 2000;
@@ -439,7 +489,8 @@
   transition: visibility var(--dur-slow);
 }
 
-#contenedor-modal-pago.abierto {
+#contenedor-modal-pago.abierto,
+#contenedor-modal-sueldo.abierto {
   visibility: visible;
   transition: none;
 }
@@ -450,7 +501,8 @@ body.con-modal-abierto #contenido-principal {
   overflow: hidden;
 }
 
-#fondo-modal-pago {
+#fondo-modal-pago,
+#fondo-modal-sueldo {
   position: absolute;
   inset: 0;
   background-color: var(--overlay-ink);
@@ -460,11 +512,13 @@ body.con-modal-abierto #contenido-principal {
   transition: opacity var(--dur-slow) var(--ease-standard);
 }
 
-#contenedor-modal-pago.abierto #fondo-modal-pago {
+#contenedor-modal-pago.abierto #fondo-modal-pago,
+#contenedor-modal-sueldo.abierto #fondo-modal-sueldo {
   opacity: 1;
 }
 
-#panel-modal-pago {
+#panel-modal-pago,
+#panel-modal-sueldo {
   position: relative;
   width: 100%;
   max-width: 440px;
@@ -479,7 +533,8 @@ body.con-modal-abierto #contenido-principal {
               transform var(--dur-slow) var(--ease-standard);
 }
 
-#contenedor-modal-pago.abierto #panel-modal-pago {
+#contenedor-modal-pago.abierto #panel-modal-pago,
+#contenedor-modal-sueldo.abierto #panel-modal-sueldo {
   opacity: 1;
   transform: scale(1);
 }
@@ -650,7 +705,9 @@ body.con-modal-abierto #contenido-principal {
 
 @media (prefers-reduced-motion: reduce) {
   #panel-modal-pago,
-  #fondo-modal-pago {
+  #fondo-modal-pago,
+  #panel-modal-sueldo,
+  #fondo-modal-sueldo {
     transition: none;
   }
 }

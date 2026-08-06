@@ -331,6 +331,81 @@ document.addEventListener("keydown", (evento) => {
     }
 });
 
+// ---------- MODAL DE SUELDO ----------
+// Un unico campo (el sueldo mensual). El boton "Fijar sueldo" lo abre con el
+// sueldo actual ya cargado; el submit es normal y formato_miles.js limpia el
+// separador de miles antes de que salga el POST.
+
+function mostrarModalSueldo() {
+    const contenedor = document.getElementById("contenedor-modal-sueldo");
+    if (!contenedor) return;
+
+    contenedor.classList.add("abierto");
+    document.body.classList.add("con-modal-abierto");
+
+    sueldoTocado = false;
+    document.querySelector(".campo-sueldo")?.classList.remove("con-error");
+
+    document.getElementById("monto-sueldo").focus();
+}
+
+function abrirModalSueldo(sueldoActual) {
+    const form = document.getElementById("form-sueldo-empleado");
+    if (!form) return;
+
+    form.reset();
+    // ponerValorMiles escribe el sueldo del servidor ("35000.00") con el formato
+    // es-AR que espera el pattern. Un sueldo en 0 queda como "0", editable.
+    ponerValorMiles(document.getElementById("monto-sueldo"), sueldoActual || "0");
+    mostrarModalSueldo();
+}
+
+function cerrarModalSueldo() {
+    const contenedor = document.getElementById("contenedor-modal-sueldo");
+    if (!contenedor) return;
+
+    contenedor.classList.remove("abierto");
+    document.body.classList.remove("con-modal-abierto");
+
+    document.getElementById("form-sueldo-empleado").reset();
+
+    sueldoTocado = false;
+    document.querySelector(".campo-sueldo")?.classList.remove("con-error");
+}
+
+// Mismo criterio que el monto del pago: marca en rojo recien despues de tocar.
+let sueldoTocado = false;
+
+function revisarSueldo() {
+    const monto = document.getElementById("monto-sueldo");
+    const campo = document.querySelector(".campo-sueldo");
+    if (!monto || !campo) return;
+
+    campo.classList.toggle("con-error", sueldoTocado && !monto.checkValidity());
+}
+
+document.getElementById("boton-fijar-sueldo")?.addEventListener("click", (evento) => {
+    abrirModalSueldo(evento.currentTarget.dataset.sueldo);
+});
+
+document.addEventListener("input", (evento) => {
+    if (evento.target.id === "monto-sueldo") {
+        sueldoTocado = true;
+        revisarSueldo();
+    }
+});
+
+document.getElementById("monto-sueldo")?.addEventListener("blur", () => {
+    sueldoTocado = true;
+    revisarSueldo();
+});
+
+document.addEventListener("keydown", (evento) => {
+    if (evento.key === "Escape" && document.getElementById("contenedor-modal-sueldo")?.classList.contains("abierto")) {
+        cerrarModalSueldo();
+    }
+});
+
 // ---------- PANELES DE EDICION Y ELIMINACION ----------
 // Las dos funciones viven en empleados.js, que esta pagina carga antes que a
 // este archivo: el perfil abre los mismos paneles que el listado.
