@@ -1008,6 +1008,34 @@ def editar_empleado(id_empleado, nombre, apellido, activo):
     return empleado
 
 
+def fijar_sueldo_empleado(id_empleado, sueldo):
+    """Fija el sueldo mensual de un empleado.
+
+    El sueldo llega del modal como texto ya normalizado a punto decimal por
+    formato_miles.js (el submit limpia el separador de miles antes del POST). Se
+    acepta 0 para dejar el sueldo sin definir; un valor negativo o no numerico se
+    rechaza. El campo es DecimalField(max_digits=10, decimal_places=2), asi que
+    corto en 8 enteros para no romper el insert de la base.
+    """
+    empleado = get_object_or_404(Empleado, id=id_empleado, activo=True)
+
+    try:
+        sueldo = Decimal(str(sueldo).strip())
+    except (InvalidOperation, AttributeError):
+        raise ValueError("El sueldo no es un número válido.")
+
+    if sueldo < 0:
+        raise ValueError("El sueldo no puede ser negativo.")
+
+    sueldo = sueldo.quantize(Decimal("0.01"))
+    if sueldo >= Decimal("100000000"):
+        raise ValueError("El sueldo es demasiado grande.")
+
+    empleado.sueldo = sueldo
+    empleado.save(update_fields=["sueldo"])
+    return empleado
+
+
 def eliminar_empleado(id_empleado):
     empleado = get_object_or_404(Empleado, id=id_empleado)
     empleado.activo = False

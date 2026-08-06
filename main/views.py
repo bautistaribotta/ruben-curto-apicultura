@@ -29,7 +29,7 @@ from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo
                        obtener_vehiculos_activos, obtener_viajes, obtener_datos_viaje, editar_viaje, eliminar_viaje, crear_gasto,
                        editar_gasto_viaje, eliminar_gasto_viaje,
                        incluir_asignado,
-                       editar_empleado, eliminar_empleado, obtener_datos_empleado, crear_pago_empleado,
+                       editar_empleado, eliminar_empleado, obtener_datos_empleado, crear_pago_empleado, fijar_sueldo_empleado,
                        editar_pago_empleado, eliminar_pago_empleado,
                        obtener_gastos_empleado, obtener_viajes_empleado, TIPOS_VIAJE_EMPLEADO,
                        obtener_pagos_empleado, resolver_granularidad_pagos, resolver_ancla_pagos,
@@ -318,6 +318,11 @@ def informacion_empleado(request, id_empleado):
             if accion == "eliminar_pago":
                 eliminar_pago_empleado(request.POST.get("id_eliminar"), empleado.id)
                 messages.success(request, "Pago eliminado correctamente")
+                return redirect("informacion_empleado", id_empleado=empleado.id)
+
+            if accion == "sueldo":
+                fijar_sueldo_empleado(empleado.id, request.POST.get("sueldo"))
+                messages.success(request, "Sueldo actualizado correctamente")
                 return redirect("informacion_empleado", id_empleado=empleado.id)
 
             editar_empleado(
