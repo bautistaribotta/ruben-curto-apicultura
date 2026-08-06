@@ -94,8 +94,30 @@
     {% endcomment %}
     <section class="emp-seccion">
       <div class="seccion-info-header">
-        <h4><span class="material-symbols-outlined">payments</span> Pagos</h4>
+        <h4><span class="material-symbols-outlined">account_balance</span> Cuenta corriente</h4>
       </div>
+
+      {% comment %}
+        Saldo actual (hasta hoy): el numero grande de la cuenta. Vive fuera de
+        #seccion-pagos a proposito, asi no cambia al navegar periodos por AJAX;
+        solo se recalcula al recargar la pagina (alta/edicion de pago o sueldo).
+      {% endcomment %}
+      {% if cuenta_saldo %}
+      <div class="cuenta-firma{% if cuenta_saldo.a_favor %} cuenta-firma--favor{% elif cuenta_saldo.en_contra %} cuenta-firma--contra{% else %} cuenta-firma--cero{% endif %}">
+        <div class="cuenta-firma__monto">
+          {% if cuenta_saldo.a_favor %}+{% elif cuenta_saldo.en_contra %}&minus;{% endif %}${{ cuenta_saldo.abs|floatformat:"0"|intcomma }}
+        </div>
+        <div class="cuenta-firma__rotulo">
+          {% if cuenta_saldo.saldado %}
+            Cuenta saldada
+          {% elif cuenta_saldo.a_favor %}
+            A favor · falta cobrar
+          {% else %}
+            En contra · cobró de más
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
 
       <div id="seccion-pagos">
         {% include 'pagos_empleado.html' %}

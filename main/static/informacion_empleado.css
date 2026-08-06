@@ -377,33 +377,173 @@
   color: var(--text-on-inverse);
 }
 
-/* --- Comisiones: fila diferenciada dentro de la tabla de pagos --- */
-.fila-pago--comision {
-  cursor: pointer;
-  background-color: var(--success-50);
-  box-shadow: inset 0.25rem 0 0 var(--success-500);
+/* -----------------------------------------------------------------------------
+   CUENTA CORRIENTE
+   La tabla de pagos es ahora un libro de cuenta corriente: cada fila lleva su
+   saldo corrido y arriba/abajo del periodo van el saldo inicial y final. El
+   sueldo devengado suma a favor del empleado; comisiones y pagos lo cubren.
+   Colores: a favor -> pino (positivo), en contra -> rojo (aviso), saldado ->
+   apagado.
+   ----------------------------------------------------------------------------- */
+
+/* --- Firma: saldo actual, el numero grande que encabeza la seccion --- */
+.cuenta-firma {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin-bottom: 1rem;
+  padding: 1rem 1.25rem;
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-left: 4px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
 }
 
-.fila-pago--comision:hover {
-  background-color: var(--success-50);
-  filter: brightness(0.98);
+.cuenta-firma--favor {
+  border-left-color: var(--pine-900);
 }
 
-.fila-pago--comision .celda-observacion {
+.cuenta-firma--contra {
+  border-left-color: var(--danger-600);
+}
+
+.cuenta-firma__monto {
+  font-size: var(--text-2xl, 1.75rem);
+  font-weight: var(--weight-bold);
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.cuenta-firma--favor .cuenta-firma__monto {
+  color: var(--pine-900);
+}
+
+.cuenta-firma--contra .cuenta-firma__monto {
+  color: var(--danger-600);
+}
+
+.cuenta-firma__rotulo {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--text-muted);
+}
+
+/* --- Sin sueldo: la cuenta todavia no arranco --- */
+.cuenta-sin-sueldo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 2.5rem 1.25rem;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.cuenta-sin-sueldo .material-symbols-outlined {
+  font-size: 2rem;
+  color: var(--text-subtle);
+}
+
+.cuenta-sin-sueldo p {
+  max-width: 24rem;
+  margin: 0;
+}
+
+/* --- Bordes del periodo: saldo inicial (arrastre) y final --- */
+.cuenta-borde {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1.25rem;
+  background-color: var(--surface-sunken);
+}
+
+.cuenta-borde--inicial {
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.cuenta-borde--final {
+  border-top: 1px solid var(--border-subtle);
+}
+
+.cuenta-borde__rotulo {
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--text-muted);
+  font-weight: var(--weight-bold);
+}
+
+.cuenta-saldo-chip {
+  font-weight: var(--weight-bold);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.cuenta-saldo-chip--fuerte {
+  font-size: var(--text-md);
+}
+
+.cuenta-saldo-chip--favor {
+  color: var(--pine-900);
+}
+
+.cuenta-saldo-chip--contra {
+  color: var(--danger-600);
+}
+
+/* --- Filas del libro --- */
+.tabla-cuenta .celda-observacion {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 0.5rem;
 }
 
-.etiqueta-comision {
+/* El prefijo .tabla-cuenta le gana en especificidad a `.tabla-pagos td`
+   (0,1,1), que si no pisaria estos colores con el text-body de la celda. */
+.celda-monto-mov {
+  width: 1%;
+  white-space: nowrap;
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-body);
+}
+
+.tabla-cuenta .celda-monto-mov--ingreso {
+  color: var(--pine-900);
+}
+
+.tabla-cuenta .celda-monto-mov--egreso {
+  color: var(--text-muted);
+}
+
+.tabla-cuenta .celda-saldo {
+  width: 1%;
+  white-space: nowrap;
+  font-weight: var(--weight-bold);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-strong);
+}
+
+.tabla-cuenta .celda-saldo--favor {
+  color: var(--pine-900);
+}
+
+.tabla-cuenta .celda-saldo--contra {
+  color: var(--danger-600);
+}
+
+/* Etiqueta del tipo de movimiento (Sueldo / Comisión / Pago) */
+.etiqueta-mov {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
   padding: 0.2rem 0.55rem;
   border-radius: var(--radius-pill);
-  background-color: var(--success-200);
-  color: var(--success-700, var(--success-600));
   font-size: var(--text-xs);
   font-weight: var(--weight-bold);
   text-transform: uppercase;
@@ -411,11 +551,26 @@
   white-space: nowrap;
 }
 
-.etiqueta-comision .material-symbols-outlined {
+.etiqueta-mov .material-symbols-outlined {
   font-size: 1rem;
 }
 
-.comision-detalle {
+.etiqueta-mov--sueldo {
+  background-color: var(--honey-tint-10);
+  color: var(--brand-active);
+}
+
+.etiqueta-mov--comision {
+  background-color: var(--success-200);
+  color: var(--success-600);
+}
+
+.etiqueta-mov--pago {
+  background-color: var(--surface-sunken);
+  color: var(--text-muted);
+}
+
+.mov-detalle {
   color: var(--text-body);
 }
 
@@ -429,8 +584,11 @@
   font-variant-numeric: tabular-nums;
 }
 
-.celda-monto-pago--comision {
-  color: var(--success-600);
+/* Comision: fila clickeable que abre el detalle del viaje. Un acento a la
+   izquierda la marca como especial sin gritar (ya no pinta toda la fila). */
+.fila-pago--comision {
+  cursor: pointer;
+  box-shadow: inset 0.2rem 0 0 var(--success-500);
 }
 
 /* --- Resumen del periodo (pie de la tabla de pagos) --- */
