@@ -1032,7 +1032,16 @@ def fijar_sueldo_empleado(id_empleado, sueldo):
         raise ValueError("El sueldo es demasiado grande.")
 
     empleado.sueldo = sueldo
-    empleado.save(update_fields=["sueldo"])
+
+    # La cuenta corriente arranca la primera vez que se carga un sueldo real: fijo
+    # el corte en hoy y de ahi en adelante se devenga el sueldo. No lo piso en las
+    # ediciones siguientes para no reiniciar el saldo ya acumulado.
+    campos = ["sueldo"]
+    if sueldo > 0 and empleado.inicio_cuenta is None:
+        empleado.inicio_cuenta = timezone.localdate()
+        campos.append("inicio_cuenta")
+
+    empleado.save(update_fields=campos)
     return empleado
 
 
@@ -1411,71 +1420,161 @@ def etiqueta_periodo_pagos(inicio, fin, granularidad):
     return f"{date_format(inicio, 'j M')} al {date_format(fin, 'j M Y')}"
 
 
-def obtener_pagos_empleado(empleado, desde, hasta):
-    """Movimientos a favor del empleado dentro de un periodo, unificados.
+def _presentar_saldo(saldo):
+    """Traduce un saldo (positivo = a favor del empleado) a los datos que la
+    plantilla necesita para pintarlo: valor absoluto, si esta a favor y si esta
+    saldado. Positivo = la empresa le debe; negativo = el empleado cobro de mas."""
+    return {
+        "valor": saldo,
+        "abs": abs(saldo),
+        "a_favor": saldo > 0,
+        "en_contra": saldo < 0,
+        "saldado": saldo == 0,
+    }
 
-    Junta dos fuentes en una sola lista ordenada por fecha:
 
-    - Pagos reales cargados a mano (PagosEmpleados), ubicados por su fecha.
-    - Comisiones por viajes de cereal: el chofer se lleva un porcentaje del viaje
-      y esa parte se muestra como un pago diferenciado. Solo entran los viajes ya
-      cobrados al cliente (pagado=True), ubicados por la fecha del cobro
-      (fecha_pago), que es cuando la comision se hace efectiva.
+def _eventos_cuenta_corriente(empleado, corte, esperado_semana, tope):
+    """Todos los movimientos de la cuenta desde 'corte' (lunes) hasta 'tope',
+    sin ordenar. Tres fuentes, con el signo desde la mirada del empleado:
 
-    Devuelve (filas, resumen). Cada fila trae 'es_comision' para que la plantilla
-    la distinga; el resumen separa el total de pagos del de comisiones.
+    - Sueldo devengado: +esperado_semana por cada lunes de semana (lo que se le
+      pasa a deber cuando arranca la semana).
+    - Comisiones cobradas y pagos reales: -monto (adelantan/cubren ese sueldo).
     """
-    filas = []
-    total_pagos = Decimal("0")
-    total_comisiones = Decimal("0")
+    eventos = []
 
-    pagos = PagosEmpleados.objects.filter(empleado=empleado, fecha__gte=desde, fecha__lte=hasta)
-    for pago in pagos:
-        filas.append({
-            "es_comision": False,
-            "fecha": pago.fecha,
-            "observaciones": pago.observaciones,
-            "monto": pago.monto,
-            "id": pago.id,
+    # Sueldo: un evento por semana, fechado el lunes en que se abre.
+    semana = corte
+    while semana <= tope:
+        eventos.append({
+            "fecha": semana,
+            "orden": 0,  # el sueldo se devenga al abrir la semana, antes que nada
+            "tipo": "sueldo",
+            "concepto": "Sueldo de la semana",
+            "monto": esperado_semana,
         })
-        total_pagos += pago.monto
+        semana = semana + timedelta(days=7)
 
-    # fecha_pago es un DateTimeField, asi que acoto por los limites del periodo
-    # como momentos (00:00 del primer dia a 23:59:59 del ultimo) en la zona local.
-    # No uso el lookup __date porque en este MySQL las tablas de zonas horarias no
-    # estan cargadas y CONVERT_TZ devuelve NULL, dejando afuera todas las filas.
+    # Comisiones: fecha_pago es DateTimeField, acoto por momentos en zona local
+    # (mismo motivo que el resto: CONVERT_TZ no sirve sin las tablas de zonas).
     tz = timezone.get_current_timezone()
-    inicio_dt = timezone.make_aware(datetime.combine(desde, time.min), tz)
-    fin_dt = timezone.make_aware(datetime.combine(hasta, time.max), tz)
-
+    corte_dt = timezone.make_aware(datetime.combine(corte, time.min), tz)
+    tope_dt = timezone.make_aware(datetime.combine(tope, time.max), tz)
     comisiones = (ViajeCereal.objects
                   .filter(empleado=empleado, activo=True, pagado=True,
                           porcentaje_empleado__gt=0,
-                          fecha_pago__gte=inicio_dt, fecha_pago__lte=fin_dt)
+                          fecha_pago__gte=corte_dt, fecha_pago__lte=tope_dt)
                   .prefetch_related("detalle_gastos"))
     for viaje in comisiones:
-        monto = viaje.pago_empleado
-        filas.append({
-            "es_comision": True,
+        eventos.append({
             "fecha": timezone.localtime(viaje.fecha_pago).date(),
-            "porcentaje": viaje.porcentaje_empleado,
-            "monto": monto,
+            "orden": 1,
+            "tipo": "comision",
+            "concepto": f"Comisión viaje #{viaje.id}",
+            "monto": -viaje.pago_empleado,
             "viaje_id": viaje.id,
-            "id": 0,
+            "porcentaje": viaje.porcentaje_empleado,
         })
-        total_comisiones += monto
 
-    # Del mas reciente al mas viejo; el id desempata los pagos del mismo dia. Las
-    # comisiones caen todas con id=0, asi que entre si desempata la fecha nomas.
-    filas.sort(key=lambda f: (f["fecha"], f["id"]), reverse=True)
+    pagos = PagosEmpleados.objects.filter(empleado=empleado, fecha__gte=corte, fecha__lte=tope)
+    for pago in pagos:
+        eventos.append({
+            "fecha": pago.fecha,
+            "orden": 2,
+            "tipo": "pago",
+            "concepto": pago.observaciones or "Pago",
+            "monto": -pago.monto,
+            "pago_id": pago.id,
+            "pago_monto": pago.monto,
+            "observaciones": pago.observaciones,
+        })
 
-    resumen = {
-        "total_pagos": total_pagos,
-        "total_comisiones": total_comisiones,
-        "total": total_pagos + total_comisiones,
+    return eventos
+
+
+def _corte_cuenta(empleado):
+    """Lunes de la semana en que arranca la cuenta, o None si el empleado todavia
+    no tiene cuenta (sin sueldo o sin fecha de inicio). Anclar al lunes deja las
+    semanas completas y alineadas con la navegacion de periodos."""
+    if not empleado.sueldo or empleado.sueldo <= 0 or not empleado.inicio_cuenta:
+        return None
+    return _inicio_periodo_pagos(empleado.inicio_cuenta, "semana")
+
+
+def saldo_cuenta_corriente(empleado, hasta=None):
+    """Saldo de la cuenta al dia 'hasta' (por defecto hoy). Es el numero grande
+    del encabezado: no depende del periodo que se este mirando."""
+    corte = _corte_cuenta(empleado)
+    if corte is None:
+        return None
+    if hasta is None:
+        hasta = timezone.localdate()
+
+    esperado_semana = (empleado.sueldo / 4).quantize(Decimal("0.01"))
+    saldo = sum((e["monto"] for e in _eventos_cuenta_corriente(empleado, corte, esperado_semana, hasta)),
+                Decimal("0"))
+    return _presentar_saldo(saldo)
+
+
+def obtener_cuenta_corriente(empleado, desde, hasta):
+    """Cuenta corriente del empleado acotada al periodo [desde, hasta].
+
+    Devuelve un dict listo para la plantilla:
+
+    - 'activa': si el empleado tiene cuenta (sueldo + fecha de inicio).
+    - 'saldo_inicial': arrastre que entra al periodo (lo acumulado antes de 'desde').
+    - 'filas': movimientos del periodo, viejo -> nuevo, cada uno con su saldo
+      corrido ya calculado para leerlo de arriba hacia abajo.
+    - 'saldo_final': saldo al cerrar el periodo.
+    - 'total_devengado' / 'total_cobrado': totales del periodo, para el pie.
+
+    El sueldo se devenga a razon de sueldo/4 por semana; comisiones y pagos lo
+    adelantan (cuentan como adelanto del sueldo, que es el techo).
+    """
+    corte = _corte_cuenta(empleado)
+    if corte is None:
+        return {"activa": False, "filas": [], "cantidad": 0}
+
+    esperado_semana = (empleado.sueldo / 4).quantize(Decimal("0.01"))
+    eventos = _eventos_cuenta_corriente(empleado, corte, esperado_semana, hasta)
+
+    # Cronologico ascendente; 'orden' desempata dentro del mismo dia (primero el
+    # sueldo que se devenga, despues la comision y el pago que lo cubren).
+    eventos.sort(key=lambda e: (e["fecha"], e["orden"]))
+
+    saldo = Decimal("0")
+    saldo_inicial = Decimal("0")
+    total_devengado = Decimal("0")
+    total_cobrado = Decimal("0")
+    filas = []
+    for ev in eventos:
+        saldo += ev["monto"]
+        if ev["fecha"] < desde:
+            # Todo lo anterior al periodo se resume en el saldo inicial.
+            saldo_inicial = saldo
+            continue
+
+        if ev["monto"] >= 0:
+            total_devengado += ev["monto"]
+        else:
+            total_cobrado += -ev["monto"]
+
+        fila = dict(ev)
+        fila["es_ingreso"] = ev["monto"] >= 0
+        fila["monto_abs"] = abs(ev["monto"])
+        fila["saldo"] = _presentar_saldo(saldo)
+        filas.append(fila)
+
+    return {
+        "activa": True,
+        "esperado_semana": esperado_semana,
+        "saldo_inicial": _presentar_saldo(saldo_inicial),
+        "saldo_final": _presentar_saldo(saldo),
+        "total_devengado": total_devengado,
+        "total_cobrado": total_cobrado,
+        "filas": filas,
         "cantidad": len(filas),
     }
-    return filas, resumen
 
 
 def crear_vehiculo(nombre, patente):

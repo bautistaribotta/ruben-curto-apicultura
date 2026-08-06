@@ -32,7 +32,7 @@ from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo
                        editar_empleado, eliminar_empleado, obtener_datos_empleado, crear_pago_empleado, fijar_sueldo_empleado,
                        editar_pago_empleado, eliminar_pago_empleado,
                        obtener_gastos_empleado, obtener_viajes_empleado, TIPOS_VIAJE_EMPLEADO,
-                       obtener_pagos_empleado, resolver_granularidad_pagos, resolver_ancla_pagos,
+                       obtener_cuenta_corriente, saldo_cuenta_corriente, resolver_granularidad_pagos, resolver_ancla_pagos,
                        rango_periodo_pagos, desplazar_periodo_pagos, etiqueta_periodo_pagos,
                        editar_vehiculo, eliminar_vehiculo,
                        crear_viaje_cereal, obtener_viajes_cereales, obtener_viajes_cereal_de_cliente,
@@ -168,16 +168,16 @@ def _contexto_pagos_empleado(request, empleado):
     inicio = resolver_ancla_pagos(request.GET.get("pagos_ancla"), granularidad)
     desde, hasta = rango_periodo_pagos(inicio, granularidad)
 
-    filas, resumen = obtener_pagos_empleado(empleado, desde, hasta)
+    cuenta = obtener_cuenta_corriente(empleado, desde, hasta)
 
-    # El resumen (totales del periodo) se calcula sobre todas las filas; recien
-    # despues pagino la tabla de a 5 para no romper esos totales.
-    paginador_pagos = Paginator(filas, 5)
+    # El saldo inicial/final del periodo se calcula sobre todas las filas; recien
+    # despues pagino de a 8 para no romper esos bordes de la cuenta.
+    paginador_pagos = Paginator(cuenta["filas"], 8)
     pagina_pagos = paginador_pagos.get_page(request.GET.get("pagos_page"))
 
     return {
         "pagos": pagina_pagos,
-        "resumen_pagos": resumen,
+        "cuenta": cuenta,
         "pagos_granularidad": granularidad,
         "pagos_inicio": inicio,
         "pagos_fin": hasta,
@@ -386,6 +386,9 @@ def informacion_empleado(request, id_empleado):
         "tipo": tipo,
         "pestañas_viajes": pestañas_viajes,
         "total_viajes_periodo": conteos_viajes["todos"],
+        # Saldo actual de la cuenta corriente (hasta hoy): el numero grande del
+        # encabezado, que no cambia al navegar periodos en el bloque de pagos.
+        "cuenta_saldo": saldo_cuenta_corriente(empleado),
         **ctx_fechas,
     }
 
