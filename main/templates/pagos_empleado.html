@@ -77,7 +77,7 @@
                   <span class="material-symbols-outlined">event</span>
                   Sueldo
                 </span>
-                <span class="mov-detalle">Semana devengada</span>
+                <span class="mov-detalle">Restante de la semana pasada</span>
               </td>
               <td class="texto-derecha celda-monto-mov celda-monto-mov--ingreso">+${{ fila.monto_abs|floatformat:"0"|intcomma }}</td>
               <td class="texto-derecha celda-saldo{% if fila.saldo.a_favor %} celda-saldo--favor{% elif fila.saldo.en_contra %} celda-saldo--contra{% endif %}">
