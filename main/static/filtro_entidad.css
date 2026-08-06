@@ -1,0 +1,75 @@
+/* --- Filtro por entidad (chip -> modal selector) -----------------------------
+   Chip autonomo (no depende de .prod-chip, asi funciona igual en las tres vistas de
+   viaje sin importar que hoja de estilos cargue cada una). Abre un modal
+   selector_entidad para ELEGIR empleado, vehiculo o destino en vez de tipear. Mismo
+   lenguaje visual que los chips de la vista de Deudas. */
+.filtros-entidad {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.filtro-entidad {
+  display: inline-flex;
+}
+
+.filtro-entidad__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  /* El nombre de la entidad puede ser largo; acoto para que no desborde la barra. */
+  max-width: 15rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-default);
+  background-color: var(--surface-card);
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color var(--dur-normal) var(--ease-standard),
+              color var(--dur-normal) var(--ease-standard),
+              border-color var(--dur-normal) var(--ease-standard);
+}
+
+.filtro-entidad__trigger .material-symbols-outlined {
+  font-size: 1.05rem;
+}
+
+.filtro-entidad__trigger:hover {
+  background-color: var(--surface-hover);
+  color: var(--text-body);
+}
+
+/* Con un filtro elegido, el chip toma el pino de marca (igual que en Deudas). */
+.filtro-entidad__trigger.is-active {
+  background-color: var(--brand-secondary);
+  color: var(--text-on-inverse);
+  border-color: var(--brand-secondary);
+}
+
+.filtro-entidad__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* La "x" para limpiar vive dentro del chip activo; es un target propio, con su propio
+   hover, sin disparar la apertura del modal (lo frena el JS). */
+.filtro-entidad__clear {
+  font-size: 1rem;
+  margin-left: 0.1rem;
+  margin-right: -0.2rem;
+  border-radius: var(--radius-pill);
+  opacity: 0.8;
+  transition: opacity var(--dur-fast) var(--ease-standard),
+              background-color var(--dur-fast) var(--ease-standard);
+}
+
+.filtro-entidad__clear:hover {
+  opacity: 1;
+  background-color: oklch(100% 0 0 / 0.18);
+}

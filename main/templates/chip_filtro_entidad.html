@@ -1,0 +1,33 @@
+{% comment %}
+  Chip de filtro por entidad (chip -> modal selector_entidad). Reemplaza al buscador
+  de texto libre por una eleccion acotada: el usuario ELIGE de una lista en vez de
+  tipear, evitando errores y confusiones entre nombres parecidos.
+
+  El estado APLICADO (id + nombre) vive en los data-* del contenedor; filtros_entidad.js
+  lo lee para armar la URL de la busqueda AJAX y para reconstruir la etiqueta al elegir
+  o limpiar. El chip vive fuera de la region que reemplaza el AJAX, asi que su estado
+  sobrevive a los refrescos.
+
+  Parametros de contexto:
+    chip_id      -> id unico del contenedor
+    param        -> nombre del parametro GET que aplica el filtro (empleado/vehiculo/destino)
+    modal_id     -> id del modal selector_entidad que abre
+    icono        -> simbolo Material
+    etiqueta     -> texto del chip cuando no hay filtro (por ej. "Empleado")
+    valor_id     -> estado aplicado que viene del server (id elegido)
+    valor_nombre -> nombre a mostrar del estado aplicado
+{% endcomment %}
+<div class="filtro-entidad" id="{{ chip_id }}"
+     data-param="{{ param }}" data-modal="{{ modal_id }}" data-etiqueta="{{ etiqueta }}"
+     data-filtro-id="{{ valor_id }}" data-filtro-nombre="{{ valor_nombre }}">
+  <button type="button"
+          class="filtro-entidad__trigger {% if valor_id %}is-active{% endif %}"
+          aria-haspopup="dialog" aria-expanded="false">
+    <span class="material-symbols-outlined" aria-hidden="true">{{ icono }}</span>
+    <span class="filtro-entidad__label">{{ valor_nombre|default:etiqueta }}</span>
+    {% if valor_id %}
+      <span class="material-symbols-outlined filtro-entidad__clear"
+            role="button" tabindex="0" aria-label="Quitar filtro de {{ etiqueta|lower }}">close</span>
+    {% endif %}
+  </button>
+</div>
