@@ -4,7 +4,6 @@
  * -----------------------------------------------------------------------------
  */
 
-const inputBusqueda = document.getElementById('buscar-viaje');
 const filtroEstado = document.getElementById('filtro-estado');
 const contenedorTabla = document.getElementById('tabla-viajes-container');
 const filtroFechasViaje = document.getElementById('filtro-fechas');
@@ -21,14 +20,13 @@ const aplicarFechasViaje = (url) => {
 };
 
 /**
- * Busca viajes aplicando texto y filtro de estado mediante AJAX, sin recargar
- * la página entera.
+ * Busca viajes aplicando los filtros por entidad (empleado/vehiculo/destino), el
+ * estado y la fecha mediante AJAX, sin recargar la página entera.
  * @param {string|null} urlString - URL opcional (ej: para paginación).
  */
 const buscar = (urlString = null) => {
-  if (!inputBusqueda || !filtroEstado || !contenedorTabla) return;
+  if (!filtroEstado || !contenedorTabla) return;
 
-  const q = inputBusqueda.value;
   const estado = filtroEstado.value;
   let url;
 
@@ -36,7 +34,6 @@ const buscar = (urlString = null) => {
     url = new URL(urlString, window.location.origin);
   } else {
     url = new URL(window.location.href);
-    url.searchParams.set('q', q);
     if (estado) {
       url.searchParams.set('estado', estado);
     } else {
@@ -45,6 +42,9 @@ const buscar = (urlString = null) => {
     url.searchParams.delete('page');
   }
 
+  // Los filtros por entidad y por fecha viven en sus chips (fuera de la tabla que
+  // reemplaza el AJAX); los vuelco en la URL tanto al buscar como al paginar.
+  if (typeof aplicarFiltrosEntidad === 'function') aplicarFiltrosEntidad(url);
   aplicarFechasViaje(url);
 
   fetch(url, {
@@ -76,7 +76,8 @@ const vincularPaginacion = () => {
   });
 };
 
-if (inputBusqueda) inputBusqueda.addEventListener('input', () => buscar());
+// Los chips de filtro por entidad avisan por evento; recargo la tabla al cambiar.
+document.addEventListener('filtroentidad:cambio', () => buscar());
 
 // El filtro de fecha avisa por evento; recargo la tabla con el rango aplicado.
 document.addEventListener('filtrofechas:cambio', () => buscar());

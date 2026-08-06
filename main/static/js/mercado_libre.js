@@ -6,7 +6,6 @@
  * -----------------------------------------------------------------------------
  */
 
-const inputBusquedaMeli = document.getElementById('buscador-viajes-meli');
 const contenedorTablaMeli = document.getElementById('contenedor-tabla-viajes-meli');
 const filtroFechasMeli = document.getElementById('filtro-fechas');
 
@@ -23,11 +22,12 @@ const aplicarFechasMeli = (url) => {
 };
 
 /**
- * Busca viajes de reparto aplicando el texto mediante AJAX.
+ * Busca viajes de reparto aplicando los filtros por entidad (empleado/vehiculo/
+ * destino) y la fecha mediante AJAX.
  * @param {string|null} urlString - URL opcional (ej: para paginacion).
  */
 const buscarMeli = (urlString = null) => {
-  if (!inputBusquedaMeli || !contenedorTablaMeli) return;
+  if (!contenedorTablaMeli) return;
 
   let url;
 
@@ -35,10 +35,12 @@ const buscarMeli = (urlString = null) => {
     url = new URL(urlString, window.location.origin);
   } else {
     url = new URL(window.location.href);
-    url.searchParams.set('q', inputBusquedaMeli.value);
     url.searchParams.delete('page');
   }
 
+  // Los filtros por entidad y por fecha viven en sus chips (fuera de la region que
+  // reemplaza el AJAX); los vuelco en la URL tanto al buscar como al paginar.
+  if (typeof aplicarFiltrosEntidad === 'function') aplicarFiltrosEntidad(url);
   aplicarFechasMeli(url);
 
   fetch(url, {
@@ -86,7 +88,8 @@ const vincularPaginacionMeli = () => {
   });
 };
 
-if (inputBusquedaMeli) inputBusquedaMeli.addEventListener('input', () => buscarMeli());
+// Los chips de filtro por entidad avisan por evento; recargo la tabla al cambiar.
+document.addEventListener('filtroentidad:cambio', () => buscarMeli());
 
 // El filtro de fecha avisa por evento; recargo la tabla con el rango aplicado.
 document.addEventListener('filtrofechas:cambio', () => buscarMeli());

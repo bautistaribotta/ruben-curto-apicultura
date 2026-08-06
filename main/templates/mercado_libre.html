@@ -10,6 +10,8 @@
 {% block links %}
 <link rel="stylesheet" href="{% static_v 'mercado_libre.css' %}">
 <link rel="stylesheet" href="{% static_v 'filtro_fechas.css' %}">
+<link rel="stylesheet" href="{% static_v 'filtro_entidad.css' %}">
+<link rel="stylesheet" href="{% static_v 'selector_entidad.css' %}">
 <link rel="stylesheet" href="{% static_v 'pago_viaje.css' %}">
 {% endblock %}
 
@@ -36,9 +38,15 @@
   <!-- Controles Superiores: Buscador + Boton nuevo -->
   <div class="barra-herramientas">
     <div class="grupo-busqueda">
-      <div class="contenedor-buscador">
-        <span class="material-symbols-outlined icono-busqueda">search</span>
-        <input type="text" id="buscador-viajes-meli" class="input-busqueda" placeholder="Busca un viaje por vehiculo, empleado o destino" value="{{ q|default:'' }}">
+      {% comment %}
+        Filtros por entidad: un chip por dimension (empleado, vehiculo, destino) que
+        abre su modal para elegir de la lista. El destino sale del catalogo de
+        localidades. Se combinan entre si y con la fecha.
+      {% endcomment %}
+      <div class="filtros-entidad">
+        {% include "chip_filtro_entidad.html" with chip_id="chip-empleado" param="empleado" modal_id="selector-empleado-reparto" icono="person" etiqueta="Empleado" valor_id=empleado valor_nombre=empleado_nombre %}
+        {% include "chip_filtro_entidad.html" with chip_id="chip-vehiculo" param="vehiculo" modal_id="selector-vehiculo-reparto" icono="local_shipping" etiqueta="Vehículo" valor_id=vehiculo valor_nombre=vehiculo_nombre %}
+        {% include "chip_filtro_entidad.html" with chip_id="chip-destino" param="destino" modal_id="selector-destino-reparto" icono="location_on" etiqueta="Destino" valor_id=destino valor_nombre=destino_nombre %}
       </div>
       {% include 'filtro_fechas.html' %}
     </div>
@@ -58,6 +66,11 @@
   </div>
 
 </section>
+
+{% comment %} Modales de los chips de filtro (empleado, vehiculo, destino del catalogo). {% endcomment %}
+{% include "selector_entidad.html" with selector_id="selector-empleado-reparto" icono="person" titulo="Elegir empleado" descripcion="Filtrá los repartos por el empleado que elijas de la lista." placeholder="Buscar por nombre" items=empleados_filtro sin_items="No hay empleados activos." %}
+{% include "selector_entidad.html" with selector_id="selector-vehiculo-reparto" icono="local_shipping" titulo="Elegir vehículo" descripcion="Filtrá los repartos por el vehículo que elijas de la lista." placeholder="Buscar por nombre o patente" items=vehiculos_filtro sin_items="No hay vehículos activos." %}
+{% include "selector_entidad.html" with selector_id="selector-destino-reparto" icono="location_on" titulo="Elegir destino" descripcion="Filtrá los repartos por la localidad que elijas de la lista." placeholder="Buscar por localidad" items=destinos_filtro sin_items="Todavía no hay localidades cargadas." %}
 
 <!-- PANEL LATERAL NUEVO REPARTO (SLIDE-OVER) -->
 <div id="slide-over-reparto">
@@ -259,6 +272,8 @@
 
 {% block codigo-javascript %}
 <script src="{% static_v 'js/filtro_fechas.js' %}"></script>
+<script src="{% static_v 'js/selector_entidad.js' %}"></script>
+<script src="{% static_v 'js/filtros_entidad.js' %}"></script>
 <script src="{% static_v 'js/mercado_libre.js' %}"></script>
 <script src="{% static_v 'js/pago_viaje.js' %}"></script>
 <script src="{% static_v 'js/destino_reparto.js' %}"></script>

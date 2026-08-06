@@ -6,7 +6,6 @@
  * -----------------------------------------------------------------------------
  */
 
-const inputBusqueda = document.getElementById('buscar-viaje-cereal');
 const contenedorTabla = document.getElementById('tabla-viajes-cereales-container');
 const filtroFechasCereal = document.getElementById('filtro-fechas');
 
@@ -22,23 +21,25 @@ const aplicarFechasCereal = (url) => {
 };
 
 /**
- * Busca viajes de cereales aplicando el texto ingresado mediante AJAX.
+ * Busca viajes de cereales aplicando los filtros por entidad (empleado/vehiculo/
+ * destino) y la fecha mediante AJAX.
  * @param {string|null} urlString - URL opcional (ej: para paginación).
  */
 const buscar = (urlString = null) => {
-  if (!inputBusqueda || !contenedorTabla) return;
+  if (!contenedorTabla) return;
 
-  const q = inputBusqueda.value;
   let url;
 
   if (urlString) {
     url = new URL(urlString, window.location.origin);
   } else {
     url = new URL(window.location.href);
-    url.searchParams.set('q', q);
     url.searchParams.delete('page');
   }
 
+  // Los filtros por entidad y por fecha viven en sus chips (fuera de la region que
+  // reemplaza el AJAX); los vuelco en la URL tanto al buscar como al paginar.
+  if (typeof aplicarFiltrosEntidad === 'function') aplicarFiltrosEntidad(url);
   aplicarFechasCereal(url);
 
   fetch(url, {
@@ -86,7 +87,8 @@ const vincularPaginacion = () => {
   });
 };
 
-if (inputBusqueda) inputBusqueda.addEventListener('input', () => buscar());
+// Los chips de filtro por entidad avisan por evento; recargo la tabla al cambiar.
+document.addEventListener('filtroentidad:cambio', () => buscar());
 
 // El filtro de fecha avisa por evento; recargo la tabla con el rango aplicado.
 document.addEventListener('filtrofechas:cambio', () => buscar());

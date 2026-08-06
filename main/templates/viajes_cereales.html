@@ -10,6 +10,8 @@
 <link rel="stylesheet" href="{% static_v 'viajes.css' %}">
 <link rel="stylesheet" href="{% static_v 'viajes_cereales.css' %}">
 <link rel="stylesheet" href="{% static_v 'filtro_fechas.css' %}">
+<link rel="stylesheet" href="{% static_v 'filtro_entidad.css' %}">
+<link rel="stylesheet" href="{% static_v 'selector_entidad.css' %}">
 <link rel="stylesheet" href="{% static_v 'autocompletado_ciudades.css' %}">
 <link rel="stylesheet" href="{% static_v 'pago_viaje.css' %}">
 {% endblock %}
@@ -36,10 +38,14 @@
   <!-- Controles superiores: buscador y boton -->
   <div class="barra-herramientas">
     <div class="grupo-busqueda">
-      <div class="contenedor-input-busqueda">
-        <span class="material-symbols-outlined icono-busqueda">search</span>
-        <input type="text" id="buscar-viaje-cereal" class="input-busqueda"
-               placeholder="Buscar por empleado, vehículo, cereal o destino" value="{{ q|default:'' }}">
+      {% comment %}
+        Filtros por entidad: un chip por dimension (empleado, vehiculo, destino) que
+        abre su modal para elegir de la lista. Se combinan entre si y con la fecha.
+      {% endcomment %}
+      <div class="filtros-entidad">
+        {% include "chip_filtro_entidad.html" with chip_id="chip-empleado" param="empleado" modal_id="selector-empleado-cereal" icono="person" etiqueta="Empleado" valor_id=empleado valor_nombre=empleado_nombre %}
+        {% include "chip_filtro_entidad.html" with chip_id="chip-vehiculo" param="vehiculo" modal_id="selector-vehiculo-cereal" icono="local_shipping" etiqueta="Vehículo" valor_id=vehiculo valor_nombre=vehiculo_nombre %}
+        {% include "chip_filtro_entidad.html" with chip_id="chip-destino" param="destino" modal_id="selector-destino-cereal" icono="location_on" etiqueta="Destino" valor_id=destino valor_nombre=destino_nombre %}
       </div>
       {% include 'filtro_fechas.html' %}
     </div>
@@ -59,6 +65,11 @@
   </div>
 
 </section>
+
+{% comment %} Modales de los chips de filtro (empleado, vehiculo, destino). {% endcomment %}
+{% include "selector_entidad.html" with selector_id="selector-empleado-cereal" icono="person" titulo="Elegir empleado" descripcion="Filtrá los viajes por el empleado que elijas de la lista." placeholder="Buscar por nombre" items=empleados_filtro sin_items="No hay empleados activos." %}
+{% include "selector_entidad.html" with selector_id="selector-vehiculo-cereal" icono="local_shipping" titulo="Elegir vehículo" descripcion="Filtrá los viajes por el vehículo que elijas de la lista." placeholder="Buscar por nombre o patente" items=vehiculos_filtro sin_items="No hay vehículos activos." %}
+{% include "selector_entidad.html" with selector_id="selector-destino-cereal" icono="location_on" titulo="Elegir destino" descripcion="Filtrá los viajes por el destino que elijas de la lista." placeholder="Buscar por destino" items=destinos_filtro sin_items="Todavía no hay destinos en los viajes." %}
 
 <!-- PANEL LATERAL NUEVO ACOPIO (SLIDE-OVER) -->
 <div id="slide-over-acopio">
@@ -284,6 +295,8 @@
 <script src="{% static_v 'js/autocompletado_ciudades.js' %}"></script>
 <script src="{% static_v 'js/autocompletado_clientes.js' %}"></script>
 <script src="{% static_v 'js/filtro_fechas.js' %}"></script>
+<script src="{% static_v 'js/selector_entidad.js' %}"></script>
+<script src="{% static_v 'js/filtros_entidad.js' %}"></script>
 <script src="{% static_v 'js/viajes_cereales.js' %}"></script>
 <script src="{% static_v 'js/pago_viaje.js' %}"></script>
 <script>

@@ -63,7 +63,7 @@
     <tr class="fila-vacia">
       <td colspan="{% if user.is_staff %}5{% else %}4{% endif %}" class="celda-vacia">
         <span class="material-symbols-outlined">local_shipping</span>
-        {% if q %}
+        {% if empleado or vehiculo or destino or desde or hasta %}
         No se encontraron repartos con esos filtros.
         {% else %}
         Todavía no hay repartos. Cargá el primero con el botón "Nuevo reparto".
@@ -82,7 +82,7 @@
   </div>
   <div class="paginacion-botones">
     {% if page_obj.has_previous %}
-      <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if desde %}&desde={{ desde }}{% endif %}{% if hasta %}&hasta={{ hasta }}{% endif %}">
+      <a href="?page={{ page_obj.previous_page_number }}{% if empleado %}&empleado={{ empleado }}{% endif %}{% if vehiculo %}&vehiculo={{ vehiculo }}{% endif %}{% if destino %}&destino={{ destino }}{% endif %}{% if desde %}&desde={{ desde }}{% endif %}{% if hasta %}&hasta={{ hasta }}{% endif %}">
         <button class="boton-paginacion">Anterior</button>
       </a>
     {% else %}
@@ -90,7 +90,7 @@
     {% endif %}
 
     {% if page_obj.has_next %}
-      <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if desde %}&desde={{ desde }}{% endif %}{% if hasta %}&hasta={{ hasta }}{% endif %}">
+      <a href="?page={{ page_obj.next_page_number }}{% if empleado %}&empleado={{ empleado }}{% endif %}{% if vehiculo %}&vehiculo={{ vehiculo }}{% endif %}{% if destino %}&destino={{ destino }}{% endif %}{% if desde %}&desde={{ desde }}{% endif %}{% if hasta %}&hasta={{ hasta }}{% endif %}">
         <button class="boton-paginacion">Siguiente</button>
       </a>
     {% else %}

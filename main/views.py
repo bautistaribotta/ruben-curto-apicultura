@@ -29,6 +29,9 @@ from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo
                        obtener_vehiculos_activos, obtener_viajes, obtener_datos_viaje, editar_viaje, eliminar_viaje, crear_gasto,
                        editar_gasto_viaje, eliminar_gasto_viaje,
                        incluir_asignado,
+                       opciones_empleados_filtro, opciones_vehiculos_filtro,
+                       opciones_destinos_viaje, opciones_destinos_cereal, opciones_destinos_reparto_filtro,
+                       nombre_empleado_filtro, nombre_vehiculo_filtro, nombre_destino_reparto_filtro,
                        editar_empleado, eliminar_empleado, obtener_datos_empleado, crear_pago_empleado, fijar_sueldo_empleado,
                        editar_pago_empleado, eliminar_pago_empleado,
                        obtener_gastos_empleado, obtener_viajes_empleado, TIPOS_VIAJE_EMPLEADO,
@@ -1267,18 +1270,17 @@ def viajes(request):
 
     lista_viajes = base_viajes
 
-    # Búsqueda por vehículo, empleado, destino o ID
-    q = request.GET.get("q", "")
-    if q:
-        if q.isdigit():
-            lista_viajes = lista_viajes.filter(id__icontains=q)
-        else:
-            lista_viajes = lista_viajes.filter(
-                Q(vehiculo__nombre__icontains=q)
-                | Q(vehiculo__patente__icontains=q)
-                | filtro_nombre_apellido(q, "empleado__")
-                | Q(destinos__destino__icontains=q)
-            ).distinct()
+    # Filtros por entidad (chip -> modal selector). Reemplazan al buscador de texto:
+    # el usuario elige empleado, vehiculo o destino de una lista en vez de tipear.
+    empleado = request.GET.get("empleado", "")
+    vehiculo = request.GET.get("vehiculo", "")
+    destino = request.GET.get("destino", "")
+    if empleado.isdigit():
+        lista_viajes = lista_viajes.filter(empleado_id=empleado)
+    if vehiculo.isdigit():
+        lista_viajes = lista_viajes.filter(vehiculo_id=vehiculo)
+    if destino:
+        lista_viajes = lista_viajes.filter(destinos__destino=destino).distinct()
 
     # Filtro por estado (chips). Replico la lógica de la property Viaje.estado en la query.
     estado = request.GET.get("estado", "")
@@ -1303,7 +1305,15 @@ def viajes(request):
         "page_obj": page_obj,
         "empleados": obtener_empleados_activos(),
         "vehiculos": obtener_vehiculos_activos(),
-        "q": q,
+        "empleado": empleado,
+        "empleado_nombre": nombre_empleado_filtro(empleado),
+        "vehiculo": vehiculo,
+        "vehiculo_nombre": nombre_vehiculo_filtro(vehiculo),
+        "destino": destino,
+        "destino_nombre": destino,
+        "empleados_filtro": opciones_empleados_filtro(),
+        "vehiculos_filtro": opciones_vehiculos_filtro(),
+        "destinos_filtro": opciones_destinos_viaje(),
         "estado": estado,
         "count_total": count_total,
         "count_en_curso": count_en_curso,
@@ -2080,18 +2090,17 @@ def mercado_libre(request):
     # Base de viajes de reparto activos
     lista_viajes = obtener_viajes_reparto()
 
-    # Busqueda por vehiculo, empleado, destino o ID
-    q = request.GET.get("q", "")
-    if q:
-        if q.isdigit():
-            lista_viajes = lista_viajes.filter(id__icontains=q)
-        else:
-            lista_viajes = lista_viajes.filter(
-                Q(vehiculo__nombre__icontains=q)
-                | Q(vehiculo__patente__icontains=q)
-                | filtro_nombre_apellido(q, "empleado__")
-                | Q(destino__localidad_destino__icontains=q)
-            ).distinct()
+    # Filtros por entidad (chip -> modal selector). El destino sale del catalogo de
+    # localidades, asi que se filtra por su id (no por texto libre como los otros viajes).
+    empleado = request.GET.get("empleado", "")
+    vehiculo = request.GET.get("vehiculo", "")
+    destino = request.GET.get("destino", "")
+    if empleado.isdigit():
+        lista_viajes = lista_viajes.filter(empleado_id=empleado)
+    if vehiculo.isdigit():
+        lista_viajes = lista_viajes.filter(vehiculo_id=vehiculo)
+    if destino.isdigit():
+        lista_viajes = lista_viajes.filter(destino_id=destino)
 
     # Filtro por rango de fechas (chip + popover), por la fecha del reparto.
     desde, hasta, ctx_fechas = _rango_fechas(request)
@@ -2111,7 +2120,15 @@ def mercado_libre(request):
         "vehiculos": obtener_vehiculos_activos(),
         # Catalogo de localidades: el alta de un reparto elige de aca, no escribe a mano
         "destinos": obtener_destinos_reparto(),
-        "q": q,
+        "empleado": empleado,
+        "empleado_nombre": nombre_empleado_filtro(empleado),
+        "vehiculo": vehiculo,
+        "vehiculo_nombre": nombre_vehiculo_filtro(vehiculo),
+        "destino": destino,
+        "destino_nombre": nombre_destino_reparto_filtro(destino),
+        "empleados_filtro": opciones_empleados_filtro(),
+        "vehiculos_filtro": opciones_vehiculos_filtro(),
+        "destinos_filtro": opciones_destinos_reparto_filtro(),
         # Las tarjetas reflejan los mismos filtros que la tabla: calculo el resumen
         # sobre el listado ya filtrado (antes de paginar), no sobre todos los viajes.
         "resumen": obtener_resumen_reparto(lista_viajes),
@@ -2327,19 +2344,17 @@ def viaje_cereales(request):
 
     lista_viajes = obtener_viajes_cereales()
 
-    # Busqueda por vehiculo, empleado, tipo de cereal, destino o ID
-    q = request.GET.get("q", "")
-    if q:
-        if q.isdigit():
-            lista_viajes = lista_viajes.filter(id__icontains=q)
-        else:
-            lista_viajes = lista_viajes.filter(
-                Q(vehiculo__nombre__icontains=q)
-                | Q(vehiculo__patente__icontains=q)
-                | filtro_nombre_apellido(q, "empleado__")
-                | Q(tipo_cereal__icontains=q)
-                | Q(destinos__destino__icontains=q)
-            ).distinct()
+    # Filtros por entidad (chip -> modal selector). Reemplazan al buscador de texto:
+    # el usuario elige empleado, vehiculo o destino de una lista en vez de tipear.
+    empleado = request.GET.get("empleado", "")
+    vehiculo = request.GET.get("vehiculo", "")
+    destino = request.GET.get("destino", "")
+    if empleado.isdigit():
+        lista_viajes = lista_viajes.filter(empleado_id=empleado)
+    if vehiculo.isdigit():
+        lista_viajes = lista_viajes.filter(vehiculo_id=vehiculo)
+    if destino:
+        lista_viajes = lista_viajes.filter(destinos__destino=destino).distinct()
 
     # Filtro por rango de fechas (chip + popover), por la fecha del viaje.
     desde, hasta, ctx_fechas = _rango_fechas(request)
@@ -2358,7 +2373,15 @@ def viaje_cereales(request):
         "empleados": obtener_empleados_activos(),
         "vehiculos": obtener_vehiculos_activos(),
         "cereales": ViajeCereal.cereales,
-        "q": q,
+        "empleado": empleado,
+        "empleado_nombre": nombre_empleado_filtro(empleado),
+        "vehiculo": vehiculo,
+        "vehiculo_nombre": nombre_vehiculo_filtro(vehiculo),
+        "destino": destino,
+        "destino_nombre": destino,
+        "empleados_filtro": opciones_empleados_filtro(),
+        "vehiculos_filtro": opciones_vehiculos_filtro(),
+        "destinos_filtro": opciones_destinos_cereal(),
         # Las tarjetas reflejan los mismos filtros que la tabla: calculo el resumen
         # sobre el listado ya filtrado (antes de paginar), no sobre todos los viajes.
         "resumen": obtener_resumen_cereal(lista_viajes),
