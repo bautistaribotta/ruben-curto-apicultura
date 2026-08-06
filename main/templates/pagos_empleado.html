@@ -54,7 +54,7 @@
       <tbody>
         {% for pago in pagos %}
           {% if pago.es_comision %}
-          <tr class="fila-pago--comision" data-url="{% url 'informacion_viaje_cereal' pago.viaje_id %}">
+          <tr class="fila-pago--comision" data-url="{% url 'informacion_viaje_cereal' pago.viaje_id %}?origen=empleado">
             <td class="celda-fecha-pago">{{ pago.fecha|date:"d/m/Y" }}</td>
             <td class="celda-observacion">
               <span class="etiqueta-comision">

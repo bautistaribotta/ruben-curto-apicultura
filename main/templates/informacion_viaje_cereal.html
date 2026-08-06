@@ -30,6 +30,11 @@
     <span class="material-symbols-outlined">arrow_back</span>
     Volver al perfil de {{ viaje_cereal.cliente.nombre }} {{ viaje_cereal.cliente.apellido|default:"" }}
   </a>
+  {% elif request.GET.origen == 'empleado' and viaje_cereal.empleado %}
+  <a href="{% url 'informacion_empleado' viaje_cereal.empleado.id %}" class="boton-volver">
+    <span class="material-symbols-outlined">arrow_back</span>
+    Volver al perfil de {{ viaje_cereal.empleado.nombre }} {{ viaje_cereal.empleado.apellido|default:"" }}
+  </a>
   {% else %}
   <a href="{% url 'viajes_cereales' %}" class="boton-volver">
     <span class="material-symbols-outlined">arrow_back</span>
