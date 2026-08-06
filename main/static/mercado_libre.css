@@ -95,7 +95,9 @@
   display: flex;
   flex: 1;
   min-width: 0;
-  gap: 1rem;
+  /* Los chips de filtro (entidad y fecha) se separan 0.5rem entre si, igual que
+     los chips de entidad dentro de su grupo. */
+  gap: 0.5rem;
 }
 
 /* El buscador es lo unico elastico de la barra: parte de 24rem y cede ancho
