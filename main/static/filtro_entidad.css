@@ -20,7 +20,7 @@
   gap: 0.45rem;
   /* El nombre de la entidad puede ser largo; acoto para que no desborde la barra. */
   max-width: 15rem;
-  padding: 0.45rem 0.9rem;
+  padding: 0.625rem 0.9rem;
   border-radius: var(--radius-pill);
   border: 1px solid var(--border-default);
   background-color: var(--surface-card);
@@ -36,7 +36,7 @@
 }
 
 .filtro-entidad__trigger .material-symbols-outlined {
-  font-size: 1.05rem;
+  font-size: 1.15rem;
 }
 
 .filtro-entidad__trigger:hover {
