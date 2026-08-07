@@ -94,7 +94,7 @@
         {% endcomment %}
         <li>
           <a href="{% url 'viajes' %}" class="item-menu {% if request.resolver_match.url_name == 'viajes' or request.resolver_match.url_name == 'informacion_viaje' or request.resolver_match.url_name == 'informacion_operacion' and request.GET.origen == 'viaje' %} activo {% endif %}">
-            <span class="material-symbols-outlined">local_shipping</span>
+            <span class="material-symbols-outlined">hive</span>
             Viajes Miel/Cera
           </a>
         </li>
