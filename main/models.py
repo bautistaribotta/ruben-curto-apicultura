@@ -503,6 +503,25 @@ class ViajeCereal(models.Model):
     # que no corresponde al estado actual.
     fecha_pago = models.DateTimeField(null=True, blank=True)
 
+    # --- Dadora de carga ---
+    # La dadora es quien le consigue el flete al cliente. Es opcional: si el nombre
+    # queda vacio, el viaje no tuvo dadora (o no le cobro). Su comision se calcula
+    # sobre la facturacion (toneladas x precio), antes que los gastos: es lo primero
+    # que se descuenta apenas se factura el viaje.
+    COBROS_DADORA = [
+        ("porcentaje", "Porcentaje"),
+        ("tonelada", "Por tonelada"),
+        ("efectivo", "Efectivo"),
+    ]
+    dadora_carga = models.CharField(max_length=60, blank=True, default="")
+    # Como cobra la dadora, siempre sobre la facturacion: un porcentaje, un monto por
+    # cada tonelada, o un monto fijo en efectivo. Queda vacio cuando no hay dadora.
+    dadora_tipo_cobro = models.CharField(max_length=20, choices=COBROS_DADORA, blank=True, default="")
+    # El valor cobrado, que se interpreta segun 'dadora_tipo_cobro': si es porcentaje
+    # va de 1 a 100; si es por tonelada son los pesos por cada tonelada; si es efectivo
+    # es el monto fijo. Queda en 0 cuando el viaje no tiene dadora.
+    dadora_valor = models.PositiveIntegerField(default=0)
+
     class Meta:
         db_table = "viaje_cereal"
         verbose_name = "Viaje cereal"
@@ -521,22 +540,47 @@ class ViajeCereal(models.Model):
         return resultado if resultado is not None else 0
 
     @property
+    def tiene_dadora(self):
+        # El nombre vacio es la marca de "este viaje no tuvo dadora de carga".
+        return bool(self.dadora_carga)
+
+    @property
+    def costo_dadora(self):
+        # Comision de la dadora, lo primero que se descuenta de la facturacion (antes
+        # que los gastos). Segun como cobre:
+        #  - porcentaje: un porcentaje de la facturacion (toneladas x precio).
+        #  - tonelada: un monto por cada tonelada transportada.
+        #  - efectivo: un monto fijo.
+        # Sin dadora no hay costo.
+        if not self.tiene_dadora:
+            return 0
+        if self.dadora_tipo_cobro == "porcentaje":
+            return self.total_bruto * self.dadora_valor / 100
+        if self.dadora_tipo_cobro == "tonelada":
+            return self.dadora_valor * self.toneladas
+        if self.dadora_tipo_cobro == "efectivo":
+            return self.dadora_valor
+        return 0
+
+    @property
     def subtotal(self):
-        # Base sobre la que se reparte el empleado: facturacion menos los gastos del viaje
-        return self.total_bruto - self.total_gastos
+        # Base sobre la que se reparte el empleado: la facturacion menos la comision
+        # de la dadora (que sale primero) y menos los gastos del viaje.
+        return self.total_bruto - self.costo_dadora - self.total_gastos
 
     @property
     def pago_empleado(self):
-        # Lo que se lleva el empleado segun su porcentaje sobre el subtotal (bruto - gastos).
-        # Si los gastos superan al bruto el subtotal es negativo; en ese caso el empleado no
-        # "aporta" plata, asi que tomo la base en 0 para no calcular un pago negativo.
+        # Lo que se lleva el empleado segun su porcentaje sobre el subtotal (ya
+        # descontadas la dadora y los gastos). Si el subtotal es negativo tomo la base
+        # en 0 para no calcular un pago negativo.
         base = self.subtotal if self.subtotal > 0 else 0
         return base * self.porcentaje_empleado / 100
 
     @property
     def ganancia_neta(self):
-        # Lo que le queda a la empresa: el subtotal (ya descontados los gastos) menos
-        # la parte del empleado. Puede ser negativo si los gastos superan la facturacion.
+        # Lo que le queda a la empresa: el subtotal (ya descontadas dadora y gastos)
+        # menos la parte del empleado. Puede ser negativo si los costos superan la
+        # facturacion.
         return self.subtotal - self.pago_empleado
 
     def __str__(self):
