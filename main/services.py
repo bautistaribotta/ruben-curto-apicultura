@@ -2039,9 +2039,13 @@ def _validar_viaje_cereal(id_cliente, id_empleado, id_vehiculo, tipo_cereal, cod
         if dadora_tipo_val == "porcentaje":
             if dadora_valor_val < 1 or dadora_valor_val > 100:
                 raise ValueError("El porcentaje de la dadora de carga debe ser un numero entero entre 1 y 100.")
-        else:  # tonelada o efectivo: un monto en pesos
+        elif dadora_tipo_val == "tonelada":
+            # Es una cantidad de toneladas que despues se valua al precio del viaje.
             if dadora_valor_val < 1 or dadora_valor_val > 2147483647:
-                raise ValueError("El monto que cobra la dadora de carga debe ser un numero entero positivo.")
+                raise ValueError("La cantidad de toneladas de la dadora de carga debe ser un numero entero positivo.")
+        else:  # efectivo: un monto en pesos
+            if dadora_valor_val < 1 or dadora_valor_val > 2147483647:
+                raise ValueError("El monto en efectivo de la dadora de carga debe ser un numero entero positivo.")
 
     return (codigo_limpio, toneladas_val, precio_val, porcentaje_val, destinos_limpios,
             dadora_nombre, dadora_tipo_val, dadora_valor_val)
@@ -2156,7 +2160,7 @@ def obtener_resumen_cereal(viajes):
             _bruto=F("toneladas") * F("precio_tonelada"),
             _gastos=Coalesce(gastos_por_viaje, Value(0)),
         )
-        .values("_bruto", "_gastos", "toneladas", "porcentaje_empleado",
+        .values("_bruto", "_gastos", "precio_tonelada", "porcentaje_empleado",
                 "dadora_carga", "dadora_tipo_cobro", "dadora_valor")
     )
 
@@ -2174,7 +2178,7 @@ def obtener_resumen_cereal(viajes):
         elif v["dadora_tipo_cobro"] == "porcentaje":
             costo_dadora = bruto * v["dadora_valor"] / 100
         elif v["dadora_tipo_cobro"] == "tonelada":
-            costo_dadora = v["dadora_valor"] * v["toneladas"]
+            costo_dadora = v["dadora_valor"] * v["precio_tonelada"]
         elif v["dadora_tipo_cobro"] == "efectivo":
             costo_dadora = Decimal(v["dadora_valor"])
         else:

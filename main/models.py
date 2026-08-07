@@ -549,7 +549,9 @@ class ViajeCereal(models.Model):
         # Comision de la dadora, lo primero que se descuenta de la facturacion (antes
         # que los gastos). Segun como cobre:
         #  - porcentaje: un porcentaje de la facturacion (toneladas x precio).
-        #  - tonelada: un monto por cada tonelada transportada.
+        #  - tonelada: una cantidad de toneladas valuadas al precio del viaje. Si la
+        #    dadora se lleva "1 tonelada", cobra el precio de una tonelada de este
+        #    viaje (dadora_valor toneladas x precio_tonelada).
         #  - efectivo: un monto fijo.
         # Sin dadora no hay costo.
         if not self.tiene_dadora:
@@ -557,7 +559,7 @@ class ViajeCereal(models.Model):
         if self.dadora_tipo_cobro == "porcentaje":
             return self.total_bruto * self.dadora_valor / 100
         if self.dadora_tipo_cobro == "tonelada":
-            return self.dadora_valor * self.toneladas
+            return self.dadora_valor * self.precio_tonelada
         if self.dadora_tipo_cobro == "efectivo":
             return self.dadora_valor
         return 0

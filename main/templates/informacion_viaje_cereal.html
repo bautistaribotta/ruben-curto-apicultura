@@ -125,7 +125,7 @@
           <span class="vd-data__ico"><span class="material-symbols-outlined">handshake</span></span>
           <div class="vd-data__meta">
             <div class="vd-data__label">Dadora de carga</div>
-            <div class="vd-data__value">{{ viaje_cereal.dadora_carga }}{% if user.is_staff %}<span class="vd-pat">{% if viaje_cereal.dadora_tipo_cobro == 'porcentaje' %}{{ viaje_cereal.dadora_valor }}%{% elif viaje_cereal.dadora_tipo_cobro == 'tonelada' %}${{ viaje_cereal.dadora_valor|intcomma }} / t{% else %}${{ viaje_cereal.dadora_valor|intcomma }} efectivo{% endif %}</span>{% endif %}</div>
+            <div class="vd-data__value">{{ viaje_cereal.dadora_carga }}{% if user.is_staff %}<span class="vd-pat">{% if viaje_cereal.dadora_tipo_cobro == 'porcentaje' %}{{ viaje_cereal.dadora_valor }}%{% elif viaje_cereal.dadora_tipo_cobro == 'tonelada' %}{{ viaje_cereal.dadora_valor|intcomma }} t{% else %}${{ viaje_cereal.dadora_valor|intcomma }} efectivo{% endif %}</span>{% endif %}</div>
           </div>
         </div>
         {% endif %}
@@ -199,7 +199,7 @@
           <span class="vd-caja__k">
             <span class="vd-gasto__ico"><span class="material-symbols-outlined">handshake</span></span>
             Dadora de carga
-            <span class="vc-pct">{% if viaje_cereal.dadora_tipo_cobro == 'porcentaje' %}{{ viaje_cereal.dadora_valor }}%{% elif viaje_cereal.dadora_tipo_cobro == 'tonelada' %}${{ viaje_cereal.dadora_valor|intcomma }}/t{% else %}Efectivo{% endif %}</span>
+            <span class="vc-pct">{% if viaje_cereal.dadora_tipo_cobro == 'porcentaje' %}{{ viaje_cereal.dadora_valor }}%{% elif viaje_cereal.dadora_tipo_cobro == 'tonelada' %}{{ viaje_cereal.dadora_valor|intcomma }} t{% else %}Efectivo{% endif %}</span>
           </span>
           <span class="vd-caja__v vc-deduct">-${{ viaje_cereal.costo_dadora|floatformat:0|intcomma }}</span>
         </div>
@@ -619,22 +619,17 @@
               </div>
 
               <div class="grupo-input" id="dadora-ton-grupo-cereal" {% if viaje_cereal.dadora_tipo_cobro != 'tonelada' %}hidden{% endif %}>
-                <label for="dadora-ton-cereal">Monto por tonelada</label>
-                <div class="input-con-icono">
-                  <span>$</span>
-                  <input
-                    type="text"
-                    id="dadora-ton-cereal"
-                    name="dadora_valor"
-                    class="input-miles"
-                    inputmode="numeric"
-                    autocomplete="off"
-                    placeholder="0"
-                    pattern="[1-9][0-9]{0,2}(\.[0-9]{3})*"
-                    value="{% if viaje_cereal.dadora_tipo_cobro == 'tonelada' %}{{ viaje_cereal.dadora_valor }}{% endif %}"
-                    {% if viaje_cereal.dadora_tipo_cobro == 'tonelada' %}required{% else %}disabled{% endif %}>
-                </div>
-                <span class="mensaje-error">Ingrese un monto válido mayor a 0.</span>
+                <label for="dadora-ton-cereal">Cant. de toneladas</label>
+                <input
+                  type="number"
+                  id="dadora-ton-cereal"
+                  name="dadora_valor"
+                  min="1"
+                  step="1"
+                  placeholder="Ej: 1"
+                  value="{% if viaje_cereal.dadora_tipo_cobro == 'tonelada' %}{{ viaje_cereal.dadora_valor }}{% endif %}"
+                  {% if viaje_cereal.dadora_tipo_cobro == 'tonelada' %}required{% else %}disabled{% endif %}>
+                <span class="mensaje-error">Ingrese una cantidad de toneladas mayor a 0.</span>
               </div>
 
               <div class="grupo-input" id="dadora-efe-grupo-cereal" {% if viaje_cereal.dadora_tipo_cobro != 'efectivo' %}hidden{% endif %}>
