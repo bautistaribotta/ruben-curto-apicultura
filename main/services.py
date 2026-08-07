@@ -15,7 +15,7 @@ from django.core.cache import cache
 from .models import (Producto, Cliente, Operacion, DetalleOperacion, Pago, Cotizaciones, Empleado, PagosEmpleados,
                      Vehiculo, Viaje, DetalleViaje, Gasto, ViajeCereal, DetalleViajeCereal, GastoViajeCereal,
                      ViajeReparto, GastoViajeReparto, DestinoViajeReparto, Casa, Contrato, PagoAlquiler,
-                     GastoCasa, contratos_del_periodo, periodo_actual)
+                     GastoCasa, RegistroKilometraje, Seguro, VTV, Servis, contratos_del_periodo, periodo_actual)
 
 
 def _aplicar_estado_pago(viaje, pagado):
@@ -1610,6 +1610,177 @@ def eliminar_vehiculo(id_vehiculo):
     vehiculo.activo = False
     vehiculo.save()
     return vehiculo
+
+
+# ---------------------------------------------------------------------------
+# Kilometraje, seguros, VTV y services de un vehiculo
+#
+# Los cuatro cuelgan del vehiculo con una relacion uno a muchos y comparten el
+# mismo patron de CRUD: validar con los helpers de siempre (_fecha_obligatoria,
+# _decimal_opcional, _texto_opcional) y borrar de verdad, porque lo unico que se
+# borra es un registro cargado mal; el historial vive de no reescribirse.
+# ---------------------------------------------------------------------------
+
+# Topes de la BD: 10 digitos con 2 decimales para el kilometraje, 12 para los
+# costos. Los dejo como constantes para no repetir el numero magico en cada
+# validador y que se lea de donde sale.
+MAX_KILOMETROS = Decimal("99999999.99")
+MAX_COSTO = Decimal("9999999999.99")
+
+
+def _validar_kilometraje(fecha, kilometros):
+    """Limpia y valida una carga de kilometraje. Devuelve (fecha, kilometros)."""
+    dia = _fecha_obligatoria(fecha, "La fecha de la carga de kilometraje")
+    km = _decimal_opcional(kilometros, "El kilometraje", MAX_KILOMETROS)
+    if not km or km <= 0:
+        raise ValueError("El kilometraje agregado tiene que ser mayor a cero.")
+    return dia, km
+
+
+def crear_registro_km(id_vehiculo, fecha=None, kilometros=None):
+    """Anota una carga de kilometraje de un vehiculo activo."""
+    vehiculo = get_object_or_404(Vehiculo, id=id_vehiculo, activo=True)
+    dia, km = _validar_kilometraje(fecha, kilometros)
+    return RegistroKilometraje.objects.create(vehiculo=vehiculo, fecha=dia, kilometros=km)
+
+
+def editar_registro_km(id_registro, fecha=None, kilometros=None):
+    """Corrige una carga de kilometraje ya guardada (para lo que se tipeo mal)."""
+    registro = get_object_or_404(RegistroKilometraje, id=id_registro)
+    dia, km = _validar_kilometraje(fecha, kilometros)
+    registro.fecha, registro.kilometros = dia, km
+    registro.save()
+    return registro
+
+
+def eliminar_registro_km(id_registro):
+    """Borra una carga de kilometraje cargada por error. Devuelve el id del vehiculo."""
+    registro = get_object_or_404(RegistroKilometraje, id=id_registro)
+    id_vehiculo = registro.vehiculo_id
+    registro.delete()
+    return id_vehiculo
+
+
+def obtener_registros_km(id_vehiculo):
+    """Historial de cargas de kilometraje de un vehiculo, del mas nuevo al mas viejo."""
+    vehiculo = get_object_or_404(Vehiculo, id=id_vehiculo)
+    return vehiculo.registros_km.all()
+
+
+def _validar_vigencia(inicio, fin, costo, observaciones, articulo):
+    """Valida los datos de un seguro o una VTV (mismos campos y reglas).
+
+    'articulo' arma los mensajes de error ("del seguro", "de la VTV"). Las dos
+    fechas de vigencia son obligatorias y el fin no puede caer antes del inicio;
+    el costo y las observaciones son opcionales.
+    """
+    ini = _fecha_obligatoria(inicio, f"La fecha de inicio {articulo}")
+    f = _fecha_obligatoria(fin, f"La fecha de fin {articulo}")
+    if f < ini:
+        raise ValueError(f"El fin {articulo} no puede ser anterior a su inicio.")
+    monto = _decimal_opcional(costo, "El costo", MAX_COSTO)
+    obs = _texto_opcional(observaciones, 200, "Las observaciones")
+    return ini, f, monto, obs
+
+
+def crear_seguro(id_vehiculo, inicio=None, fin=None, costo=None, observaciones=None):
+    """Nueva poliza de seguro de un vehiculo activo. Renovar es esto, no editar la vieja."""
+    vehiculo = get_object_or_404(Vehiculo, id=id_vehiculo, activo=True)
+    ini, f, monto, obs = _validar_vigencia(inicio, fin, costo, observaciones, "del seguro")
+    return Seguro.objects.create(vehiculo=vehiculo, inicio=ini, fin=f, costo=monto, observaciones=obs)
+
+
+def editar_seguro(id_seguro, inicio=None, fin=None, costo=None, observaciones=None):
+    """Corrige una poliza de seguro ya cargada."""
+    seguro = get_object_or_404(Seguro, id=id_seguro)
+    ini, f, monto, obs = _validar_vigencia(inicio, fin, costo, observaciones, "del seguro")
+    seguro.inicio, seguro.fin = ini, f
+    seguro.costo, seguro.observaciones = monto, obs
+    seguro.save()
+    return seguro
+
+
+def eliminar_seguro(id_seguro):
+    """Borra una poliza cargada por error. Devuelve el id del vehiculo."""
+    seguro = get_object_or_404(Seguro, id=id_seguro)
+    id_vehiculo = seguro.vehiculo_id
+    seguro.delete()
+    return id_vehiculo
+
+
+def obtener_seguros(id_vehiculo):
+    """Historial de seguros de un vehiculo, del vencimiento mas nuevo al mas viejo."""
+    vehiculo = get_object_or_404(Vehiculo, id=id_vehiculo)
+    return vehiculo.seguros.all()
+
+
+def crear_vtv(id_vehiculo, inicio=None, fin=None, costo=None, observaciones=None):
+    """Nueva VTV de un vehiculo activo. Cada verificacion es un registro aparte."""
+    vehiculo = get_object_or_404(Vehiculo, id=id_vehiculo, activo=True)
+    ini, f, monto, obs = _validar_vigencia(inicio, fin, costo, observaciones, "de la VTV")
+    return VTV.objects.create(vehiculo=vehiculo, inicio=ini, fin=f, costo=monto, observaciones=obs)
+
+
+def editar_vtv(id_vtv, inicio=None, fin=None, costo=None, observaciones=None):
+    """Corrige una VTV ya cargada."""
+    vtv = get_object_or_404(VTV, id=id_vtv)
+    ini, f, monto, obs = _validar_vigencia(inicio, fin, costo, observaciones, "de la VTV")
+    vtv.inicio, vtv.fin = ini, f
+    vtv.costo, vtv.observaciones = monto, obs
+    vtv.save()
+    return vtv
+
+
+def eliminar_vtv(id_vtv):
+    """Borra una VTV cargada por error. Devuelve el id del vehiculo."""
+    vtv = get_object_or_404(VTV, id=id_vtv)
+    id_vehiculo = vtv.vehiculo_id
+    vtv.delete()
+    return id_vehiculo
+
+
+def obtener_vtvs(id_vehiculo):
+    """Historial de VTV de un vehiculo, del vencimiento mas nuevo al mas viejo."""
+    vehiculo = get_object_or_404(Vehiculo, id=id_vehiculo)
+    return vehiculo.vtvs.all()
+
+
+def _validar_servis(fecha, costo, observaciones):
+    """Valida los datos de un service. La fecha es obligatoria; el resto opcional."""
+    dia = _fecha_obligatoria(fecha, "La fecha del servis")
+    monto = _decimal_opcional(costo, "El costo del servis", MAX_COSTO)
+    obs = _texto_opcional(observaciones, 200, "Las observaciones")
+    return dia, monto, obs
+
+
+def crear_servis(id_vehiculo, fecha=None, costo=None, observaciones=None):
+    """Anota un service de un vehiculo activo en una fecha puntual."""
+    vehiculo = get_object_or_404(Vehiculo, id=id_vehiculo, activo=True)
+    dia, monto, obs = _validar_servis(fecha, costo, observaciones)
+    return Servis.objects.create(vehiculo=vehiculo, fecha=dia, costo=monto, observaciones=obs)
+
+
+def editar_servis(id_servis, fecha=None, costo=None, observaciones=None):
+    """Corrige un service ya cargado."""
+    servis = get_object_or_404(Servis, id=id_servis)
+    dia, monto, obs = _validar_servis(fecha, costo, observaciones)
+    servis.fecha, servis.costo, servis.observaciones = dia, monto, obs
+    servis.save()
+    return servis
+
+
+def eliminar_servis(id_servis):
+    """Borra un service cargado por error. Devuelve el id del vehiculo."""
+    servis = get_object_or_404(Servis, id=id_servis)
+    id_vehiculo = servis.vehiculo_id
+    servis.delete()
+    return id_vehiculo
+
+
+def obtener_servicios(id_vehiculo):
+    """Historial de services de un vehiculo, del mas nuevo al mas viejo."""
+    vehiculo = get_object_or_404(Vehiculo, id=id_vehiculo)
+    return vehiculo.servicios.all()
 
 
 def _validar_viaje(id_empleado, id_vehiculo, destinos, inicio_caja, fecha_inicio, fecha_vuelta):

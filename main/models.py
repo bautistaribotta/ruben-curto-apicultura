@@ -306,8 +306,139 @@ class Vehiculo(models.Model):
             + self.viajecereal_set.filter(activo=True).count()
         )
 
+    @property
+    def kilometraje_total(self):
+        """Odometro del vehiculo: la suma de todas las cargas de kilometraje.
+
+        No hay un campo unico que se pise: cada carga suma sus kilometros y el
+        total sale de sumarlas. Sin cargas todavia, el total es cero.
+        """
+        total = self.registros_km.aggregate(t=Sum("kilometros"))["t"]
+        return total if total is not None else Decimal("0")
+
+    @property
+    def ultima_carga_km(self):
+        """Fecha de la ultima vez que se anoto kilometraje, o None si nunca.
+
+        Es el dato que el usuario quiere recordar: cuando fue la ultima carga.
+        Los registros vienen ordenados del mas nuevo al mas viejo, asi que el
+        primero es el ultimo cargado.
+        """
+        ultimo = self.registros_km.first()
+        return ultimo.fecha if ultimo else None
+
     def __str__(self):
         return f"Vehiculo {self.nombre} ({self.patente})"
+
+
+class RegistroKilometraje(models.Model):
+    """Una carga de kilometraje de un vehiculo: cuantos km se sumaron y cuando.
+
+    El odometro no se guarda como un numero que se pisa: se guarda cada carga por
+    separado, con su fecha y los kilometros que se agregaron ese dia. El total del
+    vehiculo es la suma de todas sus cargas (ver Vehiculo.kilometraje_total), y de
+    paso queda el rastro de cuando fue la ultima vez que se anoto kilometraje, que
+    es lo que el usuario quiere recordar. Nunca se reinicia: corregir es editar o
+    borrar una carga, no arrancar de cero.
+    """
+    vehiculo = models.ForeignKey(Vehiculo, on_delete=models.CASCADE, related_name="registros_km",
+                                 db_column="id_vehiculo")
+    # default y no auto_now_add: la carga se anota cuando se puede, y la fecha que
+    # vale es la del dia que se recorrieron los kilometros, no la de la carga
+    fecha = models.DateField(default=timezone.localdate)
+    kilometros = models.DecimalField(max_digits=10, decimal_places=2)
+
+    class Meta:
+        db_table = "registros_kilometraje"
+        verbose_name = "Registro de kilometraje"
+        verbose_name_plural = "Registros de kilometraje"
+        # Del mas nuevo al mas viejo; el id desempata los del mismo dia
+        ordering = ["-fecha", "-id"]
+
+    def __str__(self):
+        return f"{self.kilometros} km el {self.fecha:%d/%m/%Y} ({self.vehiculo})"
+
+
+class Seguro(models.Model):
+    """Poliza de seguro de un vehiculo, con su vigencia de inicio a fin.
+
+    Un vehiculo tiene varias a lo largo del tiempo (relacion uno a muchos):
+    renovar el seguro es guardar una poliza nueva, no editar la vieja, para que
+    quede el historial completo de cobertura. El costo y las observaciones son
+    opcionales; las dos fechas de vigencia no.
+    """
+    vehiculo = models.ForeignKey(Vehiculo, on_delete=models.CASCADE, related_name="seguros",
+                                 db_column="id_vehiculo")
+    inicio = models.DateField()
+    fin = models.DateField()
+    costo = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    observaciones = models.CharField(max_length=200, null=True, blank=True)
+
+    class Meta:
+        db_table = "seguros"
+        verbose_name = "Seguro"
+        verbose_name_plural = "Seguros"
+        # Del vencimiento mas nuevo al mas viejo; el id desempata
+        ordering = ["-fin", "-id"]
+
+    @property
+    def vencido(self):
+        return self.fin < timezone.localdate()
+
+    def __str__(self):
+        return f"Seguro de {self.vehiculo} hasta {self.fin:%d/%m/%Y}"
+
+
+class VTV(models.Model):
+    """Verificacion tecnica vehicular, con su vigencia de inicio a fin.
+
+    Igual que el seguro: un vehiculo acumula varias VTV a lo largo del tiempo
+    (uno a muchos) y cada nueva verificacion es un registro aparte, no una
+    edicion de la anterior. Costo y observaciones opcionales; fechas obligatorias.
+    """
+    vehiculo = models.ForeignKey(Vehiculo, on_delete=models.CASCADE, related_name="vtvs",
+                                 db_column="id_vehiculo")
+    inicio = models.DateField()
+    fin = models.DateField()
+    costo = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    observaciones = models.CharField(max_length=200, null=True, blank=True)
+
+    class Meta:
+        db_table = "vtv"
+        verbose_name = "VTV"
+        verbose_name_plural = "VTV"
+        ordering = ["-fin", "-id"]
+
+    @property
+    def vencido(self):
+        return self.fin < timezone.localdate()
+
+    def __str__(self):
+        return f"VTV de {self.vehiculo} hasta {self.fin:%d/%m/%Y}"
+
+
+class Servis(models.Model):
+    """Service de mantenimiento de un vehiculo, en una fecha puntual.
+
+    Un vehiculo tiene muchos services a lo largo de su vida (uno a muchos), cada
+    uno en su fecha. A diferencia del seguro y la VTV, un service no tiene
+    vigencia: es un hecho de un dia. Costo y observaciones opcionales.
+    """
+    vehiculo = models.ForeignKey(Vehiculo, on_delete=models.CASCADE, related_name="servicios",
+                                 db_column="id_vehiculo")
+    fecha = models.DateField()
+    costo = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    observaciones = models.CharField(max_length=200, null=True, blank=True)
+
+    class Meta:
+        db_table = "servicios"
+        verbose_name = "Servis"
+        verbose_name_plural = "Servicios"
+        # Del mas nuevo al mas viejo; el id desempata los del mismo dia
+        ordering = ["-fecha", "-id"]
+
+    def __str__(self):
+        return f"Servis de {self.vehiculo} el {self.fecha:%d/%m/%Y}"
 
 
 class Viaje(models.Model):

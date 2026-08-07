@@ -4,6 +4,7 @@ from .models import (
     Empleado, PagosEmpleados, Vehiculo, Viaje, DetalleViaje, Gasto,
     ViajeReparto, DetalleViajeReparto, DestinoViajeReparto, ViajeCereal, DetalleViajeCereal,
     GastoViajeCereal, Casa, Contrato, PagoAlquiler, GastoCasa, EstacionDeServicio,
+    RegistroKilometraje, Seguro, VTV, Servis,
 )
 
 admin.site.register(Cliente)
@@ -12,7 +13,49 @@ admin.site.register(Pago)
 admin.site.register(Cotizaciones)
 admin.site.register(Empleado)
 admin.site.register(PagosEmpleados)
-admin.site.register(Vehiculo)
+
+
+class RegistroKilometrajeInline(admin.TabularInline):
+    model = RegistroKilometraje
+    extra = 1
+
+class SeguroInline(admin.TabularInline):
+    model = Seguro
+    extra = 1
+
+class VTVInline(admin.TabularInline):
+    model = VTV
+    extra = 1
+
+class ServisInline(admin.TabularInline):
+    model = Servis
+    extra = 1
+
+@admin.register(Vehiculo)
+class VehiculoAdmin(admin.ModelAdmin):
+    inlines = [RegistroKilometrajeInline, SeguroInline, VTVInline, ServisInline]
+    list_display = ('id', 'nombre', 'patente', 'kilometraje_total', 'ultima_carga_km', 'activo')
+    search_fields = ('nombre', 'patente')
+
+@admin.register(RegistroKilometraje)
+class RegistroKilometrajeAdmin(admin.ModelAdmin):
+    list_display = ('id', 'vehiculo', 'fecha', 'kilometros')
+    list_filter = ('vehiculo',)
+
+@admin.register(Seguro)
+class SeguroAdmin(admin.ModelAdmin):
+    list_display = ('id', 'vehiculo', 'inicio', 'fin', 'costo', 'vencido')
+    list_filter = ('vehiculo',)
+
+@admin.register(VTV)
+class VTVAdmin(admin.ModelAdmin):
+    list_display = ('id', 'vehiculo', 'inicio', 'fin', 'costo', 'vencido')
+    list_filter = ('vehiculo',)
+
+@admin.register(Servis)
+class ServisAdmin(admin.ModelAdmin):
+    list_display = ('id', 'vehiculo', 'fecha', 'costo')
+    list_filter = ('vehiculo',)
 
 class DetalleOperacionInline(admin.TabularInline):
     model = DetalleOperacion
