@@ -26,21 +26,34 @@ function inicializarDadoraCarga(ids) {
         input: document.getElementById(refs.input),
     }));
 
+    // La fila forma-de-cobro: el contenedor que pasa de 1 a 2 columnas
+    const filaCobro = tipo.closest('.dadora-fila-cobro');
+
     const sincronizar = () => {
         const activa = toggle.checked;
 
         campos.hidden = !activa;
+        campos.style.display = activa ? '' : 'none';
         nombre.disabled = !activa;
         tipo.disabled = !activa;
         nombre.required = activa;
         tipo.required = activa;
 
+        let hayValorVisible = false;
         valores.forEach(({ clave, grupo, input }) => {
             const usado = activa && tipo.value === clave;
             grupo.hidden = !usado;
+            grupo.style.display = usado ? '' : 'none';
             input.disabled = !usado;
             input.required = usado;
+            if (usado) hayValorVisible = true;
         });
+
+        // Cuando hay un input de valor visible, la fila pasa a 2 columnas;
+        // cuando no, el select ocupa todo el ancho.
+        if (filaCobro) {
+            filaCobro.classList.toggle('dadora-fila-cobro--duo', hayValorVisible);
+        }
 
         // Al apagar el switch dejo los campos en blanco: si el usuario habia
         // cargado una dadora y se arrepiente, el viaje no debe quedar con datos

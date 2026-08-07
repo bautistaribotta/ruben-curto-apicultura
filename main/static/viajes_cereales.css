@@ -227,3 +227,27 @@
     --cereal-mani-dot: #ba7652;
   }
 }
+
+/* --- Dadora de carga: fila forma-de-cobro + valor ---
+   Por defecto el select ocupa todo el ancho (1 columna). Cuando el JS revela un
+   input de valor a su lado, la fila pasa a 2 columnas iguales. */
+.dadora-fila-cobro {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.85rem;
+  margin-top: 1.15rem;
+}
+
+.dadora-fila-cobro [hidden] {
+  display: none !important;
+}
+
+.dadora-fila-cobro.dadora-fila-cobro--duo {
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 480px) {
+  .dadora-fila-cobro.dadora-fila-cobro--duo {
+    grid-template-columns: 1fr;
+  }
+}
