@@ -494,23 +494,70 @@
               value="{% if viaje_cereal.porcentaje_empleado %}{{ viaje_cereal.porcentaje_empleado }}{% endif %}">
             <span class="mensaje-error">Debe ser un numero entre 1 y 100.</span>
           </div>
-
-          {% if user.is_staff %}
-          <div class="pago-fila">
-            <div class="pago-fila__texto">
-              <span class="pago-fila__titulo">Viaje pagado</span>
-              <span class="pago-fila__sub">Activalo cuando el cobro ya entró. El cobro es total, no hay pagos parciales.</span>
-            </div>
-            <label class="pago-switch">
-              <input type="checkbox" id="pagado-cereal" name="pagado"
-                     {% if viaje_cereal.pagado %}checked{% endif %}>
-              <span class="pago-switch__slider"></span>
-            </label>
-          </div>
-          {% endif %}
         </section>
 
-        <!-- Seccion 3: Dadora de carga -->
+        <!-- Seccion 3: Recorrido -->
+        <section class="seccion-bloque">
+          <div class="subtitulo-formulario">
+            <span class="material-symbols-outlined">location_on</span>
+            <h4>Recorrido</h4>
+          </div>
+
+          <div class="grupo-input" id="contenedor-destinos-cereal">
+            <label for="destino-cereal">Destinos</label>
+            {% for destino in viaje_cereal.destinos.all %}
+            <input
+              type="text"
+              name="destino"
+              placeholder="Ej: Rosario"
+              required
+              maxlength="30"
+              pattern="[a-zA-ZÁÉÍÓÚáéíóúñÑ\s\d]{3,}"
+              value="{{ destino.destino }}"
+              data-autocompletar-ciudad
+              {% if forloop.first %}id="destino-cereal"{% endif %}>
+            {% empty %}
+            <input
+              type="text"
+              id="destino-cereal"
+              name="destino"
+              placeholder="Ej: Rosario"
+              required
+              maxlength="30"
+              pattern="[a-zA-ZÁÉÍÓÚáéíóúñÑ\s\d]{3,}"
+              data-autocompletar-ciudad>
+            {% endfor %}
+
+            <div class="vje-destacciones">
+              <button type="button" id="btn-agregar-destino-cereal" class="vje-addbtn">
+                <span class="material-symbols-outlined">add_circle</span>
+                Anadir un destino
+              </button>
+              <button type="button" id="btn-quitar-destino-cereal" class="vje-removebtn">
+                <span class="material-symbols-outlined">do_not_disturb_on</span>
+                Quitar destino
+              </button>
+            </div>
+            <span class="mensaje-error">Minimo 3 caracteres (Solo letras y numeros)</span>
+          </div>
+        </section>
+
+        <!-- Seccion 4: Fecha -->
+        <section class="seccion-bloque">
+          <div class="subtitulo-formulario">
+            <span class="material-symbols-outlined">event</span>
+            <h4>Fecha</h4>
+          </div>
+
+          <div class="grupo-input">
+            <label for="fecha-cereal">Fecha del viaje</label>
+            <input type="date" id="fecha-cereal" name="fecha_viaje_cereal" required
+                   value="{{ viaje_cereal.fecha_viaje_cereal|date:'Y-m-d' }}">
+            <span class="mensaje-error">Por favor, seleccione una fecha valida.</span>
+          </div>
+        </section>
+
+        <!-- Seccion 5: Dadora de carga -->
         <section class="seccion-bloque">
           <div class="subtitulo-formulario">
             <span class="material-symbols-outlined">handshake</span>
@@ -612,66 +659,22 @@
           </div>
         </section>
 
-        <!-- Seccion 4: Recorrido -->
+        <!-- Seccion 6: Estado de pago (ultimo del formulario) -->
+        {% if user.is_staff %}
         <section class="seccion-bloque">
-          <div class="subtitulo-formulario">
-            <span class="material-symbols-outlined">location_on</span>
-            <h4>Recorrido</h4>
-          </div>
-
-          <div class="grupo-input" id="contenedor-destinos-cereal">
-            <label for="destino-cereal">Destinos</label>
-            {% for destino in viaje_cereal.destinos.all %}
-            <input
-              type="text"
-              name="destino"
-              placeholder="Ej: Rosario"
-              required
-              maxlength="30"
-              pattern="[a-zA-ZÁÉÍÓÚáéíóúñÑ\s\d]{3,}"
-              value="{{ destino.destino }}"
-              data-autocompletar-ciudad
-              {% if forloop.first %}id="destino-cereal"{% endif %}>
-            {% empty %}
-            <input
-              type="text"
-              id="destino-cereal"
-              name="destino"
-              placeholder="Ej: Rosario"
-              required
-              maxlength="30"
-              pattern="[a-zA-ZÁÉÍÓÚáéíóúñÑ\s\d]{3,}"
-              data-autocompletar-ciudad>
-            {% endfor %}
-
-            <div class="vje-destacciones">
-              <button type="button" id="btn-agregar-destino-cereal" class="vje-addbtn">
-                <span class="material-symbols-outlined">add_circle</span>
-                Anadir un destino
-              </button>
-              <button type="button" id="btn-quitar-destino-cereal" class="vje-removebtn">
-                <span class="material-symbols-outlined">do_not_disturb_on</span>
-                Quitar destino
-              </button>
+          <div class="pago-fila">
+            <div class="pago-fila__texto">
+              <span class="pago-fila__titulo">Viaje pagado</span>
+              <span class="pago-fila__sub">Activalo cuando el cobro ya entró. El cobro es total, no hay pagos parciales.</span>
             </div>
-            <span class="mensaje-error">Minimo 3 caracteres (Solo letras y numeros)</span>
+            <label class="pago-switch">
+              <input type="checkbox" id="pagado-cereal" name="pagado"
+                     {% if viaje_cereal.pagado %}checked{% endif %}>
+              <span class="pago-switch__slider"></span>
+            </label>
           </div>
         </section>
-
-        <!-- Seccion 5: Fecha -->
-        <section class="seccion-bloque">
-          <div class="subtitulo-formulario">
-            <span class="material-symbols-outlined">event</span>
-            <h4>Fecha</h4>
-          </div>
-
-          <div class="grupo-input">
-            <label for="fecha-cereal">Fecha del viaje</label>
-            <input type="date" id="fecha-cereal" name="fecha_viaje_cereal" required
-                   value="{{ viaje_cereal.fecha_viaje_cereal|date:'Y-m-d' }}">
-            <span class="mensaje-error">Por favor, seleccione una fecha valida.</span>
-          </div>
-        </section>
+        {% endif %}
       </main>
 
       <!-- 3. Pie del panel -->

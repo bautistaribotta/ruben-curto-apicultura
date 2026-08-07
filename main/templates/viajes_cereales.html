@@ -218,22 +218,56 @@
               step="1">
             <span class="mensaje-error">Debe ser un número entre 1 y 100.</span>
           </div>
-
-          {% if user.is_staff %}
-          <div class="pago-fila">
-            <div class="pago-fila__texto">
-              <span class="pago-fila__titulo">Viaje pagado</span>
-              <span class="pago-fila__sub">Activalo cuando el cobro ya entró. El cobro es total, no hay pagos parciales.</span>
-            </div>
-            <label class="pago-switch">
-              <input type="checkbox" id="pagado-acopio" name="pagado">
-              <span class="pago-switch__slider"></span>
-            </label>
-          </div>
-          {% endif %}
         </section>
 
-        <!-- Seccion 3: Dadora de carga -->
+        <!-- Seccion 3: Recorrido -->
+        <section class="seccion-bloque">
+          <div class="subtitulo-formulario">
+            <span class="material-symbols-outlined">location_on</span>
+            <h4>Recorrido</h4>
+          </div>
+
+          <div class="grupo-input" id="contenedor-destinos-acopio">
+            <label for="destino-acopio">Destinos</label>
+            <input
+              type="text"
+              id="destino-acopio"
+              name="destino"
+              placeholder="Ej: Rosario"
+              required
+              maxlength="30"
+              pattern="[a-zA-ZÁÉÍÓÚáéíóúñÑ\s\d]{3,}"
+              data-autocompletar-ciudad>
+
+            <div class="vje-destacciones">
+              <button type="button" id="btn-agregar-destino-acopio" class="vje-addbtn">
+                <span class="material-symbols-outlined">add_circle</span>
+                Añadir un destino
+              </button>
+              <button type="button" id="btn-quitar-destino-acopio" class="vje-removebtn">
+                <span class="material-symbols-outlined">do_not_disturb_on</span>
+                Quitar destino
+              </button>
+            </div>
+            <span class="mensaje-error">Mínimo 3 caracteres (Solo letras y números)</span>
+          </div>
+        </section>
+
+        <!-- Seccion 4: Fecha -->
+        <section class="seccion-bloque">
+          <div class="subtitulo-formulario">
+            <span class="material-symbols-outlined">event</span>
+            <h4>Fecha</h4>
+          </div>
+
+          <div class="grupo-input">
+            <label for="fecha-acopio">Fecha del viaje</label>
+            <input type="date" id="fecha-acopio" name="fecha_viaje_cereal" required>
+            <span class="mensaje-error">Por favor, seleccione una fecha válida.</span>
+          </div>
+        </section>
+
+        <!-- Seccion 5: Dadora de carga -->
         <section class="seccion-bloque">
           <div class="subtitulo-formulario">
             <span class="material-symbols-outlined">handshake</span>
@@ -330,52 +364,21 @@
           </div>
         </section>
 
-        <!-- Seccion 4: Recorrido -->
+        <!-- Seccion 6: Estado de pago (ultimo del formulario) -->
+        {% if user.is_staff %}
         <section class="seccion-bloque">
-          <div class="subtitulo-formulario">
-            <span class="material-symbols-outlined">location_on</span>
-            <h4>Recorrido</h4>
-          </div>
-
-          <div class="grupo-input" id="contenedor-destinos-acopio">
-            <label for="destino-acopio">Destinos</label>
-            <input
-              type="text"
-              id="destino-acopio"
-              name="destino"
-              placeholder="Ej: Rosario"
-              required
-              maxlength="30"
-              pattern="[a-zA-ZÁÉÍÓÚáéíóúñÑ\s\d]{3,}"
-              data-autocompletar-ciudad>
-
-            <div class="vje-destacciones">
-              <button type="button" id="btn-agregar-destino-acopio" class="vje-addbtn">
-                <span class="material-symbols-outlined">add_circle</span>
-                Añadir un destino
-              </button>
-              <button type="button" id="btn-quitar-destino-acopio" class="vje-removebtn">
-                <span class="material-symbols-outlined">do_not_disturb_on</span>
-                Quitar destino
-              </button>
+          <div class="pago-fila">
+            <div class="pago-fila__texto">
+              <span class="pago-fila__titulo">Viaje pagado</span>
+              <span class="pago-fila__sub">Activalo cuando el cobro ya entró. El cobro es total, no hay pagos parciales.</span>
             </div>
-            <span class="mensaje-error">Mínimo 3 caracteres (Solo letras y números)</span>
+            <label class="pago-switch">
+              <input type="checkbox" id="pagado-acopio" name="pagado">
+              <span class="pago-switch__slider"></span>
+            </label>
           </div>
         </section>
-
-        <!-- Seccion 5: Fecha -->
-        <section class="seccion-bloque">
-          <div class="subtitulo-formulario">
-            <span class="material-symbols-outlined">event</span>
-            <h4>Fecha</h4>
-          </div>
-
-          <div class="grupo-input">
-            <label for="fecha-acopio">Fecha del viaje</label>
-            <input type="date" id="fecha-acopio" name="fecha_viaje_cereal" required>
-            <span class="mensaje-error">Por favor, seleccione una fecha válida.</span>
-          </div>
-        </section>
+        {% endif %}
       </main>
 
       <!-- 3. Pie del panel -->
