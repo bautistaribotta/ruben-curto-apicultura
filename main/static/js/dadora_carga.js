@@ -55,7 +55,21 @@ function inicializarDadoraCarga(ids) {
     toggle.addEventListener('change', sincronizar);
     tipo.addEventListener('change', sincronizar);
 
-    // No corro sincronizar al cargar: en edicion el markup ya llega con el estado
-    // correcto desde la vista (switch, nombre, tipo y valor), y limpiar aca borraria
-    // esos datos. El primer 'change' del usuario reconcilia todo.
+    // Al cerrar el slide-over se hace formulario.reset(), que devuelve el switch a su
+    // valor por defecto pero no dispara 'change' ni restaura los 'hidden': sin esto los
+    // campos quedaban visibles con el switch apagado. reset() ya restauro los valores
+    // cuando salta este evento, asi que sincronizar solo reconcilia que se vea/envie.
+    const formulario = toggle.form;
+    if (formulario) {
+        formulario.addEventListener('reset', () => {
+            // El reset todavia no aplico los valores por defecto cuando corre el
+            // listener; lo dejo para el proximo tick para leer el estado ya reseteado.
+            setTimeout(sincronizar, 0);
+        });
+    }
+
+    // Reconcilio el estado al cargar la pagina. Es seguro para la edicion: si el viaje
+    // tiene dadora el switch viene activo y no se limpia nada; si no la tiene, los
+    // campos ya estan vacios. Cubre recargas y restauraciones del navegador (bfcache).
+    sincronizar();
 }
