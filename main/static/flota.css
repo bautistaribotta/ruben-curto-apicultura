@@ -34,11 +34,23 @@
   font-size: 1.7rem;
 }
 
+.cabecera-seccion__texto {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
 .cabecera-seccion h2 {
   font-size: var(--text-3xl);
   font-weight: var(--weight-extra);
   letter-spacing: var(--tracking-tight);
   color: var(--text-strong);
+  margin: 0;
+}
+
+.cabecera-seccion__texto p {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
   margin: 0;
 }
 
