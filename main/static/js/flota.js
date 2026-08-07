@@ -30,6 +30,28 @@ function filtrarVehiculos() {
 
 document.getElementById('buscar-vehiculo')?.addEventListener('input', filtrarVehiculos);
 
+// ---------- NAVEGACION AL PERFIL (click en la fila) ----------
+// La fila entera lleva al perfil del vehiculo, pero la ultima columna tiene los
+// botones de editar/eliminar: ahi el click hace lo suyo y no navega.
+
+function irAlPerfilVehiculo(fila) {
+    const destino = fila.dataset.href;
+    if (destino) window.location.href = destino;
+}
+
+document.getElementById('cuerpo-tabla-flota')?.addEventListener('click', (evento) => {
+    const fila = evento.target.closest('.fila-vehiculo');
+    if (!fila || evento.target.closest('.col-acciones')) return;
+    irAlPerfilVehiculo(fila);
+});
+
+document.getElementById('cuerpo-tabla-flota')?.addEventListener('keydown', (evento) => {
+    if (evento.key !== 'Enter') return;
+    const fila = evento.target.closest('.fila-vehiculo');
+    if (!fila || evento.target !== fila) return;
+    irAlPerfilVehiculo(fila);
+});
+
 // ---------- VEHÍCULO ----------
 
 function abrirNuevoVehiculo() {

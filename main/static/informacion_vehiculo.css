@@ -1,0 +1,154 @@
+/* =============================================
+   PERFIL DE VEHICULO (cascara)
+   La cabecera de identidad reusa el patron del tile oscuro del listado.
+   El elemento distintivo es la patente: se muestra como una chapa real,
+   con tornillos y tipografia monoespaciada. El resto queda sobrio a
+   proposito, para que la chapa sea lo unico que resalta.
+   ============================================= */
+
+/* --- IDENTIDAD DEL VEHICULO --- */
+.identidad-vehiculo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.identidad-vehiculo__tile {
+  width: 56px;
+  height: 56px;
+  flex: none;
+  border-radius: var(--radius-lg);
+  background-color: var(--brand-secondary);
+  color: var(--sand-100);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.identidad-vehiculo__tile .material-symbols-outlined {
+  font-size: 30px;
+}
+
+.identidad-vehiculo__nombre {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  color: var(--text-strong);
+  line-height: 1.15;
+  margin: 0;
+}
+
+.identidad-vehiculo__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.identidad-vehiculo__viajes {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.identidad-vehiculo__viajes .material-symbols-outlined {
+  font-size: 18px;
+}
+
+/* --- CHAPA DE PATENTE (elemento firma) --- */
+/* Fondo claro, borde grueso y dos tornillos: lee como una patente fisica.
+   La tipografia monoespaciada mantiene los caracteres parejos como en la calle. */
+.chapa-patente {
+  position: relative;
+  display: inline-block;
+  padding: 0.3rem 1.35rem;
+  border: 2px solid var(--pine-950);
+  border-radius: var(--radius-sm);
+  background-color: var(--sand-50);
+  color: var(--pine-950);
+  font-family: ui-monospace, "SFMono-Regular", "Cascadia Code", Consolas, monospace;
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.18em;
+  text-indent: 0.18em;
+  line-height: 1.4;
+  box-shadow: var(--shadow-xs);
+}
+
+.chapa-patente::before,
+.chapa-patente::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 4px;
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background-color: var(--sand-400);
+  transform: translateY(-50%);
+}
+
+.chapa-patente::before {
+  left: 5px;
+}
+
+.chapa-patente::after {
+  right: 5px;
+}
+
+/* --- ESTADO VACIO --- */
+.perfil-vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.6rem;
+  padding: 4rem 1.5rem;
+  border: 1px dashed var(--border-default);
+  border-radius: var(--radius-xl);
+  background-color: var(--surface-sunken);
+}
+
+.perfil-vacio__icono {
+  font-size: 44px;
+  color: var(--text-subtle);
+}
+
+.perfil-vacio__titulo {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  color: var(--text-strong);
+  margin: 0;
+}
+
+.perfil-vacio__texto {
+  max-width: 42ch;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* --- RESPONSIVE --- */
+@media (max-width: 640px) {
+  .identidad-vehiculo {
+    gap: 0.85rem;
+  }
+
+  .identidad-vehiculo__tile {
+    width: 48px;
+    height: 48px;
+  }
+
+  .identidad-vehiculo__nombre {
+    font-size: var(--text-xl);
+  }
+
+  .perfil-vacio {
+    padding: 3rem 1rem;
+  }
+}

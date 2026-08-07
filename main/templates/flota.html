@@ -57,7 +57,10 @@
       </thead>
       <tbody id="cuerpo-tabla-flota">
         {% for vehiculo in vehiculos %}
-        <tr class="fila-vehiculo" data-nombre="{{ vehiculo.nombre|lower }}">
+        <tr class="fila-vehiculo" data-nombre="{{ vehiculo.nombre|lower }}"
+            data-href="{% url 'informacion_vehiculo' vehiculo.id %}"
+            role="link" tabindex="0"
+            aria-label="Ver información de {{ vehiculo.nombre }}">
           <td class="celda-flota-nombre">{{ vehiculo.nombre }}</td>
           <td><span class="celda-flota-patente">{{ vehiculo.patente }}</span></td>
           <td class="col-centrada">{{ vehiculo.total_viajes|intcomma }}</td>

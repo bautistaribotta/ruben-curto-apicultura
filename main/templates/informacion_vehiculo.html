@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% load static %}
+{% load static_version %}
+{% load humanize %}
+
+{% comment %}
+  Perfil de un vehiculo. Por ahora es la cascara: la identidad del vehiculo y un
+  estado vacio. Mas adelante van a colgar aca el kilometraje, los seguros, la
+  VTV, los servicios y las observaciones.
+{% endcomment %}
+
+{% block nombre-pestaña %}
+  <title> {{ vehiculo.nombre }} </title>
+{% endblock %}
+
+{% block links %}
+  <link rel="stylesheet" href="{% static_v 'informacion_vehiculo.css' %}">
+{% endblock %}
+
+{% block cabecera %}
+  <a href="{% url 'flota' %}" class="boton-volver">
+    <span class="material-symbols-outlined">arrow_back</span>
+    Volver a Vehículos
+  </a>
+{% endblock %}
+
+{% block area-trabajo %}
+<section id="area-trabajo">
+
+  <!-- Identidad: tile + nombre + patente como chapa + resumen de viajes -->
+  <div class="identidad-vehiculo">
+    <span class="identidad-vehiculo__tile">
+      <span class="material-symbols-outlined">local_shipping</span>
+    </span>
+    <div class="identidad-vehiculo__datos">
+      <h2 class="identidad-vehiculo__nombre">{{ vehiculo.nombre }}</h2>
+      <div class="identidad-vehiculo__meta">
+        <span class="chapa-patente">{{ vehiculo.patente }}</span>
+        <span class="identidad-vehiculo__viajes">
+          <span class="material-symbols-outlined">route</span>
+          {{ vehiculo.total_viajes|intcomma }} viajes
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Estado vacio: todavia no hay secciones cargadas -->
+  <div class="perfil-vacio">
+    <span class="perfil-vacio__icono material-symbols-outlined">database</span>
+    <h3 class="perfil-vacio__titulo">Todavía no hay información para mostrar</h3>
+    <p class="perfil-vacio__texto">
+      Acá vas a ver el kilometraje, los seguros, la VTV, los servicios y las
+      observaciones de {{ vehiculo.nombre }}.
+    </p>
+  </div>
+
+</section>
+{% endblock %}

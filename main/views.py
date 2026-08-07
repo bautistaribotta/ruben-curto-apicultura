@@ -1366,6 +1366,23 @@ def flota(request):
 
 
 @login_required
+def informacion_vehiculo(request, id_vehiculo):
+    """Perfil de un vehiculo. Por ahora es la cascara: identidad + estado vacio.
+
+    Aca van a colgarse el kilometraje, los seguros, la VTV, los servicios y las
+    observaciones, cada uno con su tabla propia. Se llega dando click a una fila
+    del listado de flota.
+    """
+    vehiculo = get_object_or_404(Vehiculo, id=id_vehiculo, activo=True)
+
+    contexto = {
+        "vehiculo": vehiculo,
+        "pestaña": "viajes",
+    }
+    return render(request, "informacion_vehiculo.html", contexto)
+
+
+@login_required
 def informacion_viaje(request, id_viaje):
     viaje = obtener_datos_viaje(id_viaje)
 

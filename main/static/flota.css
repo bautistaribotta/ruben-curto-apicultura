@@ -154,6 +154,17 @@
   background-color: var(--surface-hover);
 }
 
+/* La fila es un enlace al perfil del vehiculo: la mano y el foco lo anuncian.
+   Los botones de la ultima columna paran la navegacion, no la fila. */
+.fila-vehiculo {
+  cursor: pointer;
+}
+
+.fila-vehiculo:focus-visible {
+  outline: 2px solid var(--honey-500);
+  outline-offset: -2px;
+}
+
 .celda-flota-nombre {
   font-weight: var(--weight-semibold);
   color: var(--text-strong);
