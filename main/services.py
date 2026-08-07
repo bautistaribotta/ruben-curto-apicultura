@@ -15,7 +15,8 @@ from django.core.cache import cache
 from .models import (Producto, Cliente, Operacion, DetalleOperacion, Pago, Cotizaciones, Empleado, PagosEmpleados,
                      Vehiculo, Viaje, DetalleViaje, Gasto, ViajeCereal, DetalleViajeCereal, GastoViajeCereal,
                      ViajeReparto, GastoViajeReparto, DestinoViajeReparto, Casa, Contrato, PagoAlquiler,
-                     GastoCasa, RegistroKilometraje, Seguro, VTV, Servis, contratos_del_periodo, periodo_actual)
+                     GastoCasa, RegistroKilometraje, Seguro, VTV, Servis, ObservacionVehiculo,
+                     contratos_del_periodo, periodo_actual)
 
 
 def _aplicar_estado_pago(viaje, pagado):
@@ -1781,6 +1782,45 @@ def obtener_servicios(id_vehiculo):
     """Historial de services de un vehiculo, del mas nuevo al mas viejo."""
     vehiculo = get_object_or_404(Vehiculo, id=id_vehiculo)
     return vehiculo.servicios.all()
+
+
+def _validar_observacion(fecha, texto):
+    """Valida una nota libre de vehiculo. La fecha es obligatoria; el texto tambien."""
+    dia = _fecha_obligatoria(fecha, "La fecha de la observación")
+    nota = _texto_opcional(texto, 250, "La observación")
+    if not nota:
+        raise ValueError("La observación no puede estar vacía.")
+    return dia, nota
+
+
+def crear_observacion(id_vehiculo, fecha=None, texto=None):
+    """Anota una observacion libre sobre un vehiculo activo."""
+    vehiculo = get_object_or_404(Vehiculo, id=id_vehiculo, activo=True)
+    dia, nota = _validar_observacion(fecha, texto)
+    return ObservacionVehiculo.objects.create(vehiculo=vehiculo, fecha=dia, texto=nota)
+
+
+def editar_observacion(id_observacion, fecha=None, texto=None):
+    """Corrige una observacion ya cargada."""
+    observacion = get_object_or_404(ObservacionVehiculo, id=id_observacion)
+    dia, nota = _validar_observacion(fecha, texto)
+    observacion.fecha, observacion.texto = dia, nota
+    observacion.save()
+    return observacion
+
+
+def eliminar_observacion(id_observacion):
+    """Borra una observacion. Devuelve el id del vehiculo."""
+    observacion = get_object_or_404(ObservacionVehiculo, id=id_observacion)
+    id_vehiculo = observacion.vehiculo_id
+    observacion.delete()
+    return id_vehiculo
+
+
+def obtener_observaciones(id_vehiculo):
+    """Historial de observaciones de un vehiculo, de la mas nueva a la mas vieja."""
+    vehiculo = get_object_or_404(Vehiculo, id=id_vehiculo)
+    return vehiculo.observaciones.all()
 
 
 def _validar_viaje(id_empleado, id_vehiculo, destinos, inicio_caja, fecha_inicio, fecha_vuelta):

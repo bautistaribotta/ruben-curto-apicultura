@@ -441,6 +441,31 @@ class Servis(models.Model):
         return f"Servis de {self.vehiculo} el {self.fecha:%d/%m/%Y}"
 
 
+class ObservacionVehiculo(models.Model):
+    """Nota libre sobre un vehiculo, con su fecha.
+
+    Un vehiculo acumula varias a lo largo del tiempo (uno a muchos): es un cuaderno
+    de anotaciones donde el usuario escribe lo que quiera sobre el vehiculo, sin un
+    formato fijo. La fecha ubica cada nota; el texto es obligatorio, porque una
+    observacion vacia no anota nada.
+    """
+    vehiculo = models.ForeignKey(Vehiculo, on_delete=models.CASCADE, related_name="observaciones",
+                                 db_column="id_vehiculo")
+    # default y no auto_now_add: la nota puede referirse a algo de otro dia
+    fecha = models.DateField(default=timezone.localdate)
+    texto = models.CharField(max_length=250)
+
+    class Meta:
+        db_table = "observaciones_vehiculo"
+        verbose_name = "Observación de vehículo"
+        verbose_name_plural = "Observaciones de vehículos"
+        # De la mas nueva a la mas vieja; el id desempata las del mismo dia
+        ordering = ["-fecha", "-id"]
+
+    def __str__(self):
+        return f"Observación de {self.vehiculo} el {self.fecha:%d/%m/%Y}"
+
+
 class Viaje(models.Model):
     empleado = models.ForeignKey(Empleado, on_delete=models.PROTECT, db_column="id_empleado")
     vehiculo = models.ForeignKey(Vehiculo, on_delete=models.PROTECT, db_column="id_vehiculo")

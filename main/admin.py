@@ -4,7 +4,7 @@ from .models import (
     Empleado, PagosEmpleados, Vehiculo, Viaje, DetalleViaje, Gasto,
     ViajeReparto, DetalleViajeReparto, DestinoViajeReparto, ViajeCereal, DetalleViajeCereal,
     GastoViajeCereal, Casa, Contrato, PagoAlquiler, GastoCasa, EstacionDeServicio,
-    RegistroKilometraje, Seguro, VTV, Servis,
+    RegistroKilometraje, Seguro, VTV, Servis, ObservacionVehiculo,
 )
 
 admin.site.register(Cliente)
@@ -31,9 +31,13 @@ class ServisInline(admin.TabularInline):
     model = Servis
     extra = 1
 
+class ObservacionVehiculoInline(admin.TabularInline):
+    model = ObservacionVehiculo
+    extra = 1
+
 @admin.register(Vehiculo)
 class VehiculoAdmin(admin.ModelAdmin):
-    inlines = [RegistroKilometrajeInline, SeguroInline, VTVInline, ServisInline]
+    inlines = [RegistroKilometrajeInline, SeguroInline, VTVInline, ServisInline, ObservacionVehiculoInline]
     list_display = ('id', 'nombre', 'patente', 'kilometraje_total', 'ultima_carga_km', 'activo')
     search_fields = ('nombre', 'patente')
 
@@ -55,6 +59,11 @@ class VTVAdmin(admin.ModelAdmin):
 @admin.register(Servis)
 class ServisAdmin(admin.ModelAdmin):
     list_display = ('id', 'vehiculo', 'fecha', 'costo')
+    list_filter = ('vehiculo',)
+
+@admin.register(ObservacionVehiculo)
+class ObservacionVehiculoAdmin(admin.ModelAdmin):
+    list_display = ('id', 'vehiculo', 'fecha', 'texto')
     list_filter = ('vehiculo',)
 
 class DetalleOperacionInline(admin.TabularInline):
