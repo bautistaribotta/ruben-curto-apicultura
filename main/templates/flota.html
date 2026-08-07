@@ -13,23 +13,6 @@
 
 {% block cabecera %}
   <div class="flota-cabecera-grupo">
-    {% if request.GET.origen == 'cereales' %}
-    <a href="{% url 'viajes_cereales' %}" class="boton-volver">
-      <span class="material-symbols-outlined">arrow_back</span>
-      Volver a Viajes de cereales
-    </a>
-    {% elif request.GET.origen == 'reparto' %}
-    <a href="{% url 'mercado_libre' %}" class="boton-volver">
-      <span class="material-symbols-outlined">arrow_back</span>
-      Volver a Repartos
-    </a>
-    {% else %}
-    <a href="{% url 'viajes' %}" class="boton-volver">
-      <span class="material-symbols-outlined">arrow_back</span>
-      Volver a Viajes
-    </a>
-    {% endif %}
-
     <!-- Titulo de la seccion: tile oscuro + titulo -->
     <div class="cabecera-seccion">
       <span class="cabecera-seccion__tile">

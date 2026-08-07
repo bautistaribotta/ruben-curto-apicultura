@@ -1356,12 +1356,7 @@ def flota(request):
             # Capturo errores inesperados (ej: base de datos)
             messages.error(request, f"Ocurrió un error inesperado: {e}")
 
-        # Conservo el origen de navegacion para que el boton "Volver" siga apuntando bien
-        origen = request.GET.get("origen", "")
-        url_flota = reverse("flota")
-        if origen:
-            url_flota = f"{url_flota}?origen={origen}"
-        return redirect(url_flota)
+        return redirect("flota")
 
     contexto = {
         "vehiculos": obtener_vehiculos_activos(),

@@ -77,68 +77,51 @@
           </a>
         </li>
         {% endif %}
+        <li>
+          <a href="{% url 'flota' %}" class="item-menu {% if request.resolver_match.url_name == 'flota' %} activo {% endif %}">
+            <span class="material-symbols-outlined">local_shipping</span>
+            Vehículos
+          </a>
+        </li>
         {% comment %}
-          Las tres secciones de viajes cuelgan sus paginas de apoyo (Flota, y en
-          repartos tambien Destinos) como sub-items de la barra, en vez de repetir
-          los mismos botones en el area de trabajo de cada vista.
+          Repartos cuelga su catalogo de Destinos como sub-item de la barra, en vez
+          de repetir el mismo boton en el area de trabajo de la vista.
 
           El submenu que se ve es siempre el de la seccion en la que ya estas: no
           hay toggle ni hover. Por eso alcanza con el <ul> hermano del item activo
           (.item-menu.activo + .nav-sub en base.css) y la condicion de la seccion
           se sigue escribiendo una sola vez, la misma de antes.
-
-          Flota es la misma vista para las tres secciones; ?origen= es lo que define
-          a donde vuelve y que seccion queda marcada.
         {% endcomment %}
         <li>
-          <a href="{% url 'viajes' %}" class="item-menu {% if request.resolver_match.url_name == 'viajes' or request.resolver_match.url_name == 'informacion_viaje' or request.resolver_match.url_name == 'flota' and request.GET.origen != 'cereales' and request.GET.origen != 'reparto' or request.resolver_match.url_name == 'informacion_operacion' and request.GET.origen == 'viaje' %} activo {% endif %}">
+          <a href="{% url 'viajes' %}" class="item-menu {% if request.resolver_match.url_name == 'viajes' or request.resolver_match.url_name == 'informacion_viaje' or request.resolver_match.url_name == 'informacion_operacion' and request.GET.origen == 'viaje' %} activo {% endif %}">
             <span class="material-symbols-outlined">local_shipping</span>
             Viajes Miel/Cera
           </a>
-          <ul class="nav-sub">
-            <li>
-              <a href="{% url 'flota' %}?origen=viajes" class="item-sub {% if request.resolver_match.url_name == 'flota' %} activo {% endif %}">
-                Flota
-              </a>
-            </li>
-          </ul>
         </li>
         <li>
-          <a href="{% url 'mercado_libre' %}" class="item-menu {% if request.resolver_match.url_name == 'mercado_libre' or request.resolver_match.url_name == 'informacion_viaje_reparto' or request.resolver_match.url_name == 'destinos_reparto' or request.resolver_match.url_name == 'flota' and request.GET.origen == 'reparto' %} activo {% endif %}">
+          <a href="{% url 'mercado_libre' %}" class="item-menu {% if request.resolver_match.url_name == 'mercado_libre' or request.resolver_match.url_name == 'informacion_viaje_reparto' or request.resolver_match.url_name == 'destinos_reparto' %} activo {% endif %}">
             <span class="material-symbols-outlined">inventory</span>
             Viajes repartos
           </a>
+          {% comment %}
+            El catalogo de destinos define cuanto se cobra cada reparto, asi que lo
+            maneja solo el personal administrativo. La vista tambien valida el permiso.
+          {% endcomment %}
+          {% if user.is_staff %}
           <ul class="nav-sub">
-            <li>
-              <a href="{% url 'flota' %}?origen=reparto" class="item-sub {% if request.resolver_match.url_name == 'flota' %} activo {% endif %}">
-                Flota
-              </a>
-            </li>
-            {% comment %}
-              El catalogo de destinos define cuanto se cobra cada reparto, asi que lo
-              maneja solo el personal administrativo. La vista tambien valida el permiso.
-            {% endcomment %}
-            {% if user.is_staff %}
             <li>
               <a href="{% url 'destinos_reparto' %}" class="item-sub {% if request.resolver_match.url_name == 'destinos_reparto' %} activo {% endif %}">
                 Destinos
               </a>
             </li>
-            {% endif %}
           </ul>
+          {% endif %}
         </li>
         <li>
-          <a href="{% url 'viajes_cereales' %}" class="item-menu {% if request.resolver_match.url_name == 'viajes_cereales' or request.resolver_match.url_name == 'informacion_viaje_cereal' and request.GET.origen != 'cliente' or request.resolver_match.url_name == 'flota' and request.GET.origen == 'cereales' %} activo {% endif %}">
+          <a href="{% url 'viajes_cereales' %}" class="item-menu {% if request.resolver_match.url_name == 'viajes_cereales' or request.resolver_match.url_name == 'informacion_viaje_cereal' and request.GET.origen != 'cliente' %} activo {% endif %}">
             <span class="material-symbols-outlined">agriculture</span>
             Viajes cereales
           </a>
-          <ul class="nav-sub">
-            <li>
-              <a href="{% url 'flota' %}?origen=cereales" class="item-sub {% if request.resolver_match.url_name == 'flota' %} activo {% endif %}">
-                Flota
-              </a>
-            </li>
-          </ul>
         </li>
         {% if user.is_staff %}
         <li>
