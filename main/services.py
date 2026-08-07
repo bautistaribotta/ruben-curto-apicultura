@@ -1926,7 +1926,8 @@ def crear_gasto(id_viaje, tipo_gasto, monto):
 # --- Viajes de cereales ---
 
 def _validar_viaje_cereal(id_cliente, id_empleado, id_vehiculo, tipo_cereal, codigo_trazabilidad,
-                          toneladas, precio_tonelada, porcentaje_empleado, fecha_viaje_cereal, destinos):
+                          toneladas, precio_tonelada, porcentaje_empleado, fecha_viaje_cereal, destinos,
+                          dadora_carga, dadora_tipo_cobro, dadora_valor):
     """
     Centraliza las validaciones de un viaje de cereal (crear y editar comparten las
     mismas reglas). Devuelve una tupla con los valores ya limpios y convertidos,
@@ -2013,11 +2014,42 @@ def _validar_viaje_cereal(id_cliente, id_empleado, id_vehiculo, tipo_cereal, cod
             raise ValueError(f"El destino '{d}' es invalido (debe tener entre 3 y 30 caracteres alfanumericos).")
         destinos_limpios.append(d_limpio)
 
-    return codigo_limpio, toneladas_val, precio_val, porcentaje_val, destinos_limpios
+    # 11. Dadora de carga: opcional. Si no se informa el nombre, el viaje no tuvo
+    #     dadora y el tipo de cobro y el valor quedan neutros. Si se informa, hay
+    #     que decir como cobra (porcentaje o por tonelada) y con que valor.
+    dadora_nombre = (dadora_carga or "").strip()
+    if not dadora_nombre:
+        dadora_tipo_val = ""
+        dadora_valor_val = 0
+    else:
+        if not (3 <= len(dadora_nombre) <= 60) or not REGEX_TEXTO_NUMEROS.match(dadora_nombre):
+            raise ValueError("El nombre de la dadora de carga debe tener entre 3 y 60 caracteres "
+                             "(solo letras y numeros).")
+
+        tipos_dadora = dict(ViajeCereal.COBROS_DADORA).keys()
+        if dadora_tipo_cobro not in tipos_dadora:
+            raise ValueError("Debe indicar como cobra la dadora de carga (porcentaje o por tonelada).")
+        dadora_tipo_val = dadora_tipo_cobro
+
+        try:
+            dadora_valor_val = int(dadora_valor)
+        except (ValueError, TypeError):
+            raise ValueError("El valor que cobra la dadora de carga debe ser un numero entero positivo.")
+
+        if dadora_tipo_val == "porcentaje":
+            if dadora_valor_val < 1 or dadora_valor_val > 100:
+                raise ValueError("El porcentaje de la dadora de carga debe ser un numero entero entre 1 y 100.")
+        else:  # tonelada o efectivo: un monto en pesos
+            if dadora_valor_val < 1 or dadora_valor_val > 2147483647:
+                raise ValueError("El monto que cobra la dadora de carga debe ser un numero entero positivo.")
+
+    return (codigo_limpio, toneladas_val, precio_val, porcentaje_val, destinos_limpios,
+            dadora_nombre, dadora_tipo_val, dadora_valor_val)
 
 
 def crear_viaje_cereal(id_cliente, id_empleado, id_vehiculo, tipo_cereal, codigo_trazabilidad,
                        toneladas, precio_tonelada, porcentaje_empleado, fecha_viaje_cereal, destinos,
+                       dadora_carga=None, dadora_tipo_cobro=None, dadora_valor=None,
                        pagado=False):
     """
     Crea un viaje de cereal (maestro) y sus destinos asociados (detalle) en una
@@ -2026,9 +2058,11 @@ def crear_viaje_cereal(id_cliente, id_empleado, id_vehiculo, tipo_cereal, codigo
     'pagado' es el cobro del flete: la empresa no acepta pagos parciales, asi que
     alcanza con el booleano (o esta cobrado o no lo esta). Por defecto nace impago.
     """
-    codigo, toneladas_val, precio_val, porcentaje_val, destinos_limpios = _validar_viaje_cereal(
+    (codigo, toneladas_val, precio_val, porcentaje_val, destinos_limpios,
+     dadora_nombre, dadora_tipo_val, dadora_valor_val) = _validar_viaje_cereal(
         id_cliente, id_empleado, id_vehiculo, tipo_cereal, codigo_trazabilidad,
-        toneladas, precio_tonelada, porcentaje_empleado, fecha_viaje_cereal, destinos
+        toneladas, precio_tonelada, porcentaje_empleado, fecha_viaje_cereal, destinos,
+        dadora_carga, dadora_tipo_cobro, dadora_valor
     )
 
     with transaction.atomic():
@@ -2042,6 +2076,9 @@ def crear_viaje_cereal(id_cliente, id_empleado, id_vehiculo, tipo_cereal, codigo
             precio_tonelada=precio_val,
             porcentaje_empleado=porcentaje_val,
             fecha_viaje_cereal=fecha_viaje_cereal,
+            dadora_carga=dadora_nombre,
+            dadora_tipo_cobro=dadora_tipo_val,
+            dadora_valor=dadora_valor_val,
             pagado=bool(pagado),
             # Si nace cobrado, el momento del cobro es el del alta
             fecha_pago=timezone.now() if pagado else None,
@@ -2119,7 +2156,8 @@ def obtener_resumen_cereal(viajes):
             _bruto=F("toneladas") * F("precio_tonelada"),
             _gastos=Coalesce(gastos_por_viaje, Value(0)),
         )
-        .values("_bruto", "_gastos", "porcentaje_empleado")
+        .values("_bruto", "_gastos", "toneladas", "porcentaje_empleado",
+                "dadora_carga", "dadora_tipo_cobro", "dadora_valor")
     )
 
     total = Decimal(0)
@@ -2127,11 +2165,26 @@ def obtener_resumen_cereal(viajes):
     for v in viajes:
         bruto = v["_bruto"] or Decimal(0)
         gastos_viaje = v["_gastos"] or 0
-        subtotal = bruto - gastos_viaje
+
+        # Comision de la dadora (mismo criterio que la property costo_dadora del
+        # modelo): se calcula sobre la facturacion (bruto), antes que los gastos.
+        # Un porcentaje del bruto, un fijo por tonelada, o un monto en efectivo.
+        if not v["dadora_carga"]:
+            costo_dadora = Decimal(0)
+        elif v["dadora_tipo_cobro"] == "porcentaje":
+            costo_dadora = bruto * v["dadora_valor"] / 100
+        elif v["dadora_tipo_cobro"] == "tonelada":
+            costo_dadora = v["dadora_valor"] * v["toneladas"]
+        elif v["dadora_tipo_cobro"] == "efectivo":
+            costo_dadora = Decimal(v["dadora_valor"])
+        else:
+            costo_dadora = Decimal(0)
+
+        subtotal = bruto - costo_dadora - gastos_viaje
         base = subtotal if subtotal > 0 else Decimal(0)
         pago_empleado = base * v["porcentaje_empleado"] / 100
         total += bruto
-        gastos += gastos_viaje + pago_empleado
+        gastos += gastos_viaje + costo_dadora + pago_empleado
 
     total = int(round(total))
     gastos = int(round(gastos))
@@ -2159,12 +2212,15 @@ def obtener_datos_viaje_cereal(id_viaje_cereal):
 
 def editar_viaje_cereal(id_viaje_cereal, id_cliente, id_empleado, id_vehiculo, tipo_cereal, codigo_trazabilidad,
                         toneladas, precio_tonelada, porcentaje_empleado, fecha_viaje_cereal, destinos,
+                        dadora_carga=None, dadora_tipo_cobro=None, dadora_valor=None,
                         pagado=None):
     # 'pagado' llega en None cuando quien edita no puede tocar el cobro (no staff):
     # en ese caso el estado de pago queda como estaba, no se pisa con un False.
-    codigo, toneladas_val, precio_val, porcentaje_val, destinos_limpios = _validar_viaje_cereal(
+    (codigo, toneladas_val, precio_val, porcentaje_val, destinos_limpios,
+     dadora_nombre, dadora_tipo_val, dadora_valor_val) = _validar_viaje_cereal(
         id_cliente, id_empleado, id_vehiculo, tipo_cereal, codigo_trazabilidad,
-        toneladas, precio_tonelada, porcentaje_empleado, fecha_viaje_cereal, destinos
+        toneladas, precio_tonelada, porcentaje_empleado, fecha_viaje_cereal, destinos,
+        dadora_carga, dadora_tipo_cobro, dadora_valor
     )
 
     with transaction.atomic():
@@ -2179,6 +2235,9 @@ def editar_viaje_cereal(id_viaje_cereal, id_cliente, id_empleado, id_vehiculo, t
         viaje_cereal.precio_tonelada = precio_val
         viaje_cereal.porcentaje_empleado = porcentaje_val
         viaje_cereal.fecha_viaje_cereal = fecha_viaje_cereal
+        viaje_cereal.dadora_carga = dadora_nombre
+        viaje_cereal.dadora_tipo_cobro = dadora_tipo_val
+        viaje_cereal.dadora_valor = dadora_valor_val
         if pagado is not None:
             _aplicar_estado_pago(viaje_cereal, pagado)
         viaje_cereal.save()

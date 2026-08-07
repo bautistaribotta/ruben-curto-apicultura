@@ -2318,6 +2318,11 @@ def viaje_cereales(request):
                 porcentaje_empleado = request.POST.get("porcentaje_empleado") or None
                 fecha_viaje_cereal = request.POST.get("fecha_viaje_cereal")
                 destinos = request.POST.getlist("destino")
+                # Dadora de carga: toda opcional. El nombre vacio significa "sin dadora"
+                # y el servicio normaliza el tipo de cobro y el valor en consecuencia.
+                dadora_carga = request.POST.get("dadora_carga")
+                dadora_tipo_cobro = request.POST.get("dadora_tipo_cobro")
+                dadora_valor = request.POST.get("dadora_valor") or None
 
                 # 2. Validacion de presencia de lo obligatorio (lo esencial en la vista)
                 if not all([id_cliente, id_empleado, id_vehiculo, tipo_cereal, codigo_trazabilidad,
@@ -2328,6 +2333,8 @@ def viaje_cereales(request):
                 # 3. Delegacion al servicio (reglas de negocio y validacion con regex)
                 crear_viaje_cereal(id_cliente, id_empleado, id_vehiculo, tipo_cereal, codigo_trazabilidad,
                                    toneladas, precio_tonelada, porcentaje_empleado, fecha_viaje_cereal, destinos,
+                                   dadora_carga=dadora_carga, dadora_tipo_cobro=dadora_tipo_cobro,
+                                   dadora_valor=dadora_valor,
                                    pagado=bool(_pagado_del_formulario(request)))
                 messages.success(request, "Viaje de cereal registrado exitosamente.")
 
@@ -2438,6 +2445,9 @@ def informacion_viaje_cereal(request, id_viaje_cereal):
             porcentaje_empleado = request.POST.get("porcentaje_empleado") or None
             fecha_viaje_cereal = request.POST.get("fecha_viaje_cereal")
             destinos = request.POST.getlist("destino")
+            dadora_carga = request.POST.get("dadora_carga")
+            dadora_tipo_cobro = request.POST.get("dadora_tipo_cobro")
+            dadora_valor = request.POST.get("dadora_valor") or None
 
             try:
                 editar_viaje_cereal(
@@ -2452,6 +2462,9 @@ def informacion_viaje_cereal(request, id_viaje_cereal):
                     porcentaje_empleado=porcentaje_empleado,
                     fecha_viaje_cereal=fecha_viaje_cereal,
                     destinos=destinos,
+                    dadora_carga=dadora_carga,
+                    dadora_tipo_cobro=dadora_tipo_cobro,
+                    dadora_valor=dadora_valor,
                     pagado=_pagado_del_formulario(request),
                 )
                 messages.success(request, "Viaje de cereal modificado exitosamente.")
