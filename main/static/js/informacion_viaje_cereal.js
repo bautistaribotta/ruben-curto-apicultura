@@ -50,4 +50,18 @@ document.addEventListener('DOMContentLoaded', () => {
             btnQuitarDestino.style.display = 'flex';
         }
     }
+
+    // Dadora de carga: el markup ya llega con el estado correcto desde la vista;
+    // esto solo engancha el switch y la forma de cobro para las ediciones en vivo.
+    inicializarDadoraCarga({
+        toggle: 'dadora-toggle-cereal',
+        campos: 'dadora-campos-cereal',
+        nombre: 'dadora-nombre-cereal',
+        tipo: 'dadora-tipo-cereal',
+        valores: {
+            porcentaje: { grupo: 'dadora-pct-grupo-cereal', input: 'dadora-pct-cereal' },
+            tonelada: { grupo: 'dadora-ton-grupo-cereal', input: 'dadora-ton-cereal' },
+            efectivo: { grupo: 'dadora-efe-grupo-cereal', input: 'dadora-efe-cereal' },
+        },
+    });
 });

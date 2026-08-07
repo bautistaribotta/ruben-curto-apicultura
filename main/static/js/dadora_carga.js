@@ -1,0 +1,61 @@
+// =============================================
+//  DADORA DE CARGA (alta y edicion de viajes de cereal)
+//
+//  Un switch decide si el viaje tuvo dadora. Cuando esta activo se muestran el
+//  nombre, la forma de cobro y el valor; cuando esta apagado se ocultan y se
+//  deshabilitan (asi no viajan en el POST y su validacion no bloquea el envio).
+//
+//  La forma de cobro (porcentaje, por tonelada o efectivo) elige cual de los inputs
+//  de valor queda activo. Todos comparten el name "dadora_valor" a proposito: el
+//  servidor recibe un unico valor y lo interpreta segun el tipo de cobro.
+//  Deshabilitar los que no se usan es lo que evita que se manden de mas.
+// =============================================
+
+function inicializarDadoraCarga(ids) {
+    const toggle = document.getElementById(ids.toggle);
+    if (!toggle) return;
+
+    const campos = document.getElementById(ids.campos);
+    const nombre = document.getElementById(ids.nombre);
+    const tipo = document.getElementById(ids.tipo);
+
+    // ids.valores: { porcentaje: {grupo, input}, tonelada: {...}, efectivo: {...} }
+    const valores = Object.entries(ids.valores).map(([clave, refs]) => ({
+        clave,
+        grupo: document.getElementById(refs.grupo),
+        input: document.getElementById(refs.input),
+    }));
+
+    const sincronizar = () => {
+        const activa = toggle.checked;
+
+        campos.hidden = !activa;
+        nombre.disabled = !activa;
+        tipo.disabled = !activa;
+        nombre.required = activa;
+        tipo.required = activa;
+
+        valores.forEach(({ clave, grupo, input }) => {
+            const usado = activa && tipo.value === clave;
+            grupo.hidden = !usado;
+            input.disabled = !usado;
+            input.required = usado;
+        });
+
+        // Al apagar el switch dejo los campos en blanco: si el usuario habia
+        // cargado una dadora y se arrepiente, el viaje no debe quedar con datos
+        // sueltos que ni siquiera se ven.
+        if (!activa) {
+            nombre.value = '';
+            tipo.value = '';
+            valores.forEach(({ input }) => { input.value = ''; });
+        }
+    };
+
+    toggle.addEventListener('change', sincronizar);
+    tipo.addEventListener('change', sincronizar);
+
+    // No corro sincronizar al cargar: en edicion el markup ya llega con el estado
+    // correcto desde la vista (switch, nombre, tipo y valor), y limpiar aca borraria
+    // esos datos. El primer 'change' del usuario reconcilia todo.
+}
