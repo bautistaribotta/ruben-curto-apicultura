@@ -19,7 +19,7 @@ from django.template.defaultfilters import floatformat
 
 from .models import (Cliente, Producto, Operacion, DetalleOperacion, Pago, Cotizaciones, Empleado,
                      Vehiculo, Viaje, ViajeCereal, ViajeReparto, Gasto, GastoViajeCereal, GastoViajeReparto,
-                     periodo_actual)
+                     EstacionDeServicio, periodo_actual)
 from .pdf_services import Remito, ResumenCuenta
 from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo_cliente, editar_cliente,
                        eliminar_cliente, buscar_clientes, get_cotizacion_dolar_oficial, get_cotizaciones, get_total_kilos_granel, get_articulos_granel, actualizar_cotizacion, obtener_datos_cliente,
@@ -57,7 +57,8 @@ from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo
                        obtener_detalle_alquiler,
                        crear_gasto_casa, editar_gasto_casa, eliminar_gasto_casa,
                        obtener_resumen_alquileres, marcar_pago_alquiler, resolver_periodo,
-                       mes_desplazado, FILTROS_ALQUILERES)
+                       mes_desplazado, FILTROS_ALQUILERES,
+                       crear_estacion, obtener_datos_estacion, editar_estacion, eliminar_estacion)
 
 
 def _pagado_del_formulario(request):
@@ -2164,7 +2165,59 @@ def marcar_pago_alquiler_ajax(request, id_casa, periodo):
 
 @staff_member_required(login_url="inicio")
 def combustible(request):
-    return render(request, "combustible.html")
+    if request.method == "POST":
+        id_estacion = request.POST.get("id_estacion")
+        nombre = request.POST.get("nombre")
+        id_eliminar = request.POST.get("id_eliminar")
+
+        try:
+            if id_eliminar:
+                eliminar_estacion(id_eliminar)
+                messages.success(request, "Estacion eliminada correctamente")
+            elif id_estacion:
+                editar_estacion(id_estacion, nombre)
+                messages.success(request, "Estacion editada correctamente")
+            else:
+                crear_estacion(nombre)
+                messages.success(request, "Estacion agregada correctamente")
+        except ValueError as e:
+            messages.error(request, str(e))
+
+        return redirect("combustible")
+
+    # Listado de estaciones activas, con busqueda por nombre o id
+    q = request.GET.get("q", "")
+    estaciones = EstacionDeServicio.objects.filter(activa=True)
+
+    if q:
+        if q.isdigit():
+            estaciones = estaciones.filter(id__icontains=q)
+        else:
+            estaciones = estaciones.filter(filtro_tokens(q, "nombre"))
+
+    estaciones = estaciones.order_by("nombre")
+
+    paginator_estaciones = Paginator(estaciones, 8)
+    pagina_numero = request.GET.get("page")
+    pagina_obj = paginator_estaciones.get_page(pagina_numero)
+
+    contexto = {"estaciones": pagina_obj, "q": q}
+
+    # Peticion AJAX (busqueda/paginacion): devuelvo solo la tabla
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        return render(request, "tabla_estaciones.html", contexto)
+
+    return render(request, "combustible.html", contexto)
+
+
+@login_required
+def obtener_estacion_json(request, id_estacion):
+    datos = obtener_datos_estacion(id_estacion)
+
+    if datos:
+        return JsonResponse(datos)
+
+    return JsonResponse({"Error": "Estacion no encontrada"}, status=404)
 
 
 @login_required

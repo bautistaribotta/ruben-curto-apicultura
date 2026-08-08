@@ -16,6 +16,7 @@ from .models import (Producto, Cliente, Operacion, DetalleOperacion, Pago, Cotiz
                      Vehiculo, Viaje, DetalleViaje, Gasto, ViajeCereal, DetalleViajeCereal, GastoViajeCereal,
                      ViajeReparto, GastoViajeReparto, DestinoViajeReparto, Casa, Contrato, PagoAlquiler,
                      GastoCasa, RegistroKilometraje, Seguro, VTV, Servis, ObservacionVehiculo,
+                     EstacionDeServicio,
                      contratos_del_periodo, periodo_actual)
 
 
@@ -140,6 +141,58 @@ def eliminar_producto(id_producto):
     producto.activo = False
     producto.save()
     return producto
+
+
+# --- ESTACIONES DE SERVICIO ---
+# Catalogo simple (solo nombre + activa). La baja es logica para no perder
+# el historial cuando las cargas de combustible referencien la estacion.
+def crear_estacion(nombre):
+    nombre = (nombre or "").strip()
+    if not nombre:
+        raise ValueError("El nombre de la estacion es obligatorio.")
+
+    # El nombre es unico: aviso antes de que la base tire IntegrityError. Ignoro
+    # las inactivas para poder reutilizar un nombre dado de baja.
+    if EstacionDeServicio.objects.filter(nombre__iexact=nombre, activa=True).exists():
+        raise ValueError("Ya existe una estacion con ese nombre.")
+
+    return EstacionDeServicio.objects.create(nombre=nombre)
+
+
+def obtener_datos_estacion(id_estacion):
+    try:
+        estacion = EstacionDeServicio.objects.get(id=id_estacion, activa=True)
+        return {"id": estacion.id, "nombre": estacion.nombre}
+    except EstacionDeServicio.DoesNotExist:
+        return None
+
+
+def editar_estacion(id_estacion, nombre):
+    nombre = (nombre or "").strip()
+    if not nombre:
+        raise ValueError("El nombre de la estacion es obligatorio.")
+
+    estacion = get_object_or_404(EstacionDeServicio, id=id_estacion)
+
+    # Descarto choques con otra estacion activa (la propia no cuenta)
+    duplicada = (EstacionDeServicio.objects
+                 .filter(nombre__iexact=nombre, activa=True)
+                 .exclude(id=estacion.id)
+                 .exists())
+    if duplicada:
+        raise ValueError("Ya existe una estacion con ese nombre.")
+
+    estacion.nombre = nombre
+    estacion.save()
+    return estacion
+
+
+def eliminar_estacion(id_estacion):
+    estacion = get_object_or_404(EstacionDeServicio, id=id_estacion)
+    # Baja logica: preserva el historial de cargas de combustible
+    estacion.activa = False
+    estacion.save()
+    return estacion
 
 
 def nuevo_cliente(nombre, apellido=None, telefono=None, localidad=None, direccion=None, factura_produccion=False, cuit=None):

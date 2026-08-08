@@ -1,22 +1,122 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block nombre-pestaña %}
   <title> Combustible </title>
 {% endblock %}
 
+{% block links %}
+  <link rel="stylesheet" href="{% static 'combustible.css' %}">
+{% endblock %}
+
 {% block cabecera %}
   <div id="titulos-cabecera">
     <h2> Combustible </h2>
-    <p> Controla las cargas, deudas y gastos de combustible </p>
+    <p> Gestiona las estaciones de servicio donde cargas combustible </p>
   </div>
 {% endblock %}
 
 {% block area-trabajo %}
-  <section id="area-trabajo">
-    <div class="en-obra">
-      <span class="en-obra__icono material-symbols-outlined">construction</span>
-      <h3 class="en-obra__titulo">Estoy trabajando en esto cabezon</h3>
-      <p class="en-obra__detalle">Acá vas a poder registrar las cargas de combustible y ver cuánto gasta cada vehículo.</p>
+<section id="area-trabajo">
+  <!-- Controles superiores: buscador y alta -->
+  <div class="barra-herramientas">
+    <div class="grupo-busqueda">
+      <div class="contenedor-input-busqueda">
+        <span class="material-symbols-outlined icono-busqueda">search</span>
+        <input type="text" id="buscar-estacion" class="input-busqueda"
+               placeholder="Buscar estacion por nombre o id" value="{{ q|default:'' }}">
+      </div>
     </div>
-  </section>
+
+    <button class="boton-nuevo" onclick="prepararPanelNuevaEstacion()">
+      <span class="material-symbols-outlined">add</span>
+      <span class="texto-boton">Nueva estacion</span>
+    </button>
+  </div>
+
+  <!-- Tabla de estaciones -->
+  <div class="contenedor-tabla" id="tabla-estaciones-container">
+    {% include 'tabla_estaciones.html' %}
+  </div>
+</section>
+
+<!-- PANEL LATERAL NUEVA/EDITAR ESTACION (SLIDE-OVER) -->
+<div id="contenedor-slide-over">
+  <div id="slide-over-fondo" onclick="cerrarSlideOver()"> </div>
+
+  <div id="slide-over-panel">
+    <header class="panel-cabecera">
+      <div class="panel-titulo-fila">
+        <div class="icono-contenedor">
+          <span class="material-symbols-outlined">local_gas_station</span>
+        </div>
+        <div class="texto-cabecera">
+          <h3>Nueva estacion</h3>
+          <p>Registra una estacion de servicio</p>
+        </div>
+      </div>
+      <button class="boton-cerrar-panel" onclick="cerrarSlideOver()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </header>
+
+    <div class="panel-cuerpo">
+      <form class="formulario-estacion" id="form-estacion" method="POST" autocomplete="off">
+        {% csrf_token %}
+        <input type="hidden" id="id_estacion" name="id_estacion">
+        <div class="campo-formulario">
+          <label for="nombre">Nombre de la estacion</label>
+          <input
+            type="text"
+            id="nombre"
+            name="nombre"
+            class="input-estandar"
+            placeholder="Ej: YPF Ruta 8"
+            maxlength="30"
+            required
+            pattern="[a-zA-ZÁÉÍÓÚáéíóúñÑ\s\d]{3,}">
+          <span class="mensaje-error">Minimo 3 caracteres. No se permiten simbolos.</span>
+        </div>
+      </form>
+    </div>
+
+    <div class="panel-pie">
+      <button type="submit" form="form-estacion" class="boton-primario">Guardar estacion</button>
+      <button type="button" class="boton-secundario" onclick="cerrarSlideOver()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Panel de eliminacion -->
+<form id="formulario-eliminar" method="POST">
+  {% csrf_token %}
+  <div id="contenedor-panel-eliminar">
+    <div id="contenedor-panel-fondo" onclick="cerrarPanelEliminar()"> </div>
+
+    <div id="panel-eliminar">
+      <input type="hidden" id="id_eliminar" name="id_eliminar" value="">
+
+      <button type="button" class="boton-cerrar-panel" id="icono-cerrar-panel-eliminar" onclick="cerrarPanelEliminar()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+
+      <div id="icono-advertencia">
+        <span class="material-symbols-outlined">warning</span>
+      </div>
+
+      <h3>Confirmar eliminacion</h3>
+      <p id="texto-confirmacion-eliminar">¿Esta seguro que quiere eliminar esta estacion?</p>
+
+      <div class="acciones-modal">
+        <button type="button" class="boton-secundario" onclick="cerrarPanelEliminar()">No, mantener</button>
+        <button type="button" class="boton-primario-eliminar" id="boton-confirmar-eliminar"><span>Si, eliminar</span></button>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}
+
+{% block codigo-javascript %}
+<script src="{% static 'js/paneles.js' %}"></script>
+<script src="{% static 'js/combustible.js' %}"></script>
 {% endblock %}

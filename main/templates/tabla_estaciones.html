@@ -1,0 +1,68 @@
+<table class="tabla-estaciones">
+  <thead>
+    <tr>
+      <th>Estacion</th>
+      <th class="texto-centrado">Acciones</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for estacion in estaciones %}
+      <tr class="fila-estacion" data-id="{{ estacion.id }}">
+        <td>
+          <div class="estacion-celda">
+            <span class="estacion-avatar material-symbols-outlined">local_gas_station</span>
+            <div class="estacion-texto">
+              <div class="estacion-nombre">{{ estacion.nombre }}</div>
+              <div class="estacion-id">ID: {{ estacion.id }}</div>
+            </div>
+          </div>
+        </td>
+        <td>
+          <div class="acciones-tabla">
+            <button class="boton-icono editar" title="Editar" data-id="{{ estacion.id }}">
+              <span class="material-symbols-outlined">edit</span>
+            </button>
+            <button class="boton-icono eliminar"
+                    title="Eliminar"
+                    data-id="{{ estacion.id }}"
+                    data-nombre="{{ estacion.nombre }}">
+              <span class="material-symbols-outlined">delete</span>
+            </button>
+          </div>
+        </td>
+      </tr>
+    {% empty %}
+      <tr class="fila-vacia">
+        <td colspan="2" class="celda-vacia">
+          <span class="material-symbols-outlined">local_gas_station</span>
+          {% if q %}No se encontraron estaciones con esa busqueda.{% else %}No hay estaciones registradas.{% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<!-- Paginacion -->
+<div class="paginacion">
+  <div class="paginacion-info">
+    Mostrando <span>{{ estaciones.start_index }}-{{ estaciones.end_index }}</span>
+    de <span>{{ estaciones.paginator.count }}</span> estaciones
+  </div>
+  <div class="paginacion-botones">
+    {% if estaciones.has_previous %}
+      <a href="?page={{ estaciones.previous_page_number }}{% if q %}&q={{ q }}{% endif %}">
+        <button class="boton-paginacion">Anterior</button>
+      </a>
+    {% else %}
+      <button class="boton-paginacion" disabled>Anterior</button>
+    {% endif %}
+
+    {% if estaciones.has_next %}
+      <a href="?page={{ estaciones.next_page_number }}{% if q %}&q={{ q }}{% endif %}">
+        <button class="boton-paginacion">Siguiente</button>
+      </a>
+    {% else %}
+      <button class="boton-paginacion" disabled>Siguiente</button>
+    {% endif %}
+  </div>
+</div>
