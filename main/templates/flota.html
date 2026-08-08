@@ -44,60 +44,79 @@
     </button>
   </div>
 
-  <!-- Tabla de vehículos -->
-  <div class="contenedor-tabla">
-    <table class="tabla-flota">
-      <thead>
-        <tr>
-          <th>Nombre</th>
-          <th>Patente</th>
-          <th class="col-centrada">Viajes</th>
-          <th class="col-acciones">Acciones</th>
-        </tr>
-      </thead>
-      <tbody id="cuerpo-tabla-flota">
-        {% for vehiculo in vehiculos %}
-        <tr class="fila-vehiculo" data-nombre="{{ vehiculo.nombre|lower }}"
-            data-href="{% url 'informacion_vehiculo' vehiculo.id %}"
-            role="link" tabindex="0"
-            aria-label="Ver información de {{ vehiculo.nombre }}">
-          <td class="celda-flota-nombre">{{ vehiculo.nombre }}</td>
-          <td><span class="celda-flota-patente">{{ vehiculo.patente }}</span></td>
-          <td class="col-centrada">{{ vehiculo.total_viajes|intcomma }}</td>
-          <td class="col-acciones">
-            <button type="button" class="boton-accion-flota editar"
-                    title="Editar vehículo"
-                    data-id="{{ vehiculo.id }}"
-                    data-nombre="{{ vehiculo.nombre }}"
-                    data-patente="{{ vehiculo.patente }}"
-                    onclick="abrirEditarVehiculo(this)">
-              <span class="material-symbols-outlined">edit</span>
-            </button>
-            <button type="button" class="boton-accion-flota eliminar"
-                    title="Eliminar vehículo"
-                    data-id="{{ vehiculo.id }}"
-                    data-nombre="{{ vehiculo.nombre }}"
-                    onclick="abrirEliminarFlota(this)">
-              <span class="material-symbols-outlined">delete</span>
-            </button>
-          </td>
-        </tr>
-        {% empty %}
-        <tr class="fila-vacia">
-          <td colspan="4" class="celda-vacia">
-            <span class="material-symbols-outlined">local_shipping</span>
-            No hay vehículos registrados.
-          </td>
-        </tr>
-        {% endfor %}
-        <tr class="fila-vacia" id="fila-sin-resultados" hidden>
-          <td colspan="4" class="celda-vacia">
-            <span class="material-symbols-outlined">search_off</span>
-            No se encontraron vehículos con ese nombre.
-          </td>
-        </tr>
-      </tbody>
-    </table>
+  <!-- Grilla de vehículos: una tarjeta por vehículo, clickeable al perfil -->
+  <div class="grilla-flota" id="grilla-flota">
+    {% for vehiculo in vehiculos %}
+    <article class="tarjeta-vehiculo" data-nombre="{{ vehiculo.nombre|lower }}"
+             data-href="{% url 'informacion_vehiculo' vehiculo.id %}"
+             role="link" tabindex="0"
+             aria-label="Ver información de {{ vehiculo.nombre }}">
+
+      <!-- Identidad: icono, nombre y patente; acciones al margen -->
+      <header class="tarjeta-vehiculo__cabecera">
+        <span class="tarjeta-vehiculo__icono">
+          <span class="material-symbols-outlined">local_shipping</span>
+        </span>
+        <div class="tarjeta-vehiculo__identidad">
+          <h3 class="tarjeta-vehiculo__nombre">{{ vehiculo.nombre }}</h3>
+          <span class="tarjeta-vehiculo__patente">{{ vehiculo.patente }}</span>
+        </div>
+        <div class="tarjeta-vehiculo__acciones">
+          <button type="button" class="boton-accion-flota editar"
+                  title="Editar vehículo"
+                  data-id="{{ vehiculo.id }}"
+                  data-nombre="{{ vehiculo.nombre }}"
+                  data-patente="{{ vehiculo.patente }}"
+                  onclick="abrirEditarVehiculo(this)">
+            <span class="material-symbols-outlined">edit</span>
+          </button>
+          <button type="button" class="boton-accion-flota eliminar"
+                  title="Eliminar vehículo"
+                  data-id="{{ vehiculo.id }}"
+                  data-nombre="{{ vehiculo.nombre }}"
+                  onclick="abrirEliminarFlota(this)">
+            <span class="material-symbols-outlined">delete</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Kilometraje: el número protagonista de la tarjeta -->
+      <div class="tarjeta-vehiculo__odometro">
+        <span class="tarjeta-vehiculo__km-valor">{{ vehiculo.km_total|floatformat:0|intcomma }}</span>
+        <span class="tarjeta-vehiculo__km-unidad">km</span>
+      </div>
+
+      <!-- Estado de los tres vencimientos que se controlan del vehículo -->
+      <dl class="tarjeta-vehiculo__estado">
+        <div class="dato-estado{% if vehiculo.seguro_vencido %} dato-estado--vencido{% endif %}">
+          <span class="material-symbols-outlined dato-estado__icono">shield</span>
+          <dt class="dato-estado__rotulo">Seguro</dt>
+          <dd class="dato-estado__valor">
+            {% if vehiculo.seguro_fin %}{{ vehiculo.seguro_fin|date:"d/m/Y" }}{% else %}Sin registro{% endif %}
+          </dd>
+        </div>
+        <div class="dato-estado{% if vehiculo.vtv_vencido %} dato-estado--vencido{% endif %}">
+          <span class="material-symbols-outlined dato-estado__icono">verified</span>
+          <dt class="dato-estado__rotulo">VTV</dt>
+          <dd class="dato-estado__valor">
+            {% if vehiculo.vtv_fin %}{{ vehiculo.vtv_fin|date:"d/m/Y" }}{% else %}Sin registro{% endif %}
+          </dd>
+        </div>
+        <div class="dato-estado">
+          <span class="material-symbols-outlined dato-estado__icono">build</span>
+          <dt class="dato-estado__rotulo">Último service</dt>
+          <dd class="dato-estado__valor">
+            {% if vehiculo.servis_fecha %}{{ vehiculo.servis_fecha|date:"d/m/Y" }}{% else %}Sin registro{% endif %}
+          </dd>
+        </div>
+      </dl>
+    </article>
+    {% empty %}
+    <div class="flota-vacia">
+      <span class="material-symbols-outlined">local_shipping</span>
+      No hay vehículos registrados.
+    </div>
+    {% endfor %}
   </div>
 
 </section>

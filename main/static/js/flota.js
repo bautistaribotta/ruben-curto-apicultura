@@ -12,20 +12,11 @@ function filtrarVehiculos() {
     if (!input) return;
 
     const termino = input.value.trim().toLowerCase();
-    const filas = document.querySelectorAll('#cuerpo-tabla-flota .fila-vehiculo');
-    let visibles = 0;
+    const tarjetas = document.querySelectorAll('#grilla-flota .tarjeta-vehiculo');
 
-    filas.forEach((fila) => {
-        const coincide = fila.dataset.nombre.includes(termino);
-        fila.hidden = !coincide;
-        if (coincide) visibles++;
+    tarjetas.forEach((tarjeta) => {
+        tarjeta.hidden = !tarjeta.dataset.nombre.includes(termino);
     });
-
-    // Muestro el aviso de "sin resultados" solo si hay vehiculos pero ninguno coincide
-    const filaSinResultados = document.getElementById('fila-sin-resultados');
-    if (filaSinResultados) {
-        filaSinResultados.hidden = !(filas.length > 0 && visibles === 0);
-    }
 }
 
 document.getElementById('buscar-vehiculo')?.addEventListener('input', filtrarVehiculos);
@@ -34,22 +25,22 @@ document.getElementById('buscar-vehiculo')?.addEventListener('input', filtrarVeh
 // La fila entera lleva al perfil del vehiculo, pero la ultima columna tiene los
 // botones de editar/eliminar: ahi el click hace lo suyo y no navega.
 
-function irAlPerfilVehiculo(fila) {
-    const destino = fila.dataset.href;
+function irAlPerfilVehiculo(tarjeta) {
+    const destino = tarjeta.dataset.href;
     if (destino) window.location.href = destino;
 }
 
-document.getElementById('cuerpo-tabla-flota')?.addEventListener('click', (evento) => {
-    const fila = evento.target.closest('.fila-vehiculo');
-    if (!fila || evento.target.closest('.col-acciones')) return;
-    irAlPerfilVehiculo(fila);
+document.getElementById('grilla-flota')?.addEventListener('click', (evento) => {
+    const tarjeta = evento.target.closest('.tarjeta-vehiculo');
+    if (!tarjeta || evento.target.closest('.tarjeta-vehiculo__acciones')) return;
+    irAlPerfilVehiculo(tarjeta);
 });
 
-document.getElementById('cuerpo-tabla-flota')?.addEventListener('keydown', (evento) => {
+document.getElementById('grilla-flota')?.addEventListener('keydown', (evento) => {
     if (evento.key !== 'Enter') return;
-    const fila = evento.target.closest('.fila-vehiculo');
-    if (!fila || evento.target !== fila) return;
-    irAlPerfilVehiculo(fila);
+    const tarjeta = evento.target.closest('.tarjeta-vehiculo');
+    if (!tarjeta || evento.target !== tarjeta) return;
+    irAlPerfilVehiculo(tarjeta);
 });
 
 // ---------- VEHÍCULO ----------

@@ -112,66 +112,89 @@
 /* Boton "Nuevo" (.boton-nuevo) e icono: estilos unificados en base.css.
    Mantiene el mismo alto/ancho que "Nuevo Empleado" y el resto de la app. */
 
-/* --- CONTENEDOR PRINCIPAL TABLA --- */
-.contenedor-tabla {
+/* --- GRILLA DE TARJETAS --- */
+.grilla-flota {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr));
+  gap: 1.25rem;
+}
+
+/* Cada tarjeta es un enlace al perfil del vehiculo: la mano y el foco lo anuncian.
+   Los botones de accion paran la navegacion, no la tarjeta. */
+.tarjeta-vehiculo {
+  display: flex;
+  flex-direction: column;
   background-color: var(--surface-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
-  overflow: hidden;
-}
-
-/* --- TABLA --- */
-.tabla-flota {
-  width: 100%;
-  border-collapse: collapse;
-  text-align: left;
-}
-
-/* Cabecera de tabla: estilos unificados en base.css; esta tabla mantiene su
-   densidad compacta para alinear con las celdas de 1.25rem */
-.contenedor-tabla .tabla-flota th {
-  padding: 0.75rem 1.25rem;
-}
-
-.tabla-flota td {
-  padding: 0.875rem 1.25rem;
-  border-bottom: 1px solid var(--border-subtle);
-  font-size: var(--text-sm);
-  color: var(--text-body);
-  vertical-align: middle;
-}
-
-.tabla-flota tbody tr {
-  transition: background-color var(--dur-normal) var(--ease-standard);
-}
-
-.tabla-flota tbody tr:last-child td {
-  border-bottom: none;
-}
-
-.tabla-flota tbody tr:hover {
-  background-color: var(--surface-hover);
-}
-
-/* La fila es un enlace al perfil del vehiculo: la mano y el foco lo anuncian.
-   Los botones de la ultima columna paran la navegacion, no la fila. */
-.fila-vehiculo {
+  padding: 1.25rem;
   cursor: pointer;
+  transition: transform var(--dur-normal) var(--ease-standard),
+              box-shadow var(--dur-normal) var(--ease-standard),
+              border-color var(--dur-normal) var(--ease-standard);
 }
 
-.fila-vehiculo:focus-visible {
+/* El display:flex pisa el atributo hidden (misma especificidad): lo restauro
+   para que el filtro de busqueda pueda ocultar tarjetas que no coinciden. */
+.tarjeta-vehiculo[hidden] {
+  display: none;
+}
+
+.tarjeta-vehiculo:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-default);
+}
+
+.tarjeta-vehiculo:focus-visible {
   outline: 2px solid var(--honey-500);
-  outline-offset: -2px;
+  outline-offset: 2px;
 }
 
-.celda-flota-nombre {
-  font-weight: var(--weight-semibold);
+/* Cabecera: icono + identidad; las acciones se van al extremo derecho */
+.tarjeta-vehiculo__cabecera {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.tarjeta-vehiculo__icono {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: var(--radius-md);
+  background-color: var(--brand-secondary);
+  color: var(--sand-100);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tarjeta-vehiculo__icono .material-symbols-outlined {
+  font-size: 1.5rem;
+}
+
+.tarjeta-vehiculo__identidad {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.tarjeta-vehiculo__nombre {
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
   color: var(--text-strong);
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.celda-flota-patente {
-  display: inline-block;
+.tarjeta-vehiculo__patente {
+  align-self: flex-start;
   padding: 1px 7px;
   border-radius: var(--radius-sm);
   background-color: var(--surface-sunken);
@@ -183,17 +206,106 @@
   font-variant-numeric: tabular-nums;
 }
 
-.col-centrada {
-  text-align: center;
+/* Las acciones aparecen al pasar el mouse; en foco-teclado siempre visibles */
+.tarjeta-vehiculo__acciones {
+  margin-left: auto;
+  display: flex;
+  gap: 0.15rem;
+  opacity: 0;
+  transition: opacity var(--dur-normal) var(--ease-standard);
+}
+
+.tarjeta-vehiculo:hover .tarjeta-vehiculo__acciones,
+.tarjeta-vehiculo:focus-within .tarjeta-vehiculo__acciones {
+  opacity: 1;
+}
+
+/* Odometro: el numero grande que domina la tarjeta */
+.tarjeta-vehiculo__odometro {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  margin: 1.15rem 0;
+}
+
+.tarjeta-vehiculo__km-valor {
+  font-size: var(--text-3xl);
+  font-weight: var(--weight-extra);
+  letter-spacing: var(--tracking-tight);
+  color: var(--text-strong);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.tarjeta-vehiculo__km-unidad {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--text-subtle);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+
+/* Estado: los tres vencimientos, uno por fila, con divisor superior */
+.tarjeta-vehiculo__estado {
+  margin: 0;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.dato-estado {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dato-estado__icono {
+  font-size: 1.1rem;
+  color: var(--text-subtle);
+  flex: none;
+}
+
+.dato-estado__rotulo {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.dato-estado__valor {
+  margin: 0 0 0 auto;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--text-body);
   font-variant-numeric: tabular-nums;
 }
 
-.col-acciones {
-  text-align: right;
-  white-space: nowrap;
+/* Vencido: la fecha y el icono se pintan de alerta para que salte a la vista */
+.dato-estado--vencido .dato-estado__valor,
+.dato-estado--vencido .dato-estado__icono {
+  color: var(--danger-600);
 }
 
-/* Celda vacia (.celda-vacia): estilos unificados en base.css */
+/* Estado vacio / sin resultados: ocupa toda la grilla */
+.flota-vacia {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 3rem 1rem;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  background-color: var(--surface-card);
+  border: 1px dashed var(--border-default);
+  border-radius: var(--radius-lg);
+}
+
+.flota-vacia .material-symbols-outlined {
+  font-size: 2.5rem;
+  color: var(--sand-400);
+}
 
 /* Botones de acción por fila */
 .boton-accion-flota {
@@ -708,10 +820,6 @@
   .barra-herramientas .boton-nuevo .texto-boton::before {
     content: none;
   }
-  /* La tabla hace scroll horizontal en pantallas chicas */
-  .contenedor-tabla {
-    overflow-x: auto;
-  }
 }
 
 @media (max-width: 600px) {
@@ -727,6 +835,10 @@
   }
   .modal-eliminar-acciones {
     grid-template-columns: 1fr;
+  }
+  /* En tactil no hay hover: dejo las acciones siempre visibles */
+  .tarjeta-vehiculo__acciones {
+    opacity: 1;
   }
 }
 

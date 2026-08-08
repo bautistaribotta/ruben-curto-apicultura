@@ -9,7 +9,7 @@ from django.shortcuts import get_object_or_404
 from django.http import Http404
 from django.db import transaction
 from django.db.models import (Sum, F, Value, Count, Q, Subquery, OuterRef, Exists, Case, When,
-                              IntegerField)
+                              IntegerField, DecimalField, DateField)
 from django.db.models.functions import Coalesce
 from django.core.cache import cache
 from .models import (Producto, Cliente, Operacion, DetalleOperacion, Pago, Cotizaciones, Empleado, PagosEmpleados,
@@ -1913,15 +1913,49 @@ def obtener_empleados_activos():
 
 
 def obtener_vehiculos_activos():
-    return (
+    # El listado se muestra como tarjetas y cada una resume el estado del vehiculo:
+    # kilometraje, ultimo vencimiento de seguro y VTV, y fecha del ultimo service.
+    # Traigo esos cuatro datos con subconsultas (una sola query, sin N+1) en vez de
+    # apoyarme en las properties del modelo, que dispararian una consulta por tarjeta.
+    hoy = timezone.localdate()
+
+    # El [:1] con el ordering de cada modelo (-fin / -fecha) toma el registro vigente:
+    # el seguro y la VTV con el vencimiento mas lejano, y el service mas reciente.
+    ultimo_seguro = Seguro.objects.filter(vehiculo=OuterRef("pk")).values("fin")[:1]
+    ultima_vtv = VTV.objects.filter(vehiculo=OuterRef("pk")).values("fin")[:1]
+    ultimo_servis = Servis.objects.filter(vehiculo=OuterRef("pk")).values("fecha")[:1]
+    km_total = (
+        RegistroKilometraje.objects.filter(vehiculo=OuterRef("pk"))
+        .values("vehiculo").annotate(t=Sum("kilometros")).values("t")
+    )
+
+    vehiculos = list(
         Vehiculo.objects.filter(activo=True)
-        .annotate(_num_viajes=(
-            Count("viaje", filter=Q(viaje__activo=True), distinct=True)
-            + Count("viajereparto", filter=Q(viajereparto__activo=True), distinct=True)
-            + Count("viajecereal", filter=Q(viajecereal__activo=True), distinct=True)
-        ))
+        .annotate(
+            _num_viajes=(
+                Count("viaje", filter=Q(viaje__activo=True), distinct=True)
+                + Count("viajereparto", filter=Q(viajereparto__activo=True), distinct=True)
+                + Count("viajecereal", filter=Q(viajecereal__activo=True), distinct=True)
+            ),
+            _seguro_fin=Subquery(ultimo_seguro, output_field=DateField()),
+            _vtv_fin=Subquery(ultima_vtv, output_field=DateField()),
+            _servis_fecha=Subquery(ultimo_servis, output_field=DateField()),
+            _km_total=Subquery(km_total, output_field=DecimalField()),
+        )
         .order_by('nombre')
     )
+
+    # Dejo listos, sobre cada instancia, los datos que la tarjeta muestra tal cual:
+    # las fechas, el kilometraje (cero si nunca se cargo) y si seguro/VTV estan vencidos.
+    for vehiculo in vehiculos:
+        vehiculo.seguro_fin = vehiculo._seguro_fin
+        vehiculo.vtv_fin = vehiculo._vtv_fin
+        vehiculo.servis_fecha = vehiculo._servis_fecha
+        vehiculo.km_total = vehiculo._km_total or Decimal("0")
+        vehiculo.seguro_vencido = bool(vehiculo._seguro_fin and vehiculo._seguro_fin < hoy)
+        vehiculo.vtv_vencido = bool(vehiculo._vtv_fin and vehiculo._vtv_fin < hoy)
+
+    return vehiculos
 
 
 def opciones_empleados_filtro():
