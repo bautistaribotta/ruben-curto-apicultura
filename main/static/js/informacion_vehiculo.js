@@ -20,8 +20,8 @@ const CAMPOS_POR_TIPO = {
 const META_POR_TIPO = {
     km: {
         icono: 'speed', nuevo: 'nuevo_km', editar: 'editar_km', eliminar: 'eliminar_km',
-        tituloNuevo: 'Agregar kilometraje', tituloEditar: 'Editar kilometraje',
-        subtitulo: 'Sumá los kilómetros recorridos',
+        tituloNuevo: 'Actualizar kilometraje', tituloEditar: 'Editar kilometraje',
+        subtitulo: 'Ingresá el kilometraje actual del vehículo',
     },
     seguro: {
         icono: 'shield', nuevo: 'nuevo_seguro', editar: 'editar_seguro', eliminar: 'eliminar_seguro',
@@ -115,3 +115,50 @@ function abrirEliminar(tipo, boton) {
         `¿Seguro que querés eliminar <b>${boton.dataset.descripcion}</b>? Esta acción no se puede deshacer.`;
     abrirPanelEliminar();
 }
+
+// =============================================
+//  PAGINACION DE LAS TABLAS Y NOTAS
+//  Cada lista con [data-pagina-id] muestra de a data-por-pagina filas y se
+//  controla con la nav [data-pagina-target] que la acompaña. Las tablas paginan
+//  sus <tr>; la lista de notas sus <li>. Si entra todo en una pagina, la nav no
+//  aparece. Es 100% del lado del cliente: no recarga ni vuelve al server.
+// =============================================
+function paginarLista(lista) {
+    const clave = lista.dataset.paginaId;
+    const porPagina = parseInt(lista.dataset.porPagina, 10) || 5;
+    const nav = document.querySelector(`[data-pagina-target="${clave}"]`);
+    if (!nav) return;
+
+    const filas = Array.from(lista.tagName === 'TABLE' ? lista.tBodies[0].rows : lista.children);
+    const totalPaginas = Math.ceil(filas.length / porPagina);
+
+    // Una sola pagina: no tiene sentido mostrar los controles.
+    if (totalPaginas <= 1) {
+        nav.hidden = true;
+        return;
+    }
+
+    const info = nav.querySelector('.paginacion__info');
+    const anterior = nav.querySelector('[data-dir="prev"]');
+    const siguiente = nav.querySelector('[data-dir="next"]');
+    let pagina = 1;
+
+    function mostrar() {
+        const desde = (pagina - 1) * porPagina;
+        const hasta = desde + porPagina;
+        filas.forEach((fila, i) => { fila.hidden = i < desde || i >= hasta; });
+        info.textContent = `${pagina} / ${totalPaginas}`;
+        anterior.disabled = pagina === 1;
+        siguiente.disabled = pagina === totalPaginas;
+    }
+
+    anterior.addEventListener('click', () => { if (pagina > 1) { pagina -= 1; mostrar(); } });
+    siguiente.addEventListener('click', () => { if (pagina < totalPaginas) { pagina += 1; mostrar(); } });
+
+    nav.hidden = false;
+    mostrar();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[data-pagina-id]').forEach(paginarLista);
+});

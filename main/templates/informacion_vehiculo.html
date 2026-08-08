@@ -107,9 +107,9 @@
         <span class="vital__icono material-symbols-outlined">speed</span>
         <span class="vital__label">Kilometraje</span>
       </div>
-      <p class="vital__valor">{{ kilometraje_total|floatformat:0|intcomma }}<span class="vital__unidad">km</span></p>
+      <p class="vital__valor">{{ kilometraje_actual|floatformat:0|intcomma }}<span class="vital__unidad">km</span></p>
       <p class="vital__pie">
-        {% if vehiculo.ultima_carga_km %}Última carga · {{ vehiculo.ultima_carga_km|date:"d/m/Y" }}{% else %}Sin cargas todavía{% endif %}
+        {% if vehiculo.ultima_actualizacion_km %}Actualizado · {{ vehiculo.ultima_actualizacion_km|date:"d/m/Y" }}{% else %}Sin cargas todavía{% endif %}
       </p>
     </article>
 
@@ -146,7 +146,7 @@
       </button>
     </header>
     {% if observaciones %}
-    <ul class="lista-notas">
+    <ul class="lista-notas" data-pagina-id="obs" data-por-pagina="3">
       {% for r in observaciones %}
       <li class="nota">
         <div class="nota__cuerpo">
@@ -168,6 +168,17 @@
       </li>
       {% endfor %}
     </ul>
+    <nav class="paginacion" data-pagina-target="obs" hidden>
+      <button type="button" class="paginacion__boton" data-dir="prev">
+        <span class="material-symbols-outlined">chevron_left</span>
+        <span>Anterior</span>
+      </button>
+      <span class="paginacion__info"></span>
+      <button type="button" class="paginacion__boton" data-dir="next">
+        <span>Siguiente</span>
+        <span class="material-symbols-outlined">chevron_right</span>
+      </button>
+    </nav>
     {% else %}
     <p class="bloque-datos__vacio">Todavía no dejaste ninguna observación.</p>
     {% endif %}
@@ -185,17 +196,17 @@
         <span class="bloque-datos__contador">{{ registros_km|length }}</span>
       </div>
       <button type="button" class="boton-agregar" onclick="abrirFormularioNuevo('km')">
-        <span class="material-symbols-outlined">add</span>
-        <span>Agregar</span>
+        <span class="material-symbols-outlined">edit</span>
+        <span>Actualizar</span>
       </button>
     </header>
     {% if registros_km %}
     <div class="tabla-scroll">
-      <table class="tabla-datos">
+      <table class="tabla-datos" data-pagina-id="km" data-por-pagina="5">
         <thead>
           <tr>
             <th>Fecha</th>
-            <th class="col-num">Kilómetros</th>
+            <th class="col-num">Kilometraje</th>
             <th class="col-acc"></th>
           </tr>
         </thead>
@@ -203,7 +214,7 @@
           {% for r in registros_km %}
           <tr>
             <td>{{ r.fecha|date:"d/m/Y" }}</td>
-            <td class="col-num">+{{ r.kilometros|floatformat:0|intcomma }}</td>
+            <td class="col-num">{{ r.kilometros|floatformat:0|intcomma }}</td>
             <td class="col-acc">
               <button type="button" class="boton-fila editar" title="Editar"
                       data-id="{{ r.id }}" data-fecha="{{ r.fecha|date:'Y-m-d' }}"
@@ -222,6 +233,17 @@
         </tbody>
       </table>
     </div>
+    <nav class="paginacion" data-pagina-target="km" hidden>
+      <button type="button" class="paginacion__boton" data-dir="prev">
+        <span class="material-symbols-outlined">chevron_left</span>
+        <span>Anterior</span>
+      </button>
+      <span class="paginacion__info"></span>
+      <button type="button" class="paginacion__boton" data-dir="next">
+        <span>Siguiente</span>
+        <span class="material-symbols-outlined">chevron_right</span>
+      </button>
+    </nav>
     {% else %}
     <p class="bloque-datos__vacio">Todavía no cargaste kilometraje.</p>
     {% endif %}
@@ -242,7 +264,7 @@
     </header>
     {% if seguros %}
     <div class="tabla-scroll">
-      <table class="tabla-datos">
+      <table class="tabla-datos" data-pagina-id="seguro" data-por-pagina="5">
         <thead>
           <tr>
             <th>Vigencia</th>
@@ -281,6 +303,17 @@
         </tbody>
       </table>
     </div>
+    <nav class="paginacion" data-pagina-target="seguro" hidden>
+      <button type="button" class="paginacion__boton" data-dir="prev">
+        <span class="material-symbols-outlined">chevron_left</span>
+        <span>Anterior</span>
+      </button>
+      <span class="paginacion__info"></span>
+      <button type="button" class="paginacion__boton" data-dir="next">
+        <span>Siguiente</span>
+        <span class="material-symbols-outlined">chevron_right</span>
+      </button>
+    </nav>
     {% else %}
     <p class="bloque-datos__vacio">Todavía no cargaste ningún seguro.</p>
     {% endif %}
@@ -301,7 +334,7 @@
     </header>
     {% if vtvs %}
     <div class="tabla-scroll">
-      <table class="tabla-datos">
+      <table class="tabla-datos" data-pagina-id="vtv" data-por-pagina="5">
         <thead>
           <tr>
             <th>Vigencia</th>
@@ -340,6 +373,17 @@
         </tbody>
       </table>
     </div>
+    <nav class="paginacion" data-pagina-target="vtv" hidden>
+      <button type="button" class="paginacion__boton" data-dir="prev">
+        <span class="material-symbols-outlined">chevron_left</span>
+        <span>Anterior</span>
+      </button>
+      <span class="paginacion__info"></span>
+      <button type="button" class="paginacion__boton" data-dir="next">
+        <span>Siguiente</span>
+        <span class="material-symbols-outlined">chevron_right</span>
+      </button>
+    </nav>
     {% else %}
     <p class="bloque-datos__vacio">Todavía no cargaste ninguna VTV.</p>
     {% endif %}
@@ -360,7 +404,7 @@
     </header>
     {% if servicios %}
     <div class="tabla-scroll">
-      <table class="tabla-datos">
+      <table class="tabla-datos" data-pagina-id="servis" data-por-pagina="5">
         <thead>
           <tr>
             <th>Fecha</th>
@@ -393,6 +437,17 @@
         </tbody>
       </table>
     </div>
+    <nav class="paginacion" data-pagina-target="servis" hidden>
+      <button type="button" class="paginacion__boton" data-dir="prev">
+        <span class="material-symbols-outlined">chevron_left</span>
+        <span>Anterior</span>
+      </button>
+      <span class="paginacion__info"></span>
+      <button type="button" class="paginacion__boton" data-dir="next">
+        <span>Siguiente</span>
+        <span class="material-symbols-outlined">chevron_right</span>
+      </button>
+    </nav>
     {% else %}
     <p class="bloque-datos__vacio">Todavía no cargaste ningún service.</p>
     {% endif %}
@@ -430,8 +485,8 @@
           <input type="date" id="campo-fecha" name="fecha">
         </div>
         <div class="grupo-input campo campo-kilometros">
-          <label for="campo-kilometros">Kilómetros agregados</label>
-          <input type="number" id="campo-kilometros" name="kilometros" step="1" min="1" placeholder="Ej: 1500">
+          <label for="campo-kilometros">Kilometraje actual</label>
+          <input type="number" id="campo-kilometros" name="kilometros" step="1" min="0" placeholder="Ej: 125000">
         </div>
         <div class="grupo-input campo campo-inicio">
           <label for="campo-inicio">Inicio de vigencia</label>

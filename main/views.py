@@ -1474,7 +1474,7 @@ def informacion_vehiculo(request, id_vehiculo):
     contexto = {
         "vehiculo": vehiculo,
         "registros_km": list(obtener_registros_km(id_vehiculo)),
-        "kilometraje_total": vehiculo.kilometraje_total,
+        "kilometraje_actual": vehiculo.kilometraje_actual,
         "seguros": seguros,
         "vtvs": vtvs,
         "servicios": servicios,

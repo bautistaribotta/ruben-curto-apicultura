@@ -307,22 +307,24 @@ class Vehiculo(models.Model):
         )
 
     @property
-    def kilometraje_total(self):
-        """Odometro del vehiculo: la suma de todas las cargas de kilometraje.
+    def kilometraje_actual(self):
+        """Kilometraje actual del vehiculo: la ultima lectura de odometro cargada.
 
-        No hay un campo unico que se pise: cada carga suma sus kilometros y el
-        total sale de sumarlas. Sin cargas todavia, el total es cero.
+        El odometro se guarda como lecturas absolutas que se van pisando: el valor
+        vigente es el de la lectura mas reciente, no una suma. Los registros vienen
+        ordenados del mas nuevo al mas viejo, asi que el primero es la lectura
+        actual. Sin lecturas todavia, es cero.
         """
-        total = self.registros_km.aggregate(t=Sum("kilometros"))["t"]
-        return total if total is not None else Decimal("0")
+        ultimo = self.registros_km.first()
+        return ultimo.kilometros if ultimo else Decimal("0")
 
     @property
-    def ultima_carga_km(self):
-        """Fecha de la ultima vez que se anoto kilometraje, o None si nunca.
+    def ultima_actualizacion_km(self):
+        """Fecha de la ultima actualizacion de kilometraje, o None si nunca.
 
-        Es el dato que el usuario quiere recordar: cuando fue la ultima carga.
-        Los registros vienen ordenados del mas nuevo al mas viejo, asi que el
-        primero es el ultimo cargado.
+        Es el dato que el usuario quiere recordar: cuando se actualizo el odometro
+        por ultima vez. Los registros vienen ordenados del mas nuevo al mas viejo,
+        asi que el primero marca la ultima actualizacion.
         """
         ultimo = self.registros_km.first()
         return ultimo.fecha if ultimo else None
@@ -332,19 +334,19 @@ class Vehiculo(models.Model):
 
 
 class RegistroKilometraje(models.Model):
-    """Una carga de kilometraje de un vehiculo: cuantos km se sumaron y cuando.
+    """Una lectura de odometro de un vehiculo: cuantos km marca y en que fecha.
 
-    El odometro no se guarda como un numero que se pisa: se guarda cada carga por
-    separado, con su fecha y los kilometros que se agregaron ese dia. El total del
-    vehiculo es la suma de todas sus cargas (ver Vehiculo.kilometraje_total), y de
-    paso queda el rastro de cuando fue la ultima vez que se anoto kilometraje, que
-    es lo que el usuario quiere recordar. Nunca se reinicia: corregir es editar o
-    borrar una carga, no arrancar de cero.
+    El odometro se registra como lecturas absolutas: cada vez que se actualiza se
+    guarda el numero que marca el tablero en esa fecha, sin que el usuario calcule
+    diferencias. El kilometraje actual del vehiculo es la ultima lectura (ver
+    Vehiculo.kilometraje_actual) y cada actualizacion queda en el historial, de
+    modo que se ve como fue subiendo con el tiempo. Corregir es editar o borrar
+    una lectura.
     """
     vehiculo = models.ForeignKey(Vehiculo, on_delete=models.CASCADE, related_name="registros_km",
                                  db_column="id_vehiculo")
-    # default y no auto_now_add: la carga se anota cuando se puede, y la fecha que
-    # vale es la del dia que se recorrieron los kilometros, no la de la carga
+    # default y no auto_now_add: la lectura se anota cuando se puede, y la fecha que
+    # vale es la del dia en que el odometro marcaba ese numero, no la de la carga
     fecha = models.DateField(default=timezone.localdate)
     kilometros = models.DecimalField(max_digits=10, decimal_places=2)
 

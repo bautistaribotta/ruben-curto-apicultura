@@ -38,7 +38,7 @@ class ObservacionVehiculoInline(admin.TabularInline):
 @admin.register(Vehiculo)
 class VehiculoAdmin(admin.ModelAdmin):
     inlines = [RegistroKilometrajeInline, SeguroInline, VTVInline, ServisInline, ObservacionVehiculoInline]
-    list_display = ('id', 'nombre', 'patente', 'kilometraje_total', 'ultima_carga_km', 'activo')
+    list_display = ('id', 'nombre', 'patente', 'kilometraje_actual', 'ultima_actualizacion_km', 'activo')
     search_fields = ('nombre', 'patente')
 
 @admin.register(RegistroKilometraje)

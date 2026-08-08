@@ -1630,23 +1630,25 @@ MAX_COSTO = Decimal("9999999999.99")
 
 
 def _validar_kilometraje(fecha, kilometros):
-    """Limpia y valida una carga de kilometraje. Devuelve (fecha, kilometros)."""
-    dia = _fecha_obligatoria(fecha, "La fecha de la carga de kilometraje")
+    """Limpia y valida una lectura de odometro. Devuelve (fecha, kilometros)."""
+    dia = _fecha_obligatoria(fecha, "La fecha del kilometraje")
     km = _decimal_opcional(kilometros, "El kilometraje", MAX_KILOMETROS)
-    if not km or km <= 0:
-        raise ValueError("El kilometraje agregado tiene que ser mayor a cero.")
+    if km is None:
+        raise ValueError("Tenés que ingresar el kilometraje actual del vehículo.")
+    if km < 0:
+        raise ValueError("El kilometraje no puede ser negativo.")
     return dia, km
 
 
 def crear_registro_km(id_vehiculo, fecha=None, kilometros=None):
-    """Anota una carga de kilometraje de un vehiculo activo."""
+    """Registra la lectura de odometro actual de un vehiculo activo."""
     vehiculo = get_object_or_404(Vehiculo, id=id_vehiculo, activo=True)
     dia, km = _validar_kilometraje(fecha, kilometros)
     return RegistroKilometraje.objects.create(vehiculo=vehiculo, fecha=dia, kilometros=km)
 
 
 def editar_registro_km(id_registro, fecha=None, kilometros=None):
-    """Corrige una carga de kilometraje ya guardada (para lo que se tipeo mal)."""
+    """Corrige una lectura de odometro ya guardada (para lo que se tipeo mal)."""
     registro = get_object_or_404(RegistroKilometraje, id=id_registro)
     dia, km = _validar_kilometraje(fecha, kilometros)
     registro.fecha, registro.kilometros = dia, km
@@ -1663,7 +1665,7 @@ def eliminar_registro_km(id_registro):
 
 
 def obtener_registros_km(id_vehiculo):
-    """Historial de cargas de kilometraje de un vehiculo, del mas nuevo al mas viejo."""
+    """Historial de lecturas de odometro de un vehiculo, del mas nuevo al mas viejo."""
     vehiculo = get_object_or_404(Vehiculo, id=id_vehiculo)
     return vehiculo.registros_km.all()
 
@@ -1919,15 +1921,13 @@ def obtener_vehiculos_activos():
     # apoyarme en las properties del modelo, que dispararian una consulta por tarjeta.
     hoy = timezone.localdate()
 
-    # El [:1] con el ordering de cada modelo (-fin / -fecha) toma el registro vigente:
-    # el seguro y la VTV con el vencimiento mas lejano, y el service mas reciente.
+    # El [:1] con el ordering de cada modelo toma el registro vigente: el seguro y la
+    # VTV con el vencimiento mas lejano (-fin), el service mas reciente (-fecha) y la
+    # ultima lectura de odometro (-fecha), que es el kilometraje actual del vehiculo.
     ultimo_seguro = Seguro.objects.filter(vehiculo=OuterRef("pk")).values("fin")[:1]
     ultima_vtv = VTV.objects.filter(vehiculo=OuterRef("pk")).values("fin")[:1]
     ultimo_servis = Servis.objects.filter(vehiculo=OuterRef("pk")).values("fecha")[:1]
-    km_total = (
-        RegistroKilometraje.objects.filter(vehiculo=OuterRef("pk"))
-        .values("vehiculo").annotate(t=Sum("kilometros")).values("t")
-    )
+    km_actual = RegistroKilometraje.objects.filter(vehiculo=OuterRef("pk")).values("kilometros")[:1]
 
     vehiculos = list(
         Vehiculo.objects.filter(activo=True)
@@ -1940,7 +1940,7 @@ def obtener_vehiculos_activos():
             _seguro_fin=Subquery(ultimo_seguro, output_field=DateField()),
             _vtv_fin=Subquery(ultima_vtv, output_field=DateField()),
             _servis_fecha=Subquery(ultimo_servis, output_field=DateField()),
-            _km_total=Subquery(km_total, output_field=DecimalField()),
+            _km_actual=Subquery(km_actual, output_field=DecimalField()),
         )
         .order_by('nombre')
     )
@@ -1951,7 +1951,7 @@ def obtener_vehiculos_activos():
         vehiculo.seguro_fin = vehiculo._seguro_fin
         vehiculo.vtv_fin = vehiculo._vtv_fin
         vehiculo.servis_fecha = vehiculo._servis_fecha
-        vehiculo.km_total = vehiculo._km_total or Decimal("0")
+        vehiculo.km_actual = vehiculo._km_actual or Decimal("0")
         vehiculo.seguro_vencido = bool(vehiculo._seguro_fin and vehiculo._seguro_fin < hoy)
         vehiculo.vtv_vencido = bool(vehiculo._vtv_fin and vehiculo._vtv_fin < hoy)
 
