@@ -4,9 +4,10 @@
 {% load humanize %}
 
 {% comment %}
-  Perfil de un vehiculo. Por ahora es la cascara: la identidad del vehiculo y un
-  estado vacio. Mas adelante van a colgar aca el kilometraje, los seguros, la
-  VTV, los servicios y las observaciones.
+  Perfil de un vehiculo. La cabecera muestra la identidad (con la chapa de patente
+  como elemento firma) y una fila de "vitales" que responde de un vistazo si el
+  vehiculo esta en regla: dias para vencer del seguro y la VTV, odometro y ultimo
+  service. Debajo van las tablas editables de cada tipo de dato.
 {% endcomment %}
 
 {% block nombre-pestaña %}
@@ -44,15 +45,450 @@
     </div>
   </div>
 
-  <!-- Estado vacio: todavia no hay secciones cargadas -->
-  <div class="perfil-vacio">
-    <span class="perfil-vacio__icono material-symbols-outlined">database</span>
-    <h3 class="perfil-vacio__titulo">Todavía no hay información para mostrar</h3>
-    <p class="perfil-vacio__texto">
-      Acá vas a ver el kilometraje, los seguros, la VTV, los servicios y las
-      observaciones de {{ vehiculo.nombre }}.
-    </p>
+  <!-- Vitales: panel de control del cumplimiento del vehiculo.
+       Seguro y VTV llevan una barra de cuenta regresiva de su vigencia (la firma
+       del panel) y un estado en palabras; odometro y ultimo service acompañan con
+       su dato y un renglon de contexto. -->
+  <div class="vitales">
+
+    <!-- Seguro -->
+    <article class="vital{% if seguro_vigente %} vital--{{ seguro_vigente.nivel }}{% else %} vital--sin-dato{% endif %}">
+      <div class="vital__top">
+        <span class="vital__icono material-symbols-outlined">shield</span>
+        <span class="vital__label">Seguro</span>
+        {% if seguro_vigente %}
+        <span class="vital__estado">
+          <span class="vital__dot"></span>
+          {% if seguro_vigente.nivel == "vencido" %}Vencido{% elif seguro_vigente.nivel == "proximo" %}Por vencer{% else %}En regla{% endif %}
+        </span>
+        {% endif %}
+      </div>
+      {% if seguro_vigente %}
+        <p class="vital__valor">
+          {% if seguro_vigente.dias_restantes < 0 %}Vencido{% elif seguro_vigente.dias_restantes == 0 %}Vence hoy{% else %}{{ seguro_vigente.dias_restantes }}<span class="vital__unidad">día{{ seguro_vigente.dias_restantes|pluralize }}</span>{% endif %}
+        </p>
+        <p class="vital__pie">
+          {% if seguro_vigente.dias_restantes < 0 %}Venció hace {{ seguro_vigente.dias_abs }} día{{ seguro_vigente.dias_abs|pluralize }} · {{ seguro_vigente.fin|date:"d/m/Y" }}{% else %}Vence el {{ seguro_vigente.fin|date:"d/m/Y" }}{% endif %}
+        </p>
+      {% else %}
+        <p class="vital__valor vital__valor--vacio">Sin datos</p>
+        <p class="vital__pie">Agregá una póliza para controlar su vencimiento</p>
+      {% endif %}
+    </article>
+
+    <!-- VTV -->
+    <article class="vital{% if vtv_vigente %} vital--{{ vtv_vigente.nivel }}{% else %} vital--sin-dato{% endif %}">
+      <div class="vital__top">
+        <span class="vital__icono material-symbols-outlined">verified</span>
+        <span class="vital__label">VTV</span>
+        {% if vtv_vigente %}
+        <span class="vital__estado">
+          <span class="vital__dot"></span>
+          {% if vtv_vigente.nivel == "vencido" %}Vencida{% elif vtv_vigente.nivel == "proximo" %}Por vencer{% else %}En regla{% endif %}
+        </span>
+        {% endif %}
+      </div>
+      {% if vtv_vigente %}
+        <p class="vital__valor">
+          {% if vtv_vigente.dias_restantes < 0 %}Vencida{% elif vtv_vigente.dias_restantes == 0 %}Vence hoy{% else %}{{ vtv_vigente.dias_restantes }}<span class="vital__unidad">día{{ vtv_vigente.dias_restantes|pluralize }}</span>{% endif %}
+        </p>
+        <p class="vital__pie">
+          {% if vtv_vigente.dias_restantes < 0 %}Venció hace {{ vtv_vigente.dias_abs }} día{{ vtv_vigente.dias_abs|pluralize }} · {{ vtv_vigente.fin|date:"d/m/Y" }}{% else %}Vence el {{ vtv_vigente.fin|date:"d/m/Y" }}{% endif %}
+        </p>
+      {% else %}
+        <p class="vital__valor vital__valor--vacio">Sin datos</p>
+        <p class="vital__pie">Agregá una VTV para controlar su vencimiento</p>
+      {% endif %}
+    </article>
+
+    <!-- Odometro -->
+    <article class="vital vital--neutro">
+      <div class="vital__top">
+        <span class="vital__icono material-symbols-outlined">speed</span>
+        <span class="vital__label">Odómetro</span>
+      </div>
+      <p class="vital__valor">{{ kilometraje_total|floatformat:0|intcomma }}<span class="vital__unidad">km</span></p>
+      <p class="vital__pie">
+        {% if vehiculo.ultima_carga_km %}Última carga · {{ vehiculo.ultima_carga_km|date:"d/m/Y" }}{% else %}Sin cargas todavía{% endif %}
+      </p>
+    </article>
+
+    <!-- Ultimo service -->
+    <article class="vital vital--neutro">
+      <div class="vital__top">
+        <span class="vital__icono material-symbols-outlined">build</span>
+        <span class="vital__label">Último service</span>
+      </div>
+      {% if ultimo_servis %}
+        <p class="vital__valor vital__valor--fecha">{{ ultimo_servis.fecha|date:"d/m/Y" }}</p>
+        <p class="vital__pie">
+          {% if ultimo_servis.observaciones %}{{ ultimo_servis.observaciones|truncatechars:38 }}{% else %}Sin observaciones registradas{% endif %}
+        </p>
+      {% else %}
+        <p class="vital__valor vital__valor--vacio">Sin datos</p>
+        <p class="vital__pie">Registrá un service para llevar el mantenimiento</p>
+      {% endif %}
+    </article>
+
+  </div>
+
+  <!-- ============ OBSERVACIONES (arriba, a todo el ancho) ============ -->
+  <section class="bloque-datos">
+    <header class="bloque-datos__cabecera">
+      <div class="bloque-datos__titulo">
+        <span class="material-symbols-outlined">sticky_note_2</span>
+        <h3>Observaciones</h3>
+        <span class="bloque-datos__contador">{{ observaciones|length }}</span>
+      </div>
+      <button type="button" class="boton-agregar" onclick="abrirFormularioNuevo('obs')">
+        <span class="material-symbols-outlined">add</span>
+        <span>Agregar</span>
+      </button>
+    </header>
+    {% if observaciones %}
+    <ul class="lista-notas">
+      {% for r in observaciones %}
+      <li class="nota">
+        <div class="nota__cuerpo">
+          <span class="nota__fecha">{{ r.fecha|date:"d/m/Y" }}</span>
+          <p class="nota__texto">{{ r.texto }}</p>
+        </div>
+        <div class="nota__acciones">
+          <button type="button" class="boton-fila editar" title="Editar"
+                  data-id="{{ r.id }}" data-fecha="{{ r.fecha|date:'Y-m-d' }}" data-texto="{{ r.texto }}"
+                  onclick="abrirFormularioEditar('obs', this)">
+            <span class="material-symbols-outlined">edit</span>
+          </button>
+          <button type="button" class="boton-fila eliminar" title="Eliminar"
+                  data-id="{{ r.id }}" data-descripcion="la observación del {{ r.fecha|date:'d/m/Y' }}"
+                  onclick="abrirEliminar('obs', this)">
+            <span class="material-symbols-outlined">delete</span>
+          </button>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="bloque-datos__vacio">Todavía no dejaste ninguna observación.</p>
+    {% endif %}
+  </section>
+
+  <!-- Grilla de secciones: kilometraje, seguros, VTV y services en dos columnas -->
+  <div class="grilla-secciones">
+
+  <!-- ============ KILOMETRAJE ============ -->
+  <section class="bloque-datos">
+    <header class="bloque-datos__cabecera">
+      <div class="bloque-datos__titulo">
+        <span class="material-symbols-outlined">speed</span>
+        <h3>Kilometraje</h3>
+        <span class="bloque-datos__contador">{{ registros_km|length }}</span>
+      </div>
+      <button type="button" class="boton-agregar" onclick="abrirFormularioNuevo('km')">
+        <span class="material-symbols-outlined">add</span>
+        <span>Agregar</span>
+      </button>
+    </header>
+    {% if registros_km %}
+    <div class="tabla-scroll">
+      <table class="tabla-datos">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th class="col-num">Kilómetros</th>
+            <th class="col-acc"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in registros_km %}
+          <tr>
+            <td>{{ r.fecha|date:"d/m/Y" }}</td>
+            <td class="col-num">+{{ r.kilometros|floatformat:0|intcomma }}</td>
+            <td class="col-acc">
+              <button type="button" class="boton-fila editar" title="Editar"
+                      data-id="{{ r.id }}" data-fecha="{{ r.fecha|date:'Y-m-d' }}"
+                      data-kilometros="{{ r.kilometros|floatformat:0 }}"
+                      onclick="abrirFormularioEditar('km', this)">
+                <span class="material-symbols-outlined">edit</span>
+              </button>
+              <button type="button" class="boton-fila eliminar" title="Eliminar"
+                      data-id="{{ r.id }}" data-descripcion="la carga de {{ r.fecha|date:'d/m/Y' }}"
+                      onclick="abrirEliminar('km', this)">
+                <span class="material-symbols-outlined">delete</span>
+              </button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="bloque-datos__vacio">Todavía no cargaste kilometraje.</p>
+    {% endif %}
+  </section>
+
+  <!-- ============ SEGUROS ============ -->
+  <section class="bloque-datos">
+    <header class="bloque-datos__cabecera">
+      <div class="bloque-datos__titulo">
+        <span class="material-symbols-outlined">shield</span>
+        <h3>Seguros</h3>
+        <span class="bloque-datos__contador">{{ seguros|length }}</span>
+      </div>
+      <button type="button" class="boton-agregar" onclick="abrirFormularioNuevo('seguro')">
+        <span class="material-symbols-outlined">add</span>
+        <span>Agregar</span>
+      </button>
+    </header>
+    {% if seguros %}
+    <div class="tabla-scroll">
+      <table class="tabla-datos">
+        <thead>
+          <tr>
+            <th>Vigencia</th>
+            <th>Estado</th>
+            <th class="col-num">Costo</th>
+            <th>Observaciones</th>
+            <th class="col-acc"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in seguros %}
+          <tr>
+            <td class="col-vigencia">{{ r.inicio|date:"d/m/Y" }} <span class="flecha">→</span> {{ r.fin|date:"d/m/Y" }}</td>
+            <td>
+              <span class="pastilla pastilla--{{ r.nivel }}">
+                {% if r.dias_restantes < 0 %}Venció hace {{ r.dias_abs }} día{{ r.dias_abs|pluralize }}{% elif r.dias_restantes == 0 %}Vence hoy{% else %}Faltan {{ r.dias_restantes }} día{{ r.dias_restantes|pluralize }}{% endif %}
+              </span>
+            </td>
+            <td class="col-num">{% if r.costo %}${{ r.costo|floatformat:0|intcomma }}{% else %}<span class="dato-nulo">—</span>{% endif %}</td>
+            <td class="col-obs">{% if r.observaciones %}{{ r.observaciones }}{% else %}<span class="dato-nulo">—</span>{% endif %}</td>
+            <td class="col-acc">
+              <button type="button" class="boton-fila editar" title="Editar"
+                      data-id="{{ r.id }}" data-inicio="{{ r.inicio|date:'Y-m-d' }}" data-fin="{{ r.fin|date:'Y-m-d' }}"
+                      data-costo="{{ r.costo|default_if_none:''|floatformat:0 }}" data-observaciones="{{ r.observaciones|default_if_none:'' }}"
+                      onclick="abrirFormularioEditar('seguro', this)">
+                <span class="material-symbols-outlined">edit</span>
+              </button>
+              <button type="button" class="boton-fila eliminar" title="Eliminar"
+                      data-id="{{ r.id }}" data-descripcion="el seguro con vencimiento {{ r.fin|date:'d/m/Y' }}"
+                      onclick="abrirEliminar('seguro', this)">
+                <span class="material-symbols-outlined">delete</span>
+              </button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="bloque-datos__vacio">Todavía no cargaste ningún seguro.</p>
+    {% endif %}
+  </section>
+
+  <!-- ============ VTV ============ -->
+  <section class="bloque-datos">
+    <header class="bloque-datos__cabecera">
+      <div class="bloque-datos__titulo">
+        <span class="material-symbols-outlined">verified</span>
+        <h3>VTV</h3>
+        <span class="bloque-datos__contador">{{ vtvs|length }}</span>
+      </div>
+      <button type="button" class="boton-agregar" onclick="abrirFormularioNuevo('vtv')">
+        <span class="material-symbols-outlined">add</span>
+        <span>Agregar</span>
+      </button>
+    </header>
+    {% if vtvs %}
+    <div class="tabla-scroll">
+      <table class="tabla-datos">
+        <thead>
+          <tr>
+            <th>Vigencia</th>
+            <th>Estado</th>
+            <th class="col-num">Costo</th>
+            <th>Observaciones</th>
+            <th class="col-acc"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in vtvs %}
+          <tr>
+            <td class="col-vigencia">{{ r.inicio|date:"d/m/Y" }} <span class="flecha">→</span> {{ r.fin|date:"d/m/Y" }}</td>
+            <td>
+              <span class="pastilla pastilla--{{ r.nivel }}">
+                {% if r.dias_restantes < 0 %}Venció hace {{ r.dias_abs }} día{{ r.dias_abs|pluralize }}{% elif r.dias_restantes == 0 %}Vence hoy{% else %}Faltan {{ r.dias_restantes }} día{{ r.dias_restantes|pluralize }}{% endif %}
+              </span>
+            </td>
+            <td class="col-num">{% if r.costo %}${{ r.costo|floatformat:0|intcomma }}{% else %}<span class="dato-nulo">—</span>{% endif %}</td>
+            <td class="col-obs">{% if r.observaciones %}{{ r.observaciones }}{% else %}<span class="dato-nulo">—</span>{% endif %}</td>
+            <td class="col-acc">
+              <button type="button" class="boton-fila editar" title="Editar"
+                      data-id="{{ r.id }}" data-inicio="{{ r.inicio|date:'Y-m-d' }}" data-fin="{{ r.fin|date:'Y-m-d' }}"
+                      data-costo="{{ r.costo|default_if_none:''|floatformat:0 }}" data-observaciones="{{ r.observaciones|default_if_none:'' }}"
+                      onclick="abrirFormularioEditar('vtv', this)">
+                <span class="material-symbols-outlined">edit</span>
+              </button>
+              <button type="button" class="boton-fila eliminar" title="Eliminar"
+                      data-id="{{ r.id }}" data-descripcion="la VTV con vencimiento {{ r.fin|date:'d/m/Y' }}"
+                      onclick="abrirEliminar('vtv', this)">
+                <span class="material-symbols-outlined">delete</span>
+              </button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="bloque-datos__vacio">Todavía no cargaste ninguna VTV.</p>
+    {% endif %}
+  </section>
+
+  <!-- ============ SERVICES ============ -->
+  <section class="bloque-datos">
+    <header class="bloque-datos__cabecera">
+      <div class="bloque-datos__titulo">
+        <span class="material-symbols-outlined">build</span>
+        <h3>Services</h3>
+        <span class="bloque-datos__contador">{{ servicios|length }}</span>
+      </div>
+      <button type="button" class="boton-agregar" onclick="abrirFormularioNuevo('servis')">
+        <span class="material-symbols-outlined">add</span>
+        <span>Agregar</span>
+      </button>
+    </header>
+    {% if servicios %}
+    <div class="tabla-scroll">
+      <table class="tabla-datos">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th class="col-num">Costo</th>
+            <th>Observaciones</th>
+            <th class="col-acc"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in servicios %}
+          <tr>
+            <td>{{ r.fecha|date:"d/m/Y" }}</td>
+            <td class="col-num">{% if r.costo %}${{ r.costo|floatformat:0|intcomma }}{% else %}<span class="dato-nulo">—</span>{% endif %}</td>
+            <td class="col-obs">{% if r.observaciones %}{{ r.observaciones }}{% else %}<span class="dato-nulo">—</span>{% endif %}</td>
+            <td class="col-acc">
+              <button type="button" class="boton-fila editar" title="Editar"
+                      data-id="{{ r.id }}" data-fecha="{{ r.fecha|date:'Y-m-d' }}"
+                      data-costo="{{ r.costo|default_if_none:''|floatformat:0 }}" data-observaciones="{{ r.observaciones|default_if_none:'' }}"
+                      onclick="abrirFormularioEditar('servis', this)">
+                <span class="material-symbols-outlined">edit</span>
+              </button>
+              <button type="button" class="boton-fila eliminar" title="Eliminar"
+                      data-id="{{ r.id }}" data-descripcion="el service del {{ r.fecha|date:'d/m/Y' }}"
+                      onclick="abrirEliminar('servis', this)">
+                <span class="material-symbols-outlined">delete</span>
+              </button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="bloque-datos__vacio">Todavía no cargaste ningún service.</p>
+    {% endif %}
+  </section>
+
   </div>
 
 </section>
+
+<!-- SLIDE-OVER GENERICO (alta y edicion de cualquier tipo de registro) -->
+<div id="slide-over-registro">
+  <div id="registro-fondo" onclick="cerrarSlideOver('slide-over-registro')"></div>
+  <div id="registro-panel">
+    <form id="form-registro" method="post" autocomplete="off">
+      {% csrf_token %}
+      <input type="hidden" name="accion" id="registro-accion">
+      <input type="hidden" name="id_registro" id="registro-id">
+      <header class="panel-cabecera">
+        <div class="panel-titulo-fila">
+          <div class="icono-contenedor">
+            <span class="material-symbols-outlined" id="registro-icono">edit</span>
+          </div>
+          <div class="texto-cabecera">
+            <h3 id="registro-titulo">Nuevo registro</h3>
+            <p id="registro-subtitulo">Completá los datos</p>
+          </div>
+        </div>
+        <button type="button" class="boton-cerrar" onclick="cerrarSlideOver('slide-over-registro')">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </header>
+      <main class="panel-cuerpo">
+        <div class="grupo-input campo campo-fecha">
+          <label for="campo-fecha">Fecha</label>
+          <input type="date" id="campo-fecha" name="fecha">
+        </div>
+        <div class="grupo-input campo campo-kilometros">
+          <label for="campo-kilometros">Kilómetros agregados</label>
+          <input type="number" id="campo-kilometros" name="kilometros" step="1" min="1" placeholder="Ej: 1500">
+        </div>
+        <div class="grupo-input campo campo-inicio">
+          <label for="campo-inicio">Inicio de vigencia</label>
+          <input type="date" id="campo-inicio" name="inicio">
+        </div>
+        <div class="grupo-input campo campo-fin">
+          <label for="campo-fin">Vence el</label>
+          <input type="date" id="campo-fin" name="fin">
+        </div>
+        <div class="grupo-input campo campo-costo">
+          <label for="campo-costo">Costo <span class="opcional">(opcional)</span></label>
+          <input type="number" id="campo-costo" name="costo" step="1" min="0" placeholder="Ej: 85000">
+        </div>
+        <div class="grupo-input campo campo-observaciones">
+          <label for="campo-observaciones">Observaciones <span class="opcional">(opcional)</span></label>
+          <textarea id="campo-observaciones" name="observaciones" rows="3" maxlength="200" placeholder="Detalle de lo que se hizo o del registro"></textarea>
+        </div>
+        <div class="grupo-input campo campo-texto">
+          <label for="campo-texto">Observación</label>
+          <textarea id="campo-texto" name="texto" rows="4" maxlength="250" placeholder="Escribí la nota sobre el vehículo"></textarea>
+        </div>
+      </main>
+      <footer class="panel-pie">
+        <button type="button" class="boton-secundario" onclick="cerrarSlideOver('slide-over-registro')">Cancelar</button>
+        <button type="submit" class="boton-primario" id="registro-guardar">Guardar</button>
+      </footer>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL CONFIRMAR ELIMINACION (hold-to-delete de paneles.js) -->
+<div id="contenedor-panel-eliminar">
+  <div class="panel-eliminar-fondo" onclick="cerrarPanelEliminar()"></div>
+  <div class="panel-eliminar-caja">
+    <button type="button" class="panel-eliminar-cerrar" onclick="cerrarPanelEliminar()">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+    <div class="panel-eliminar-icono">
+      <span class="material-symbols-outlined">warning</span>
+    </div>
+    <h3>Confirmar eliminación</h3>
+    <p id="texto-eliminar">¿Está seguro?</p>
+    <form id="formulario-eliminar" method="post">
+      {% csrf_token %}
+      <input type="hidden" name="accion" id="accion-eliminar" value="">
+      <input type="hidden" name="id_registro" id="id-eliminar" value="">
+      <div class="panel-eliminar-acciones">
+        <button type="button" class="boton-secundario" onclick="cerrarPanelEliminar()">No, volver</button>
+        <button type="button" id="boton-confirmar-eliminar" class="boton-eliminar-confirmar">
+          <span>Sí, eliminar</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block codigo-javascript %}
+  <script src="{% static 'js/informacion_vehiculo.js' %}"></script>
 {% endblock %}

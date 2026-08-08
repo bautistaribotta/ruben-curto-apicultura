@@ -38,6 +38,11 @@ from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo
                        obtener_cuenta_corriente, resolver_granularidad_pagos, resolver_ancla_pagos,
                        rango_periodo_pagos, desplazar_periodo_pagos, etiqueta_periodo_pagos,
                        editar_vehiculo, eliminar_vehiculo,
+                       crear_registro_km, editar_registro_km, eliminar_registro_km, obtener_registros_km,
+                       crear_seguro, editar_seguro, eliminar_seguro, obtener_seguros,
+                       crear_vtv, editar_vtv, eliminar_vtv, obtener_vtvs,
+                       crear_servis, editar_servis, eliminar_servis, obtener_servicios,
+                       crear_observacion, editar_observacion, eliminar_observacion, obtener_observaciones,
                        crear_viaje_cereal, obtener_viajes_cereales, obtener_viajes_cereal_de_cliente,
                        obtener_datos_viaje_cereal,
                        editar_viaje_cereal, eliminar_viaje_cereal, crear_gasto_viaje_cereal,
@@ -1365,18 +1370,120 @@ def flota(request):
     return render(request, "flota.html", contexto)
 
 
+def _con_dias_restantes(registros, hoy):
+    """Anota en cada registro con vigencia el estado de su vencimiento.
+
+    Devuelve la lista ya evaluada (no un queryset) porque el template vuelve a
+    recorrerla y los atributos calculados se perderian si se re-consultara. En
+    cada registro deja:
+      - dias_restantes: dias hasta el fin (negativo si ya venció)
+      - dias_abs: la misma cantidad en positivo, para redactar el texto
+      - nivel: "vencido", "proximo" (vence dentro de 30 dias) o "vigente"
+    """
+    lista = list(registros)
+    for registro in lista:
+        dias = (registro.fin - hoy).days
+        registro.dias_restantes = dias
+        registro.dias_abs = abs(dias)
+        if dias < 0:
+            registro.nivel = "vencido"
+        elif dias <= 30:
+            registro.nivel = "proximo"
+        else:
+            registro.nivel = "vigente"
+    return lista
+
+
 @login_required
 def informacion_vehiculo(request, id_vehiculo):
-    """Perfil de un vehiculo. Por ahora es la cascara: identidad + estado vacio.
+    """Perfil de un vehiculo: kilometraje, seguros, VTV, services y observaciones.
 
-    Aca van a colgarse el kilometraje, los seguros, la VTV, los servicios y las
-    observaciones, cada uno con su tabla propia. Se llega dando click a una fila
-    del listado de flota.
+    Cada tipo de dato cuelga del vehiculo con su propia tabla editable. Un solo
+    POST rutea por el campo 'accion' hacia el servicio correspondiente (mismo
+    patron que la vista de flota), y el GET arma el contexto con los historiales
+    y los dias que faltan para cada vencimiento.
     """
     vehiculo = get_object_or_404(Vehiculo, id=id_vehiculo, activo=True)
 
+    if request.method == "POST":
+        accion = request.POST.get("accion")
+        p = request.POST
+        try:
+            if accion == "nuevo_km":
+                crear_registro_km(id_vehiculo, p.get("fecha"), p.get("kilometros"))
+                messages.success(request, "Kilometraje agregado correctamente.")
+            elif accion == "editar_km":
+                editar_registro_km(p.get("id_registro"), p.get("fecha"), p.get("kilometros"))
+                messages.success(request, "Kilometraje actualizado correctamente.")
+            elif accion == "eliminar_km":
+                eliminar_registro_km(p.get("id_registro"))
+                messages.success(request, "Carga de kilometraje eliminada.")
+
+            elif accion == "nuevo_seguro":
+                crear_seguro(id_vehiculo, p.get("inicio"), p.get("fin"), p.get("costo"), p.get("observaciones"))
+                messages.success(request, "Seguro agregado correctamente.")
+            elif accion == "editar_seguro":
+                editar_seguro(p.get("id_registro"), p.get("inicio"), p.get("fin"), p.get("costo"), p.get("observaciones"))
+                messages.success(request, "Seguro actualizado correctamente.")
+            elif accion == "eliminar_seguro":
+                eliminar_seguro(p.get("id_registro"))
+                messages.success(request, "Seguro eliminado.")
+
+            elif accion == "nueva_vtv":
+                crear_vtv(id_vehiculo, p.get("inicio"), p.get("fin"), p.get("costo"), p.get("observaciones"))
+                messages.success(request, "VTV agregada correctamente.")
+            elif accion == "editar_vtv":
+                editar_vtv(p.get("id_registro"), p.get("inicio"), p.get("fin"), p.get("costo"), p.get("observaciones"))
+                messages.success(request, "VTV actualizada correctamente.")
+            elif accion == "eliminar_vtv":
+                eliminar_vtv(p.get("id_registro"))
+                messages.success(request, "VTV eliminada.")
+
+            elif accion == "nuevo_servis":
+                crear_servis(id_vehiculo, p.get("fecha"), p.get("costo"), p.get("observaciones"))
+                messages.success(request, "Service agregado correctamente.")
+            elif accion == "editar_servis":
+                editar_servis(p.get("id_registro"), p.get("fecha"), p.get("costo"), p.get("observaciones"))
+                messages.success(request, "Service actualizado correctamente.")
+            elif accion == "eliminar_servis":
+                eliminar_servis(p.get("id_registro"))
+                messages.success(request, "Service eliminado.")
+
+            elif accion == "nueva_obs":
+                crear_observacion(id_vehiculo, p.get("fecha"), p.get("texto"))
+                messages.success(request, "Observación agregada correctamente.")
+            elif accion == "editar_obs":
+                editar_observacion(p.get("id_registro"), p.get("fecha"), p.get("texto"))
+                messages.success(request, "Observación actualizada correctamente.")
+            elif accion == "eliminar_obs":
+                eliminar_observacion(p.get("id_registro"))
+                messages.success(request, "Observación eliminada.")
+
+        except ValueError as e:
+            messages.error(request, str(e))
+        except Exception as e:
+            messages.error(request, f"Ocurrió un error inesperado: {e}")
+
+        return redirect("informacion_vehiculo", id_vehiculo=id_vehiculo)
+
+    hoy = timezone.localdate()
+    seguros = _con_dias_restantes(obtener_seguros(id_vehiculo), hoy)
+    vtvs = _con_dias_restantes(obtener_vtvs(id_vehiculo), hoy)
+    servicios = list(obtener_servicios(id_vehiculo))
+
     contexto = {
         "vehiculo": vehiculo,
+        "registros_km": list(obtener_registros_km(id_vehiculo)),
+        "kilometraje_total": vehiculo.kilometraje_total,
+        "seguros": seguros,
+        "vtvs": vtvs,
+        "servicios": servicios,
+        "observaciones": list(obtener_observaciones(id_vehiculo)),
+        # El registro vigente es el primero (orden por -fin / -fecha): de el sale el
+        # resumen de vencimientos de la cabecera.
+        "seguro_vigente": seguros[0] if seguros else None,
+        "vtv_vigente": vtvs[0] if vtvs else None,
+        "ultimo_servis": servicios[0] if servicios else None,
         "pestaña": "viajes",
     }
     return render(request, "informacion_vehiculo.html", contexto)
