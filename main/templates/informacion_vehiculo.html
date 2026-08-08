@@ -6,7 +6,7 @@
 {% comment %}
   Perfil de un vehiculo. La cabecera muestra la identidad (con la chapa de patente
   como elemento firma) y una fila de "vitales" que responde de un vistazo si el
-  vehiculo esta en regla: dias para vencer del seguro y la VTV, odometro y ultimo
+  vehiculo esta en regla: dias para vencer del seguro y la VTV, kilometraje y ultimo
   service. Debajo van las tablas editables de cada tipo de dato.
 {% endcomment %}
 
@@ -47,7 +47,7 @@
 
   <!-- Vitales: panel de control del cumplimiento del vehiculo.
        Seguro y VTV llevan una barra de cuenta regresiva de su vigencia (la firma
-       del panel) y un estado en palabras; odometro y ultimo service acompañan con
+       del panel) y un estado en palabras; kilometraje y ultimo service acompañan con
        su dato y un renglon de contexto. -->
   <div class="vitales">
 
@@ -101,11 +101,11 @@
       {% endif %}
     </article>
 
-    <!-- Odometro -->
+    <!-- Kilometraje -->
     <article class="vital vital--neutro">
       <div class="vital__top">
         <span class="vital__icono material-symbols-outlined">speed</span>
-        <span class="vital__label">Odómetro</span>
+        <span class="vital__label">Kilometraje</span>
       </div>
       <p class="vital__valor">{{ kilometraje_total|floatformat:0|intcomma }}<span class="vital__unidad">km</span></p>
       <p class="vital__pie">
