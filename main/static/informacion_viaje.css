@@ -811,86 +811,99 @@ html {
   box-shadow: var(--ring);
 }
 
-/* Fila de "ya esta paga" dentro del bloque de combustible del modal de gasto:
-   texto a la izquierda y un switch a la derecha. Arranca desmarcado (impaga). */
-#panel-gasto .gasto-pagada {
+/* Fila de "ya esta paga" del bloque de combustible: mismo diseno que el slide-over
+   de nueva carga en la ficha de estacion (.pago-fila + .pago-switch de pago_viaje.css),
+   replicado aca porque miel/cera no carga esa hoja. Scoped a #panel-gasto. */
+#panel-gasto .pago-fila {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
+  align-items: center;
+  gap: 1rem;
   text-align: left;
+  padding: 0.85rem 1rem;
   margin-bottom: 1rem;
+  background-color: var(--surface-sunken);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
 }
 
-#panel-gasto .gasto-pagada__texto {
+#panel-gasto .pago-fila__texto {
   display: flex;
   flex-direction: column;
-  gap: 0.1rem;
 }
 
-#panel-gasto .gasto-pagada__titulo {
+#panel-gasto .pago-fila__titulo {
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
   color: var(--text-strong);
 }
 
-#panel-gasto .gasto-pagada__sub {
+#panel-gasto .pago-fila__sub {
   font-size: var(--text-xs);
-  color: var(--text-subtle);
+  color: var(--text-muted);
+  margin-top: 1px;
 }
 
-/* Switch: mismo lenguaje que el resto de los toggles del sistema. */
-.gasto-switch {
+#panel-gasto .pago-switch {
   position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
   flex: none;
-  width: 40px;
-  height: 22px;
-  cursor: pointer;
 }
 
-.gasto-switch input {
-  position: absolute;
+#panel-gasto .pago-switch input {
   opacity: 0;
   width: 0;
   height: 0;
 }
 
-.gasto-switch__slider {
+#panel-gasto .pago-switch__slider {
   position: absolute;
   inset: 0;
-  border-radius: 999px;
-  background-color: var(--sand-400);
+  cursor: pointer;
+  background-color: var(--border-default);
+  border-radius: var(--radius-pill);
   transition: background-color var(--dur-normal) var(--ease-standard);
 }
 
-.gasto-switch__slider::before {
+#panel-gasto .pago-switch__slider::before {
   content: "";
   position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 18px;
   height: 18px;
-  border-radius: 50%;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
   background-color: var(--color-blanco);
+  box-shadow: var(--shadow-sm);
+  border-radius: 50%;
   transition: transform var(--dur-normal) var(--ease-standard);
 }
 
-.gasto-switch input:checked + .gasto-switch__slider {
+#panel-gasto .pago-switch input:checked + .pago-switch__slider {
   background-color: var(--brand-secondary);
 }
 
-.gasto-switch input:checked + .gasto-switch__slider::before {
-  transform: translateX(18px);
+#panel-gasto .pago-switch input:checked + .pago-switch__slider::before {
+  transform: translateX(20px);
 }
 
-.gasto-switch input:focus-visible + .gasto-switch__slider {
-  box-shadow: var(--ring);
+#panel-gasto .pago-switch input:focus-visible + .pago-switch__slider {
+  box-shadow: 0 0 0 3px var(--honey-tint-20);
 }
 
 .acciones-modal {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
+}
+
+/* En el modal de gasto separo los botones del cuerpo con una linea divisoria.
+   Scoped para no tocar el modal de eliminacion, que comparte .acciones-modal. */
+#panel-gasto .acciones-modal {
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 1.25rem;
+  margin-top: 0.25rem;
 }
 
 .boton-secundario {
