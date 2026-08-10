@@ -90,7 +90,6 @@ const prepararEliminarEstacion = () => {
 document.addEventListener('click', (e) => {
   const botonEditar = e.target.closest('.boton-icono.editar');
   const botonEliminar = e.target.closest('.boton-icono.eliminar');
-  const botonToggle = e.target.closest('.toggle-pago');
 
   if (botonEditar) {
     prepararPanelEditarCarga(botonEditar.dataset.id);
@@ -103,9 +102,14 @@ document.addEventListener('click', (e) => {
       `¿Confirma que quiere eliminar <b>${botonEliminar.dataset.descripcion}</b>?`;
     if (typeof abrirPanelEliminar === 'function') abrirPanelEliminar();
   }
+});
 
-  if (botonToggle) {
-    document.getElementById('id_toggle').value = botonToggle.dataset.id;
+// El check de pago alterna el estado de la carga. Uso 'change' para que tambien
+// funcione con teclado (barra espaciadora), no solo con click.
+document.addEventListener('change', (e) => {
+  const check = e.target.closest('.toggle-pago');
+  if (check) {
+    document.getElementById('id_toggle').value = check.dataset.id;
     document.getElementById('form-toggle-pago').submit();
   }
 });

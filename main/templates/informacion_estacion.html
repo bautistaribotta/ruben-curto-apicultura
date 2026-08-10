@@ -78,9 +78,10 @@
       <table class="tabla-cargas">
         <thead>
           <tr>
+            <th class="texto-centro">Pago</th>
             <th>Fecha</th>
-            <th>Empleado</th>
             <th>Vehiculo</th>
+            <th>Empleado</th>
             <th class="texto-derecha">Monto</th>
             <th>Estado</th>
             <th class="texto-derecha">Acciones</th>
@@ -89,21 +90,28 @@
         <tbody>
           {% for carga in cargas %}
           <tr>
+            <td class="texto-centro">
+              <!-- El check alterna el estado de pago (paga <-> impaga) -->
+              <label class="check-pago" title="Marcar si la carga esta paga">
+                <input type="checkbox" class="check-pago__input toggle-pago"
+                       data-id="{{ carga.id }}" {% if carga.pagada %}checked{% endif %}>
+                <span class="check-pago__caja"><span class="material-symbols-outlined">check</span></span>
+              </label>
+            </td>
             <td>{{ carga.fecha|date:"d/m/Y" }}</td>
-            <td>{{ carga.empleado.nombre }} {{ carga.empleado.apellido }}</td>
             <td>
               <div class="carga-vehiculo">
                 <span class="carga-vehiculo__nombre">{{ carga.vehiculo.nombre }}</span>
                 <span class="carga-vehiculo__patente">{{ carga.vehiculo.patente }}</span>
               </div>
             </td>
+            <td>{{ carga.empleado.nombre }} {{ carga.empleado.apellido }}</td>
             <td class="texto-derecha carga-monto">$ {{ carga.monto|floatformat:"-2g" }}</td>
             <td>
-              <!-- El estado es un boton: un click alterna paga <-> impaga -->
-              <button type="button" class="estado-pago {% if carga.pagada %}pagada{% else %}impaga{% endif %} toggle-pago"
-                      data-id="{{ carga.id }}" title="Cambiar estado de pago">
+              <!-- Estado solo visual: verde cuando la carga esta paga -->
+              <span class="estado-pago {% if carga.pagada %}pagada{% else %}impaga{% endif %}">
                 <span class="punto"></span>{{ carga.estado_pago }}
-              </button>
+              </span>
             </td>
             <td class="texto-derecha">
               <div class="acciones-tabla">
