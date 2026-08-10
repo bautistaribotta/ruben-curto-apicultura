@@ -531,6 +531,15 @@ class GastoBase(models.Model):
     fecha = models.DateField(auto_now_add=True)
     gasto = models.CharField(choices=TIPO_GASTOS, max_length=25)
     monto = models.PositiveIntegerField(default=0)
+    # Solo para los gastos de tipo Combustible: la carga de combustible que este
+    # gasto genero en una estacion de servicio. Queda en None para el resto de los
+    # gastos. Cada tabla de gasto (miel/cera, cereal, reparto) tiene su propia
+    # columna gracias a %(class)s. Al borrar la carga el gasto no se cae: solo
+    # pierde el vinculo (SET_NULL), pero en la practica se sincronizan juntos.
+    carga_combustible = models.OneToOneField(
+        "CargaCombustible", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="%(class)s_gasto",
+    )
 
     class Meta:
         abstract = True
@@ -1217,8 +1226,18 @@ class CargaCombustible(models.Model):
     litros = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     # Estado binario: una carga esta paga o no lo esta (sin pagos parciales)
     pagada = models.BooleanField(default=False)
-    observaciones = models.CharField(max_length=200, blank=True)
     activa = models.BooleanField(default=True)
+
+    # Origen de la carga. Si nacio dentro de un viaje, apunta a ese viaje (uno solo
+    # de los tres, segun el tipo); el resto quedan en None. Una carga cargada a mano
+    # desde la estacion tiene los tres en None. Sirve para diferenciarla en el
+    # listado y para llevar al viaje donde se hizo el gasto.
+    viaje = models.ForeignKey("Viaje", on_delete=models.CASCADE, null=True, blank=True,
+                              related_name="cargas_combustible")
+    viaje_reparto = models.ForeignKey("ViajeReparto", on_delete=models.CASCADE, null=True, blank=True,
+                                      related_name="cargas_combustible")
+    viaje_cereal = models.ForeignKey("ViajeCereal", on_delete=models.CASCADE, null=True, blank=True,
+                                     related_name="cargas_combustible")
 
     class Meta:
         db_table = "cargas_combustible"
@@ -1230,6 +1249,45 @@ class CargaCombustible(models.Model):
     @property
     def estado_pago(self):
         return "Pagada" if self.pagada else "Impaga"
+
+    @property
+    def viaje_asociado(self):
+        # El unico viaje que tiene seteado, o None si es una carga manual.
+        return self.viaje or self.viaje_reparto or self.viaje_cereal
+
+    @property
+    def de_viaje(self):
+        # True si la carga nacio dentro de un viaje (no se cargo a mano). Uso los
+        # ids para no traer los objetos viaje (evita una query por fila en el listado).
+        return bool(self.viaje_id or self.viaje_reparto_id or self.viaje_cereal_id)
+
+    @property
+    def viaje_url(self):
+        # URL del detalle del viaje que origino la carga, para llevar al usuario al
+        # viaje donde se hizo el gasto. Vacia si la carga se cargo a mano. Lleva el id
+        # de la estacion como volver_estacion, asi el boton "volver" del viaje puede
+        # devolver a esta ficha en vez de al listado de viajes.
+        from django.urls import reverse
+        if self.viaje_id:
+            destino = reverse("informacion_viaje", kwargs={"id_viaje": self.viaje_id})
+        elif self.viaje_reparto_id:
+            destino = reverse("informacion_viaje_reparto", kwargs={"id_viaje_reparto": self.viaje_reparto_id})
+        elif self.viaje_cereal_id:
+            destino = reverse("informacion_viaje_cereal", kwargs={"id_viaje_cereal": self.viaje_cereal_id})
+        else:
+            return ""
+        return f"{destino}?volver_estacion={self.estacion_id}"
+
+    @property
+    def viaje_etiqueta(self):
+        # Texto corto para el chip que diferencia la carga en el listado.
+        if self.viaje_id:
+            return f"Viaje miel/cera #{self.viaje_id}"
+        if self.viaje_reparto_id:
+            return f"Viaje reparto #{self.viaje_reparto_id}"
+        if self.viaje_cereal_id:
+            return f"Viaje cereal #{self.viaje_cereal_id}"
+        return ""
 
     def __str__(self):
         return f"Carga de {self.monto} en {self.estacion} ({self.fecha})"
