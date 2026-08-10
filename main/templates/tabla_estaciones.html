@@ -3,6 +3,7 @@
     <tr>
       <th>Estacion</th>
       <th>Estado</th>
+      <th class="texto-derecha">Deuda</th>
       <th class="texto-derecha">Acciones</th>
     </tr>
   </thead>
@@ -26,6 +27,13 @@
             <span class="estado-deuda al-dia"><span class="punto"></span>Todo pago</span>
           {% endif %}
         </td>
+        <td class="texto-derecha">
+          {% if estacion.total_deuda %}
+            <span class="estacion-deuda-monto">$ {{ estacion.total_deuda|floatformat:"-2g" }}</span>
+          {% else %}
+            <span class="estacion-deuda-nula">—</span>
+          {% endif %}
+        </td>
         <td>
           <div class="acciones-tabla">
             <button class="boton-icono editar" title="Editar" data-id="{{ estacion.id }}">
@@ -42,7 +50,7 @@
       </tr>
     {% empty %}
       <tr class="fila-vacia">
-        <td colspan="3" class="celda-vacia">
+        <td colspan="4" class="celda-vacia">
           <span class="material-symbols-outlined">local_gas_station</span>
           {% if q %}No se encontraron estaciones con esa busqueda.{% else %}No hay estaciones registradas.{% endif %}
         </td>

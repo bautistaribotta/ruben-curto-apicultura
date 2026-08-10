@@ -1186,6 +1186,19 @@ class EstacionDeServicio(models.Model):
         return self.cargas.filter(activa=True, pagada=False).exists()
 
     @property
+    def total_deuda(self):
+        """Suma de los montos de las cargas activas impagas. 0 si no debe nada.
+
+        Mismo criterio que tiene_deuda: el saldo se deriva de las cargas. En el
+        listado se anota con _total_deuda_anotado para evitar una query por fila;
+        suelta, cae al aggregate directo.
+        """
+        if hasattr(self, "_total_deuda_anotado"):
+            return self._total_deuda_anotado or 0
+        agregado = self.cargas.filter(activa=True, pagada=False).aggregate(total=Sum("monto"))
+        return agregado["total"] or 0
+
+    @property
     def estado_deuda(self):
         # Etiqueta para la columna de estado: no muestra numeros, solo si debe o no
         return "Debe" if self.tiene_deuda else "Todo pago"

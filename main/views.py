@@ -2204,11 +2204,19 @@ def combustible(request):
         else:
             estaciones = estaciones.filter(filtro_tokens(q, "nombre"))
 
-    # Anoto el estado de deuda en una sola query (Exists) en vez de una por fila
+    # Anoto el estado de deuda en una sola query (Exists) en vez de una por fila,
+    # y de paso la suma de lo impago (Sum con filtro) para la columna de deuda.
+    from django.db.models import Q, Sum
+
     cargas_impagas = CargaCombustible.objects.filter(
         estacion=OuterRef("pk"), activa=True, pagada=False
     )
-    estaciones = estaciones.annotate(_tiene_deuda_anotado=Exists(cargas_impagas)).order_by("nombre")
+    estaciones = estaciones.annotate(
+        _tiene_deuda_anotado=Exists(cargas_impagas),
+        _total_deuda_anotado=Sum(
+            "cargas__monto", filter=Q(cargas__activa=True, cargas__pagada=False)
+        ),
+    ).order_by("nombre")
 
     paginator_estaciones = Paginator(estaciones, 5)
     pagina_numero = request.GET.get("page")

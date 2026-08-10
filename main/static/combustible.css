@@ -135,6 +135,18 @@
   margin-top: 0.125rem;
 }
 
+/* Columna de deuda: el monto adeudado se resalta; sin deuda, un guion neutro. */
+.estacion-deuda-monto {
+  font-weight: 600;
+  color: var(--color-rojo-eliminacion);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.estacion-deuda-nula {
+  color: var(--text-muted);
+}
+
 /* Estado vacio (sin estaciones o sin resultados de busqueda) */
 .celda-vacia {
   text-align: center;
