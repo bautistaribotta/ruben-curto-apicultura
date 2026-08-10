@@ -187,8 +187,10 @@
 
         <div class="campo-formulario">
           <label for="monto">Monto</label>
-          <input type="number" id="monto" name="monto" class="input-estandar"
-                 placeholder="Ej: 45000.00" step="0.01" min="0.01" required>
+          <input type="text" id="monto" name="monto"
+                 class="input-estandar input-miles-decimal" inputmode="decimal"
+                 autocomplete="off" placeholder="Ej: 45.000,00" required
+                 pattern="[1-9][0-9]{0,2}(\.[0-9]{3})*(,[0-9]{1,2})?|0,(0[1-9]|[1-9][0-9]?)">
         </div>
 
         <div class="campo-formulario">
@@ -294,5 +296,6 @@
 
 {% block codigo-javascript %}
 <script src="{% static 'js/paneles.js' %}"></script>
+<script src="{% static 'js/formato_miles.js' %}"></script>
 <script src="{% static 'js/informacion_estacion.js' %}"></script>
 {% endblock %}

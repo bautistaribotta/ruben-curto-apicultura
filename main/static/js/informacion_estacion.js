@@ -42,7 +42,12 @@ const prepararPanelEditarCarga = (id) => {
       document.getElementById('empleado').value = carga.empleado;
       document.getElementById('vehiculo').value = carga.vehiculo;
       document.getElementById('fecha').value = carga.fecha;
-      document.getElementById('monto').value = carga.monto;
+      const inputMonto = document.getElementById('monto');
+      if (typeof ponerValorMiles === 'function') {
+        ponerValorMiles(inputMonto, carga.monto);
+      } else {
+        inputMonto.value = carga.monto;
+      }
       document.getElementById('observaciones').value = carga.observaciones || '';
       document.getElementById('pagada').checked = carga.pagada;
 
