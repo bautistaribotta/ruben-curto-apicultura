@@ -159,6 +159,11 @@ def crear_estacion(nombre):
     return EstacionDeServicio.objects.create(nombre=nombre)
 
 
+def obtener_estaciones_activas():
+    """Estaciones activas en orden alfabetico, para los desplegables de combustible."""
+    return EstacionDeServicio.objects.filter(activa=True).order_by("nombre")
+
+
 def obtener_datos_estacion(id_estacion):
     try:
         estacion = EstacionDeServicio.objects.get(id=id_estacion, activa=True)
@@ -197,12 +202,11 @@ def eliminar_estacion(id_estacion):
 
 # --- CARGAS DE COMBUSTIBLE ---------------------------------------------------
 
-def _validar_carga(id_empleado, id_vehiculo, fecha, monto, litros, observaciones):
-    """Limpia y valida los datos de una carga. Devuelve (empleado, vehiculo, fecha, monto, litros, obs).
+def _validar_carga(id_empleado, id_vehiculo, fecha, monto, litros):
+    """Limpia y valida los datos de una carga. Devuelve (empleado, vehiculo, fecha, monto, litros).
 
     El empleado y el vehiculo son obligatorios (cada carga la hace una persona con
-    una unidad de la flota), igual que la fecha y el monto. Los litros y las
-    observaciones son datos opcionales.
+    una unidad de la flota), igual que la fecha y el monto. Los litros son opcionales.
     """
     empleado = get_object_or_404(Empleado, id=id_empleado, activo=True)
     vehiculo = get_object_or_404(Vehiculo, id=id_vehiculo, activo=True)
@@ -211,26 +215,25 @@ def _validar_carga(id_empleado, id_vehiculo, fecha, monto, litros, observaciones
     if not total:
         raise ValueError("El monto de la carga es obligatorio y tiene que ser mayor a cero.")
     cantidad = _decimal_opcional(litros, "Los litros de la carga")
-    obs = _texto_opcional(observaciones, 200, "Las observaciones") or ""
-    return empleado, vehiculo, dia, total, cantidad, obs
+    return empleado, vehiculo, dia, total, cantidad
 
 
-def crear_carga(id_estacion, id_empleado=None, id_vehiculo=None, fecha=None, monto=None, litros=None, pagada=False, observaciones=None):
+def crear_carga(id_estacion, id_empleado=None, id_vehiculo=None, fecha=None, monto=None, litros=None, pagada=False):
     """Registra una carga de combustible de una estacion activa."""
     estacion = get_object_or_404(EstacionDeServicio, id=id_estacion, activa=True)
-    empleado, vehiculo, dia, total, cantidad, obs = _validar_carga(id_empleado, id_vehiculo, fecha, monto, litros, observaciones)
+    empleado, vehiculo, dia, total, cantidad = _validar_carga(id_empleado, id_vehiculo, fecha, monto, litros)
     return CargaCombustible.objects.create(
         estacion=estacion, empleado=empleado, vehiculo=vehiculo, fecha=dia, monto=total,
-        litros=cantidad, pagada=bool(pagada), observaciones=obs,
+        litros=cantidad, pagada=bool(pagada),
     )
 
 
-def editar_carga(id_carga, id_empleado=None, id_vehiculo=None, fecha=None, monto=None, litros=None, pagada=False, observaciones=None):
+def editar_carga(id_carga, id_empleado=None, id_vehiculo=None, fecha=None, monto=None, litros=None, pagada=False):
     """Corrige una carga de combustible ya cargada."""
     carga = get_object_or_404(CargaCombustible, id=id_carga, activa=True)
-    empleado, vehiculo, dia, total, cantidad, obs = _validar_carga(id_empleado, id_vehiculo, fecha, monto, litros, observaciones)
+    empleado, vehiculo, dia, total, cantidad = _validar_carga(id_empleado, id_vehiculo, fecha, monto, litros)
     carga.empleado, carga.vehiculo, carga.fecha, carga.monto = empleado, vehiculo, dia, total
-    carga.litros, carga.pagada, carga.observaciones = cantidad, bool(pagada), obs
+    carga.litros, carga.pagada = cantidad, bool(pagada)
     carga.save()
     return carga
 
@@ -284,7 +287,6 @@ def obtener_datos_carga(id_carga):
         "monto": str(carga.monto),
         "litros": str(carga.litros) if carga.litros is not None else "",
         "pagada": carga.pagada,
-        "observaciones": carga.observaciones,
     }
 
 
@@ -2278,17 +2280,72 @@ def _validar_gasto_viaje(modelo, tipo_gasto, monto):
     return tipo_gasto, monto_val
 
 
-def editar_gasto_viaje(modelo, id_gasto, tipo_gasto, monto):
+# Como cada tabla de gasto cuelga de un viaje distinto, este mapa dice, para cada
+# modelo de gasto: el atributo del gasto que apunta al viaje, el campo de la carga
+# que guarda ese mismo viaje, y de donde sale la fecha del viaje. Asi la sincro de
+# la carga de combustible es una sola, comun a miel/cera, cereal y reparto.
+_CONFIG_CARGA_GASTO = {
+    "Gasto": ("viaje", "viaje", "fecha_inicio"),
+    "GastoViajeReparto": ("viaje_reparto", "viaje_reparto", "fecha_viaje_reparto"),
+    "GastoViajeCereal": ("viaje_cereal", "viaje_cereal", "fecha_viaje_cereal"),
+}
+
+
+def _sincronizar_carga_combustible(gasto, id_estacion, litros, pagada):
+    """Mantiene al dia la carga de combustible que representa un gasto de viaje.
+
+    Un gasto de tipo Combustible tiene, ademas del monto, una carga en una estacion
+    de servicio (con litros y estado de pago). Empleado, vehiculo y fecha salen del
+    viaje, no se piden de nuevo. Si el gasto deja de ser Combustible, la carga que
+    tenia se da de baja.
+    """
+    attr_gasto_viaje, campo_carga_viaje, attr_fecha = _CONFIG_CARGA_GASTO[type(gasto).__name__]
+    viaje = getattr(gasto, attr_gasto_viaje)
+    carga = gasto.carga_combustible
+
+    if gasto.gasto != "Combustible":
+        # Cambio de tipo: la carga que hubiera quedado ya no corresponde.
+        if carga is not None:
+            carga.activa = False
+            carga.save(update_fields=["activa"])
+            gasto.carga_combustible = None
+            gasto.save(update_fields=["carga_combustible"])
+        return
+
+    if not id_estacion:
+        raise ValueError("Elegí una estación de servicio para el gasto de combustible.")
+    estacion = get_object_or_404(EstacionDeServicio, id=id_estacion, activa=True)
+    cantidad = _decimal_opcional(litros, "Los litros de la carga")
+    fecha_viaje = getattr(viaje, attr_fecha)
+
+    if carga is None:
+        carga = CargaCombustible.objects.create(
+            estacion=estacion, empleado=viaje.empleado, vehiculo=viaje.vehiculo,
+            fecha=fecha_viaje, monto=gasto.monto, litros=cantidad, pagada=bool(pagada),
+            **{campo_carga_viaje: viaje},
+        )
+        gasto.carga_combustible = carga
+        gasto.save(update_fields=["carga_combustible"])
+    else:
+        carga.estacion, carga.monto, carga.litros = estacion, gasto.monto, cantidad
+        carga.pagada, carga.fecha, carga.activa = bool(pagada), fecha_viaje, True
+        carga.empleado, carga.vehiculo = viaje.empleado, viaje.vehiculo
+        carga.save()
+    return carga
+
+
+def editar_gasto_viaje(modelo, id_gasto, tipo_gasto, monto, id_estacion=None, litros=None, pagada=False):
     """Corrige el tipo y el monto de un gasto ya cargado.
 
     La fecha no se toca: es auto_now_add, queda la del dia en que se registro.
     Al guardar, los totales del viaje (caja, subtotal, pago del empleado,
     ganancia) se recalculan solos, porque son properties derivadas de la suma
-    de gastos.
+    de gastos. Si el gasto es de combustible, se sincroniza su carga.
     """
     gasto = get_object_or_404(modelo, id=id_gasto)
     gasto.gasto, gasto.monto = _validar_gasto_viaje(modelo, tipo_gasto, monto)
     gasto.save()
+    _sincronizar_carga_combustible(gasto, id_estacion, litros, pagada)
     return gasto
 
 
@@ -2296,13 +2353,18 @@ def eliminar_gasto_viaje(modelo, id_gasto):
     """Borrado de verdad y no logico, igual que el gasto de una casa.
 
     Un gasto mal cargado no es historia y no tiene nada colgando que se pierda
-    al borrarlo, asi que no necesita la baja logica del resto del sistema.
+    al borrarlo, asi que no necesita la baja logica del resto del sistema. Si tenia
+    una carga de combustible asociada, se da de baja para que no siga en la estacion.
     """
     gasto = get_object_or_404(modelo, id=id_gasto)
+    carga = gasto.carga_combustible
+    if carga is not None:
+        carga.activa = False
+        carga.save(update_fields=["activa"])
     gasto.delete()
 
 
-def crear_gasto(id_viaje, tipo_gasto, monto):
+def crear_gasto(id_viaje, tipo_gasto, monto, id_estacion=None, litros=None, pagada=False):
     viaje = get_object_or_404(Viaje, id=id_viaje)
     tipo_gasto, monto_val = _validar_gasto_viaje(Gasto, tipo_gasto, monto)
 
@@ -2311,6 +2373,7 @@ def crear_gasto(id_viaje, tipo_gasto, monto):
         gasto=tipo_gasto,
         monto=monto_val
     )
+    _sincronizar_carga_combustible(nuevo_gasto, id_estacion, litros, pagada)
     return nuevo_gasto
 
 
@@ -2668,7 +2731,7 @@ def eliminar_viaje_cereal(id_viaje_cereal):
     return viaje_cereal
 
 
-def crear_gasto_viaje_cereal(id_viaje_cereal, tipo_gasto, monto):
+def crear_gasto_viaje_cereal(id_viaje_cereal, tipo_gasto, monto, id_estacion=None, litros=None, pagada=False):
     # Mismo patron que crear_gasto (viajes comunes), pero sobre la tabla GastoViajeCereal.
     # Cada gasto cargado recalcula automaticamente el subtotal y el pago del empleado, porque
     # esas propiedades del modelo se derivan de la suma de gastos del viaje.
@@ -2680,6 +2743,7 @@ def crear_gasto_viaje_cereal(id_viaje_cereal, tipo_gasto, monto):
         gasto=tipo_gasto,
         monto=monto_val
     )
+    _sincronizar_carga_combustible(nuevo_gasto, id_estacion, litros, pagada)
     return nuevo_gasto
 
 
@@ -2942,7 +3006,7 @@ def obtener_datos_viaje_reparto(id_viaje_reparto):
     )
 
 
-def crear_gasto_viaje_reparto(id_viaje_reparto, tipo_gasto, monto):
+def crear_gasto_viaje_reparto(id_viaje_reparto, tipo_gasto, monto, id_estacion=None, litros=None, pagada=False):
     # Mismo patron que crear_gasto_viaje_cereal, sobre la tabla GastoViajeReparto.
     # Cada gasto cargado recalcula la ganancia, porque la property del modelo se deriva
     # de la suma de gastos del viaje.
@@ -2954,6 +3018,7 @@ def crear_gasto_viaje_reparto(id_viaje_reparto, tipo_gasto, monto):
         gasto=tipo_gasto,
         monto=monto_val
     )
+    _sincronizar_carga_combustible(nuevo_gasto, id_estacion, litros, pagada)
     return nuevo_gasto
 
 
