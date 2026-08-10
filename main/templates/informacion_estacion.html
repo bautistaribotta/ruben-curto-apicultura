@@ -14,6 +14,7 @@
 
 {% block links %}
   <link rel="stylesheet" href="{% static 'combustible.css' %}">
+  <link rel="stylesheet" href="{% static 'pago_viaje.css' %}">
   <link rel="stylesheet" href="{% static 'informacion_estacion.css' %}">
 {% endblock %}
 
@@ -78,25 +79,23 @@
       <table class="tabla-cargas">
         <thead>
           <tr>
-            <th class="texto-centro">Pago</th>
+            <th class="pago-col">Pago</th>
             <th>Fecha</th>
             <th>Vehiculo</th>
             <th>Empleado</th>
             <th class="texto-derecha">Monto</th>
-            <th>Estado</th>
+            <th class="texto-derecha">Litros</th>
             <th class="texto-derecha">Acciones</th>
           </tr>
         </thead>
         <tbody>
           {% for carga in cargas %}
           <tr>
-            <td class="texto-centro">
-              <!-- El check alterna el estado de pago (paga <-> impaga) -->
-              <label class="check-pago" title="Marcar si la carga esta paga">
-                <input type="checkbox" class="check-pago__input toggle-pago"
-                       data-id="{{ carga.id }}" {% if carga.pagada %}checked{% endif %}>
-                <span class="check-pago__caja"><span class="material-symbols-outlined">check</span></span>
-              </label>
+            <td class="pago-celda">
+              <!-- Casilla de pago reutilizada de los viajes: alterna paga <-> impaga -->
+              <input type="checkbox" class="pago-check toggle-pago"
+                     data-id="{{ carga.id }}" {% if carga.pagada %}checked{% endif %}
+                     aria-label="Pago de la carga del {{ carga.fecha|date:'d/m/Y' }}">
             </td>
             <td>{{ carga.fecha|date:"d/m/Y" }}</td>
             <td>
@@ -107,11 +106,8 @@
             </td>
             <td>{{ carga.empleado.nombre }} {{ carga.empleado.apellido }}</td>
             <td class="texto-derecha carga-monto">$ {{ carga.monto|floatformat:"-2g" }}</td>
-            <td>
-              <!-- Estado solo visual: verde cuando la carga esta paga -->
-              <span class="estado-pago {% if carga.pagada %}pagada{% else %}impaga{% endif %}">
-                <span class="punto"></span>{{ carga.estado_pago }}
-              </span>
+            <td class="texto-derecha carga-litros">
+              {% if carga.litros is not None %}{{ carga.litros|floatformat:"-2g" }} L{% else %}—{% endif %}
             </td>
             <td class="texto-derecha">
               <div class="acciones-tabla">
@@ -199,6 +195,13 @@
                  class="input-estandar input-miles-decimal" inputmode="decimal"
                  autocomplete="off" placeholder="Ej: 45.000,00" required
                  pattern="[1-9][0-9]{0,2}(\.[0-9]{3})*(,[0-9]{1,2})?|0,(0[1-9]|[1-9][0-9]?)">
+        </div>
+
+        <div class="campo-formulario">
+          <label for="litros">Litros <span class="opcional">(opcional)</span></label>
+          <input type="text" id="litros" name="litros"
+                 class="input-estandar input-miles-decimal" inputmode="decimal"
+                 autocomplete="off" placeholder="Ej: 250,50">
         </div>
 
         <div class="campo-formulario">

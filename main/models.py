@@ -1200,6 +1200,8 @@ class CargaCombustible(models.Model):
     vehiculo = models.ForeignKey(Vehiculo, on_delete=models.PROTECT, related_name="cargas_combustible")
     fecha = models.DateField()
     monto = models.DecimalField(max_digits=12, decimal_places=2)
+    # Litros cargados: dato opcional (a veces solo se conoce el monto)
+    litros = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     # Estado binario: una carga esta paga o no lo esta (sin pagos parciales)
     pagada = models.BooleanField(default=False)
     observaciones = models.CharField(max_length=200, blank=True)

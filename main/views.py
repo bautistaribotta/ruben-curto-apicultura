@@ -2256,11 +2256,11 @@ def informacion_estacion(request, id_estacion):
                 return redirect("combustible")
             elif accion == "nueva_carga":
                 crear_carga(id_estacion, p.get("empleado"), p.get("vehiculo"), p.get("fecha"), p.get("monto"),
-                            p.get("pagada") == "on", p.get("observaciones"))
+                            p.get("litros"), p.get("pagada") == "on", p.get("observaciones"))
                 messages.success(request, "Carga agregada correctamente.")
             elif accion == "editar_carga":
                 editar_carga(p.get("id_registro"), p.get("empleado"), p.get("vehiculo"), p.get("fecha"), p.get("monto"),
-                             p.get("pagada") == "on", p.get("observaciones"))
+                             p.get("litros"), p.get("pagada") == "on", p.get("observaciones"))
                 messages.success(request, "Carga actualizada correctamente.")
             elif accion == "eliminar_carga":
                 eliminar_carga(p.get("id_registro"))

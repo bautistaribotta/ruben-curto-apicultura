@@ -43,10 +43,13 @@ const prepararPanelEditarCarga = (id) => {
       document.getElementById('vehiculo').value = carga.vehiculo;
       document.getElementById('fecha').value = carga.fecha;
       const inputMonto = document.getElementById('monto');
+      const inputLitros = document.getElementById('litros');
       if (typeof ponerValorMiles === 'function') {
         ponerValorMiles(inputMonto, carga.monto);
+        ponerValorMiles(inputLitros, carga.litros);
       } else {
         inputMonto.value = carga.monto;
+        inputLitros.value = carga.litros || '';
       }
       document.getElementById('observaciones').value = carga.observaciones || '';
       document.getElementById('pagada').checked = carga.pagada;

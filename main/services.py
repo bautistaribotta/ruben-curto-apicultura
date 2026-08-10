@@ -197,12 +197,12 @@ def eliminar_estacion(id_estacion):
 
 # --- CARGAS DE COMBUSTIBLE ---------------------------------------------------
 
-def _validar_carga(id_empleado, id_vehiculo, fecha, monto, observaciones):
-    """Limpia y valida los datos de una carga. Devuelve (empleado, vehiculo, fecha, monto, obs).
+def _validar_carga(id_empleado, id_vehiculo, fecha, monto, litros, observaciones):
+    """Limpia y valida los datos de una carga. Devuelve (empleado, vehiculo, fecha, monto, litros, obs).
 
     El empleado y el vehiculo son obligatorios (cada carga la hace una persona con
-    una unidad de la flota), igual que la fecha y el monto. Las observaciones son un
-    dato opcional de agenda.
+    una unidad de la flota), igual que la fecha y el monto. Los litros y las
+    observaciones son datos opcionales.
     """
     empleado = get_object_or_404(Empleado, id=id_empleado, activo=True)
     vehiculo = get_object_or_404(Vehiculo, id=id_vehiculo, activo=True)
@@ -210,26 +210,27 @@ def _validar_carga(id_empleado, id_vehiculo, fecha, monto, observaciones):
     total = _decimal_opcional(monto, "El monto de la carga", MAX_COSTO)
     if not total:
         raise ValueError("El monto de la carga es obligatorio y tiene que ser mayor a cero.")
+    cantidad = _decimal_opcional(litros, "Los litros de la carga")
     obs = _texto_opcional(observaciones, 200, "Las observaciones") or ""
-    return empleado, vehiculo, dia, total, obs
+    return empleado, vehiculo, dia, total, cantidad, obs
 
 
-def crear_carga(id_estacion, id_empleado=None, id_vehiculo=None, fecha=None, monto=None, pagada=False, observaciones=None):
+def crear_carga(id_estacion, id_empleado=None, id_vehiculo=None, fecha=None, monto=None, litros=None, pagada=False, observaciones=None):
     """Registra una carga de combustible de una estacion activa."""
     estacion = get_object_or_404(EstacionDeServicio, id=id_estacion, activa=True)
-    empleado, vehiculo, dia, total, obs = _validar_carga(id_empleado, id_vehiculo, fecha, monto, observaciones)
+    empleado, vehiculo, dia, total, cantidad, obs = _validar_carga(id_empleado, id_vehiculo, fecha, monto, litros, observaciones)
     return CargaCombustible.objects.create(
         estacion=estacion, empleado=empleado, vehiculo=vehiculo, fecha=dia, monto=total,
-        pagada=bool(pagada), observaciones=obs,
+        litros=cantidad, pagada=bool(pagada), observaciones=obs,
     )
 
 
-def editar_carga(id_carga, id_empleado=None, id_vehiculo=None, fecha=None, monto=None, pagada=False, observaciones=None):
+def editar_carga(id_carga, id_empleado=None, id_vehiculo=None, fecha=None, monto=None, litros=None, pagada=False, observaciones=None):
     """Corrige una carga de combustible ya cargada."""
     carga = get_object_or_404(CargaCombustible, id=id_carga, activa=True)
-    empleado, vehiculo, dia, total, obs = _validar_carga(id_empleado, id_vehiculo, fecha, monto, observaciones)
+    empleado, vehiculo, dia, total, cantidad, obs = _validar_carga(id_empleado, id_vehiculo, fecha, monto, litros, observaciones)
     carga.empleado, carga.vehiculo, carga.fecha, carga.monto = empleado, vehiculo, dia, total
-    carga.pagada, carga.observaciones = bool(pagada), obs
+    carga.litros, carga.pagada, carga.observaciones = cantidad, bool(pagada), obs
     carga.save()
     return carga
 
@@ -268,6 +269,7 @@ def obtener_datos_carga(id_carga):
         "vehiculo": carga.vehiculo_id,
         "fecha": carga.fecha.strftime("%Y-%m-%d"),
         "monto": str(carga.monto),
+        "litros": str(carga.litros) if carga.litros is not None else "",
         "pagada": carga.pagada,
         "observaciones": carga.observaciones,
     }
