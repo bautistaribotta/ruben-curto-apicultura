@@ -1,0 +1,283 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% comment %}
+  Ficha de una estacion de servicio: identidad + estado de deuda y el historial de
+  cargas de combustible. Cada carga dice si esta paga o impaga; el saldo no se
+  muestra en numeros, se resume en el estado. Reutiliza el slide-over y el modal de
+  eliminacion de combustible.css, siguiendo el patron de informacion_empleado.
+{% endcomment %}
+
+{% block nombre-pestaña %}
+  <title> {{ estacion.nombre }} </title>
+{% endblock %}
+
+{% block links %}
+  <link rel="stylesheet" href="{% static 'combustible.css' %}">
+  <link rel="stylesheet" href="{% static 'informacion_estacion.css' %}">
+{% endblock %}
+
+{% block cabecera %}
+  <a href="{% url 'combustible' %}" class="boton-volver">
+    <span class="material-symbols-outlined">arrow_back</span>
+    Volver a Combustible
+  </a>
+{% endblock %}
+
+{% block area-trabajo %}
+<section id="area-trabajo">
+
+  <!-- Identidad de la estacion + acciones -->
+  <div class="cabecera-estacion">
+    <div class="identidad-estacion">
+      <span class="identidad-estacion__tile material-symbols-outlined">local_gas_station</span>
+      <div class="identidad-estacion__datos">
+        <h2 class="identidad-estacion__nombre">{{ estacion.nombre }}</h2>
+        <div class="identidad-estacion__meta">
+          {% if estacion.tiene_deuda %}
+            <span class="estado-deuda debe"><span class="punto"></span>Debe cargas</span>
+          {% else %}
+            <span class="estado-deuda al-dia"><span class="punto"></span>Todo pago</span>
+          {% endif %}
+          <span class="identidad-estacion__cuenta">
+            <span class="material-symbols-outlined">local_gas_station</span>
+            {{ cargas|length }} carga{{ cargas|length|pluralize }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="acciones-estacion">
+      <button type="button" class="boton-nuevo" onclick="prepararPanelNuevaCarga()">
+        <span class="material-symbols-outlined">add</span>
+        Nueva carga
+      </button>
+      <button type="button" class="boton-accion boton-editar"
+              data-nombre="{{ estacion.nombre }}" onclick="prepararEditarEstacion()">
+        <span class="material-symbols-outlined">edit</span>
+        Editar estación
+      </button>
+      <button type="button" class="boton-accion boton-cancelar" onclick="prepararEliminarEstacion()">
+        <span class="material-symbols-outlined">delete</span>
+        Eliminar estación
+      </button>
+    </div>
+  </div>
+
+  <!-- Historial de cargas -->
+  <section class="bloque-cargas">
+    <header class="bloque-cargas__cabecera">
+      <div class="bloque-cargas__titulo">
+        <span class="material-symbols-outlined">receipt_long</span>
+        <h3>Cargas de combustible</h3>
+      </div>
+    </header>
+
+    {% if cargas %}
+    <div class="contenedor-tabla">
+      <table class="tabla-cargas">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Vehiculo</th>
+            <th class="texto-derecha">Monto</th>
+            <th>Estado</th>
+            <th class="texto-derecha">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for carga in cargas %}
+          <tr>
+            <td>{{ carga.fecha|date:"d/m/Y" }}</td>
+            <td>
+              <div class="carga-vehiculo">
+                <span class="carga-vehiculo__nombre">{{ carga.vehiculo.nombre }}</span>
+                <span class="carga-vehiculo__patente">{{ carga.vehiculo.patente }}</span>
+              </div>
+            </td>
+            <td class="texto-derecha carga-monto">$ {{ carga.monto|floatformat:"-2g" }}</td>
+            <td>
+              <!-- El estado es un boton: un click alterna paga <-> impaga -->
+              <button type="button" class="estado-pago {% if carga.pagada %}pagada{% else %}impaga{% endif %} toggle-pago"
+                      data-id="{{ carga.id }}" title="Cambiar estado de pago">
+                <span class="punto"></span>{{ carga.estado_pago }}
+              </button>
+            </td>
+            <td class="texto-derecha">
+              <div class="acciones-tabla">
+                <button class="boton-icono editar" title="Editar" data-id="{{ carga.id }}">
+                  <span class="material-symbols-outlined">edit</span>
+                </button>
+                <button class="boton-icono eliminar" title="Eliminar"
+                        data-id="{{ carga.id }}"
+                        data-descripcion="la carga del {{ carga.fecha|date:'d/m/Y' }} de {{ carga.vehiculo.nombre }}">
+                  <span class="material-symbols-outlined">delete</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="cargas-vacio">
+      <span class="material-symbols-outlined">local_gas_station</span>
+      Todavia no hay cargas registradas en esta estacion.
+    </div>
+    {% endif %}
+  </section>
+</section>
+
+<!-- PANEL LATERAL NUEVA/EDITAR CARGA (SLIDE-OVER) -->
+<div id="contenedor-slide-over">
+  <div id="slide-over-fondo" onclick="cerrarSlideOver()"> </div>
+
+  <div id="slide-over-panel">
+    <header class="panel-cabecera">
+      <div class="panel-titulo-fila">
+        <div class="icono-contenedor">
+          <span class="material-symbols-outlined">local_gas_station</span>
+        </div>
+        <div class="texto-cabecera">
+          <h3>Nueva carga</h3>
+          <p>Registra una carga de combustible</p>
+        </div>
+      </div>
+      <button class="boton-cerrar-panel" onclick="cerrarSlideOver()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </header>
+
+    <div class="panel-cuerpo">
+      <form class="formulario-estacion" id="form-carga" method="POST" autocomplete="off">
+        {% csrf_token %}
+        <input type="hidden" name="accion" id="accion-carga" value="nueva_carga">
+        <input type="hidden" name="id_registro" id="id_registro">
+
+        <div class="campo-formulario">
+          <label for="vehiculo">Vehiculo</label>
+          <select id="vehiculo" name="vehiculo" class="input-estandar" required>
+            <option value="" disabled selected>Elegi un vehiculo</option>
+            {% for v in vehiculos %}
+              <option value="{{ v.id }}">{{ v.nombre }} · {{ v.patente }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="campo-formulario">
+          <label for="fecha">Fecha</label>
+          <input type="date" id="fecha" name="fecha" class="input-estandar" required>
+        </div>
+
+        <div class="campo-formulario">
+          <label for="monto">Monto</label>
+          <input type="number" id="monto" name="monto" class="input-estandar"
+                 placeholder="Ej: 45000.00" step="0.01" min="0.01" required>
+        </div>
+
+        <div class="campo-formulario">
+          <label for="observaciones">Observaciones <span class="opcional">(opcional)</span></label>
+          <input type="text" id="observaciones" name="observaciones" class="input-estandar"
+                 placeholder="Ej: carga de gasoil" maxlength="200">
+        </div>
+
+        <label class="campo-check" for="pagada">
+          <input type="checkbox" id="pagada" name="pagada">
+          <span class="campo-check__caja"><span class="material-symbols-outlined">check</span></span>
+          <span class="campo-check__texto">La carga ya esta paga</span>
+        </label>
+      </form>
+    </div>
+
+    <div class="panel-pie">
+      <button type="submit" form="form-carga" class="boton-primario">Guardar carga</button>
+      <button type="button" class="boton-secundario" onclick="cerrarSlideOver()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- PANEL LATERAL EDITAR ESTACION (SLIDE-OVER) ---
+     Recicla el slide-over de edicion del listado de estaciones (combustible.css).
+     Ids internos propios para no chocar con el slide-over de cargas. -->
+<div id="contenedor-slide-over-estacion">
+  <div id="slide-over-fondo-estacion" onclick="cerrarSlideOver('contenedor-slide-over-estacion')"> </div>
+
+  <div id="slide-over-panel-estacion" class="slide-over-panel-base">
+    <header class="panel-cabecera">
+      <div class="panel-titulo-fila">
+        <div class="icono-contenedor">
+          <span class="material-symbols-outlined">local_gas_station</span>
+        </div>
+        <div class="texto-cabecera">
+          <h3>Editar estacion</h3>
+          <p>Modifica los datos de la estacion</p>
+        </div>
+      </div>
+      <button class="boton-cerrar-panel" onclick="cerrarSlideOver('contenedor-slide-over-estacion')">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </header>
+
+    <div class="panel-cuerpo">
+      <form class="formulario-estacion" id="form-estacion" method="POST" autocomplete="off">
+        {% csrf_token %}
+        <input type="hidden" name="accion" value="editar_estacion">
+        <div class="campo-formulario">
+          <label for="nombre-estacion">Nombre de la estacion</label>
+          <input type="text" id="nombre-estacion" name="nombre" class="input-estandar"
+                 placeholder="Ej: YPF Ruta 8" maxlength="30" required
+                 pattern="[a-zA-ZÁÉÍÓÚáéíóúñÑ\s\d]{3,}">
+          <span class="mensaje-error">Minimo 3 caracteres. No se permiten simbolos.</span>
+        </div>
+      </form>
+    </div>
+
+    <div class="panel-pie">
+      <button type="submit" form="form-estacion" class="boton-primario">Actualizar estacion</button>
+      <button type="button" class="boton-secundario" onclick="cerrarSlideOver('contenedor-slide-over-estacion')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Formulario oculto para alternar el estado de pago -->
+<form id="form-toggle-pago" method="POST">
+  {% csrf_token %}
+  <input type="hidden" name="accion" value="alternar_pago">
+  <input type="hidden" name="id_registro" id="id_toggle">
+</form>
+
+<!-- Modal de eliminacion (sirve para cargas y para la estacion: la accion la fija el JS) -->
+<form id="formulario-eliminar" method="POST">
+  {% csrf_token %}
+  <input type="hidden" name="accion" id="accion-eliminar" value="eliminar_carga">
+  <div id="contenedor-panel-eliminar">
+    <div id="contenedor-panel-fondo" onclick="cerrarPanelEliminar()"> </div>
+
+    <div id="panel-eliminar">
+      <input type="hidden" id="id_registro_eliminar" name="id_registro" value="">
+
+      <button type="button" class="boton-cerrar-panel" id="icono-cerrar-panel-eliminar" onclick="cerrarPanelEliminar()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+
+      <div id="icono-advertencia">
+        <span class="material-symbols-outlined">warning</span>
+      </div>
+
+      <h3>Confirmar eliminación</h3>
+      <p id="texto-confirmacion-eliminar">¿Confirma que quiere eliminar esta carga?</p>
+
+      <div class="acciones-modal">
+        <button type="button" class="boton-secundario" onclick="cerrarPanelEliminar()">No, mantener</button>
+        <button type="button" class="boton-primario-eliminar" id="boton-confirmar-eliminar"><span>Sí, eliminar</span></button>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}
+
+{% block codigo-javascript %}
+<script src="{% static 'js/paneles.js' %}"></script>
+<script src="{% static 'js/informacion_estacion.js' %}"></script>
+{% endblock %}

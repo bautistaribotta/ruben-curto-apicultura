@@ -253,8 +253,8 @@
 }
 
 .icono-contenedor {
-  background-color: var(--success-50);
-  color: var(--success-600);
+  background-color: oklch(25.391% 0.0349 170.220 / 0.1);
+  color: var(--brand-olive);
   width: 40px;
   height: 40px;
   border-radius: var(--radius-md);
@@ -560,6 +560,46 @@
 
 #boton-confirmar-eliminar:hover {
   filter: brightness(0.9);
+}
+
+/* --- COLUMNA DE ESTADO (deuda de la estacion) --- */
+/* Pastilla en palabras, sin numeros: solo dice si la estacion debe o esta al dia */
+.estado-deuda {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.estado-deuda .punto {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: currentColor;
+}
+
+.estado-deuda.debe {
+  background-color: var(--color-rosa-claro);
+  color: var(--color-rojo-eliminacion);
+}
+
+.estado-deuda.al-dia {
+  background-color: var(--success-50);
+  color: var(--success-600);
+}
+
+/* Toda la fila es un acceso a la ficha de cargas de la estacion */
+.fila-estacion {
+  cursor: pointer;
+}
+
+.fila-estacion:hover .estacion-nombre {
+  color: var(--brand-olive);
+  text-decoration: underline;
 }
 
 /* --- RESPONSIVE --- */

@@ -1043,6 +1043,7 @@ body {
 .tabla-operaciones th,
 .tabla-viajes-cereal th,
 .tabla-estaciones th,
+.tabla-cargas th,
 #tabla-viajes-meli th {
   padding: 0.9rem 1.5rem;
   font-size: var(--text-xs);

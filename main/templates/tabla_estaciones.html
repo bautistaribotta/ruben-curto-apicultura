@@ -2,12 +2,14 @@
   <thead>
     <tr>
       <th>Estacion</th>
+      <th>Estado</th>
       <th class="texto-derecha">Acciones</th>
     </tr>
   </thead>
   <tbody>
     {% for estacion in estaciones %}
-      <tr class="fila-estacion" data-id="{{ estacion.id }}">
+      <tr class="fila-estacion" data-id="{{ estacion.id }}"
+          data-href="{% url 'informacion_estacion' estacion.id %}">
         <td>
           <div class="estacion-celda">
             <span class="estacion-avatar material-symbols-outlined">local_gas_station</span>
@@ -16,6 +18,13 @@
               <div class="estacion-id">ID: {{ estacion.id }}</div>
             </div>
           </div>
+        </td>
+        <td>
+          {% if estacion.tiene_deuda %}
+            <span class="estado-deuda debe"><span class="punto"></span>Debe</span>
+          {% else %}
+            <span class="estado-deuda al-dia"><span class="punto"></span>Todo pago</span>
+          {% endif %}
         </td>
         <td>
           <div class="acciones-tabla">
@@ -33,7 +42,7 @@
       </tr>
     {% empty %}
       <tr class="fila-vacia">
-        <td colspan="2" class="celda-vacia">
+        <td colspan="3" class="celda-vacia">
           <span class="material-symbols-outlined">local_gas_station</span>
           {% if q %}No se encontraron estaciones con esa busqueda.{% else %}No hay estaciones registradas.{% endif %}
         </td>

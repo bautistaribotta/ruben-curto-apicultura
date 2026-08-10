@@ -19,7 +19,7 @@ from django.template.defaultfilters import floatformat
 
 from .models import (Cliente, Producto, Operacion, DetalleOperacion, Pago, Cotizaciones, Empleado,
                      Vehiculo, Viaje, ViajeCereal, ViajeReparto, Gasto, GastoViajeCereal, GastoViajeReparto,
-                     EstacionDeServicio, periodo_actual)
+                     EstacionDeServicio, CargaCombustible, periodo_actual)
 from .pdf_services import Remito, ResumenCuenta
 from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo_cliente, editar_cliente,
                        eliminar_cliente, buscar_clientes, get_cotizacion_dolar_oficial, get_cotizaciones, get_total_kilos_granel, get_articulos_granel, actualizar_cotizacion, obtener_datos_cliente,
@@ -58,7 +58,9 @@ from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo
                        crear_gasto_casa, editar_gasto_casa, eliminar_gasto_casa,
                        obtener_resumen_alquileres, marcar_pago_alquiler, resolver_periodo,
                        mes_desplazado, FILTROS_ALQUILERES,
-                       crear_estacion, obtener_datos_estacion, editar_estacion, eliminar_estacion)
+                       crear_estacion, obtener_datos_estacion, editar_estacion, eliminar_estacion,
+                       crear_carga, editar_carga, eliminar_carga, alternar_pago_carga,
+                       obtener_cargas, obtener_datos_carga)
 
 
 def _pagado_del_formulario(request):
@@ -2186,6 +2188,8 @@ def combustible(request):
         return redirect("combustible")
 
     # Listado de estaciones activas, con busqueda por nombre o id
+    from django.db.models import Exists, OuterRef
+
     q = request.GET.get("q", "")
     estaciones = EstacionDeServicio.objects.filter(activa=True)
 
@@ -2195,9 +2199,13 @@ def combustible(request):
         else:
             estaciones = estaciones.filter(filtro_tokens(q, "nombre"))
 
-    estaciones = estaciones.order_by("nombre")
+    # Anoto el estado de deuda en una sola query (Exists) en vez de una por fila
+    cargas_impagas = CargaCombustible.objects.filter(
+        estacion=OuterRef("pk"), activa=True, pagada=False
+    )
+    estaciones = estaciones.annotate(_tiene_deuda_anotado=Exists(cargas_impagas)).order_by("nombre")
 
-    paginator_estaciones = Paginator(estaciones, 8)
+    paginator_estaciones = Paginator(estaciones, 5)
     pagina_numero = request.GET.get("page")
     pagina_obj = paginator_estaciones.get_page(pagina_numero)
 
@@ -2218,6 +2226,68 @@ def obtener_estacion_json(request, id_estacion):
         return JsonResponse(datos)
 
     return JsonResponse({"Error": "Estacion no encontrada"}, status=404)
+
+
+@staff_member_required(login_url="inicio")
+def informacion_estacion(request, id_estacion):
+    """Perfil de una estacion: todas sus cargas de combustible, pagas e impagas.
+
+    Un solo POST rutea por 'accion' hacia el servicio correspondiente (mismo patron
+    que la vista de flota): alta, edicion, baja logica y el toggle de pagado. El GET
+    arma el historial de cargas y la lista de vehiculos para el alta.
+    """
+    estacion = get_object_or_404(EstacionDeServicio, id=id_estacion, activa=True)
+
+    if request.method == "POST":
+        accion = request.POST.get("accion")
+        p = request.POST
+        try:
+            if accion == "editar_estacion":
+                editar_estacion(id_estacion, p.get("nombre"))
+                messages.success(request, "Estacion editada correctamente.")
+            elif accion == "eliminar_estacion":
+                eliminar_estacion(id_estacion)
+                messages.success(request, "Estacion eliminada correctamente.")
+                return redirect("combustible")
+            elif accion == "nueva_carga":
+                crear_carga(id_estacion, p.get("vehiculo"), p.get("fecha"), p.get("monto"),
+                            p.get("pagada") == "on", p.get("observaciones"))
+                messages.success(request, "Carga agregada correctamente.")
+            elif accion == "editar_carga":
+                editar_carga(p.get("id_registro"), p.get("vehiculo"), p.get("fecha"), p.get("monto"),
+                             p.get("pagada") == "on", p.get("observaciones"))
+                messages.success(request, "Carga actualizada correctamente.")
+            elif accion == "eliminar_carga":
+                eliminar_carga(p.get("id_registro"))
+                messages.success(request, "Carga eliminada.")
+            elif accion == "alternar_pago":
+                alternar_pago_carga(p.get("id_registro"))
+                messages.success(request, "Estado de pago actualizado.")
+        except ValueError as e:
+            messages.error(request, str(e))
+        except Exception as e:
+            messages.error(request, f"Ocurrió un error inesperado: {e}")
+
+        return redirect("informacion_estacion", id_estacion=id_estacion)
+
+    cargas = list(obtener_cargas(id_estacion))
+    contexto = {
+        "estacion": estacion,
+        "cargas": cargas,
+        "vehiculos": obtener_vehiculos_activos(),
+        "pestaña": "viajes",
+    }
+    return render(request, "informacion_estacion.html", contexto)
+
+
+@login_required
+def obtener_carga_json(request, id_carga):
+    datos = obtener_datos_carga(id_carga)
+
+    if datos:
+        return JsonResponse(datos)
+
+    return JsonResponse({"Error": "Carga no encontrada"}, status=404)
 
 
 @login_required

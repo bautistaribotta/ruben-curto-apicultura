@@ -97,6 +97,13 @@ document.addEventListener('click', (e) => {
   const botonEditar = e.target.closest('.boton-icono.editar');
   const botonEliminar = e.target.closest('.boton-icono.eliminar');
 
+  // Fila clickeable: navega a la ficha salvo que se toque un boton de accion
+  const fila = e.target.closest('.fila-estacion');
+  if (fila && !botonEditar && !botonEliminar && fila.dataset.href) {
+    window.location.href = fila.dataset.href;
+    return;
+  }
+
   if (botonEditar) {
     prepararPanelEditarEstacion(botonEditar.dataset.id);
   }

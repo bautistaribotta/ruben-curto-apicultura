@@ -1173,5 +1173,47 @@ class EstacionDeServicio(models.Model):
         # Alfabetico como el resto de los catalogos: el id solo desempata
         ordering = ["nombre", "id"]
 
+    @property
+    def tiene_deuda(self):
+        """True si queda al menos una carga activa sin pagar.
+
+        El saldo no se guarda: se deriva de las cargas para no descuadrarse. En el
+        listado se anota con Exists (_tiene_deuda_anotado) y asi se evita una query
+        por fila; suelta, cae al exists() directo.
+        """
+        if hasattr(self, "_tiene_deuda_anotado"):
+            return self._tiene_deuda_anotado
+        return self.cargas.filter(activa=True, pagada=False).exists()
+
+    @property
+    def estado_deuda(self):
+        # Etiqueta para la columna de estado: no muestra numeros, solo si debe o no
+        return "Debe" if self.tiene_deuda else "Todo pago"
+
     def __str__(self):
         return self.nombre
+
+
+class CargaCombustible(models.Model):
+    estacion = models.ForeignKey(EstacionDeServicio, on_delete=models.PROTECT, related_name="cargas")
+    vehiculo = models.ForeignKey(Vehiculo, on_delete=models.PROTECT, related_name="cargas_combustible")
+    fecha = models.DateField()
+    monto = models.DecimalField(max_digits=12, decimal_places=2)
+    # Estado binario: una carga esta paga o no lo esta (sin pagos parciales)
+    pagada = models.BooleanField(default=False)
+    observaciones = models.CharField(max_length=200, blank=True)
+    activa = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = "cargas_combustible"
+        verbose_name = "Carga de combustible"
+        verbose_name_plural = "Cargas de combustible"
+        # De la mas nueva a la mas vieja, como el resto de los historiales
+        ordering = ["-fecha", "-id"]
+
+    @property
+    def estado_pago(self):
+        return "Pagada" if self.pagada else "Impaga"
+
+    def __str__(self):
+        return f"Carga de {self.monto} en {self.estacion} ({self.fecha})"

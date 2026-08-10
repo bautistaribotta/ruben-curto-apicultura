@@ -1,0 +1,399 @@
+/* ============================================================
+   INFORMACION ESTACION DE SERVICIO
+   Estilos propios de la ficha. El slide-over, el modal de
+   eliminacion, la pastilla de estado, los botones de icono y el
+   contenedor de tabla se reutilizan de combustible.css. Los
+   encabezados de .tabla-cargas th salen de la regla unificada de
+   base.css.
+   ============================================================ */
+
+/* --- VOLVER --- */
+.boton-volver {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-decoration: none;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-md);
+  transition: all 0.2s;
+}
+
+.boton-volver:hover {
+  color: var(--brand-olive);
+  background-color: var(--surface-hover);
+}
+
+.boton-volver .material-symbols-outlined {
+  font-size: 20px;
+}
+
+/* --- CABECERA: IDENTIDAD + ACCIONES (patron de informacion_empleado) --- */
+.cabecera-estacion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+}
+
+.identidad-estacion {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.identidad-estacion .identidad-estacion__tile {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: oklch(25.391% 0.0349 170.220 / 0.1);
+  color: var(--brand-olive);
+  font-size: 30px;
+  line-height: 1;
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+.identidad-estacion__nombre {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-strong);
+  margin: 0;
+}
+
+.identidad-estacion__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.375rem;
+  flex-wrap: wrap;
+}
+
+.identidad-estacion__cuenta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.identidad-estacion__cuenta .material-symbols-outlined {
+  font-size: 18px;
+}
+
+/* --- BLOQUE DE CARGAS --- */
+.bloque-cargas__cabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
+}
+
+.bloque-cargas__titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bloque-cargas__titulo h3 {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-strong);
+  margin: 0;
+}
+
+.bloque-cargas__titulo .material-symbols-outlined {
+  color: var(--text-muted);
+  font-size: 22px;
+}
+
+/* --- TABLA DE CARGAS --- */
+.tabla-cargas {
+  width: 100%;
+  text-align: left;
+  border-collapse: collapse;
+}
+
+.tabla-cargas td {
+  padding: 1rem 1.5rem;
+  font-size: 0.875rem;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-body);
+}
+
+.tabla-cargas tbody tr {
+  transition: background-color var(--dur-normal) var(--ease-standard);
+}
+
+.tabla-cargas tbody tr:hover {
+  background-color: var(--surface-hover);
+}
+
+.tabla-cargas tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.carga-vehiculo {
+  display: flex;
+  flex-direction: column;
+}
+
+.carga-vehiculo__nombre {
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+.carga-vehiculo__patente {
+  font-size: 0.75rem;
+  color: var(--sand-400);
+  margin-top: 0.125rem;
+}
+
+.carga-monto {
+  font-weight: 600;
+  color: var(--text-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- PASTILLA DE ESTADO DE PAGO (clickeable) --- */
+.estado-pago {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+
+.estado-pago .punto {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: currentColor;
+}
+
+.estado-pago.pagada {
+  background-color: var(--success-50);
+  color: var(--success-600);
+}
+
+.estado-pago.impaga {
+  background-color: var(--color-rosa-claro);
+  color: var(--color-rojo-eliminacion);
+}
+
+.estado-pago:hover {
+  filter: brightness(0.96);
+  border-color: currentColor;
+}
+
+/* --- ESTADO VACIO --- */
+.cargas-vacio {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 3rem 1.5rem;
+}
+
+.cargas-vacio .material-symbols-outlined {
+  display: block;
+  margin: 0 auto 0.5rem;
+  font-size: 2.5rem;
+  color: var(--sand-400);
+}
+
+/* --- CAMPO CHECKBOX (carga paga) --- */
+.opcional {
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.campo-check {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.campo-check input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.campo-check__caja {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 0.375rem;
+  border: 1px solid var(--border-subtle);
+  background-color: var(--color-blanco);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.campo-check__caja .material-symbols-outlined {
+  font-size: 16px;
+  color: var(--color-blanco);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.campo-check input:checked + .campo-check__caja {
+  background-color: var(--brand-secondary);
+  border-color: var(--brand-secondary);
+}
+
+.campo-check input:checked + .campo-check__caja .material-symbols-outlined {
+  opacity: 1;
+}
+
+.campo-check input:focus-visible + .campo-check__caja {
+  box-shadow: var(--ring);
+}
+
+.campo-check__texto {
+  font-size: 0.875rem;
+  color: var(--text-body);
+}
+
+/* --- ACCIONES SOBRE LA ESTACION (cabecera) ---
+   Mismos botones que el perfil de empleado: primario "Nueva carga" + par
+   editar/eliminar. .boton-nuevo sale de base.css. */
+.acciones-estacion {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.boton-accion {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--dur-normal) var(--ease-standard);
+}
+
+.boton-accion .material-symbols-outlined {
+  font-size: 1.25rem;
+}
+
+.boton-editar {
+  background-color: var(--surface-card);
+  color: var(--text-body);
+  box-shadow: 0 1px 2px var(--color-sombra-1);
+}
+
+.boton-editar:hover {
+  background-color: var(--surface-hover);
+  border-color: var(--sand-400);
+}
+
+.boton-cancelar {
+  background-color: var(--surface-card);
+  color: var(--color-rojo-eliminacion);
+  border-color: var(--color-rojo-eliminacion-transparente-30);
+}
+
+.boton-cancelar:hover {
+  background-color: var(--danger-500);
+  border-color: var(--danger-500);
+  color: var(--text-on-inverse);
+}
+
+/* --- SLIDE-OVER DE EDICION DE ESTACION ---
+   Recicla el panel del listado. Las reglas por id de combustible.css apuntan a
+   #contenedor-slide-over, asi que aca se espejan para este segundo contenedor. */
+#contenedor-slide-over-estacion {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  visibility: hidden;
+  overflow: hidden;
+  display: flex;
+  justify-content: flex-end;
+  transition: visibility 0.3s;
+}
+
+#contenedor-slide-over-estacion.slide-over-abierto {
+  visibility: visible;
+  transition: none;
+}
+
+#slide-over-fondo-estacion {
+  position: fixed;
+  inset: 0;
+  background-color: var(--overlay-ink);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+#contenedor-slide-over-estacion.slide-over-abierto #slide-over-fondo-estacion {
+  opacity: 1;
+}
+
+.slide-over-panel-base {
+  position: relative;
+  width: 100%;
+  max-width: 28rem;
+  background-color: var(--color-blanco);
+  box-shadow: -12px 0 24px -8px var(--shadow-tint);
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+
+#contenedor-slide-over-estacion.slide-over-abierto .slide-over-panel-base {
+  transform: translateX(0);
+}
+
+/* --- RESPONSIVE --- */
+@media (max-width: 1024px) {
+  .acciones-estacion {
+    width: 100%;
+  }
+  .acciones-estacion .boton-nuevo,
+  .acciones-estacion .boton-accion {
+    flex: 1;
+    justify-content: center;
+  }
+  .contenedor-tabla {
+    overflow-x: auto;
+  }
+}
+
+@media (max-width: 600px) {
+  #slide-over-panel-estacion {
+    width: 100%;
+    border-radius: 0;
+  }
+}

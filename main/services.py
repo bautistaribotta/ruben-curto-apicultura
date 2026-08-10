@@ -16,7 +16,7 @@ from .models import (Producto, Cliente, Operacion, DetalleOperacion, Pago, Cotiz
                      Vehiculo, Viaje, DetalleViaje, Gasto, ViajeCereal, DetalleViajeCereal, GastoViajeCereal,
                      ViajeReparto, GastoViajeReparto, DestinoViajeReparto, Casa, Contrato, PagoAlquiler,
                      GastoCasa, RegistroKilometraje, Seguro, VTV, Servis, ObservacionVehiculo,
-                     EstacionDeServicio,
+                     EstacionDeServicio, CargaCombustible,
                      contratos_del_periodo, periodo_actual)
 
 
@@ -193,6 +193,81 @@ def eliminar_estacion(id_estacion):
     estacion.activa = False
     estacion.save()
     return estacion
+
+
+# --- CARGAS DE COMBUSTIBLE ---------------------------------------------------
+
+def _validar_carga(id_vehiculo, fecha, monto, observaciones):
+    """Limpia y valida los datos de una carga. Devuelve (vehiculo, fecha, monto, obs).
+
+    El vehiculo es obligatorio (cada carga es de una unidad de la flota), igual que
+    la fecha y el monto. Las observaciones son un dato opcional de agenda.
+    """
+    vehiculo = get_object_or_404(Vehiculo, id=id_vehiculo, activo=True)
+    dia = _fecha_obligatoria(fecha, "La fecha de la carga")
+    total = _decimal_opcional(monto, "El monto de la carga", MAX_COSTO)
+    if not total:
+        raise ValueError("El monto de la carga es obligatorio y tiene que ser mayor a cero.")
+    obs = _texto_opcional(observaciones, 200, "Las observaciones") or ""
+    return vehiculo, dia, total, obs
+
+
+def crear_carga(id_estacion, id_vehiculo=None, fecha=None, monto=None, pagada=False, observaciones=None):
+    """Registra una carga de combustible de una estacion activa."""
+    estacion = get_object_or_404(EstacionDeServicio, id=id_estacion, activa=True)
+    vehiculo, dia, total, obs = _validar_carga(id_vehiculo, fecha, monto, observaciones)
+    return CargaCombustible.objects.create(
+        estacion=estacion, vehiculo=vehiculo, fecha=dia, monto=total,
+        pagada=bool(pagada), observaciones=obs,
+    )
+
+
+def editar_carga(id_carga, id_vehiculo=None, fecha=None, monto=None, pagada=False, observaciones=None):
+    """Corrige una carga de combustible ya cargada."""
+    carga = get_object_or_404(CargaCombustible, id=id_carga, activa=True)
+    vehiculo, dia, total, obs = _validar_carga(id_vehiculo, fecha, monto, observaciones)
+    carga.vehiculo, carga.fecha, carga.monto = vehiculo, dia, total
+    carga.pagada, carga.observaciones = bool(pagada), obs
+    carga.save()
+    return carga
+
+
+def alternar_pago_carga(id_carga):
+    """Invierte el estado de pago de una carga (paga <-> impaga)."""
+    carga = get_object_or_404(CargaCombustible, id=id_carga, activa=True)
+    carga.pagada = not carga.pagada
+    carga.save(update_fields=["pagada"])
+    return carga
+
+
+def eliminar_carga(id_carga):
+    """Baja logica de una carga: la saca del saldo sin perder el historial."""
+    carga = get_object_or_404(CargaCombustible, id=id_carga)
+    carga.activa = False
+    carga.save(update_fields=["activa"])
+    return carga
+
+
+def obtener_cargas(id_estacion):
+    """Historial de cargas activas de una estacion, de la mas nueva a la mas vieja."""
+    estacion = get_object_or_404(EstacionDeServicio, id=id_estacion)
+    return estacion.cargas.filter(activa=True).select_related("vehiculo")
+
+
+def obtener_datos_carga(id_carga):
+    """Datos de una carga para precargar el panel de edicion, o None si no existe."""
+    try:
+        carga = CargaCombustible.objects.get(id=id_carga, activa=True)
+    except CargaCombustible.DoesNotExist:
+        return None
+    return {
+        "id": carga.id,
+        "vehiculo": carga.vehiculo_id,
+        "fecha": carga.fecha.strftime("%Y-%m-%d"),
+        "monto": str(carga.monto),
+        "pagada": carga.pagada,
+        "observaciones": carga.observaciones,
+    }
 
 
 def nuevo_cliente(nombre, apellido=None, telefono=None, localidad=None, direccion=None, factura_produccion=False, cuit=None):
