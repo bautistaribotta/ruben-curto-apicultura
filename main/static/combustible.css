@@ -76,8 +76,8 @@
   border-collapse: collapse;
 }
 
-.texto-centrado {
-  text-align: center;
+.texto-derecha {
+  text-align: right;
 }
 
 .tabla-estaciones td {
@@ -108,7 +108,7 @@
   gap: 0.875rem;
 }
 
-.estacion-avatar {
+.estacion-celda .estacion-avatar {
   flex: none;
   width: 40px;
   height: 40px;
@@ -116,9 +116,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--success-50);
-  color: var(--success-600);
+  line-height: 1;
+  background-color: oklch(25.391% 0.0349 170.220 / 0.1);
+  color: var(--brand-olive);
   font-size: 22px;
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
 
 .estacion-nombre {
@@ -151,7 +153,7 @@
 .acciones-tabla {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   gap: 0.5rem;
 }
 
