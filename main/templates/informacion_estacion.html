@@ -130,11 +130,18 @@
             <td>{{ carga.fecha|date:"d/m/Y" }}</td>
             <td>
               <div class="carga-vehiculo">
-                <span class="carga-vehiculo__nombre">{{ carga.vehiculo.nombre }}</span>
-                <span class="carga-vehiculo__patente">{{ carga.vehiculo.patente }}</span>
+                <span class="carga-vehiculo__tile">
+                  <span class="material-symbols-outlined">local_shipping</span>
+                </span>
+                <div class="carga-vehiculo__info">
+                  <span class="carga-vehiculo__nombre">{{ carga.vehiculo.nombre }}</span>
+                  <span class="carga-vehiculo__patente">{{ carga.vehiculo.patente }}</span>
+                </div>
               </div>
             </td>
-            <td>{{ carga.empleado.nombre }} {{ carga.empleado.apellido }}</td>
+            <td>
+              <span class="carga-empleado__name">{{ carga.empleado.nombre }} {{ carga.empleado.apellido }}</span>
+            </td>
             <td class="texto-derecha carga-monto">$ {{ carga.monto|floatformat:"-2g" }}</td>
             <td class="texto-derecha carga-litros">
               {% if carga.litros is not None %}{{ carga.litros|floatformat:"-2g" }} L{% else %}—{% endif %}

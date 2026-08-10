@@ -234,20 +234,60 @@
   border-bottom: none;
 }
 
+/* Celda de vehiculo: mismo patron que las tablas de viajes (tile con icono +
+   nombre + patente en pastilla). Replicado aca para no depender de esa hoja. */
 .carga-vehiculo {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.carga-vehiculo__tile {
+  width: 38px;
+  height: 38px;
+  flex: none;
+  border-radius: var(--radius-md);
+  background-color: var(--brand-secondary);
+  color: var(--sand-100);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.carga-vehiculo__tile .material-symbols-outlined {
+  font-size: 1.25rem;
+}
+
+.carga-vehiculo__info {
   display: flex;
   flex-direction: column;
 }
 
 .carga-vehiculo__nombre {
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   color: var(--text-strong);
 }
 
 .carga-vehiculo__patente {
-  font-size: 0.75rem;
-  color: var(--sand-400);
-  margin-top: 0.125rem;
+  display: inline-block;
+  width: fit-content;
+  margin-top: 3px;
+  padding: 1px 7px;
+  border-radius: var(--radius-sm);
+  background-color: var(--surface-sunken);
+  border: 1px solid var(--border-subtle);
+  font-size: 0.68rem;
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.06em;
+  color: var(--text-subtle);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Celda de empleado: igual a las tablas de viajes pero sin el circulo de
+   iniciales, solo el nombre. */
+.carga-empleado__name {
+  font-weight: var(--weight-semibold);
+  color: var(--text-strong);
 }
 
 .carga-monto {
