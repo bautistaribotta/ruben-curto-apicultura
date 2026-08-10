@@ -2165,12 +2165,12 @@ def marcar_pago_alquiler_ajax(request, id_casa, periodo):
     })
 
 
-# La seccion de combustible esta en construccion: la ven solo los superusuarios
-# hasta que este completa, para que el resto del personal no cargue datos todavia.
-superuser_required = user_passes_test(lambda u: u.is_superuser, login_url="inicio")
+# La seccion de combustible es solo para el personal: la ve cualquier miembro del
+# staff, sin necesidad de ser superusuario.
+staff_required = user_passes_test(lambda u: u.is_staff, login_url="inicio")
 
 
-@superuser_required
+@staff_required
 def combustible(request):
     if request.method == "POST":
         id_estacion = request.POST.get("id_estacion")
@@ -2241,7 +2241,7 @@ def obtener_estacion_json(request, id_estacion):
     return JsonResponse({"Error": "Estacion no encontrada"}, status=404)
 
 
-@superuser_required
+@staff_required
 def informacion_estacion(request, id_estacion):
     """Perfil de una estacion: todas sus cargas de combustible, pagas e impagas.
 
@@ -2309,7 +2309,7 @@ def informacion_estacion(request, id_estacion):
     return render(request, "informacion_estacion.html", contexto)
 
 
-@superuser_required
+@staff_required
 def obtener_carga_json(request, id_carga):
     datos = obtener_datos_carga(id_carga)
 
