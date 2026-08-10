@@ -51,7 +51,6 @@ const prepararPanelEditarCarga = (id) => {
         inputMonto.value = carga.monto;
         inputLitros.value = carga.litros || '';
       }
-      document.getElementById('observaciones').value = carga.observaciones || '';
       document.getElementById('pagada').checked = carga.pagada;
 
       if (typeof abrirSlideOver === 'function') abrirSlideOver();
@@ -109,21 +108,31 @@ document.addEventListener('click', (e) => {
 
 /**
  * -----------------------------------------------------------------------------
- * MODAL DE DETALLE DE CARGA
- * Al hacer clic en una fila se abre un modal centrado con la fecha y las
- * observaciones. Los datos viajan en los data- de la fila.
+ * CLIC EN UNA FILA DE CARGA
+ * Si la carga nacio en un viaje (tiene data-viaje-url) la fila lleva a ese viaje.
+ * Si es una carga manual, abre un modal centrado con la fecha y los litros. Los
+ * datos viajan en los data- de la fila.
  * -----------------------------------------------------------------------------
  */
+const activarFila = (fila) => {
+  const urlViaje = fila.dataset.viajeUrl;
+  if (urlViaje) {
+    window.location.href = urlViaje;
+    return;
+  }
+  abrirModalCarga(fila);
+};
+
 const abrirModalCarga = (fila) => {
-  const observacion = fila.dataset.observacion?.trim();
-  const dd = document.getElementById('modal-carga-observacion');
+  const litros = fila.dataset.litros?.trim();
+  const dd = document.getElementById('modal-carga-litros');
 
   document.getElementById('modal-carga-fecha').innerText = fila.dataset.fecha || '—';
-  if (observacion) {
-    dd.innerText = observacion;
+  if (litros) {
+    dd.innerText = litros;
     dd.classList.remove('modal-carga__vacio');
   } else {
-    dd.innerText = 'Sin observaciones';
+    dd.innerText = 'Sin litros cargados';
     dd.classList.add('modal-carga__vacio');
   }
 
@@ -136,18 +145,17 @@ const cerrarModalCarga = () => {
   document.body.style.overflow = 'auto';
 };
 
-// Clic en la fila: abre el detalle, salvo que el clic haya sido sobre un control
-// propio (casilla de pago, botones de editar/eliminar). Asi la fila no roba esos
-// clics.
+// Clic en la fila: la activa, salvo que el clic haya sido sobre un control propio
+// (casilla de pago, botones de editar/eliminar). Asi la fila no roba esos clics.
 document.addEventListener('click', (e) => {
   const fila = e.target.closest('.carga-fila');
   if (fila && !e.target.closest('input, button, a, label')) {
-    abrirModalCarga(fila);
+    activarFila(fila);
   }
 });
 
-// Teclado: Enter o barra espaciadora sobre la fila enfocada abren el detalle;
-// Escape cierra el modal.
+// Teclado: Enter o barra espaciadora sobre la fila enfocada la activan; Escape
+// cierra el modal.
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     cerrarModalCarga();
@@ -156,7 +164,7 @@ document.addEventListener('keydown', (e) => {
   const fila = e.target.closest?.('.carga-fila');
   if (fila && (e.key === 'Enter' || e.key === ' ')) {
     e.preventDefault();
-    abrirModalCarga(fila);
+    activarFila(fila);
   }
 });
 

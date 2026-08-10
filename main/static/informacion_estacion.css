@@ -273,6 +273,44 @@
   color: var(--text-strong);
 }
 
+/* Celda de fecha: la fecha y, debajo, el chip que diferencia de que viaje viene
+   la carga (las manuales no llevan chip). */
+.carga-fecha {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  align-items: flex-start;
+}
+
+.carga-origen {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 1px 8px 1px 6px;
+  border-radius: var(--radius-pill);
+  background-color: oklch(25.391% 0.0349 170.220 / 0.1);
+  color: var(--brand-olive);
+  font-size: 0.7rem;
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+}
+
+.carga-origen .material-symbols-outlined {
+  font-size: 0.95rem;
+}
+
+/* Icono de "ir al viaje" en la columna de acciones de una carga de viaje: la
+   fila entera navega, el icono es solo la pista visual. */
+.carga-ir-viaje {
+  color: var(--text-subtle);
+  font-size: 1.15rem;
+  vertical-align: middle;
+}
+
+.carga-fila--viaje:hover .carga-ir-viaje {
+  color: var(--brand-olive);
+}
+
 .carga-monto {
   font-weight: 600;
   color: var(--text-strong);

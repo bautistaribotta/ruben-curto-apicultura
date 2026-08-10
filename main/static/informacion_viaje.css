@@ -694,6 +694,15 @@ html {
   transform: scale(1);
 }
 
+/* El modal de gasto puede crecer con los campos de combustible. Le pongo un tope
+   de alto y scroll propio para que nunca desborde la pantalla, y ajusto el padding
+   superior (el resto lo comparte con el modal de eliminacion, que no debe cambiar). */
+#panel-gasto {
+  max-height: 88vh;
+  overflow-y: auto;
+  padding-top: 2rem;
+}
+
 .boton-cerrar {
   position: absolute;
   top: 0.75rem;
@@ -754,30 +763,30 @@ html {
 #panel-gasto p {
   font-size: 0.875rem;
   color: var(--slate-500);
-  margin-bottom: 1.5rem;
-  line-height: 1.5;
+  margin-bottom: 1rem;
+  line-height: 1.4;
 }
 
 #icono-gasto {
   color: var(--brand-olive);
   align-self: center;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
   display: flex;
   justify-content: center;
 }
 
 #icono-gasto span {
-  font-size: 4rem;
+  font-size: 2.75rem;
   font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 48;
 }
 
 #panel-gasto .grupo-input {
   text-align: left;
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
 }
 
 #panel-gasto .grupo-input:last-of-type {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 #panel-gasto .vd-hint {
@@ -799,6 +808,82 @@ html {
 #panel-gasto .grupo-input input:focus {
   border-color: var(--brand);
   background-color: var(--surface-card);
+  box-shadow: var(--ring);
+}
+
+/* Fila de "ya esta paga" dentro del bloque de combustible del modal de gasto:
+   texto a la izquierda y un switch a la derecha. Arranca desmarcado (impaga). */
+#panel-gasto .gasto-pagada {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  text-align: left;
+  margin-bottom: 1rem;
+}
+
+#panel-gasto .gasto-pagada__texto {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+#panel-gasto .gasto-pagada__titulo {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--text-strong);
+}
+
+#panel-gasto .gasto-pagada__sub {
+  font-size: var(--text-xs);
+  color: var(--text-subtle);
+}
+
+/* Switch: mismo lenguaje que el resto de los toggles del sistema. */
+.gasto-switch {
+  position: relative;
+  flex: none;
+  width: 40px;
+  height: 22px;
+  cursor: pointer;
+}
+
+.gasto-switch input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.gasto-switch__slider {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background-color: var(--sand-400);
+  transition: background-color var(--dur-normal) var(--ease-standard);
+}
+
+.gasto-switch__slider::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background-color: var(--color-blanco);
+  transition: transform var(--dur-normal) var(--ease-standard);
+}
+
+.gasto-switch input:checked + .gasto-switch__slider {
+  background-color: var(--brand-secondary);
+}
+
+.gasto-switch input:checked + .gasto-switch__slider::before {
+  transform: translateX(18px);
+}
+
+.gasto-switch input:focus-visible + .gasto-switch__slider {
   box-shadow: var(--ring);
 }
 

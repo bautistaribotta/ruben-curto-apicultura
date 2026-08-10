@@ -22,10 +22,17 @@
 {% block area-trabajo %}
 <section id="area-trabajo" class="vd-screen">
 
+  {% if volver_url %}
+  <a href="{{ volver_url }}" class="boton-volver">
+    <span class="material-symbols-outlined">arrow_back</span>
+    Volver a la estación
+  </a>
+  {% else %}
   <a href="{% url 'mercado_libre' %}" class="boton-volver">
     <span class="material-symbols-outlined">arrow_back</span>
     Volver a Repartos
   </a>
+  {% endif %}
 
   <!-- CABECERA -->
   <div class="op-head">
@@ -220,6 +227,8 @@
         </div>
         <span class="vd-hint">Número entero. Los puntos se agregan solos.</span>
       </div>
+
+      {% include 'campos_gasto_combustible.html' %}
       </div>
 
       <div class="acciones-modal" id="gasto-acciones">

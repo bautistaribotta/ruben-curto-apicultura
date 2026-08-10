@@ -22,6 +22,11 @@
     const titulo = document.getElementById('gasto-titulo');
     const bajada = document.getElementById('gasto-bajada');
     const botonGuardar = document.getElementById('gasto-guardar');
+    // Campos que solo se piden cuando el gasto es de combustible.
+    const bloqueCombustible = document.getElementById('gasto-combustible');
+    const campoEstacion = document.getElementById('gasto-estacion');
+    const campoLitros = document.getElementById('gasto-litros');
+    const campoPagada = document.getElementById('gasto-pagada');
     const zonaBorrar = document.getElementById('gasto-zona-borrar');
     const botonEliminar = document.getElementById('gasto-borrar');
     const etiquetaEliminar = document.getElementById('gasto-borrar-texto');
@@ -44,6 +49,13 @@
         campoTipo.focus();
     }
 
+    // El bloque de combustible (estacion, litros, pagada) solo se muestra cuando el
+    // tipo elegido es Combustible. Al ocultarlo no se limpia: el servidor ignora esos
+    // datos si el gasto no es de combustible.
+    function aplicarCombustible() {
+        if (bloqueCombustible) bloqueCombustible.hidden = campoTipo.value !== 'Combustible';
+    }
+
     function abrirModalGasto() {
         formulario.reset();
         campoAccion.value = formulario.dataset.accionNuevo;
@@ -52,6 +64,7 @@
         bajada.textContent = bajadaAlta;
         botonGuardar.textContent = 'Guardar';
         aplicarModo('nuevo');
+        aplicarCombustible();
         mostrar();
     }
 
@@ -64,7 +77,13 @@
         botonGuardar.textContent = 'Guardar cambios';
         campoTipo.value = datos.tipo;
         ponerValorMiles(campoMonto, datos.monto);
+        // Precargo los datos de la carga si el gasto es de combustible. Los litros
+        // vienen con punto decimal desde el modelo; los muestro con coma como se cargan.
+        if (campoEstacion) campoEstacion.value = datos.estacion || '';
+        if (campoLitros) campoLitros.value = datos.litros ? datos.litros.replace('.', ',') : '';
+        if (campoPagada) campoPagada.checked = datos.pagada === '1';
         aplicarModo('editar');
+        aplicarCombustible();
         mostrar();
     }
 
@@ -81,6 +100,9 @@
     // funciones tienen que quedar colgadas del window.
     window.abrirModalGasto = abrirModalGasto;
     window.cerrarModalGasto = cerrarModalGasto;
+
+    // Al cambiar el tipo, muestro u oculto el bloque de combustible.
+    campoTipo.addEventListener('change', aplicarCombustible);
 
     // Las filas comparten marcado y se rearman en cada carga, asi que van por
     // delegacion. El data-gasto deja afuera las filas del reparto que parecen

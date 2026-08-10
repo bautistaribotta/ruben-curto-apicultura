@@ -117,17 +117,28 @@
         </thead>
         <tbody>
           {% for carga in cargas %}
-          <tr class="carga-fila" tabindex="0" role="button"
+          <tr class="carga-fila{% if carga.de_viaje %} carga-fila--viaje{% endif %}" tabindex="0" role="button"
               data-fecha="{{ carga.fecha|date:'d/m/Y' }}"
-              data-observacion="{{ carga.observaciones }}"
-              aria-label="Ver detalle de la carga del {{ carga.fecha|date:'d/m/Y' }}">
+              data-litros="{% if carga.litros is not None %}{{ carga.litros|floatformat:'-2g' }} L{% endif %}"
+              data-viaje-url="{{ carga.viaje_url }}"
+              aria-label="{% if carga.de_viaje %}Ir al {{ carga.viaje_etiqueta }} donde se hizo la carga del {{ carga.fecha|date:'d/m/Y' }}{% else %}Ver detalle de la carga del {{ carga.fecha|date:'d/m/Y' }}{% endif %}">
             <td class="pago-celda">
               <!-- Casilla de pago reutilizada de los viajes: alterna paga <-> impaga -->
               <input type="checkbox" class="pago-check toggle-pago"
                      data-id="{{ carga.id }}" {% if carga.pagada %}checked{% endif %}
                      aria-label="Pago de la carga del {{ carga.fecha|date:'d/m/Y' }}">
             </td>
-            <td>{{ carga.fecha|date:"d/m/Y" }}</td>
+            <td>
+              <div class="carga-fecha">
+                <span>{{ carga.fecha|date:"d/m/Y" }}</span>
+                {% if carga.de_viaje %}
+                <span class="carga-origen">
+                  <span class="material-symbols-outlined">{% if carga.viaje_id %}hive{% elif carga.viaje_reparto_id %}local_shipping{% else %}agriculture{% endif %}</span>
+                  {{ carga.viaje_etiqueta }}
+                </span>
+                {% endif %}
+              </div>
+            </td>
             <td>
               <div class="carga-vehiculo">
                 <div class="carga-vehiculo__info">
@@ -144,16 +155,21 @@
               {% if carga.litros is not None %}{{ carga.litros|floatformat:"-2g" }} L{% else %}—{% endif %}
             </td>
             <td class="texto-derecha">
-              <div class="acciones-tabla">
-                <button class="boton-icono editar" title="Editar" data-id="{{ carga.id }}">
-                  <span class="material-symbols-outlined">edit</span>
-                </button>
-                <button class="boton-icono eliminar" title="Eliminar"
-                        data-id="{{ carga.id }}"
-                        data-descripcion="la carga del {{ carga.fecha|date:'d/m/Y' }} de {{ carga.vehiculo.nombre }}">
-                  <span class="material-symbols-outlined">delete</span>
-                </button>
-              </div>
+              {% if carga.de_viaje %}
+                <!-- Las cargas de un viaje se editan y borran desde el viaje, no aca. -->
+                <span class="carga-ir-viaje material-symbols-outlined" title="Ir al viaje">open_in_new</span>
+              {% else %}
+                <div class="acciones-tabla">
+                  <button class="boton-icono editar" title="Editar" data-id="{{ carga.id }}">
+                    <span class="material-symbols-outlined">edit</span>
+                  </button>
+                  <button class="boton-icono eliminar" title="Eliminar"
+                          data-id="{{ carga.id }}"
+                          data-descripcion="la carga del {{ carga.fecha|date:'d/m/Y' }} de {{ carga.vehiculo.nombre }}">
+                    <span class="material-symbols-outlined">delete</span>
+                  </button>
+                </div>
+              {% endif %}
             </td>
           </tr>
           {% empty %}
@@ -264,12 +280,6 @@
                  autocomplete="off" placeholder="Ej: 250,50">
         </div>
 
-        <div class="campo-formulario">
-          <label for="observaciones">Observaciones <span class="opcional">(opcional)</span></label>
-          <input type="text" id="observaciones" name="observaciones" class="input-estandar"
-                 placeholder="Ej: carga de gasoil" maxlength="200">
-        </div>
-
         <div class="pago-fila">
           <div class="pago-fila__texto">
             <span class="pago-fila__titulo">La carga ya esta paga</span>
@@ -369,8 +379,9 @@
   </div>
 </form>
 
-<!-- Modal de detalle de carga: se abre al hacer clic en una fila de la tabla.
-     Muestra la fecha y las observaciones; el JS lo puebla desde los data- de la fila. -->
+<!-- Modal de detalle de una carga manual: se abre al hacer clic en su fila.
+     Muestra la fecha y los litros; el JS lo puebla desde los data- de la fila.
+     Las cargas que vienen de un viaje no abren este modal: llevan al viaje. -->
 <div id="contenedor-modal-carga">
   <div id="modal-carga-fondo" onclick="cerrarModalCarga()"> </div>
 
@@ -395,10 +406,10 @@
         </div>
       </div>
       <div class="modal-carga__item">
-        <span class="material-symbols-outlined">notes</span>
+        <span class="material-symbols-outlined">local_gas_station</span>
         <div class="modal-carga__campo">
-          <dt>Observaciones</dt>
-          <dd id="modal-carga-observacion">—</dd>
+          <dt>Litros</dt>
+          <dd id="modal-carga-litros">—</dd>
         </div>
       </div>
     </dl>

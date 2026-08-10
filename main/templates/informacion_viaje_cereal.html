@@ -24,8 +24,13 @@
 {% block area-trabajo %}
 <section id="area-trabajo" class="vd-screen">
 
-  <!-- Volver: el destino depende del origen de navegacion (?origen=) -->
-  {% if request.GET.origen == 'cliente' and viaje_cereal.cliente %}
+  <!-- Volver: el destino depende del origen de navegacion (?origen= / ?volver_estacion=) -->
+  {% if volver_url %}
+  <a href="{{ volver_url }}" class="boton-volver">
+    <span class="material-symbols-outlined">arrow_back</span>
+    Volver a la estación
+  </a>
+  {% elif request.GET.origen == 'cliente' and viaje_cereal.cliente %}
   <a href="{% url 'informacion_clientes' viaje_cereal.cliente.id %}" class="boton-volver">
     <span class="material-symbols-outlined">arrow_back</span>
     Volver al perfil de {{ viaje_cereal.cliente.nombre }} {{ viaje_cereal.cliente.apellido|default:"" }}
@@ -289,6 +294,8 @@
         </div>
         <span class="vd-hint">Número entero. Los puntos se agregan solos.</span>
       </div>
+
+      {% include 'campos_gasto_combustible.html' %}
       </div>
 
       <div class="acciones-modal" id="gasto-acciones">

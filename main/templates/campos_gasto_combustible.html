@@ -1,0 +1,37 @@
+{% comment %}
+  Campos extra del modal de gasto que solo aparecen cuando el tipo es Combustible.
+  gastos_viaje.js muestra u oculta este bloque segun el tipo elegido. El empleado,
+  el vehiculo y la fecha no se piden: salen del viaje. La estacion es obligatoria,
+  pero se valida en el servidor (el campo va oculto para el resto de los gastos, y
+  un required escondido no se puede enfocar). Necesita la variable de contexto
+  estaciones.
+{% endcomment %}
+<div id="gasto-combustible" hidden>
+  <div class="grupo-input">
+    <label for="gasto-estacion">Estación de servicio</label>
+    <select id="gasto-estacion" name="estacion_gasto" class="vd-select">
+      <option value="" disabled selected>Seleccioná una estación</option>
+      {% for estacion in estaciones %}
+        <option value="{{ estacion.id }}">{{ estacion.nombre }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="grupo-input">
+    <label for="gasto-litros">Litros (opcional)</label>
+    <input type="text" id="gasto-litros" name="litros_gasto"
+           class="input-miles-decimal" inputmode="decimal"
+           autocomplete="off" placeholder="Ej: 250,50">
+  </div>
+
+  <div class="gasto-pagada">
+    <div class="gasto-pagada__texto">
+      <span class="gasto-pagada__titulo">La carga ya está paga</span>
+      <span class="gasto-pagada__sub">Activalo si este combustible ya se pagó.</span>
+    </div>
+    <label class="gasto-switch">
+      <input type="checkbox" id="gasto-pagada" name="pagada_gasto">
+      <span class="gasto-switch__slider"></span>
+    </label>
+  </div>
+</div>
