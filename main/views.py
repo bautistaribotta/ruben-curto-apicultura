@@ -59,6 +59,7 @@ from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo
                        obtener_resumen_alquileres, marcar_pago_alquiler, resolver_periodo,
                        mes_desplazado, FILTROS_ALQUILERES,
                        crear_estacion, obtener_datos_estacion, editar_estacion, eliminar_estacion,
+                       obtener_estaciones_activas,
                        crear_carga, editar_carga, eliminar_carga, alternar_pago_carga,
                        obtener_cargas, obtener_datos_carga)
 
@@ -90,6 +91,19 @@ def _url_con_gasto(url, id_gasto):
         return url
     separador = "&" if "?" in url else "?"
     return f"{url}{separador}gasto={id_gasto}"
+
+
+def _volver_estacion_url(request):
+    """URL de la ficha de estacion a la que debe volver el boton del viaje.
+
+    Cuando se entra a un viaje desde una carga de combustible, la fila manda
+    ?volver_estacion=<id>. Solo acepto un id numerico y armo la URL yo, asi el
+    boton nunca redirige a un destino arbitrario. Vacia si no vino el parametro.
+    """
+    id_estacion = request.GET.get("volver_estacion", "")
+    if id_estacion.isdigit():
+        return reverse("informacion_estacion", kwargs={"id_estacion": id_estacion})
+    return ""
 
 
 def _rango_fechas(request):
@@ -1544,14 +1558,20 @@ def informacion_viaje(request, id_viaje):
             tipo_gasto = request.POST.get("tipo_gasto")
             monto_gasto = request.POST.get("monto_gasto")
             id_gasto = request.POST.get("id_gasto")
+            # Datos extra que solo llegan cuando el gasto es de combustible.
+            id_estacion = request.POST.get("estacion_gasto")
+            litros_gasto = request.POST.get("litros_gasto")
+            pagada_gasto = request.POST.get("pagada_gasto") == "on"
             gasto_marcado = ""
 
             try:
                 if accion == "nuevo_gasto":
-                    gasto_marcado = crear_gasto(id_viaje, tipo_gasto, monto_gasto).id
+                    gasto_marcado = crear_gasto(id_viaje, tipo_gasto, monto_gasto,
+                                                id_estacion, litros_gasto, pagada_gasto).id
                     messages.success(request, "Gasto registrado exitosamente.")
                 elif accion == "editar_gasto":
-                    gasto_marcado = editar_gasto_viaje(Gasto, id_gasto, tipo_gasto, monto_gasto).id
+                    gasto_marcado = editar_gasto_viaje(Gasto, id_gasto, tipo_gasto, monto_gasto,
+                                                       id_estacion, litros_gasto, pagada_gasto).id
                     messages.success(request, "Gasto actualizado correctamente.")
                 else:
                     eliminar_gasto_viaje(Gasto, id_gasto)
@@ -1592,6 +1612,8 @@ def informacion_viaje(request, id_viaje):
         'vehiculos': incluir_asignado(obtener_vehiculos_activos(), viaje.vehiculo),
         'operaciones': operaciones_viaje,
         'clientes_items': clientes_items,
+        'estaciones': obtener_estaciones_activas(),
+        'volver_url': _volver_estacion_url(request),
     }
     return render(request, "informacion_viaje.html", contexto)
 
@@ -2264,11 +2286,11 @@ def informacion_estacion(request, id_estacion):
                 return redirect("combustible")
             elif accion == "nueva_carga":
                 crear_carga(id_estacion, p.get("empleado"), p.get("vehiculo"), p.get("fecha"), p.get("monto"),
-                            p.get("litros"), p.get("pagada") == "on", p.get("observaciones"))
+                            p.get("litros"), p.get("pagada") == "on")
                 messages.success(request, "Carga agregada correctamente.")
             elif accion == "editar_carga":
                 editar_carga(p.get("id_registro"), p.get("empleado"), p.get("vehiculo"), p.get("fecha"), p.get("monto"),
-                             p.get("litros"), p.get("pagada") == "on", p.get("observaciones"))
+                             p.get("litros"), p.get("pagada") == "on")
                 messages.success(request, "Carga actualizada correctamente.")
             elif accion == "eliminar_carga":
                 eliminar_carga(p.get("id_registro"))
@@ -2472,15 +2494,21 @@ def informacion_viaje_reparto(request, id_viaje_reparto):
             tipo_gasto = request.POST.get("tipo_gasto")
             monto_gasto = request.POST.get("monto_gasto")
             id_gasto = request.POST.get("id_gasto")
+            # Datos extra que solo llegan cuando el gasto es de combustible.
+            id_estacion = request.POST.get("estacion_gasto")
+            litros_gasto = request.POST.get("litros_gasto")
+            pagada_gasto = request.POST.get("pagada_gasto") == "on"
             gasto_marcado = ""
 
             try:
                 if accion == "nuevo_gasto_reparto":
-                    gasto_marcado = crear_gasto_viaje_reparto(id_viaje_reparto, tipo_gasto, monto_gasto).id
+                    gasto_marcado = crear_gasto_viaje_reparto(id_viaje_reparto, tipo_gasto, monto_gasto,
+                                                              id_estacion, litros_gasto, pagada_gasto).id
                     messages.success(request, "Gasto registrado exitosamente.")
                 elif accion == "editar_gasto_reparto":
                     gasto_marcado = editar_gasto_viaje(GastoViajeReparto, id_gasto,
-                                                       tipo_gasto, monto_gasto).id
+                                                       tipo_gasto, monto_gasto,
+                                                       id_estacion, litros_gasto, pagada_gasto).id
                     messages.success(request, "Gasto actualizado correctamente.")
                 else:
                     eliminar_gasto_viaje(GastoViajeReparto, id_gasto)
@@ -2500,6 +2528,8 @@ def informacion_viaje_reparto(request, id_viaje_reparto):
         # Incluyo el destino del viaje aunque este dado de baja, para que al editar
         # siga preseleccionado en vez de obligar a elegir otra localidad.
         "destinos": incluir_asignado(obtener_destinos_reparto(), viaje_reparto.destino),
+        "estaciones": obtener_estaciones_activas(),
+        "volver_url": _volver_estacion_url(request),
     }
     return render(request, "informacion_viaje_reparto.html", contexto)
 
@@ -2756,15 +2786,21 @@ def informacion_viaje_cereal(request, id_viaje_cereal):
             tipo_gasto = request.POST.get("tipo_gasto")
             monto_gasto = request.POST.get("monto_gasto")
             id_gasto = request.POST.get("id_gasto")
+            # Datos extra que solo llegan cuando el gasto es de combustible.
+            id_estacion = request.POST.get("estacion_gasto")
+            litros_gasto = request.POST.get("litros_gasto")
+            pagada_gasto = request.POST.get("pagada_gasto") == "on"
             gasto_marcado = ""
 
             try:
                 if accion == "nuevo_gasto_cereal":
-                    gasto_marcado = crear_gasto_viaje_cereal(id_viaje_cereal, tipo_gasto, monto_gasto).id
+                    gasto_marcado = crear_gasto_viaje_cereal(id_viaje_cereal, tipo_gasto, monto_gasto,
+                                                             id_estacion, litros_gasto, pagada_gasto).id
                     messages.success(request, "Gasto registrado exitosamente.")
                 elif accion == "editar_gasto_cereal":
                     gasto_marcado = editar_gasto_viaje(GastoViajeCereal, id_gasto,
-                                                       tipo_gasto, monto_gasto).id
+                                                       tipo_gasto, monto_gasto,
+                                                       id_estacion, litros_gasto, pagada_gasto).id
                     messages.success(request, "Gasto actualizado correctamente.")
                 else:
                     eliminar_gasto_viaje(GastoViajeCereal, id_gasto)
@@ -2782,6 +2818,8 @@ def informacion_viaje_cereal(request, id_viaje_cereal):
         "empleados": incluir_asignado(obtener_empleados_activos(), viaje_cereal.empleado),
         "vehiculos": incluir_asignado(obtener_vehiculos_activos(), viaje_cereal.vehiculo),
         "cereales": ViajeCereal.cereales,
+        "estaciones": obtener_estaciones_activas(),
+        "volver_url": _volver_estacion_url(request),
     }
     return render(request, "informacion_viaje_cereal.html", contexto)
 
