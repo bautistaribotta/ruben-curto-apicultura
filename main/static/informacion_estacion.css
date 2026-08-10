@@ -203,19 +203,6 @@
 }
 
 /* --- ESTADO VACIO --- */
-.cargas-vacio {
-  text-align: center;
-  color: var(--text-muted);
-  padding: 3rem 1.5rem;
-}
-
-.cargas-vacio .material-symbols-outlined {
-  display: block;
-  margin: 0 auto 0.5rem;
-  font-size: 2.5rem;
-  color: var(--sand-400);
-}
-
 /* --- CAMPO CHECKBOX (carga paga) --- */
 .opcional {
   font-weight: 400;
