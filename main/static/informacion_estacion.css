@@ -234,28 +234,11 @@
   border-bottom: none;
 }
 
-/* Celda de vehiculo: mismo patron que las tablas de viajes (tile con icono +
-   nombre + patente en pastilla). Replicado aca para no depender de esa hoja. */
+/* Celda de vehiculo: nombre + patente en pastilla, mismo estilo que las tablas
+   de viajes. Sin el tile de icono. */
 .carga-vehiculo {
   display: flex;
   align-items: center;
-  gap: 0.8rem;
-}
-
-.carga-vehiculo__tile {
-  width: 38px;
-  height: 38px;
-  flex: none;
-  border-radius: var(--radius-md);
-  background-color: var(--brand-secondary);
-  color: var(--sand-100);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.carga-vehiculo__tile .material-symbols-outlined {
-  font-size: 1.25rem;
 }
 
 .carga-vehiculo__info {
@@ -317,6 +300,18 @@
   align-items: center;
   gap: 0.75rem;
   flex-wrap: wrap;
+}
+
+/* Emparejo la altura de los tres botones sin tocar el boton global:
+   - .boton-accion suma 1px de borde arriba y abajo; el borde transparente iguala.
+   - .boton-nuevo hereda el icono global de 24px mientras que .boton-accion lo fija
+     en 20px, lo que lo hacia 4px mas alto. */
+.acciones-estacion .boton-nuevo {
+  border: 1px solid transparent;
+}
+
+.acciones-estacion .boton-nuevo .material-symbols-outlined {
+  font-size: 1.25rem;
 }
 
 .boton-accion {
