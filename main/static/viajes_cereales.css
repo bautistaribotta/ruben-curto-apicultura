@@ -122,62 +122,100 @@
   }
 }
 
-/* --- Anchos de columna propios de esta tabla (5 columnas).
+/* --- Anchos de columna propios de esta tabla (staff: 6 columnas).
    Uso el prefijo .contenedor-tabla para ganarle en especificidad a las
    reglas que define viajes.css para .tabla-viajes. La primera columna tambien
-   necesita su regla aca: .pago-col sola pierde contra el nth-child de viajes.css. --- */
+   necesita su regla aca: .pago-col sola pierde contra el nth-child de viajes.css.
+   Al entrar Cliente y Monto total hubo que apretar Fecha, Vehiculo y Empleado. --- */
 .contenedor-tabla .tabla-cereales th:nth-child(1) {
   width: 5rem;
 }
 
 /* Pago */
 .contenedor-tabla .tabla-cereales th:nth-child(2) {
-  width: 18%;
+  width: 15%;
 }
 
 /* Fecha */
 .contenedor-tabla .tabla-cereales th:nth-child(3) {
-  width: 30%;
+  width: 23%;
 }
 
 /* Vehiculo */
 .contenedor-tabla .tabla-cereales th:nth-child(4) {
-  width: 28%;
+  width: 22%;
 }
 
 /* Empleado */
 .contenedor-tabla .tabla-cereales th:nth-child(5) {
-  width: 17%;
+  width: 22%;
 }
 
-/* Cereal */
+/* Cliente */
+.contenedor-tabla .tabla-cereales th:nth-child(6) {
+  width: 14%;
+}
 
-/* --- Anchos sin la columna de pago (usuario no-staff): las cuatro columnas
-   restantes se corren un lugar, asi que hay que reasignarles el ancho. El
-   espacio de la columna que se fue se reparte en proporcion al reparto original. --- */
+/* Monto total */
+
+/* --- Anchos sin las columnas de pago y monto (usuario no-staff): quedan las
+   cuatro columnas de negocio corridas un lugar, asi que hay que reasignarles el
+   ancho. El espacio liberado se reparte en proporcion al reparto original. --- */
 .contenedor-tabla .tabla-cereales.tabla-cereales--sin-pago th:nth-child(1) {
-  width: 19%;
+  width: 18%;
 }
 
 /* Fecha */
 .contenedor-tabla .tabla-cereales.tabla-cereales--sin-pago th:nth-child(2) {
-  width: 32%;
+  width: 28%;
 }
 
 /* Vehiculo */
 .contenedor-tabla .tabla-cereales.tabla-cereales--sin-pago th:nth-child(3) {
-  width: 30%;
+  width: 27%;
 }
 
 /* Empleado */
 .contenedor-tabla .tabla-cereales.tabla-cereales--sin-pago th:nth-child(4) {
-  width: 19%;
+  width: 27%;
 }
 
-/* Cereal */
+/* Cliente */
 /* La celda de fecha usa .celda-fecha, el componente unificado de base.css */
 
-/* La pildora de tipo de cereal (.cereal-pill) es un componente unificado de base.css */
+/* --- Celda Cliente: avatar + nombre, espejo de la celda Empleado de viajes.css.
+   El avatar .avatar-iniciales--cliente vive en base.css. --- */
+.vje-cliente {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.vje-cliente__name {
+  font-weight: var(--weight-semibold);
+  color: var(--text-strong);
+}
+
+/* Cuando el viaje viejo no tiene cliente cargado, un rotulo apagado en vez del
+   avatar, asi la fila no queda visualmente incompleta. */
+.vje-cliente__vacio {
+  color: var(--text-subtle);
+  font-style: italic;
+}
+
+/* --- Celda Monto total (solo staff): la facturacion bruta alineada a la derecha
+   y en cifras tabulares para que las columnas de pesos queden a plomo. --- */
+.alineado-der {
+  text-align: right;
+}
+
+.celda-monto-total {
+  text-align: right;
+  font-weight: var(--weight-bold);
+  color: var(--text-strong);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
 
 /* --- Slide-over "Nuevo acopio" ---
    Las clases internas del panel (.panel-cabecera, .grupo-input, .boton-primario,

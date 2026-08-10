@@ -1,3 +1,4 @@
+{% load humanize %}
 <table class="tabla-viajes tabla-cereales{% if not user.is_staff %} tabla-cereales--sin-pago{% endif %}">
   <thead>
     <tr>
@@ -7,7 +8,10 @@
       <th class="alineado-izq">Fecha</th>
       <th class="alineado-izq">Vehículo</th>
       <th class="alineado-izq">Empleado</th>
-      <th class="alineado-izq">Cereal</th>
+      <th class="alineado-izq">Cliente</th>
+      {% if user.is_staff %}
+      <th class="alineado-der">Monto total</th>
+      {% endif %}
     </tr>
   </thead>
   <tbody>
@@ -50,14 +54,22 @@
         </div>
       </td>
       <td>
-        <span class="cereal-pill cereal-pill--{{ viaje.tipo_cereal|lower }}">
-          <span class="cereal-pill__dot"></span>{{ viaje.get_tipo_cereal_display }}
-        </span>
+        {% if viaje.cliente %}
+        <div class="vje-cliente">
+          <span class="avatar-iniciales avatar-iniciales--cliente">{{ viaje.cliente.nombre|first|upper }}{{ viaje.cliente.apellido|first|upper }}</span>
+          <span class="vje-cliente__name">{{ viaje.cliente.nombre }} {{ viaje.cliente.apellido }}</span>
+        </div>
+        {% else %}
+        <span class="vje-cliente__vacio">Sin cliente</span>
+        {% endif %}
       </td>
+      {% if user.is_staff %}
+      <td class="celda-monto-total">${{ viaje.total_bruto|floatformat:0|intcomma }}</td>
+      {% endif %}
     </tr>
     {% empty %}
     <tr class="fila-vacia">
-      <td colspan="{% if user.is_staff %}5{% else %}4{% endif %}" class="celda-vacia">
+      <td colspan="{% if user.is_staff %}6{% else %}4{% endif %}" class="celda-vacia">
         <span class="material-symbols-outlined">agriculture</span>
         No se encontraron viajes de cereales con esos filtros.
       </td>
