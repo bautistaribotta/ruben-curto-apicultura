@@ -210,11 +210,16 @@
                  placeholder="Ej: carga de gasoil" maxlength="200">
         </div>
 
-        <label class="campo-check" for="pagada">
-          <input type="checkbox" id="pagada" name="pagada">
-          <span class="campo-check__caja"><span class="material-symbols-outlined">check</span></span>
-          <span class="campo-check__texto">La carga ya esta paga</span>
-        </label>
+        <div class="pago-fila">
+          <div class="pago-fila__texto">
+            <span class="pago-fila__titulo">La carga ya esta paga</span>
+            <span class="pago-fila__sub">Activalo cuando ya se pago esta carga de combustible.</span>
+          </div>
+          <label class="pago-switch">
+            <input type="checkbox" id="pagada" name="pagada">
+            <span class="pago-switch__slider"></span>
+          </label>
+        </div>
       </form>
     </div>
 

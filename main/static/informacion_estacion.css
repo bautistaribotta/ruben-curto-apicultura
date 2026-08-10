@@ -171,63 +171,10 @@
   white-space: nowrap;
 }
 
-/* --- ESTADO VACIO --- */
-/* --- CAMPO CHECKBOX (carga paga) --- */
+/* --- ETIQUETA OPCIONAL (litros, observaciones) --- */
 .opcional {
   font-weight: 400;
   color: var(--text-muted);
-}
-
-.campo-check {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  cursor: pointer;
-  user-select: none;
-}
-
-.campo-check input {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.campo-check__caja {
-  flex: none;
-  width: 22px;
-  height: 22px;
-  border-radius: 0.375rem;
-  border: 1px solid var(--border-subtle);
-  background-color: var(--color-blanco);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-}
-
-.campo-check__caja .material-symbols-outlined {
-  font-size: 16px;
-  color: var(--color-blanco);
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.campo-check input:checked + .campo-check__caja {
-  background-color: var(--brand-secondary);
-  border-color: var(--brand-secondary);
-}
-
-.campo-check input:checked + .campo-check__caja .material-symbols-outlined {
-  opacity: 1;
-}
-
-.campo-check input:focus-visible + .campo-check__caja {
-  box-shadow: var(--ring);
-}
-
-.campo-check__texto {
-  font-size: 0.875rem;
-  color: var(--text-body);
 }
 
 /* --- ACCIONES SOBRE LA ESTACION (cabecera) ---
