@@ -39,6 +39,7 @@ const prepararPanelEditarCarga = (id) => {
 
       document.getElementById('accion-carga').value = 'editar_carga';
       document.getElementById('id_registro').value = carga.id;
+      document.getElementById('empleado').value = carga.empleado;
       document.getElementById('vehiculo').value = carga.vehiculo;
       document.getElementById('fecha').value = carga.fecha;
       document.getElementById('monto').value = carga.monto;

@@ -1196,6 +1196,7 @@ class EstacionDeServicio(models.Model):
 
 class CargaCombustible(models.Model):
     estacion = models.ForeignKey(EstacionDeServicio, on_delete=models.PROTECT, related_name="cargas")
+    empleado = models.ForeignKey(Empleado, on_delete=models.PROTECT, related_name="cargas_combustible")
     vehiculo = models.ForeignKey(Vehiculo, on_delete=models.PROTECT, related_name="cargas_combustible")
     fecha = models.DateField()
     monto = models.DecimalField(max_digits=12, decimal_places=2)

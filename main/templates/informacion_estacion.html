@@ -79,6 +79,7 @@
         <thead>
           <tr>
             <th>Fecha</th>
+            <th>Empleado</th>
             <th>Vehiculo</th>
             <th class="texto-derecha">Monto</th>
             <th>Estado</th>
@@ -89,6 +90,7 @@
           {% for carga in cargas %}
           <tr>
             <td>{{ carga.fecha|date:"d/m/Y" }}</td>
+            <td>{{ carga.empleado.nombre }} {{ carga.empleado.apellido }}</td>
             <td>
               <div class="carga-vehiculo">
                 <span class="carga-vehiculo__nombre">{{ carga.vehiculo.nombre }}</span>
@@ -157,6 +159,16 @@
         {% csrf_token %}
         <input type="hidden" name="accion" id="accion-carga" value="nueva_carga">
         <input type="hidden" name="id_registro" id="id_registro">
+
+        <div class="campo-formulario">
+          <label for="empleado">Empleado</label>
+          <select id="empleado" name="empleado" class="input-estandar" required>
+            <option value="" disabled selected>Elegi un empleado</option>
+            {% for e in empleados %}
+              <option value="{{ e.id }}">{{ e.nombre }} {{ e.apellido }}</option>
+            {% endfor %}
+          </select>
+        </div>
 
         <div class="campo-formulario">
           <label for="vehiculo">Vehiculo</label>

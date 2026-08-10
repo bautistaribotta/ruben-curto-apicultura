@@ -2255,11 +2255,11 @@ def informacion_estacion(request, id_estacion):
                 messages.success(request, "Estacion eliminada correctamente.")
                 return redirect("combustible")
             elif accion == "nueva_carga":
-                crear_carga(id_estacion, p.get("vehiculo"), p.get("fecha"), p.get("monto"),
+                crear_carga(id_estacion, p.get("empleado"), p.get("vehiculo"), p.get("fecha"), p.get("monto"),
                             p.get("pagada") == "on", p.get("observaciones"))
                 messages.success(request, "Carga agregada correctamente.")
             elif accion == "editar_carga":
-                editar_carga(p.get("id_registro"), p.get("vehiculo"), p.get("fecha"), p.get("monto"),
+                editar_carga(p.get("id_registro"), p.get("empleado"), p.get("vehiculo"), p.get("fecha"), p.get("monto"),
                              p.get("pagada") == "on", p.get("observaciones"))
                 messages.success(request, "Carga actualizada correctamente.")
             elif accion == "eliminar_carga":
@@ -2279,6 +2279,7 @@ def informacion_estacion(request, id_estacion):
     contexto = {
         "estacion": estacion,
         "cargas": cargas,
+        "empleados": obtener_empleados_activos(),
         "vehiculos": obtener_vehiculos_activos(),
         "pestaña": "viajes",
     }
