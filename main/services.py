@@ -251,10 +251,23 @@ def eliminar_carga(id_carga):
     return carga
 
 
-def obtener_cargas(id_estacion):
-    """Historial de cargas activas de una estacion, de la mas nueva a la mas vieja."""
+def obtener_cargas(id_estacion, estado="impagas", desde=None, hasta=None):
+    """Historial de cargas activas de una estacion, de la mas nueva a la mas vieja.
+
+    estado filtra por pago: "impagas" (por defecto), "pagadas" o "todas".
+    desde/hasta acotan por la fecha de la carga (date o None si no hay filtro).
+    """
     estacion = get_object_or_404(EstacionDeServicio, id=id_estacion)
-    return estacion.cargas.filter(activa=True).select_related("empleado", "vehiculo")
+    cargas = estacion.cargas.filter(activa=True).select_related("empleado", "vehiculo")
+    if estado == "impagas":
+        cargas = cargas.filter(pagada=False)
+    elif estado == "pagadas":
+        cargas = cargas.filter(pagada=True)
+    if desde:
+        cargas = cargas.filter(fecha__gte=desde)
+    if hasta:
+        cargas = cargas.filter(fecha__lte=hasta)
+    return cargas
 
 
 def obtener_datos_carga(id_carga):

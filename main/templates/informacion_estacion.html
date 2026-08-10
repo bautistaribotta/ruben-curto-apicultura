@@ -15,6 +15,7 @@
 {% block links %}
   <link rel="stylesheet" href="{% static 'combustible.css' %}">
   <link rel="stylesheet" href="{% static 'pago_viaje.css' %}">
+  <link rel="stylesheet" href="{% static 'filtro_fechas.css' %}">
   <link rel="stylesheet" href="{% static 'informacion_estacion.css' %}">
 {% endblock %}
 
@@ -42,7 +43,7 @@
           {% endif %}
           <span class="identidad-estacion__cuenta">
             <span class="material-symbols-outlined">local_gas_station</span>
-            {{ cargas|length }} carga{{ cargas|length|pluralize }}
+            {{ total_cargas }} carga{{ total_cargas|pluralize }}
           </span>
         </div>
       </div>
@@ -74,7 +75,33 @@
       </div>
     </header>
 
-    {% if cargas %}
+    {% comment %}
+      Barra de filtros bajo el titulo (mismo lenguaje que la barra de Deudas): a la
+      izquierda las pildoras de estado de pago, a la derecha el chip de fechas. Cada
+      pildora navega server-side y conserva el filtro de fechas; Impagas es el default.
+    {% endcomment %}
+    <div class="cargas-barra">
+      <div class="prod-chips" role="group" aria-label="Filtrar por estado de pago">
+        <a class="prod-chip prod-chip--impagas {% if estado == 'impagas' %}is-active{% endif %}"
+           href="?estado=impagas{% if desde %}&desde={{ desde }}{% endif %}{% if hasta %}&hasta={{ hasta }}{% endif %}">
+          <span class="material-symbols-outlined">pending</span>
+          Impagas
+        </a>
+        <a class="prod-chip prod-chip--pagadas {% if estado == 'pagadas' %}is-active{% endif %}"
+           href="?estado=pagadas{% if desde %}&desde={{ desde }}{% endif %}{% if hasta %}&hasta={{ hasta }}{% endif %}">
+          <span class="material-symbols-outlined">check_circle</span>
+          Pagadas
+        </a>
+        <a class="prod-chip prod-chip--todas {% if estado == 'todas' %}is-active{% endif %}"
+           href="?estado=todas{% if desde %}&desde={{ desde }}{% endif %}{% if hasta %}&hasta={{ hasta }}{% endif %}">
+          <span class="material-symbols-outlined">list</span>
+          Todas
+        </a>
+      </div>
+
+      {% include 'filtro_fechas.html' %}
+    </div>
+
     <div class="contenedor-tabla">
       <table class="tabla-cargas">
         <thead>
@@ -122,19 +149,45 @@
               </div>
             </td>
           </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7">
+              <div class="estado-vacio">
+                <span class="material-symbols-outlined">local_gas_station</span>
+                <h4>Sin cargas para estos filtros</h4>
+                <p>No hay cargas que coincidan con el estado y las fechas elegidas.</p>
+              </div>
+            </td>
+          </tr>
           {% endfor %}
         </tbody>
       </table>
-    </div>
-    {% else %}
-    <div class="contenedor-tabla">
-      <div class="estado-vacio">
-        <span class="material-symbols-outlined">local_gas_station</span>
-        <h4>Sin cargas registradas</h4>
-        <p>Todavía no se cargó combustible en esta estación.</p>
+
+      <!-- PAGINACION: de a 5 cargas, conservando estado y fechas del filtro -->
+      <div class="paginacion">
+        <div class="paginacion-info">
+          Mostrando <span>{{ page_obj.start_index|default:"0" }}-{{ page_obj.end_index|default:"0" }}</span>
+          de <span>{{ page_obj.paginator.count|default:"0" }}</span> carga{{ page_obj.paginator.count|pluralize }}
+        </div>
+        <div class="paginacion-botones">
+          {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}&estado={{ estado }}{% if desde %}&desde={{ desde }}{% endif %}{% if hasta %}&hasta={{ hasta }}{% endif %}">
+              <button class="boton-paginacion">Anterior</button>
+            </a>
+          {% else %}
+            <button class="boton-paginacion" disabled>Anterior</button>
+          {% endif %}
+
+          {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}&estado={{ estado }}{% if desde %}&desde={{ desde }}{% endif %}{% if hasta %}&hasta={{ hasta }}{% endif %}">
+              <button class="boton-paginacion">Siguiente</button>
+            </a>
+          {% else %}
+            <button class="boton-paginacion" disabled>Siguiente</button>
+          {% endif %}
+        </div>
       </div>
     </div>
-    {% endif %}
   </section>
 </section>
 
@@ -313,5 +366,6 @@
 {% block codigo-javascript %}
 <script src="{% static 'js/paneles.js' %}"></script>
 <script src="{% static 'js/formato_miles.js' %}"></script>
+<script src="{% static 'js/filtro_fechas.js' %}"></script>
 <script src="{% static 'js/informacion_estacion.js' %}"></script>
 {% endblock %}

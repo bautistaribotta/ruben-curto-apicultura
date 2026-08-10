@@ -2275,13 +2275,28 @@ def informacion_estacion(request, id_estacion):
 
         return redirect("informacion_estacion", id_estacion=id_estacion)
 
-    cargas = list(obtener_cargas(id_estacion))
+    # Filtro por estado de pago (segmentado): por defecto solo las impagas.
+    estado = request.GET.get("estado", "impagas")
+    if estado not in ("impagas", "pagadas", "todas"):
+        estado = "impagas"
+
+    # Filtro por rango de fechas (chip + popover), por la fecha de la carga.
+    desde, hasta, ctx_fechas = _rango_fechas(request)
+
+    cargas = obtener_cargas(id_estacion, estado, desde, hasta)
+    paginator = Paginator(cargas, 5)
+    page_obj = paginator.get_page(request.GET.get("page"))
+
     contexto = {
         "estacion": estacion,
-        "cargas": cargas,
+        "page_obj": page_obj,
+        "cargas": page_obj,
+        "estado": estado,
+        "total_cargas": estacion.cargas.filter(activa=True).count(),
         "empleados": obtener_empleados_activos(),
         "vehiculos": obtener_vehiculos_activos(),
         "pestaña": "viajes",
+        **ctx_fechas,
     }
     return render(request, "informacion_estacion.html", contexto)
 

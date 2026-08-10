@@ -116,6 +116,87 @@
   font-size: 22px;
 }
 
+/* --- BARRA DE FILTROS (estado de pago + fechas) ---
+   Bajo el titulo, mismo patron que la barra de Deudas: pildoras de estado a la
+   izquierda, chip de fechas a la derecha. Las pildoras replican .prod-chip de
+   deudores.css (mismo lenguaje) para no depender de esa hoja. */
+.cargas-barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.prod-chips {
+  display: inline-flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.prod-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-default);
+  background-color: var(--surface-card);
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color var(--dur-normal) var(--ease-standard),
+              color var(--dur-normal) var(--ease-standard),
+              border-color var(--dur-normal) var(--ease-standard);
+}
+
+.prod-chip .material-symbols-outlined {
+  font-size: 1.05rem;
+}
+
+.prod-chip:hover {
+  background-color: var(--surface-hover);
+  color: var(--text-body);
+}
+
+.prod-chip.is-active {
+  background-color: var(--brand-secondary);
+  color: var(--text-on-inverse);
+  border-color: var(--brand-secondary);
+}
+
+/* Los chips inactivos muestran el icono ya tintado como pista: rojo para las
+   impagas (deuda) y verde para las pagas. "Todas" queda neutro. */
+.prod-chip--impagas:not(.is-active) .material-symbols-outlined {
+  color: var(--color-rojo-eliminacion);
+}
+
+.prod-chip--pagadas:not(.is-active) .material-symbols-outlined {
+  color: var(--success-600);
+}
+
+.prod-chip--todas:not(.is-active) .material-symbols-outlined {
+  color: var(--slate-500);
+}
+
+/* El estado activo toma el color de su significado, igual que en Deudas. */
+.prod-chip--impagas.is-active {
+  background-color: var(--color-rojo-eliminacion);
+  border-color: var(--color-rojo-eliminacion);
+  color: var(--color-blanco);
+}
+
+.prod-chip--pagadas.is-active {
+  background-color: var(--success-600);
+  border-color: var(--success-600);
+  color: var(--color-blanco);
+}
+
 /* --- TABLA DE CARGAS --- */
 .tabla-cargas {
   width: 100%;
