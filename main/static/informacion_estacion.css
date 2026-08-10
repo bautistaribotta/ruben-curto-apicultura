@@ -219,6 +219,17 @@
   background-color: var(--surface-hover);
 }
 
+/* La fila entera abre el detalle: se comporta como boton, salvo sobre sus propios
+   controles (pago, editar, eliminar), que cortan el clic desde el JS. */
+.carga-fila {
+  cursor: pointer;
+}
+
+.carga-fila:focus-visible {
+  outline: 2px solid var(--brand-olive);
+  outline-offset: -2px;
+}
+
 .tabla-cargas tbody tr:last-child td {
   border-bottom: none;
 }
@@ -358,6 +369,161 @@
 
 #contenedor-slide-over-estacion.slide-over-abierto .slide-over-panel-base {
   transform: translateX(0);
+}
+
+/* --- MODAL DE DETALLE DE CARGA ---
+   Mismo comportamiento (overlay + blur + scale-in) que el modal de eliminacion de
+   combustible.css, con identidad propia: cabecera con tile pino y las filas de
+   detalle en una lista con riel de iconos. */
+#contenedor-modal-carga {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  visibility: hidden;
+  transition: visibility 0.3s;
+}
+
+#contenedor-modal-carga.abierto {
+  visibility: visible;
+  transition: none;
+}
+
+#modal-carga-fondo {
+  position: absolute;
+  inset: 0;
+  background-color: var(--overlay-ink);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+#contenedor-modal-carga.abierto #modal-carga-fondo {
+  opacity: 1;
+}
+
+#modal-carga {
+  position: relative;
+  background-color: var(--color-blanco);
+  border-radius: 12px;
+  border: 1px solid var(--border-subtle);
+  padding: 2rem;
+  width: 90%;
+  max-width: 420px;
+  box-shadow: var(--shadow-xl);
+  opacity: 0;
+  transform: scale(0.95);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#contenedor-modal-carga.abierto #modal-carga {
+  opacity: 1;
+  transform: scale(1);
+}
+
+#modal-carga-cerrar {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: auto;
+  background: none;
+  border: none;
+  color: var(--sand-400);
+  cursor: pointer;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+#modal-carga-cerrar:hover {
+  background-color: var(--surface-hover);
+  color: var(--text-muted);
+}
+
+.modal-carga__cabecera {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  margin-bottom: 1.5rem;
+}
+
+.modal-carga__icono {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: oklch(25.391% 0.0349 170.220 / 0.1);
+  color: var(--brand-olive);
+}
+
+.modal-carga__icono .material-symbols-outlined {
+  font-size: 24px;
+}
+
+.modal-carga__cabecera h3 {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-strong);
+  margin: 0;
+}
+
+.modal-carga__detalles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.modal-carga__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  border-radius: var(--radius-md);
+  background-color: var(--surface-sunken);
+  border: 1px solid var(--border-subtle);
+}
+
+.modal-carga__item > .material-symbols-outlined {
+  flex: none;
+  font-size: 20px;
+  color: var(--text-muted);
+  margin-top: 0.0625rem;
+}
+
+.modal-carga__campo {
+  min-width: 0;
+}
+
+.modal-carga__campo dt {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  margin-bottom: 0.25rem;
+}
+
+.modal-carga__campo dd {
+  font-size: 0.9375rem;
+  color: var(--text-strong);
+  margin: 0;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.modal-carga__vacio {
+  color: var(--text-muted);
+  font-style: italic;
 }
 
 /* --- RESPONSIVE --- */

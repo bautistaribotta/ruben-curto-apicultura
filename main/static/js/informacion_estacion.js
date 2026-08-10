@@ -107,6 +107,59 @@ document.addEventListener('click', (e) => {
   }
 });
 
+/**
+ * -----------------------------------------------------------------------------
+ * MODAL DE DETALLE DE CARGA
+ * Al hacer clic en una fila se abre un modal centrado con la fecha y las
+ * observaciones. Los datos viajan en los data- de la fila.
+ * -----------------------------------------------------------------------------
+ */
+const abrirModalCarga = (fila) => {
+  const observacion = fila.dataset.observacion?.trim();
+  const dd = document.getElementById('modal-carga-observacion');
+
+  document.getElementById('modal-carga-fecha').innerText = fila.dataset.fecha || '—';
+  if (observacion) {
+    dd.innerText = observacion;
+    dd.classList.remove('modal-carga__vacio');
+  } else {
+    dd.innerText = 'Sin observaciones';
+    dd.classList.add('modal-carga__vacio');
+  }
+
+  document.getElementById('contenedor-modal-carga').classList.add('abierto');
+  document.body.style.overflow = 'hidden';
+};
+
+const cerrarModalCarga = () => {
+  document.getElementById('contenedor-modal-carga').classList.remove('abierto');
+  document.body.style.overflow = 'auto';
+};
+
+// Clic en la fila: abre el detalle, salvo que el clic haya sido sobre un control
+// propio (casilla de pago, botones de editar/eliminar). Asi la fila no roba esos
+// clics.
+document.addEventListener('click', (e) => {
+  const fila = e.target.closest('.carga-fila');
+  if (fila && !e.target.closest('input, button, a, label')) {
+    abrirModalCarga(fila);
+  }
+});
+
+// Teclado: Enter o barra espaciadora sobre la fila enfocada abren el detalle;
+// Escape cierra el modal.
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    cerrarModalCarga();
+    return;
+  }
+  const fila = e.target.closest?.('.carga-fila');
+  if (fila && (e.key === 'Enter' || e.key === ' ')) {
+    e.preventDefault();
+    abrirModalCarga(fila);
+  }
+});
+
 // El check de pago alterna el estado de la carga. Uso 'change' para que tambien
 // funcione con teclado (barra espaciadora), no solo con click.
 document.addEventListener('change', (e) => {
@@ -136,3 +189,4 @@ document.addEventListener('filtrofechas:cambio', () => {
 window.prepararPanelNuevaCarga = prepararPanelNuevaCarga;
 window.prepararEditarEstacion = prepararEditarEstacion;
 window.prepararEliminarEstacion = prepararEliminarEstacion;
+window.cerrarModalCarga = cerrarModalCarga;

@@ -117,7 +117,10 @@
         </thead>
         <tbody>
           {% for carga in cargas %}
-          <tr>
+          <tr class="carga-fila" tabindex="0" role="button"
+              data-fecha="{{ carga.fecha|date:'d/m/Y' }}"
+              data-observacion="{{ carga.observaciones }}"
+              aria-label="Ver detalle de la carga del {{ carga.fecha|date:'d/m/Y' }}">
             <td class="pago-celda">
               <!-- Casilla de pago reutilizada de los viajes: alterna paga <-> impaga -->
               <input type="checkbox" class="pago-check toggle-pago"
@@ -361,6 +364,42 @@
     </div>
   </div>
 </form>
+
+<!-- Modal de detalle de carga: se abre al hacer clic en una fila de la tabla.
+     Muestra la fecha y las observaciones; el JS lo puebla desde los data- de la fila. -->
+<div id="contenedor-modal-carga">
+  <div id="modal-carga-fondo" onclick="cerrarModalCarga()"> </div>
+
+  <div id="modal-carga" role="dialog" aria-modal="true" aria-labelledby="modal-carga-titulo">
+    <button type="button" class="boton-cerrar-panel" id="modal-carga-cerrar" onclick="cerrarModalCarga()">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+
+    <header class="modal-carga__cabecera">
+      <div class="modal-carga__icono">
+        <span class="material-symbols-outlined">receipt_long</span>
+      </div>
+      <h3 id="modal-carga-titulo">Detalle de la carga</h3>
+    </header>
+
+    <dl class="modal-carga__detalles">
+      <div class="modal-carga__item">
+        <span class="material-symbols-outlined">calendar_month</span>
+        <div class="modal-carga__campo">
+          <dt>Fecha</dt>
+          <dd id="modal-carga-fecha">—</dd>
+        </div>
+      </div>
+      <div class="modal-carga__item">
+        <span class="material-symbols-outlined">notes</span>
+        <div class="modal-carga__campo">
+          <dt>Observaciones</dt>
+          <dd id="modal-carga-observacion">—</dd>
+        </div>
+      </div>
+    </dl>
+  </div>
+</div>
 {% endblock %}
 
 {% block codigo-javascript %}
