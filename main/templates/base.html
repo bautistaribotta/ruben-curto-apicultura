@@ -136,7 +136,7 @@
             Alquileres
           </a>
         </li>
-        {% if user.is_superuser %}
+        {% if user.is_staff %}
         <li>
           <a href="{% url 'combustible' %}" class="item-menu {% if request.resolver_match.url_name == 'combustible' or request.resolver_match.url_name == 'informacion_estacion' %} activo {% endif %}">
             <span class="material-symbols-outlined">local_gas_station</span>
