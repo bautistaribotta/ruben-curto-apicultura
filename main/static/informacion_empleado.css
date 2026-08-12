@@ -133,6 +133,18 @@
   flex-wrap: wrap;
 }
 
+/* Emparejo la altura de los cuatro botones sin tocar el boton global:
+   - .boton-accion suma 1px de borde arriba y abajo; el borde transparente iguala.
+   - .boton-nuevo hereda el icono global de 24px mientras que .boton-accion lo fija
+     en 20px, lo que lo hacia mas alto. */
+.acciones-empleado .boton-nuevo {
+  border: 1px solid transparent;
+}
+
+.acciones-empleado .boton-nuevo .material-symbols-outlined {
+  font-size: 1.25rem;
+}
+
 /* Boton primario "Añadir pago": estilos unificados en base.css (.boton-nuevo).
    Los dos secundarios repiten el par editar/eliminar del perfil de cliente. */
 .boton-accion {
