@@ -1359,8 +1359,18 @@ def flota(request):
 
         return redirect("flota")
 
+    # Lista de empleados con el vencimiento de su carnet para el modal de la
+    # barra de herramientas. Se ordena por vencimiento mas proximo primero y
+    # los que no tienen fecha cargada quedan al final.
+    hoy = timezone.localdate()
+    empleados_carnet = list(obtener_empleados_activos())
+    for emp in empleados_carnet:
+        emp.estado_carnet = _estado_carnet(emp.vencimiento_carnet, hoy)
+    empleados_carnet.sort(key=lambda e: (e.vencimiento_carnet is None, e.vencimiento_carnet or hoy))
+
     contexto = {
         "vehiculos": obtener_vehiculos_activos(),
+        "empleados_carnet": empleados_carnet,
         "pestaña": "viajes",
     }
     return render(request, "flota.html", contexto)

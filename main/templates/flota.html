@@ -38,10 +38,16 @@
       </div>
     </div>
 
-    <button type="button" class="boton-nuevo" onclick="abrirNuevoVehiculo()">
-      <span class="material-symbols-outlined">local_shipping</span>
-      <span class="texto-boton">Nuevo Vehículo</span>
-    </button>
+    <div class="barra-herramientas__acciones">
+      <button type="button" class="boton-nuevo" onclick="abrirNuevoVehiculo()">
+        <span class="material-symbols-outlined">local_shipping</span>
+        <span class="texto-boton">Nuevo Vehículo</span>
+      </button>
+      <button type="button" class="boton-nuevo secundario boton-carnets" onclick="abrirModalCarnets()">
+        <span class="material-symbols-outlined">id_card</span>
+        <span class="texto-boton">Carnets</span>
+      </button>
+    </div>
   </div>
 
   <!-- Grilla de vehículos: una tarjeta por vehículo, clickeable al perfil -->
@@ -169,6 +175,49 @@
         <button type="button" class="boton-secundario" onclick="cerrarSlideOver('slide-over-vehiculo')">Cancelar</button>
       </footer>
     </form>
+  </div>
+</div>
+
+<!-- MODAL VENCIMIENTOS DE CARNET -->
+<div id="modal-carnets">
+  <div class="modal-carnets-fondo" onclick="cerrarModalCarnets()"></div>
+  <div class="modal-carnets-panel" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-carnets">
+    <header class="modal-carnets-cabecera">
+      <span class="modal-carnets-icono">
+        <span class="material-symbols-outlined">id_card</span>
+      </span>
+      <div class="modal-carnets-titulo">
+        <h3 id="titulo-modal-carnets">Vencimientos de carnet</h3>
+        <p>Fecha de vencimiento del carnet de conducir de cada empleado</p>
+      </div>
+      <button type="button" class="modal-carnets-cerrar" onclick="cerrarModalCarnets()" aria-label="Cerrar">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </header>
+
+    <div class="modal-carnets-cuerpo">
+      {% for empleado in empleados_carnet %}
+        <div class="fila-carnet">
+          <div class="fila-carnet__persona">
+            <span class="fila-carnet__nombre">{{ empleado.nombre }} {{ empleado.apellido }}</span>
+            <span class="fila-carnet__rotulo">Fecha de vencimiento</span>
+          </div>
+          {% if empleado.estado_carnet %}
+            <span class="chip-carnet chip-carnet--{{ empleado.estado_carnet.nivel }}">
+              <span class="chip-carnet__dot"></span>
+              {{ empleado.estado_carnet.fecha|date:"d/m/Y" }}
+            </span>
+          {% else %}
+            <span class="chip-carnet chip-carnet--sin-dato">Sin cargar</span>
+          {% endif %}
+        </div>
+      {% empty %}
+        <div class="modal-carnets-vacio">
+          <span class="material-symbols-outlined">badge</span>
+          No hay empleados registrados.
+        </div>
+      {% endfor %}
+    </div>
   </div>
 </div>
 

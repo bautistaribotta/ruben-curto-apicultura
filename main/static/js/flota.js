@@ -63,6 +63,24 @@ function abrirEditarVehiculo(boton) {
     abrirSlideOver('slide-over-vehiculo');
 }
 
+// ---------- VENCIMIENTOS DE CARNET (modal de solo lectura) ----------
+
+function abrirModalCarnets() {
+    document.getElementById('modal-carnets').classList.add('abierto');
+    document.body.style.overflow = 'hidden';
+}
+
+function cerrarModalCarnets() {
+    document.getElementById('modal-carnets').classList.remove('abierto');
+    document.body.style.overflow = 'auto';
+}
+
+document.addEventListener('keydown', (evento) => {
+    if (evento.key !== 'Escape') return;
+    const modal = document.getElementById('modal-carnets');
+    if (modal?.classList.contains('abierto')) cerrarModalCarnets();
+});
+
 // ---------- ELIMINAR (modal de confirmación) ----------
 
 function abrirEliminarFlota(boton) {

@@ -769,6 +769,237 @@
   transition: width 2s linear;
 }
 
+/* Agrupa los botones de la derecha de la barra (carnets + nuevo) */
+.barra-herramientas__acciones {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* --- MODAL VENCIMIENTOS DE CARNET (solo lectura) --- */
+#modal-carnets {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  align-items: center;
+  justify-content: center;
+}
+
+#modal-carnets.abierto {
+  display: flex;
+}
+
+.modal-carnets-fondo {
+  position: absolute;
+  inset: 0;
+  background-color: var(--overlay-ink);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+.modal-carnets-panel {
+  position: relative;
+  z-index: 1;
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  width: 90%;
+  max-width: 34rem;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: var(--shadow-xl);
+}
+
+#modal-carnets.abierto .modal-carnets-panel {
+  animation: carnets-entrar var(--dur-normal) var(--ease-standard);
+}
+
+@keyframes carnets-entrar {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-carnets-cabecera {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.modal-carnets-icono {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: var(--radius-md);
+  background-color: var(--honey-tint-10);
+  color: var(--brand-active);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-carnets-icono .material-symbols-outlined {
+  font-size: 1.5rem;
+}
+
+.modal-carnets-titulo {
+  flex: 1;
+  min-width: 0;
+}
+
+.modal-carnets-titulo h3 {
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
+  color: var(--text-strong);
+}
+
+.modal-carnets-titulo p {
+  margin: 0.15rem 0 0;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.modal-carnets-cerrar {
+  background: none;
+  border: none;
+  color: var(--sand-400);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 50%;
+  display: flex;
+  flex: none;
+  transition: all var(--dur-normal) var(--ease-standard);
+}
+
+.modal-carnets-cerrar:hover {
+  background-color: var(--surface-hover);
+  color: var(--text-muted);
+}
+
+.modal-carnets-cuerpo {
+  overflow-y: auto;
+  padding: 0.5rem 1.5rem 1.25rem;
+}
+
+.modal-carnets-cuerpo::-webkit-scrollbar {
+  width: 5px;
+}
+
+.modal-carnets-cuerpo::-webkit-scrollbar-thumb {
+  background-color: var(--border-subtle);
+  border-radius: var(--radius-pill);
+}
+
+/* Cada fila: persona a la izquierda, chip de vencimiento a la derecha */
+.fila-carnet {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.fila-carnet:last-child {
+  border-bottom: none;
+}
+
+.fila-carnet__persona {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.fila-carnet__nombre {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--text-strong);
+}
+
+.fila-carnet__rotulo {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.modal-carnets-vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 2.5rem 1rem;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.modal-carnets-vacio .material-symbols-outlined {
+  font-size: 2.5rem;
+  color: var(--sand-400);
+}
+
+/* Chip semaforo del vencimiento (mismo lenguaje que la tabla de empleados) */
+.chip-carnet {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: none;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+  border: 1px solid var(--border-subtle);
+  background-color: var(--surface-sunken);
+  white-space: nowrap;
+}
+
+.chip-carnet__dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: var(--radius-pill);
+  background-color: currentColor;
+  flex: none;
+}
+
+.chip-carnet--vigente {
+  background-color: var(--success-50);
+  border-color: var(--success-200);
+  color: var(--success-600);
+}
+
+.chip-carnet--proximo {
+  background-color: var(--honey-tint-10);
+  border-color: var(--honey-200);
+  color: var(--brand-active);
+}
+
+.chip-carnet--vencido {
+  background-color: var(--danger-50);
+  border-color: var(--danger-500);
+  color: var(--danger-600);
+}
+
+.chip-carnet--sin-dato {
+  color: var(--text-subtle);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #modal-carnets.abierto .modal-carnets-panel {
+    animation: none;
+  }
+}
+
 /* --- ADAPTACIÓN PARA PANTALLAS GRANDES --- */
 @media (min-width: 1440px) {
   html {
@@ -795,6 +1026,11 @@
     content: "Nuevo";
     font-size: var(--text-sm);
   }
+  /* El boton de carnets comparte estilos con .boton-nuevo pero su rotulo
+     corto propio, para no mostrar "Nuevo" como el de alta. */
+  .barra-herramientas .boton-carnets .texto-boton::before {
+    content: "Carnets";
+  }
 }
 
 @media (max-width: 1024px) {
@@ -819,6 +1055,14 @@
   }
   .barra-herramientas .boton-nuevo .texto-boton::before {
     content: none;
+  }
+  /* Los dos botones de la derecha comparten fila y reparten el ancho */
+  .barra-herramientas__acciones {
+    width: 100%;
+  }
+  .barra-herramientas__acciones .boton-nuevo {
+    width: auto;
+    flex: 1;
   }
 }
 
