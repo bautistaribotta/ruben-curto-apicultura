@@ -1,26 +1,18 @@
 // Perfil de empleado.
 
-// ---------- PAGOS (FILTRO SEMANA / MES + FLECHAS) ----------
-// El bloque de pagos (#seccion-pagos) se refresca solo, con su propio periodo,
-// sin tocar el resto de la pagina. Los enlaces traen los datos en data-* y aca
+// ---------- CUENTA CORRIENTE (MES A MES + FLECHAS) ----------
+// El bloque de cuenta corriente (#seccion-pagos) se refresca solo, con su propio
+// mes, sin tocar el resto de la pagina. Las flechas traen el mes en data-* y aca
 // se arma la URL completa preservando el resto de los filtros (desde/hasta/tipo).
 
 const contenedorPagos = document.getElementById("seccion-pagos");
 
-function cargarPagos(gran, ancla, page) {
+function cargarPagos(ancla) {
     if (!contenedorPagos) return;
 
     // Parto de la URL actual para no pisar los filtros de viajes
     const url = new URL(window.location.href);
-    if (gran) url.searchParams.set("pagos_gran", gran);
     if (ancla) url.searchParams.set("pagos_ancla", ancla);
-
-    // Sin pagina explicita (cambio de periodo o granularidad) vuelvo a la primera
-    if (page) {
-        url.searchParams.set("pagos_page", page);
-    } else {
-        url.searchParams.delete("pagos_page");
-    }
 
     // frag=pagos le pide a la vista solo este bloque; no queda en la barra de
     // direcciones para que la URL siga sirviendo para recargar la pagina entera.
@@ -43,27 +35,11 @@ function cargarPagos(gran, ancla, page) {
 }
 
 document.addEventListener("click", (evento) => {
-    // Cambio de granularidad (Semanal / Mensual)
-    const seg = evento.target.closest(".pagos-seg__opt");
-    if (seg && !seg.classList.contains("es-activo")) {
-        evento.preventDefault();
-        cargarPagos(seg.dataset.pagosGran, seg.dataset.pagosAncla);
-        return;
-    }
-
-    // Flechas de periodo (anterior / siguiente)
+    // Flechas de mes (anterior / siguiente)
     const paso = evento.target.closest(".pagos-nav__paso");
     if (paso) {
         evento.preventDefault();
-        cargarPagos(paso.dataset.pagosGran, paso.dataset.pagosAncla);
-        return;
-    }
-
-    // Paginacion de la tabla de pagos (5 por pagina)
-    const pag = evento.target.closest(".pagos-pag");
-    if (pag) {
-        evento.preventDefault();
-        cargarPagos(pag.dataset.pagosGran, pag.dataset.pagosAncla, pag.dataset.pagosPage);
+        cargarPagos(paso.dataset.pagosAncla);
         return;
     }
 

@@ -34,7 +34,7 @@ from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo
                        nombre_empleado_filtro, nombre_vehiculo_filtro, nombre_destino_reparto_filtro,
                        editar_empleado, eliminar_empleado, obtener_datos_empleado, crear_pago_empleado, fijar_sueldo_empleado,
                        editar_pago_empleado, eliminar_pago_empleado,
-                       obtener_cuenta_corriente, resolver_granularidad_pagos, resolver_ancla_pagos,
+                       obtener_cuenta_corriente, resolver_ancla_pagos,
                        rango_periodo_pagos, desplazar_periodo_pagos, etiqueta_periodo_pagos,
                        editar_vehiculo, eliminar_vehiculo,
                        crear_registro_km, editar_registro_km, eliminar_registro_km, obtener_registros_km,
@@ -160,32 +160,25 @@ def _rango_gastos(request):
 
 
 def _contexto_pagos_empleado(request, empleado):
-    """Arma el bloque de pagos del perfil para el periodo pedido en la URL.
+    """Arma el bloque de cuenta corriente del perfil para el mes pedido en la URL.
 
-    La granularidad ('semana' o 'mes') y el periodo (su primer dia, en
-    'pagos_ancla') viajan por la URL, asi el bloque es enlazable y sobrevive al
-    POST de un pago nuevo. El periodo se identifica siempre por su primer dia.
+    El mes (su primer dia, en 'pagos_ancla') viaja por la URL, asi el bloque es
+    enlazable y sobrevive al POST de un pago nuevo. Se muestran todos los
+    movimientos del mes, sin paginar, para no cortar semanas entre paginas.
     """
-    granularidad = resolver_granularidad_pagos(request.GET.get("pagos_gran"))
-    inicio = resolver_ancla_pagos(request.GET.get("pagos_ancla"), granularidad)
-    desde, hasta = rango_periodo_pagos(inicio, granularidad)
+    inicio = resolver_ancla_pagos(request.GET.get("pagos_ancla"))
+    desde, hasta = rango_periodo_pagos(inicio)
 
     cuenta = obtener_cuenta_corriente(empleado, desde, hasta)
 
-    # El saldo inicial/final del periodo se calcula sobre todas las filas; recien
-    # despues pagino de a 8 para no romper esos bordes de la cuenta.
-    paginador_pagos = Paginator(cuenta["filas"], 8)
-    pagina_pagos = paginador_pagos.get_page(request.GET.get("pagos_page"))
-
     return {
-        "pagos": pagina_pagos,
+        "pagos": cuenta["filas"],
         "cuenta": cuenta,
-        "pagos_granularidad": granularidad,
         "pagos_inicio": inicio,
         "pagos_fin": hasta,
-        "pagos_label": etiqueta_periodo_pagos(inicio, hasta, granularidad),
-        "pagos_ancla_anterior": desplazar_periodo_pagos(inicio, granularidad, -1),
-        "pagos_ancla_siguiente": desplazar_periodo_pagos(inicio, granularidad, 1),
+        "pagos_label": etiqueta_periodo_pagos(inicio),
+        "pagos_ancla_anterior": desplazar_periodo_pagos(inicio, -1),
+        "pagos_ancla_siguiente": desplazar_periodo_pagos(inicio, 1),
     }
 
 
@@ -342,8 +335,8 @@ def informacion_empleado(request, id_empleado):
 
         return redirect("informacion_empleado", id_empleado=empleado.id)
 
-    # El bloque de pagos se refresca solo con su propio filtro (semana/mes +
-    # flechas), asi que ante frag=pagos devuelvo unicamente ese pedazo.
+    # El bloque de cuenta corriente se refresca solo con sus flechas de mes, asi
+    # que ante frag=pagos devuelvo unicamente ese pedazo.
     es_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
     if es_ajax and request.GET.get("frag") == "pagos":
         return render(request, "pagos_empleado.html", {

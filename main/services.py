@@ -1296,79 +1296,50 @@ def eliminar_pago_empleado(id_pago, id_empleado):
 
 
 # -----------------------------------------------------------------------------
-# PERIODO DE PAGOS DEL EMPLEADO (semana a semana / mes a mes)
+# PERIODO DE PAGOS DEL EMPLEADO (mes a mes)
 #
-# El perfil mira los pagos de a un periodo por vez, con dos granularidades:
-# "semana" (lunes a domingo) y "mes" (dia 1 a fin de mes), navegables con flechas,
-# igual que el mes a mes de alquileres. El periodo se identifica siempre por su
-# primer dia (el lunes de la semana o el 1 del mes), asi entra en un DateField,
-# se ordena y se compara sin ambiguedad y no importa que dia del periodo lo
-# escriba el usuario.
+# El perfil mira la cuenta corriente de a un mes por vez, navegable con flechas,
+# igual que el mes a mes de alquileres. El mes se identifica siempre por su
+# primer dia (el 1), asi entra en un DateField, se ordena y se compara sin
+# ambiguedad y no importa que dia del mes lo escriba el usuario. Dentro del mes,
+# las filas se agrupan por semana (lunes a domingo) con una franja divisoria.
 # -----------------------------------------------------------------------------
 
-GRANULARIDADES_PAGOS = ("semana", "mes")
+
+def _lunes_de(fecha):
+    """Lunes de la semana (lunes a domingo) que contiene a 'fecha'."""
+    return fecha - timedelta(days=fecha.weekday())
 
 
-def resolver_granularidad_pagos(valor):
-    """Granularidad valida a partir del parametro de la URL; ante cualquier cosa
-    rara cae en 'semana', que es como arranca la pantalla."""
-    return valor if valor in GRANULARIDADES_PAGOS else "semana"
-
-
-def _inicio_periodo_pagos(ancla, granularidad):
-    """Primer dia del periodo que contiene a 'ancla' segun la granularidad.
-
-    - semana: retrocede hasta el lunes (weekday 0)
-    - mes:    el dia 1 del mes
-    """
-    if granularidad == "mes":
-        return ancla.replace(day=1)
-    return ancla - timedelta(days=ancla.weekday())
-
-
-def resolver_ancla_pagos(valor, granularidad):
-    """Primer dia del periodo a mostrar, a partir del parametro 'pagos_ancla'.
+def resolver_ancla_pagos(valor):
+    """Primer dia del mes a mostrar, a partir del parametro 'pagos_ancla'.
 
     No explota si el valor viene vacio, mal escrito o pegado a mano: cae en el
-    periodo que contiene el dia de hoy, que es lo que el usuario espera al entrar.
+    mes que contiene el dia de hoy, que es lo que el usuario espera al entrar.
     """
     try:
         ancla = datetime.strptime(str(valor).strip(), "%Y-%m-%d").date()
     except (ValueError, TypeError, AttributeError):
         ancla = timezone.localdate()
-    return _inicio_periodo_pagos(ancla, granularidad)
+    return ancla.replace(day=1)
 
 
-def rango_periodo_pagos(inicio, granularidad):
-    """(desde, hasta) inclusivos del periodo que empieza en 'inicio'."""
-    if granularidad == "mes":
-        return inicio, mes_desplazado(inicio, 1) - timedelta(days=1)
-    return inicio, inicio + timedelta(days=6)
+def rango_periodo_pagos(inicio):
+    """(desde, hasta) inclusivos del mes que empieza en 'inicio'."""
+    return inicio, mes_desplazado(inicio, 1) - timedelta(days=1)
 
 
-def desplazar_periodo_pagos(inicio, granularidad, paso):
-    """Corre el periodo 'paso' unidades hacia adelante (o atras). Sirve para las
-    flechas: una semana son 7 dias; un mes lo resuelve mes_desplazado, que ya
-    contempla el cambio de año."""
-    if granularidad == "mes":
-        return mes_desplazado(inicio, paso)
-    return inicio + timedelta(days=7 * paso)
+def desplazar_periodo_pagos(inicio, paso):
+    """Corre el mes 'paso' unidades hacia adelante (o atras). Sirve para las
+    flechas: mes_desplazado ya contempla el cambio de año."""
+    return mes_desplazado(inicio, paso)
 
 
-def etiqueta_periodo_pagos(inicio, fin, granularidad):
-    """Texto legible del periodo para la barra de navegacion.
-
-    - mes:    "Agosto 2026"
-    - semana: "1 al 7 de Ago 2026" (o cruzando meses: "28 Jul al 3 Ago 2026")
-    """
+def etiqueta_periodo_pagos(inicio):
+    """Texto legible del mes para la barra de navegacion: "Agosto 2026"."""
     from django.utils.formats import date_format
 
-    if granularidad == "mes":
-        return date_format(inicio, "F Y").capitalize()
-
-    if inicio.month == fin.month:
-        return f"{inicio.day} al {date_format(fin, 'j \\d\\e M Y')}"
-    return f"{date_format(inicio, 'j M')} al {date_format(fin, 'j M Y')}"
+    return date_format(inicio, "F Y").capitalize()
 
 
 def _presentar_saldo(saldo):
@@ -1384,57 +1355,44 @@ def _presentar_saldo(saldo):
     }
 
 
-def _eventos_cuenta_corriente(empleado, corte, esperado_semana, tope):
-    """Todos los movimientos de la cuenta desde 'corte' (lunes) hasta 'tope',
-    sin ordenar. Tres fuentes, con el signo desde la mirada del empleado:
+def _movimientos_cuenta_corriente(empleado, desde, hasta):
+    """Movimientos que le pagan al empleado dentro del mes [desde, hasta], sin
+    ordenar. Dos fuentes, ambas suman a lo cobrado:
 
-    - Sueldo devengado: +esperado_semana por cada lunes de semana (lo que se le
-      pasa a deber cuando arranca la semana).
-    - Comisiones cobradas y pagos reales: -monto (adelantan/cubren ese sueldo).
+    - Comisiones cobradas por viajes de cereal.
+    - Pagos reales cargados a mano.
     """
     eventos = []
-
-    # Sueldo: un evento por semana, fechado el lunes en que se abre.
-    semana = corte
-    while semana <= tope:
-        eventos.append({
-            "fecha": semana,
-            "orden": 0,  # el sueldo se devenga al abrir la semana, antes que nada
-            "tipo": "sueldo",
-            "concepto": "Sueldo de la semana",
-            "monto": esperado_semana,
-        })
-        semana = semana + timedelta(days=7)
 
     # Comisiones: fecha_pago es DateTimeField, acoto por momentos en zona local
     # (mismo motivo que el resto: CONVERT_TZ no sirve sin las tablas de zonas).
     tz = timezone.get_current_timezone()
-    corte_dt = timezone.make_aware(datetime.combine(corte, time.min), tz)
-    tope_dt = timezone.make_aware(datetime.combine(tope, time.max), tz)
+    desde_dt = timezone.make_aware(datetime.combine(desde, time.min), tz)
+    hasta_dt = timezone.make_aware(datetime.combine(hasta, time.max), tz)
     comisiones = (ViajeCereal.objects
                   .filter(empleado=empleado, activo=True, pagado=True,
                           porcentaje_empleado__gt=0,
-                          fecha_pago__gte=corte_dt, fecha_pago__lte=tope_dt)
+                          fecha_pago__gte=desde_dt, fecha_pago__lte=hasta_dt)
                   .prefetch_related("detalle_gastos"))
     for viaje in comisiones:
         eventos.append({
             "fecha": timezone.localtime(viaje.fecha_pago).date(),
-            "orden": 1,
+            "orden": 0,  # dentro del mismo dia, la comision antes que el pago
             "tipo": "comision",
             "concepto": f"Comisión viaje #{viaje.id}",
-            "monto": -viaje.pago_empleado,
+            "monto": viaje.pago_empleado,
             "viaje_id": viaje.id,
             "porcentaje": viaje.porcentaje_empleado,
         })
 
-    pagos = PagosEmpleados.objects.filter(empleado=empleado, fecha__gte=corte, fecha__lte=tope)
+    pagos = PagosEmpleados.objects.filter(empleado=empleado, fecha__gte=desde, fecha__lte=hasta)
     for pago in pagos:
         eventos.append({
             "fecha": pago.fecha,
-            "orden": 2,
+            "orden": 1,
             "tipo": "pago",
             "concepto": pago.observaciones or "Pago",
-            "monto": -pago.monto,
+            "monto": pago.monto,
             "pago_id": pago.id,
             "pago_monto": pago.monto,
             "observaciones": pago.observaciones,
@@ -1443,71 +1401,66 @@ def _eventos_cuenta_corriente(empleado, corte, esperado_semana, tope):
     return eventos
 
 
-def _corte_cuenta(empleado):
-    """Lunes de la semana en que arranca la cuenta, o None si el empleado todavia
-    no tiene cuenta (sin sueldo o sin fecha de inicio). Anclar al lunes deja las
-    semanas completas y alineadas con la navegacion de periodos."""
-    if not empleado.sueldo or empleado.sueldo <= 0 or not empleado.inicio_cuenta:
-        return None
-    return _inicio_periodo_pagos(empleado.inicio_cuenta, "semana")
+def _sobrepago_mes(empleado, desde, hasta):
+    """Cuanto se le pago de mas que el sueldo en el mes [desde, hasta]; 0 si se
+    llego justo o de menos. Sirve para avisar el arrastre a favor en el mes
+    siguiente."""
+    alcanzado = sum((e["monto"] for e in _movimientos_cuenta_corriente(empleado, desde, hasta)),
+                    Decimal("0"))
+    excedente = alcanzado - empleado.sueldo
+    return excedente if excedente > 0 else Decimal("0")
 
 
 def obtener_cuenta_corriente(empleado, desde, hasta):
-    """Cuenta corriente del empleado acotada al periodo [desde, hasta].
+    """Cuenta corriente del empleado para el mes [desde, hasta].
 
-    Devuelve un dict listo para la plantilla:
+    Modelo mensual: cada mes es independiente. Devuelve un dict listo para la
+    plantilla:
 
     - 'activa': si el empleado tiene cuenta (sueldo + fecha de inicio).
-    - 'saldo_inicial': arrastre que entra al periodo (lo acumulado antes de 'desde').
-    - 'filas': movimientos del periodo, viejo -> nuevo, cada uno con su saldo
-      corrido ya calculado para leerlo de arriba hacia abajo.
-    - 'saldo_final': saldo al cerrar el periodo.
-    - 'total_devengado' / 'total_cobrado': totales del periodo, para el pie.
-
-    El sueldo se devenga a razon de sueldo/4 por semana; comisiones y pagos lo
-    adelantan (cuentan como adelanto del sueldo, que es el techo).
+    - 'filas': los movimientos que le pagaron ese mes (comisiones y pagos), viejo
+      -> nuevo, cada uno etiquetado con la semana a la que pertenece.
+    - 'objetivo': el monto al que tenia que llegar en el mes, que es su sueldo.
+    - 'alcanzado': lo efectivamente pagado en el mes (suma de las filas).
+    - 'diferencia': alcanzado - objetivo. Positivo (se pago de mas) queda a favor
+      del empleado; negativo (se pago de menos) queda en contra.
+    - 'sobrepago_anterior': lo que se le pago de mas el mes pasado (0 si no hubo).
+      La plantilla lo muestra como una fila de aviso arriba de todo.
     """
-    corte = _corte_cuenta(empleado)
-    if corte is None:
+    if not empleado.sueldo or empleado.sueldo <= 0 or not empleado.inicio_cuenta:
         return {"activa": False, "filas": [], "cantidad": 0}
 
-    esperado_semana = (empleado.sueldo / 4).quantize(Decimal("0.01"))
-    eventos = _eventos_cuenta_corriente(empleado, corte, esperado_semana, hasta)
-
-    # Cronologico ascendente; 'orden' desempata dentro del mismo dia (primero el
-    # sueldo que se devenga, despues la comision y el pago que lo cubren).
+    eventos = _movimientos_cuenta_corriente(empleado, desde, hasta)
     eventos.sort(key=lambda e: (e["fecha"], e["orden"]))
 
-    saldo = Decimal("0")
-    saldo_inicial = Decimal("0")
-    total_devengado = Decimal("0")
-    total_cobrado = Decimal("0")
+    alcanzado = Decimal("0")
     filas = []
     for ev in eventos:
-        saldo += ev["monto"]
-        if ev["fecha"] < desde:
-            # Todo lo anterior al periodo se resume en el saldo inicial.
-            saldo_inicial = saldo
-            continue
-
-        if ev["monto"] >= 0:
-            total_devengado += ev["monto"]
-        else:
-            total_cobrado += -ev["monto"]
-
+        alcanzado += ev["monto"]
         fila = dict(ev)
-        fila["es_ingreso"] = ev["monto"] >= 0
         fila["monto_abs"] = abs(ev["monto"])
-        fila["saldo"] = _presentar_saldo(saldo)
+        # Semana (lunes a domingo) a la que pertenece la fila: la plantilla abre
+        # una franja divisoria cada vez que cambia, para separar el mes por semanas.
+        lunes = _lunes_de(ev["fecha"])
+        fila["semana_inicio"] = lunes
+        fila["semana_fin"] = lunes + timedelta(days=6)
         filas.append(fila)
+
+    # Arrastre a favor: solo si el mes anterior (ya dentro de la cuenta) se pago
+    # de mas. Es un aviso, no cuenta en el objetivo ni en lo pagado de este mes.
+    prev_desde = mes_desplazado(desde, -1)
+    prev_hasta = desde - timedelta(days=1)
+    if empleado.inicio_cuenta <= prev_hasta:
+        sobrepago_anterior = _sobrepago_mes(empleado, prev_desde, prev_hasta)
+    else:
+        sobrepago_anterior = Decimal("0")
 
     return {
         "activa": True,
-        "esperado_semana": esperado_semana,
-        "saldo_inicial": _presentar_saldo(saldo_inicial),
-        "saldo_final": _presentar_saldo(saldo),
-        "total_devengado": total_devengado,
-        "total_cobrado": total_cobrado,
+        "objetivo": empleado.sueldo,
+        "alcanzado": alcanzado,
+        "diferencia": _presentar_saldo(alcanzado - empleado.sueldo),
+        "sobrepago_anterior": sobrepago_anterior,
         "filas": filas,
         "cantidad": len(filas),
     }
