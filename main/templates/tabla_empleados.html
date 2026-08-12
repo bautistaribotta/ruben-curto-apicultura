@@ -2,6 +2,7 @@
   <thead>
     <tr id="encabezado-tabla-empleados">
       <th> Empleados </th>
+      <th> Vencimiento carnet </th>
       <th class="texto-derecha"> Acciones </th>
     </tr>
   </thead>
@@ -19,6 +20,20 @@
             </div>
           </a>
         </td>
+        <td class="celda-carnet">
+          {% comment %}
+            Vencimiento del carnet con su semaforo (mismo lenguaje que los
+            vencimientos de vehiculos). Sin fecha cargada queda "Sin cargar".
+          {% endcomment %}
+          {% if empleado.estado_carnet %}
+            <span class="chip-carnet chip-carnet--{{ empleado.estado_carnet.nivel }}">
+              <span class="chip-carnet__dot"></span>
+              {{ empleado.estado_carnet.fecha|date:"d/m/Y" }}
+            </span>
+          {% else %}
+            <span class="chip-carnet chip-carnet--sin-dato">Sin cargar</span>
+          {% endif %}
+        </td>
         <td>
           <div class="acciones-tabla">
             <button class="boton-icono editar" title="Editar" data-id="{{ empleado.id }}">
@@ -35,7 +50,7 @@
       </tr>
     {% empty %}
       <tr class="fila-vacia">
-        <td colspan="2" class="celda-vacia">
+        <td colspan="3" class="celda-vacia">
           <span class="material-symbols-outlined">badge</span>
           {% if q %}No se encontraron empleados con esos filtros.{% else %}No hay empleados registrados.{% endif %}
         </td>

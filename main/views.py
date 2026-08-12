@@ -33,7 +33,7 @@ from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo
                        opciones_destinos_viaje, opciones_destinos_cereal, opciones_destinos_reparto_filtro,
                        nombre_empleado_filtro, nombre_vehiculo_filtro, nombre_destino_reparto_filtro,
                        editar_empleado, eliminar_empleado, obtener_datos_empleado, crear_pago_empleado, fijar_sueldo_empleado,
-                       editar_pago_empleado, eliminar_pago_empleado,
+                       fijar_vencimiento_carnet, editar_pago_empleado, eliminar_pago_empleado,
                        obtener_cuenta_corriente, resolver_ancla_pagos,
                        rango_periodo_pagos, desplazar_periodo_pagos, etiqueta_periodo_pagos,
                        editar_vehiculo, eliminar_vehiculo,
@@ -223,6 +223,34 @@ def inicio(request):
     return render(request, "inicio.html", contexto)
 
 
+def _estado_carnet(fecha, hoy):
+    """Traduce la fecha de vencimiento del carnet a un estado con semaforo.
+
+    Mismo lenguaje que los vencimientos de los vehiculos (vencido/proximo/
+    vigente), pero con una ventana de aviso mas amplia: el carnet se renueva
+    con turno y tramite, asi que "por vencer" se enciende con 60 dias de
+    anticipacion en vez de 30. Devuelve None si todavia no se cargo la fecha,
+    para que la plantilla muestre el estado "sin dato".
+    """
+    if not fecha:
+        return None
+
+    dias = (fecha - hoy).days
+    if dias < 0:
+        nivel = "vencido"
+    elif dias <= 60:
+        nivel = "proximo"
+    else:
+        nivel = "vigente"
+
+    return {
+        "fecha": fecha,
+        "dias_restantes": dias,
+        "dias_abs": abs(dias),
+        "nivel": nivel,
+    }
+
+
 @staff_member_required
 def empleados(request):
     if request.method == "POST":
@@ -268,6 +296,12 @@ def empleados(request):
     paginator_empleados = Paginator(empleados_list, 10)
     pagina_numero = request.GET.get("page")
     pagina_obj = paginator_empleados.get_page(pagina_numero)
+
+    # El listado muestra el vencimiento del carnet con su semaforo: anoto el
+    # estado en cada empleado de la pagina (solo 10, no hace falta tocar la query).
+    hoy = timezone.localdate()
+    for emp in pagina_obj:
+        emp.estado_carnet = _estado_carnet(emp.vencimiento_carnet, hoy)
 
     contexto = {"empleados": pagina_obj, "q": q}
 
@@ -326,6 +360,17 @@ def informacion_empleado(request, id_empleado):
                 messages.success(request, "Sueldo actualizado correctamente")
                 return redirect("informacion_empleado", id_empleado=empleado.id)
 
+            if accion == "carnet":
+                # El mismo modal da de alta la fecha del carnet y despues la edita.
+                nuevo = empleado.vencimiento_carnet is None
+                fijar_vencimiento_carnet(empleado.id, request.POST.get("vencimiento_carnet"))
+                messages.success(
+                    request,
+                    "Vencimiento del carnet cargado correctamente" if nuevo
+                    else "Vencimiento del carnet actualizado correctamente",
+                )
+                return redirect("informacion_empleado", id_empleado=empleado.id)
+
             editar_empleado(
                 empleado.id,
                 request.POST.get("nombre", ""),
@@ -352,6 +397,7 @@ def informacion_empleado(request, id_empleado):
 
     contexto = {
         "empleado": empleado,
+        "estado_carnet": _estado_carnet(empleado.vencimiento_carnet, timezone.localdate()),
         **_contexto_pagos_empleado(request, empleado),
     }
 

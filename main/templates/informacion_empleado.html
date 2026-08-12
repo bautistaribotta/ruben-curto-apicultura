@@ -85,6 +85,47 @@
     </div>
 
     {% comment %}
+      Carnet de conducir: una sola fecha de vencimiento con su semaforo (mismo
+      lenguaje que los vencimientos de los vehiculos). Sin fecha cargada, la
+      tarjeta invita a agregarla; una vez cargada, el boton pasa a editarla.
+    {% endcomment %}
+    <section class="emp-seccion">
+      <article class="carnet carnet--{% if estado_carnet %}{{ estado_carnet.nivel }}{% else %}sin-dato{% endif %}">
+        <div class="carnet__info">
+          <span class="carnet__icono material-symbols-outlined">id_card</span>
+          <div class="carnet__texto">
+            <div class="carnet__top">
+              <span class="carnet__label">Carnet de conducir</span>
+              {% if estado_carnet %}
+                <span class="carnet__estado">
+                  <span class="carnet__dot"></span>
+                  {% if estado_carnet.nivel == "vencido" %}Vencido{% elif estado_carnet.nivel == "proximo" %}Por vencer{% else %}Vigente{% endif %}
+                </span>
+              {% endif %}
+            </div>
+            {% if estado_carnet %}
+              <p class="carnet__valor">
+                {% if estado_carnet.dias_restantes < 0 %}Vencido{% elif estado_carnet.dias_restantes == 0 %}Vence hoy{% else %}{{ estado_carnet.dias_restantes }}<span class="carnet__unidad">día{{ estado_carnet.dias_restantes|pluralize }}</span>{% endif %}
+              </p>
+              <p class="carnet__pie">
+                {% if estado_carnet.dias_restantes < 0 %}Venció hace {{ estado_carnet.dias_abs }} día{{ estado_carnet.dias_abs|pluralize }} · {{ estado_carnet.fecha|date:"d/m/Y" }}{% else %}Vence el {{ estado_carnet.fecha|date:"d/m/Y" }}{% endif %}
+              </p>
+            {% else %}
+              <p class="carnet__valor carnet__valor--vacio">Sin cargar</p>
+              <p class="carnet__pie">Agregá el vencimiento para controlar la vigencia</p>
+            {% endif %}
+          </div>
+        </div>
+
+        <button type="button" class="boton-accion boton-editar" id="boton-carnet"
+                data-vencimiento="{{ empleado.vencimiento_carnet|date:'Y-m-d' }}">
+          <span class="material-symbols-outlined">{% if estado_carnet %}edit_calendar{% else %}add{% endif %}</span>
+          {% if estado_carnet %}Editar vencimiento{% else %}Agregar vencimiento{% endif %}
+        </button>
+      </article>
+    </section>
+
+    {% comment %}
       Pagos al empleado. Junta los pagos reales (PagosEmpleados) con las comisiones
       por viajes de cereal. Todo lo que depende del periodo (semana/mes + flechas)
       vive en pagos_empleado.html, que informacion_empleado.js reemplaza por AJAX.
@@ -216,6 +257,48 @@
         <footer class="pie-modal-pago">
           <button type="submit" class="boton-primario">Guardar sueldo</button>
           <button type="button" class="boton-secundario" onclick="cerrarModalSueldo()">Cancelar</button>
+        </footer>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL VENCIMIENTO DEL CARNET
+       Reusa el esqueleto de los modales de pago/sueldo (velo + tarjeta), con un
+       unico campo: la fecha de vencimiento. El mismo modal da de alta la fecha
+       y despues la edita; el titulo y el boton cambian segun el caso desde el JS. -->
+  <div id="contenedor-modal-carnet">
+    <div id="fondo-modal-carnet" onclick="cerrarModalCarnet()"></div>
+
+    <div id="panel-modal-carnet" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-carnet">
+      <form id="form-carnet-empleado" method="POST" autocomplete="off">
+        {% csrf_token %}
+        <input type="hidden" name="accion" value="carnet">
+
+        <header class="panel-cabecera">
+          <div class="panel-titulo-fila">
+            <div class="icono-contenedor">
+              <span class="material-symbols-outlined">id_card</span>
+            </div>
+            <div class="texto-cabecera">
+              <h3 id="titulo-modal-carnet">Vencimiento del carnet</h3>
+              <p>{{ empleado.nombre }} {{ empleado.apellido }}</p>
+            </div>
+          </div>
+          <button type="button" class="boton-cerrar" onclick="cerrarModalCarnet()">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </header>
+
+        <main class="cuerpo-modal-pago">
+          <div class="grupo-input">
+            <label for="vencimiento-carnet">Fecha de vencimiento</label>
+            <input type="date" id="vencimiento-carnet" name="vencimiento_carnet" required>
+          </div>
+        </main>
+
+        <footer class="pie-modal-pago">
+          <button type="submit" class="boton-primario" id="boton-guardar-carnet">Guardar vencimiento</button>
+          <button type="button" class="boton-secundario" onclick="cerrarModalCarnet()">Cancelar</button>
         </footer>
       </form>
     </div>

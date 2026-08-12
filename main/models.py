@@ -238,9 +238,12 @@ class Empleado(models.Model):
     apellido = models.CharField(max_length=25)
     sueldo = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     # Dia desde el que arranca a contar la cuenta corriente (saldo en 0). Se fija
-    # solo la primera vez que se carga un sueldo; antes de ese dia no se devenga
-    # sueldo ni se cuentan pagos. Null mientras el empleado no tenga cuenta.
+    # solo la primera vez que se carga un sueldo; antes de ese dia no se muestran
+    # sueldos ni se cuentan pagos. Null mientras el empleado no tenga cuenta.
     inicio_cuenta = models.DateField(null=True, blank=True)
+    # Fecha unica de vencimiento del carnet de conducir. Null mientras no se
+    # cargue: el perfil ofrece un boton para darla de alta y despues editarla.
+    vencimiento_carnet = models.DateField(null=True, blank=True)
     activo = models.BooleanField(default=True)
 
     class Meta:

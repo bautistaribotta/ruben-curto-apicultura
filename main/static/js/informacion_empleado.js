@@ -263,6 +263,59 @@ document.addEventListener("keydown", (evento) => {
     }
 });
 
+// ---------- MODAL DE CARNET (ALTA Y EDICION) ----------
+// Un unico campo: la fecha de vencimiento del carnet. El boton de la tarjeta lo
+// abre con la fecha actual ya cargada (vacio si todavia no hay ninguna). El
+// titulo y el boton cambian segun sea un alta o una edicion.
+
+function mostrarModalCarnet() {
+    const contenedor = document.getElementById("contenedor-modal-carnet");
+    if (!contenedor) return;
+
+    contenedor.classList.add("abierto");
+    document.body.classList.add("con-modal-abierto");
+
+    document.getElementById("vencimiento-carnet").focus();
+}
+
+function abrirModalCarnet(vencimientoActual) {
+    const form = document.getElementById("form-carnet-empleado");
+    if (!form) return;
+
+    form.reset();
+
+    // Con fecha ya cargada es una edicion; sin fecha, un alta. El data-* viene
+    // en formato "YYYY-MM-DD", que es justo lo que espera el input date.
+    const esEdicion = Boolean(vencimientoActual);
+    document.getElementById("vencimiento-carnet").value = vencimientoActual || "";
+    document.getElementById("titulo-modal-carnet").textContent =
+        esEdicion ? "Editar vencimiento" : "Agregar vencimiento";
+    document.getElementById("boton-guardar-carnet").textContent =
+        esEdicion ? "Guardar cambios" : "Guardar vencimiento";
+
+    mostrarModalCarnet();
+}
+
+function cerrarModalCarnet() {
+    const contenedor = document.getElementById("contenedor-modal-carnet");
+    if (!contenedor) return;
+
+    contenedor.classList.remove("abierto");
+    document.body.classList.remove("con-modal-abierto");
+
+    document.getElementById("form-carnet-empleado").reset();
+}
+
+document.getElementById("boton-carnet")?.addEventListener("click", (evento) => {
+    abrirModalCarnet(evento.currentTarget.dataset.vencimiento);
+});
+
+document.addEventListener("keydown", (evento) => {
+    if (evento.key === "Escape" && document.getElementById("contenedor-modal-carnet")?.classList.contains("abierto")) {
+        cerrarModalCarnet();
+    }
+});
+
 // ---------- PANELES DE EDICION Y ELIMINACION ----------
 // Las dos funciones viven en empleados.js, que esta pagina carga antes que a
 // este archivo: el perfil abre los mismos paneles que el listado.

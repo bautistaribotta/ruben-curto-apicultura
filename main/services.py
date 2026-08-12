@@ -1194,6 +1194,29 @@ def fijar_sueldo_empleado(id_empleado, sueldo):
     return empleado
 
 
+def fijar_vencimiento_carnet(id_empleado, fecha):
+    """Fija la fecha de vencimiento del carnet de conducir de un empleado.
+
+    La fecha llega del modal como texto "YYYY-MM-DD". El mismo servicio sirve
+    para el alta (todavia no habia fecha) y para las ediciones posteriores. Se
+    admite cualquier fecha, incluso pasada: un carnet ya vencido es justamente
+    lo que hay que poder registrar para que el aviso lo marque.
+    """
+    empleado = get_object_or_404(Empleado, id=id_empleado, activo=True)
+
+    if fecha in (None, ""):
+        raise ValueError("La fecha de vencimiento del carnet es obligatoria.")
+
+    try:
+        fecha = datetime.strptime(str(fecha).strip(), "%Y-%m-%d").date()
+    except (ValueError, TypeError):
+        raise ValueError("La fecha de vencimiento del carnet no es válida.")
+
+    empleado.vencimiento_carnet = fecha
+    empleado.save(update_fields=["vencimiento_carnet"])
+    return empleado
+
+
 def eliminar_empleado(id_empleado):
     empleado = get_object_or_404(Empleado, id=id_empleado)
     empleado.activo = False
