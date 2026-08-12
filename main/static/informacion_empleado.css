@@ -473,37 +473,58 @@
   color: var(--text-strong);
 }
 
-/* --- Arrastre a favor: aviso arriba de todo cuando el mes pasado se pago de mas ---
-   Verde suave con acento pino a la izquierda, para leerse como un saldo a favor
-   que viene del mes anterior y distinguirse de las filas de movimiento. */
+/* --- Arrastre del mes pasado: aviso arriba de todo ---
+   Franja con acento a la izquierda que se distingue de las filas de movimiento.
+   El color lo pone el modificador: a favor en verde/pino, deuda en rojo. */
 .fila-arrastre td {
   padding: 0.7rem 1.25rem;
-  background-color: var(--success-50);
   border-bottom: 1px solid var(--border-subtle);
-  box-shadow: inset 0.25rem 0 0 var(--pine-900);
-}
-
-/* No es un movimiento: no reacciona al hover de las filas. */
-.tabla-pagos tbody tr.fila-arrastre:hover {
-  background-color: var(--success-50);
 }
 
 .fila-arrastre__texto {
   font-size: var(--text-sm);
   line-height: 1.5;
-  color: var(--pine-900);
 }
 
 .fila-arrastre__icono {
   vertical-align: middle;
   margin-right: 0.4rem;
   font-size: 1.15rem;
-  color: var(--pine-900);
 }
 
 .fila-arrastre__texto strong {
   font-weight: var(--weight-bold);
   font-variant-numeric: tabular-nums;
+}
+
+/* A favor: se pagó de más el mes pasado (verde suave, acento pino). */
+.fila-arrastre--favor td {
+  background-color: var(--success-50);
+  box-shadow: inset 0.25rem 0 0 var(--pine-900);
+}
+
+.tabla-pagos tbody tr.fila-arrastre--favor:hover {
+  background-color: var(--success-50);
+}
+
+.fila-arrastre--favor .fila-arrastre__texto,
+.fila-arrastre--favor .fila-arrastre__icono {
+  color: var(--pine-900);
+}
+
+/* Deuda: se le quedó debiendo el mes pasado (rojo suave, acento rojo). */
+.fila-arrastre--deuda td {
+  background-color: var(--danger-50);
+  box-shadow: inset 0.25rem 0 0 var(--danger-600);
+}
+
+.tabla-pagos tbody tr.fila-arrastre--deuda:hover {
+  background-color: var(--danger-50);
+}
+
+.fila-arrastre--deuda .fila-arrastre__texto,
+.fila-arrastre--deuda .fila-arrastre__icono {
+  color: var(--danger-600);
 }
 
 /* --- Franja divisoria de semana dentro del mes ---

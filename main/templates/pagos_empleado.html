@@ -72,15 +72,25 @@
         </thead>
         <tbody>
           {% comment %}
-            Arrastre a favor: si el mes pasado se pago de mas, arranca la tabla
-            con un aviso, arriba de todo. Ese excedente ya suma a lo pagado del mes.
+            Arrastre del mes pasado: arranca la tabla con un aviso, arriba de todo.
+            A favor (se pagó de más) ya suma a lo pagado del mes; en contra (se le
+            debe) se suma al objetivo del mes.
           {% endcomment %}
-          {% if cuenta.sobrepago_anterior %}
-          <tr class="fila-arrastre">
+          {% if cuenta.arrastre.a_favor %}
+          <tr class="fila-arrastre fila-arrastre--favor">
             <td colspan="4">
               <span class="fila-arrastre__texto">
                 <span class="material-symbols-outlined fila-arrastre__icono">savings</span>
-                El mes pasado le diste <strong>${{ cuenta.sobrepago_anterior|floatformat:"0"|intcomma }}</strong> de más con respecto al sueldo. Figura ahora en lo pagado de este mes.
+                El mes pasado le diste <strong>${{ cuenta.arrastre.abs|floatformat:"0"|intcomma }}</strong> de más con respecto al sueldo. Figura ahora en lo pagado de este mes.
+              </span>
+            </td>
+          </tr>
+          {% elif cuenta.arrastre.en_contra %}
+          <tr class="fila-arrastre fila-arrastre--deuda">
+            <td colspan="4">
+              <span class="fila-arrastre__texto">
+                <span class="material-symbols-outlined fila-arrastre__icono">warning</span>
+                Le debés <strong>${{ cuenta.arrastre.abs|floatformat:"0"|intcomma }}</strong> del mes pasado con respecto al sueldo. Se suma al objetivo de este mes.
               </span>
             </td>
           </tr>
@@ -179,7 +189,7 @@
 
       <div class="cuenta-cierre__cifra cuenta-cierre__cifra--dif">
         <span class="cuenta-cierre__rotulo">
-          {% if cuenta.diferencia.a_favor %}A favor tuyo{% elif cuenta.diferencia.en_contra %}En contra{% else %}Al día{% endif %}
+          {% if cuenta.diferencia.a_favor %}A favor tuyo{% elif cuenta.diferencia.en_contra %}Le debés{% else %}Al día{% endif %}
         </span>
         <span class="cuenta-cierre__valor cuenta-cierre__valor--dif{% if cuenta.diferencia.a_favor %} cuenta-cierre__valor--favor{% elif cuenta.diferencia.en_contra %} cuenta-cierre__valor--contra{% endif %}">
           {% if cuenta.diferencia.a_favor %}+{% elif cuenta.diferencia.en_contra %}&minus;{% endif %}${{ cuenta.diferencia.abs|floatformat:"0"|intcomma }}

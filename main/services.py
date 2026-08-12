@@ -1401,29 +1401,27 @@ def _movimientos_cuenta_corriente(empleado, desde, hasta):
     return eventos
 
 
-def _arrastre_a_favor(empleado, desde):
-    """Excedente (pago de mas) que llega arrastrado al mes que empieza en 'desde'.
+def _saldo_arrastre(empleado, desde):
+    """Saldo que llega arrastrado al mes que empieza en 'desde', con signo.
 
     Se acumula mes a mes desde el inicio de la cuenta: cada mes suma sus
-    movimientos al arrastre que traia y lo que supere el sueldo pasa al mes
-    siguiente; si un mes no llega al sueldo, el arrastre se corta en cero. Por eso
-    lo que entra a 'desde' es exactamente el saldo a favor con que cerro el mes
-    anterior."""
+    movimientos al arrastre que traia y le resta el sueldo; el resultado pasa al
+    mes siguiente. Positivo significa que se le pago de mas (a favor); negativo,
+    que se le quedo debiendo. Es, en definitiva, todo lo pagado menos todos los
+    sueldos anteriores a 'desde'."""
     inicio_mes = empleado.inicio_cuenta.replace(day=1)
     if desde <= inicio_mes:
         return Decimal("0")
 
-    carry = Decimal("0")
+    saldo = Decimal("0")
     mes = inicio_mes
     while mes < desde:
         m_desde, m_hasta = mes, mes_desplazado(mes, 1) - timedelta(days=1)
         pagado = sum((e["monto"] for e in _movimientos_cuenta_corriente(empleado, m_desde, m_hasta)),
                      Decimal("0"))
-        carry = pagado + carry - empleado.sueldo
-        if carry < 0:
-            carry = Decimal("0")
+        saldo += pagado - empleado.sueldo
         mes = mes_desplazado(mes, 1)
-    return carry
+    return saldo
 
 
 def obtener_cuenta_corriente(empleado, desde, hasta):
@@ -1436,13 +1434,13 @@ def obtener_cuenta_corriente(empleado, desde, hasta):
     - 'filas': los movimientos que le pagaron ese mes (comisiones y pagos), viejo
       -> nuevo, cada uno etiquetado con la semana a la que pertenece.
     - 'objetivo': el monto al que tenia que llegar en el mes, que es su sueldo.
-    - 'alcanzado': lo pagado del mes, contando el arrastre a favor del mes anterior
-      (movimientos del mes + sobrepago_anterior).
+    - 'alcanzado': lo pagado del mes contando el arrastre del mes anterior
+      (movimientos del mes + arrastre, este ultimo con signo).
     - 'diferencia': alcanzado - objetivo. Positivo (se pago de mas) queda a favor
       del empleado; negativo (se pago de menos) queda en contra.
-    - 'sobrepago_anterior': lo que se le pago de mas el mes pasado (0 si no hubo).
-      Suma a lo pagado de este mes y la plantilla lo muestra como una fila de
-      aviso arriba de todo.
+    - 'arrastre': el saldo con que se cerro el mes anterior. A favor suma a lo
+      pagado de este mes; en contra (se le debe) lo resta. La plantilla lo muestra
+      como una fila de aviso arriba de todo.
     """
     if not empleado.sueldo or empleado.sueldo <= 0 or not empleado.inicio_cuenta:
         return {"activa": False, "filas": [], "cantidad": 0}
@@ -1463,17 +1461,24 @@ def obtener_cuenta_corriente(empleado, desde, hasta):
         fila["semana_fin"] = lunes + timedelta(days=6)
         filas.append(fila)
 
-    # El excedente con que cerro el mes anterior se arrastra y cuenta como ya
-    # pagado de este mes (asi el saldo a favor no se pierde de un mes al otro).
-    sobrepago_anterior = _arrastre_a_favor(empleado, desde)
-    alcanzado = movimientos_total + sobrepago_anterior
+    # El saldo con que cerro el mes anterior se arrastra. A favor cuenta como ya
+    # pagado de este mes; en contra (se le debe) sube el objetivo, porque hay que
+    # cubrir tambien lo que se venia debiendo. En los dos casos la diferencia
+    # final es el saldo acumulado real y ni objetivo ni pagado quedan negativos.
+    arrastre = _saldo_arrastre(empleado, desde)
+    if arrastre >= 0:
+        objetivo = empleado.sueldo
+        alcanzado = movimientos_total + arrastre
+    else:
+        objetivo = empleado.sueldo - arrastre
+        alcanzado = movimientos_total
 
     return {
         "activa": True,
-        "objetivo": empleado.sueldo,
+        "objetivo": objetivo,
         "alcanzado": alcanzado,
-        "diferencia": _presentar_saldo(alcanzado - empleado.sueldo),
-        "sobrepago_anterior": sobrepago_anterior,
+        "diferencia": _presentar_saldo(alcanzado - objetivo),
+        "arrastre": _presentar_saldo(arrastre),
         "filas": filas,
         "cantidad": len(filas),
     }
