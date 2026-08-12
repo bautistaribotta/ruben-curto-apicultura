@@ -224,16 +224,14 @@
 .carnet--proximo { --acento: var(--brand-active); }
 .carnet--vencido { --acento: var(--danger-600); }
 
-/* Solo las que tienen un problema se encienden; vigente y sin dato quedan
-   tranquilas, con un acento a la izquierda que marca el estado sin gritar. */
+/* Solo las que tienen un problema se encienden con su fondo; vigente y sin dato
+   quedan tranquilas. El estado ya se lee en el color del dato y la lampara. */
 .carnet--proximo {
   background-color: var(--honey-tint-10);
-  box-shadow: inset 0.25rem 0 0 var(--brand-active), var(--shadow-sm);
 }
 
 .carnet--vencido {
   background-color: var(--danger-50);
-  box-shadow: inset 0.25rem 0 0 var(--danger-600), var(--shadow-sm);
 }
 
 .carnet__info {
