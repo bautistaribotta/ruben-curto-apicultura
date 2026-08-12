@@ -6,10 +6,9 @@
 {% comment %}
   Perfil de empleado.
 
-  La pagina tiene dos mitades. Los pagos se renderizan aca y no dependen de
-  ningun filtro. Los gastos y los viajes viven en secciones_empleado.html, que se
-  incluye tanto en esta pagina como en la respuesta AJAX: al cambiar el rango de
-  fechas o la pestaña de tipo de viaje se reemplaza ese bloque entero.
+  El bloque de pagos (cuenta corriente) se refresca solo con su propio filtro
+  (semana/mes + flechas): informacion_empleado.js reemplaza #seccion-pagos por
+  AJAX sin tocar el resto de la pagina.
 {% endcomment %}
 
 {% block nombre-pestaña %}
@@ -22,7 +21,6 @@
     asi el perfil usa exactamente los mismos paneles que el listado.
   {% endcomment %}
   <link rel="stylesheet" href="{% static_v 'empleados.css' %}">
-  <link rel="stylesheet" href="{% static_v 'filtro_fechas.css' %}">
   <link rel="stylesheet" href="{% static_v 'informacion_empleado.css' %}">
 {% endblock %}
 
@@ -101,21 +99,6 @@
         {% include 'pagos_empleado.html' %}
       </div>
     </section>
-
-    {% comment %}
-      El chip de fechas queda fuera de #secciones-empleado a proposito: filtro_fechas.js
-      se engancha una sola vez al cargar la pagina, asi que si el AJAX lo reemplazara
-      se quedaria sin eventos.
-    {% endcomment %}
-    <div class="barra-periodo">
-      <p class="barra-periodo__texto">Gastos y viajes del período</p>
-      {% include 'filtro_fechas.html' %}
-    </div>
-
-    <!-- Gastos rendidos y viajes. Se reemplaza entero por AJAX al filtrar. -->
-    <div id="secciones-empleado">
-      {% include 'secciones_empleado.html' %}
-    </div>
 
   </div>
 
@@ -328,6 +311,5 @@
 {% block codigo-javascript %}
   <script src="{% static_v 'js/paneles.js' %}"></script>
   <script src="{% static_v 'js/empleados.js' %}"></script>
-  <script src="{% static_v 'js/filtro_fechas.js' %}"></script>
   <script src="{% static_v 'js/informacion_empleado.js' %}"></script>
 {% endblock %}

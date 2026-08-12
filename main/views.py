@@ -34,7 +34,6 @@ from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo
                        nombre_empleado_filtro, nombre_vehiculo_filtro, nombre_destino_reparto_filtro,
                        editar_empleado, eliminar_empleado, obtener_datos_empleado, crear_pago_empleado, fijar_sueldo_empleado,
                        editar_pago_empleado, eliminar_pago_empleado,
-                       obtener_gastos_empleado, obtener_viajes_empleado, TIPOS_VIAJE_EMPLEADO,
                        obtener_cuenta_corriente, resolver_granularidad_pagos, resolver_ancla_pagos,
                        rango_periodo_pagos, desplazar_periodo_pagos, etiqueta_periodo_pagos,
                        editar_vehiculo, eliminar_vehiculo,
@@ -157,28 +156,6 @@ def _rango_gastos(request):
             and hasta + timedelta(days=1) == mes_desplazado(desde, 1)):
         ctx["fecha_label"] = date_format(desde, "F Y").capitalize()
 
-    return desde, hasta, ctx
-
-
-def _rango_fechas_empleado(request):
-    """Igual que _rango_fechas pero con el año en curso como valor por defecto.
-
-    El perfil del empleado arranca mostrando el año actual, no txdo el historial.
-    Para poder distinguir "recien entre a la pagina" de "vacie el filtro a mano"
-    miro si los parametros vinieron en la URL: informacion_empleado.js los manda
-    siempre, aunque esten vacios, justamente para poder ver el historial completo.
-    """
-    if "desde" in request.GET or "hasta" in request.GET:
-        return _rango_fechas(request)
-
-    año = timezone.localdate().year
-    desde = date(año, 1, 1)
-    hasta = date(año, 12, 31)
-    ctx = {
-        "desde": desde.isoformat(),
-        "hasta": hasta.isoformat(),
-        "fecha_label": f"Año {año}",
-    }
     return desde, hasta, ctx
 
 
@@ -365,39 +342,9 @@ def informacion_empleado(request, id_empleado):
 
         return redirect("informacion_empleado", id_empleado=empleado.id)
 
-    # Rango de fechas del chip. Por defecto, el año en curso.
-    desde, hasta, ctx_fechas = _rango_fechas_empleado(request)
-
-    # Gastos rendidos y viajes, ambos acotados al mismo rango de fechas.
-    gastos = obtener_gastos_empleado(empleado, desde, hasta)
-
-    tipo = request.GET.get("tipo", "todos")
-    if tipo not in TIPOS_VIAJE_EMPLEADO:
-        tipo = "todos"
-
-    filas_viajes, conteos_viajes = obtener_viajes_empleado(empleado, tipo, desde, hasta)
-    paginador_viajes = Paginator(filas_viajes, 10)
-    pagina_viajes = paginador_viajes.get_page(request.GET.get("page_viajes"))
-
-    # Las pestañas se arman aca y no en la plantilla: Django no sabe buscar en un
-    # diccionario con una clave variable.
-    pestañas_viajes = [{
-        "clave": "todos",
-        "etiqueta": "Todos",
-        "cuenta": conteos_viajes["todos"],
-        "activa": tipo == "todos",
-    }]
-    pestañas_viajes += [{
-        "clave": clave,
-        "etiqueta": config["etiqueta"],
-        "cuenta": conteos_viajes[clave],
-        "activa": tipo == clave,
-    } for clave, config in TIPOS_VIAJE_EMPLEADO.items()]
-
-    es_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
-
     # El bloque de pagos se refresca solo con su propio filtro (semana/mes +
     # flechas), asi que ante frag=pagos devuelvo unicamente ese pedazo.
+    es_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
     if es_ajax and request.GET.get("frag") == "pagos":
         return render(request, "pagos_empleado.html", {
             "empleado": empleado,
@@ -406,21 +353,8 @@ def informacion_empleado(request, id_empleado):
 
     contexto = {
         "empleado": empleado,
-        "gastos": gastos,
-        "viajes": pagina_viajes,
-        "tipo": tipo,
-        "pestañas_viajes": pestañas_viajes,
-        "total_viajes_periodo": conteos_viajes["todos"],
-        **ctx_fechas,
+        **_contexto_pagos_empleado(request, empleado),
     }
-
-    # Las pestañas de tipo, el filtro de fechas y la paginacion de viajes van por
-    # AJAX: devuelvo solo el bloque de gastos + viajes, que es lo que depende de
-    # esos filtros. Los pagos tienen su propio filtro, asi que quedan afuera.
-    if es_ajax:
-        return render(request, "secciones_empleado.html", contexto)
-
-    contexto.update(_contexto_pagos_empleado(request, empleado))
 
     return render(request, "informacion_empleado.html", contexto)
 
