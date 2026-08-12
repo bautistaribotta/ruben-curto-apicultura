@@ -1401,14 +1401,29 @@ def _movimientos_cuenta_corriente(empleado, desde, hasta):
     return eventos
 
 
-def _sobrepago_mes(empleado, desde, hasta):
-    """Cuanto se le pago de mas que el sueldo en el mes [desde, hasta]; 0 si se
-    llego justo o de menos. Sirve para avisar el arrastre a favor en el mes
-    siguiente."""
-    alcanzado = sum((e["monto"] for e in _movimientos_cuenta_corriente(empleado, desde, hasta)),
-                    Decimal("0"))
-    excedente = alcanzado - empleado.sueldo
-    return excedente if excedente > 0 else Decimal("0")
+def _arrastre_a_favor(empleado, desde):
+    """Excedente (pago de mas) que llega arrastrado al mes que empieza en 'desde'.
+
+    Se acumula mes a mes desde el inicio de la cuenta: cada mes suma sus
+    movimientos al arrastre que traia y lo que supere el sueldo pasa al mes
+    siguiente; si un mes no llega al sueldo, el arrastre se corta en cero. Por eso
+    lo que entra a 'desde' es exactamente el saldo a favor con que cerro el mes
+    anterior."""
+    inicio_mes = empleado.inicio_cuenta.replace(day=1)
+    if desde <= inicio_mes:
+        return Decimal("0")
+
+    carry = Decimal("0")
+    mes = inicio_mes
+    while mes < desde:
+        m_desde, m_hasta = mes, mes_desplazado(mes, 1) - timedelta(days=1)
+        pagado = sum((e["monto"] for e in _movimientos_cuenta_corriente(empleado, m_desde, m_hasta)),
+                     Decimal("0"))
+        carry = pagado + carry - empleado.sueldo
+        if carry < 0:
+            carry = Decimal("0")
+        mes = mes_desplazado(mes, 1)
+    return carry
 
 
 def obtener_cuenta_corriente(empleado, desde, hasta):
@@ -1421,11 +1436,13 @@ def obtener_cuenta_corriente(empleado, desde, hasta):
     - 'filas': los movimientos que le pagaron ese mes (comisiones y pagos), viejo
       -> nuevo, cada uno etiquetado con la semana a la que pertenece.
     - 'objetivo': el monto al que tenia que llegar en el mes, que es su sueldo.
-    - 'alcanzado': lo efectivamente pagado en el mes (suma de las filas).
+    - 'alcanzado': lo pagado del mes, contando el arrastre a favor del mes anterior
+      (movimientos del mes + sobrepago_anterior).
     - 'diferencia': alcanzado - objetivo. Positivo (se pago de mas) queda a favor
       del empleado; negativo (se pago de menos) queda en contra.
     - 'sobrepago_anterior': lo que se le pago de mas el mes pasado (0 si no hubo).
-      La plantilla lo muestra como una fila de aviso arriba de todo.
+      Suma a lo pagado de este mes y la plantilla lo muestra como una fila de
+      aviso arriba de todo.
     """
     if not empleado.sueldo or empleado.sueldo <= 0 or not empleado.inicio_cuenta:
         return {"activa": False, "filas": [], "cantidad": 0}
@@ -1433,10 +1450,10 @@ def obtener_cuenta_corriente(empleado, desde, hasta):
     eventos = _movimientos_cuenta_corriente(empleado, desde, hasta)
     eventos.sort(key=lambda e: (e["fecha"], e["orden"]))
 
-    alcanzado = Decimal("0")
+    movimientos_total = Decimal("0")
     filas = []
     for ev in eventos:
-        alcanzado += ev["monto"]
+        movimientos_total += ev["monto"]
         fila = dict(ev)
         fila["monto_abs"] = abs(ev["monto"])
         # Semana (lunes a domingo) a la que pertenece la fila: la plantilla abre
@@ -1446,14 +1463,10 @@ def obtener_cuenta_corriente(empleado, desde, hasta):
         fila["semana_fin"] = lunes + timedelta(days=6)
         filas.append(fila)
 
-    # Arrastre a favor: solo si el mes anterior (ya dentro de la cuenta) se pago
-    # de mas. Es un aviso, no cuenta en el objetivo ni en lo pagado de este mes.
-    prev_desde = mes_desplazado(desde, -1)
-    prev_hasta = desde - timedelta(days=1)
-    if empleado.inicio_cuenta <= prev_hasta:
-        sobrepago_anterior = _sobrepago_mes(empleado, prev_desde, prev_hasta)
-    else:
-        sobrepago_anterior = Decimal("0")
+    # El excedente con que cerro el mes anterior se arrastra y cuenta como ya
+    # pagado de este mes (asi el saldo a favor no se pierde de un mes al otro).
+    sobrepago_anterior = _arrastre_a_favor(empleado, desde)
+    alcanzado = movimientos_total + sobrepago_anterior
 
     return {
         "activa": True,

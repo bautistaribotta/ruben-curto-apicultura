@@ -58,14 +58,14 @@
         <tbody>
           {% comment %}
             Arrastre a favor: si el mes pasado se pago de mas, arranca la tabla
-            con un aviso, arriba de todo. Es informativo; no suma a lo pagado.
+            con un aviso, arriba de todo. Ese excedente ya suma a lo pagado del mes.
           {% endcomment %}
           {% if cuenta.sobrepago_anterior %}
           <tr class="fila-arrastre">
             <td colspan="4">
               <span class="fila-arrastre__texto">
                 <span class="material-symbols-outlined fila-arrastre__icono">savings</span>
-                El mes pasado le diste <strong>${{ cuenta.sobrepago_anterior|floatformat:"0"|intcomma }}</strong> de más con respecto al sueldo.
+                El mes pasado le diste <strong>${{ cuenta.sobrepago_anterior|floatformat:"0"|intcomma }}</strong> de más con respecto al sueldo. Figura ahora en lo pagado de este mes.
               </span>
             </td>
           </tr>
