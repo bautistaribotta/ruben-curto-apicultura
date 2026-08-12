@@ -171,6 +171,10 @@ def _contexto_pagos_empleado(request, empleado):
 
     cuenta = obtener_cuenta_corriente(empleado, desde, hasta)
 
+    # Mes actual: resolver_ancla_pagos(None) cae siempre en el mes de hoy. Si el
+    # mes que se mira no es ese, la barra ofrece un atajo para volver.
+    mes_actual = resolver_ancla_pagos(None)
+
     return {
         "pagos": cuenta["filas"],
         "cuenta": cuenta,
@@ -179,6 +183,8 @@ def _contexto_pagos_empleado(request, empleado):
         "pagos_label": etiqueta_periodo_pagos(inicio),
         "pagos_ancla_anterior": desplazar_periodo_pagos(inicio, -1),
         "pagos_ancla_siguiente": desplazar_periodo_pagos(inicio, 1),
+        "pagos_es_mes_actual": inicio == mes_actual,
+        "pagos_mes_actual": mes_actual,
     }
 
 

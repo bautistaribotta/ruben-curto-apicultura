@@ -28,7 +28,20 @@
       <span class="material-symbols-outlined">chevron_left</span>
     </a>
 
-    <span class="pagos-nav__label">{{ pagos_label }}</span>
+    <div class="pagos-nav__centro">
+      <span class="pagos-nav__label">{{ pagos_label }}</span>
+      {% comment %}
+        Atajo al mes actual: solo cuando se esta mirando otro mes. Refresca el
+        bloque por AJAX como las flechas (comparte el data-pagos-ancla).
+      {% endcomment %}
+      {% if not pagos_es_mes_actual %}
+      <a class="pagos-hoy" data-pagos-ancla="{{ pagos_mes_actual|date:'Y-m-d' }}"
+         href="?pagos_ancla={{ pagos_mes_actual|date:'Y-m-d' }}#seccion-pagos">
+        <span class="material-symbols-outlined">today</span>
+        Volver al mes actual
+      </a>
+      {% endif %}
+    </div>
 
     <a class="pagos-nav__paso" data-pagos-ancla="{{ pagos_ancla_siguiente|date:'Y-m-d' }}"
        href="?pagos_ancla={{ pagos_ancla_siguiente|date:'Y-m-d' }}#seccion-pagos"

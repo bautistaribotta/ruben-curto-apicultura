@@ -355,12 +355,46 @@
   font-size: 1.25rem;
 }
 
+/* Centro de la barra: el mes y, debajo, el atajo al mes actual. */
+.pagos-nav__centro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+
 .pagos-nav__label {
   min-width: 12rem;
   text-align: center;
   font-weight: var(--weight-semibold);
   color: var(--text-strong);
   font-variant-numeric: tabular-nums;
+}
+
+/* Atajo al mes actual: enlace tenue con icono, debajo del mes. */
+.pagos-hoy {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--pine-900);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.pagos-hoy .material-symbols-outlined {
+  font-size: 1rem;
+}
+
+.pagos-hoy:hover {
+  text-decoration: underline;
+}
+
+.pagos-hoy:focus-visible {
+  outline: 2px solid var(--brand-active);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
 }
 
 /* -----------------------------------------------------------------------------

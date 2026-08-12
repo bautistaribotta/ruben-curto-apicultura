@@ -35,8 +35,9 @@ function cargarPagos(ancla) {
 }
 
 document.addEventListener("click", (evento) => {
-    // Flechas de mes (anterior / siguiente)
-    const paso = evento.target.closest(".pagos-nav__paso");
+    // Flechas de mes (anterior / siguiente) y atajo al mes actual: los tres
+    // llevan el mes destino en data-pagos-ancla y refrescan el mismo bloque.
+    const paso = evento.target.closest(".pagos-nav__paso, .pagos-hoy");
     if (paso) {
         evento.preventDefault();
         cargarPagos(paso.dataset.pagosAncla);
