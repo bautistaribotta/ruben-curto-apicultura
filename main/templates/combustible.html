@@ -45,6 +45,19 @@
           <span class="material-symbols-outlined">chevron_right</span>
         </a>
       </div>
+
+      {% comment %}
+        Mirando otro mes, el camino de vuelta tiene que estar a la vista. Se
+        renderiza siempre para que la tarjeta mantenga su alto: en el mes actual
+        se oculta con visibility, sigue ocupando lugar pero no es visible ni
+        accesible.
+      {% endcomment %}
+      <a class="comb-mes__volver{% if es_mes_actual %} es-oculto{% endif %}"
+         href="{% url 'combustible' %}{% if q %}?q={{ q }}{% endif %}"
+         {% if es_mes_actual %}aria-hidden="true" tabindex="-1"{% endif %}>
+        <span class="material-symbols-outlined">undo</span>
+        <span class="comb-mes__volver-texto">Volver a {{ mes_actual|date:"F" }}</span>
+      </a>
     </div>
 
     <div class="comb-mes__cifras">

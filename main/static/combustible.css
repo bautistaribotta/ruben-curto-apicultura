@@ -101,6 +101,48 @@
   color: var(--sand-400);
 }
 
+/* Volver al mes actual: mismo patron y efecto hover que en alquileres
+   (.alq-mes__volver). El subrayado aparece al pasar el mouse animando el color
+   de la linea, no apareciendo de golpe. */
+.comb-mes__volver {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.15rem;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--honey-500);
+  text-decoration: none;
+}
+
+.comb-mes__volver-texto {
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 0.2em;
+  transition: text-decoration-color var(--dur-fast) var(--ease-standard);
+}
+
+.comb-mes__volver:hover .comb-mes__volver-texto {
+  text-decoration-color: currentColor;
+}
+
+.comb-mes__volver:focus-visible {
+  outline: none;
+  border-radius: var(--radius-xs);
+  box-shadow: var(--ring);
+}
+
+.comb-mes__volver .material-symbols-outlined {
+  font-size: 1.05rem;
+}
+
+/* En el mes actual el enlace se oculta pero sigue ocupando espacio para que la
+   tarjeta no cambie de alto */
+.comb-mes__volver.es-oculto {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 /* Las dos cifras alineadas por su linea de base para que el gasto y los litros
    apoyen sobre el mismo renglon */
 .comb-mes__cifras {
