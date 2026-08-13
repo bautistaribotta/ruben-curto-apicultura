@@ -240,9 +240,15 @@ def editar_carga(id_carga, id_empleado=None, id_vehiculo=None, fecha=None, monto
 
 def alternar_pago_carga(id_carga):
     """Invierte el estado de pago de una carga (paga <-> impaga)."""
-    carga = get_object_or_404(CargaCombustible, id=id_carga, activa=True)
-    carga.pagada = not carga.pagada
-    carga.save(update_fields=["pagada"])
+    with transaction.atomic():
+        # Bloqueo la fila antes de leer 'pagada': el toggle es un read-modify-write
+        # (leo el valor, lo invierto, lo guardo). Sin el lock, dos requests leen el
+        # mismo estado y ambos lo invierten al mismo valor: un click se pierde.
+        carga = get_object_or_404(
+            CargaCombustible.objects.select_for_update(), id=id_carga, activa=True
+        )
+        carga.pagada = not carga.pagada
+        carga.save(update_fields=["pagada"])
     return carga
 
 
@@ -2828,7 +2834,12 @@ def editar_viaje_reparto(id_viaje_reparto, id_empleado, id_vehiculo, gasto_combu
     )
 
     with transaction.atomic():
-        viaje_reparto = get_object_or_404(ViajeReparto, id=id_viaje_reparto)
+        # Bloqueo la fila: la edicion mueve el contador de viajes entre destinos
+        # (resta al anterior, suma al nuevo). Sin el lock, una edicion y un borrado
+        # concurrentes leen el mismo destino_anterior y desincronizan cant_viajes.
+        viaje_reparto = get_object_or_404(
+            ViajeReparto.objects.select_for_update(), id=id_viaje_reparto
+        )
         destino_anterior_id = viaje_reparto.destino_id
 
         viaje_reparto.empleado_id = id_empleado
