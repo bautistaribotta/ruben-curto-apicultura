@@ -3405,14 +3405,23 @@ def _validar_plazo_libre(casa, inicio, fin, excluir_id=None):
 def crear_contrato(id_casa, inicio=None, fin=None, monto_mensual=None,
                    comision_inmobiliaria=None, nombre_inquilino=None):
     """Nuevo contrato de una casa. Renovar es esto: el anterior no se toca."""
-    casa = get_object_or_404(Casa, id=id_casa, activa=True)
     inicio, fin, monto, comision, inquilino = _validar_contrato(
         inicio, fin, monto_mensual, comision_inmobiliaria, nombre_inquilino
     )
-    _validar_plazo_libre(casa, inicio, fin)
 
-    return Contrato.objects.create(casa=casa, inicio=inicio, fin=fin, monto_mensual=monto,
-                                   comision_inmobiliaria=comision, nombre_inquilino=inquilino)
+    with transaction.atomic():
+        # Bloqueo la fila de la casa para serializar el alta de contratos: chequear el
+        # solapamiento (_validar_plazo_libre) y crear el contrato es un check-then-act,
+        # y MySQL no tiene constraint de exclusion para rangos. Sin el lock, dos altas
+        # concurrentes de la misma casa leen los mismos contratos, pasan las dos la
+        # validacion y crean dos plazos que se pisan. Mismo criterio que marcar_pago_alquiler.
+        casa = get_object_or_404(
+            Casa.objects.select_for_update(), id=id_casa, activa=True
+        )
+        _validar_plazo_libre(casa, inicio, fin)
+
+        return Contrato.objects.create(casa=casa, inicio=inicio, fin=fin, monto_mensual=monto,
+                                       comision_inmobiliaria=comision, nombre_inquilino=inquilino)
 
 
 def editar_contrato(id_contrato, inicio=None, fin=None, monto_mensual=None,
@@ -3427,16 +3436,23 @@ def editar_contrato(id_contrato, inicio=None, fin=None, monto_mensual=None,
     nuevos y se bloquea mientras haya uno vigente. Se llega por la accion
     'editar_contrato' del POST o por el admin.
     """
-    contrato = get_object_or_404(Contrato, id=id_contrato)
     inicio, fin, monto, comision, inquilino = _validar_contrato(
         inicio, fin, monto_mensual, comision_inmobiliaria, nombre_inquilino
     )
-    _validar_plazo_libre(contrato.casa, inicio, fin, excluir_id=contrato.id)
 
-    contrato.inicio, contrato.fin = inicio, fin
-    contrato.monto_mensual, contrato.comision_inmobiliaria = monto, comision
-    contrato.nombre_inquilino = inquilino
-    contrato.save()
+    with transaction.atomic():
+        contrato = get_object_or_404(Contrato, id=id_contrato)
+        # Bloqueo la casa (no el contrato) para serializar contra crear_contrato y
+        # contra otras ediciones de la misma casa: el chequeo de solapamiento mira
+        # todos sus contratos, asi que la exclusion mutua tiene que vivir a nivel casa.
+        # Sin el lock, un alta y una edicion concurrentes se cruzan y dejan plazos pisados.
+        casa = get_object_or_404(Casa.objects.select_for_update(), id=contrato.casa_id)
+        _validar_plazo_libre(casa, inicio, fin, excluir_id=contrato.id)
+
+        contrato.inicio, contrato.fin = inicio, fin
+        contrato.monto_mensual, contrato.comision_inmobiliaria = monto, comision
+        contrato.nombre_inquilino = inquilino
+        contrato.save()
     return contrato
 
 
