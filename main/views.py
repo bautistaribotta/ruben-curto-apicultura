@@ -2201,7 +2201,14 @@ def combustible(request):
         except ValueError as e:
             messages.error(request, str(e))
 
-        return redirect("combustible")
+        # El formulario postea a la URL actual, asi que el mes que se estaba
+        # mirando sigue en request.GET: lo devuelvo para no patear al usuario de
+        # vuelta al mes en curso despues de tocar una estacion.
+        destino = reverse("combustible")
+        periodo_visto = resolver_periodo(request.GET.get("mes"))
+        if periodo_visto != periodo_actual():
+            destino = f"{destino}?mes={periodo_visto:%Y-%m}"
+        return redirect(destino)
 
     # Listado de estaciones activas, con busqueda por nombre o id
     from django.db.models import Exists, OuterRef
@@ -2238,6 +2245,28 @@ def combustible(request):
     # Peticion AJAX (busqueda/paginacion): devuelvo solo la tabla
     if request.headers.get("x-requested-with") == "XMLHttpRequest":
         return render(request, "tabla_estaciones.html", contexto)
+
+    # Mes que muestra la tarjeta de la cabecera. Sin parametro es el mes en curso;
+    # las flechas del navegador lo corren con ?mes=YYYY-MM. La tabla de estaciones
+    # no depende del mes (mide deuda total), asi que esto vive solo en el render
+    # completo y no en la respuesta AJAX de busqueda/paginacion.
+    periodo = resolver_periodo(request.GET.get("mes"))
+
+    # Gasto en combustible del periodo: suma de las cargas activas cuya fecha cae
+    # en ese mes (pagas o impagas, no importa el estado del pago). Los litros son
+    # dato opcional en la carga, asi que Sum ignora las cargas sin litros: el total
+    # es de las que si lo tienen y puede quedar por debajo del gasto real.
+    totales_mes = CargaCombustible.objects.filter(
+        activa=True, fecha__year=periodo.year, fecha__month=periodo.month
+    ).aggregate(gasto=Sum("monto"), litros=Sum("litros"))
+    contexto["periodo"] = periodo
+    contexto["gasto_mes"] = totales_mes["gasto"] or 0
+    contexto["litros_mes"] = totales_mes["litros"] or 0
+    contexto["es_mes_actual"] = periodo == periodo_actual()
+    contexto["mes_actual"] = periodo_actual()
+    # Para las flechas del navegador de mes
+    contexto["periodo_anterior"] = mes_desplazado(periodo, -1)
+    contexto["periodo_siguiente"] = mes_desplazado(periodo, 1)
 
     return render(request, "combustible.html", contexto)
 

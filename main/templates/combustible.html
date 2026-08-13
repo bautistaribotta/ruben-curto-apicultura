@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load humanize %}
 
 {% block nombre-pestaña %}
   <title> Combustible </title>
@@ -18,6 +19,52 @@
 
 {% block area-trabajo %}
 <section id="area-trabajo">
+  {% comment %}
+    Tarjeta de gasto del mes: a la izquierda el mes, navegable con flechas, y a
+    la derecha lo gastado y los litros cargados en ese mes (suma de las cargas
+    del periodo, pagas e impagas). Ocupa todo el ancho, arriba de la barra de
+    herramientas. Las flechas son enlaces de verdad (?mes=YYYY-MM): cambiar de
+    mes anda sin JavaScript y se puede abrir en otra pestaña.
+  {% endcomment %}
+  <section class="comb-mes">
+    <div class="comb-mes__periodo">
+      <p class="comb-mes__eyebrow">Combustible de</p>
+      <div class="comb-nav">
+        <a class="comb-nav__paso"
+           href="?mes={{ periodo_anterior|date:'Y-m' }}{% if q %}&amp;q={{ q }}{% endif %}"
+           title="{{ periodo_anterior|date:'F \d\e Y' }}" aria-label="Mes anterior">
+          <span class="material-symbols-outlined">chevron_left</span>
+        </a>
+        <p class="comb-mes__fecha">
+          <span class="comb-mes__nombre">{{ periodo|date:"F" }}</span>
+          <span class="comb-mes__anio">{{ periodo|date:"Y" }}</span>
+        </p>
+        <a class="comb-nav__paso"
+           href="?mes={{ periodo_siguiente|date:'Y-m' }}{% if q %}&amp;q={{ q }}{% endif %}"
+           title="{{ periodo_siguiente|date:'F \d\e Y' }}" aria-label="Mes siguiente">
+          <span class="material-symbols-outlined">chevron_right</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="comb-mes__cifras">
+      <p class="comb-cifra comb-cifra--gasto">
+        <span class="comb-cifra__valor">${{ gasto_mes|floatformat:"0"|intcomma }}</span>
+        <span class="comb-cifra__rotulo">gastado</span>
+      </p>
+      {% comment %}
+        Los litros son el dato propio del combustible (alquileres no lo tiene) y
+        van como cifra par del gasto: mismo tamaño y diseño, en blanco en vez de
+        miel para que la plata siga siendo el acento. Cuando ninguna carga del
+        mes registro litros el total es 0: se muestra "0 L", apagado.
+      {% endcomment %}
+      <p class="comb-cifra{% if not litros_mes %} es-cero{% endif %}">
+        <span class="comb-cifra__valor">{{ litros_mes|floatformat:"0"|intcomma }} L</span>
+        <span class="comb-cifra__rotulo">litros cargados</span>
+      </p>
+    </div>
+  </section>
+
   <!-- Controles superiores: buscador y alta -->
   <div class="barra-herramientas">
     <div class="grupo-busqueda">

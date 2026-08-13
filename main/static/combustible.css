@@ -6,6 +6,152 @@
    base.css (.tabla-estaciones th).
    ============================================================ */
 
+/* --- TARJETA DE GASTO DEL MES --- */
+/* Mismo lenguaje visual que la cabecera de alquileres (.alq-mes): fondo pino,
+   cifras a la derecha, mes navegable a la izquierda. Sin el desplegable de
+   meses ni los chips de estado. */
+.comb-mes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem 2.5rem;
+  padding: 1.5rem 1.75rem;
+  margin-bottom: 1.5rem;
+  border-radius: var(--radius-xl);
+  background-color: var(--pine-900);
+  color: var(--sand-50);
+  box-shadow: var(--shadow-lg);
+}
+
+.comb-mes__periodo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.comb-mes__eyebrow {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--sand-400);
+}
+
+/* Navegador de mes: flechas que flanquean el nombre. Mismo patron que la
+   cabecera de alquileres (.alq-nav), sin el desplegable de meses. */
+.comb-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  /* La flecha izquierda se cuelga del margen para que el nombre del mes quede
+     alineado con el eyebrow y con el resto de la columna */
+  margin-left: -0.5rem;
+}
+
+.comb-nav__paso {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-md);
+  color: var(--sand-400);
+  text-decoration: none;
+  transition: background-color var(--dur-fast) var(--ease-standard),
+              color var(--dur-fast) var(--ease-standard);
+}
+
+.comb-nav__paso:hover {
+  background-color: var(--blanco-transparente-12);
+  color: var(--sand-50);
+}
+
+.comb-nav__paso:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.comb-nav__paso .material-symbols-outlined {
+  font-size: 1.35rem;
+}
+
+.comb-mes__fecha {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+
+.comb-mes__nombre {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+  line-height: 1.1;
+  text-transform: capitalize;
+  color: var(--sand-50);
+}
+
+.comb-mes__anio {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+  line-height: 1.1;
+  color: var(--sand-400);
+}
+
+/* Las dos cifras alineadas por su linea de base para que el gasto y los litros
+   apoyen sobre el mismo renglon */
+.comb-mes__cifras {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.75rem 2rem;
+}
+
+.comb-cifra {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+/* Las dos cifras comparten tamaño y diseño; el gasto y los litros solo se
+   distinguen por el color del numero (ver mas abajo), como cobrado/falta cobrar
+   en alquileres */
+.comb-cifra__valor {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--tracking-tight);
+  line-height: 1.1;
+  white-space: nowrap;
+  color: var(--sand-50);
+}
+
+/* Miel para la plata: es el unico acento de la tarjeta. Los litros quedan en
+   blanco, mismo tamaño y otra temperatura */
+.comb-cifra--gasto .comb-cifra__valor {
+  color: var(--honey-500);
+}
+
+.comb-cifra__rotulo {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--sand-400);
+}
+
+/* Sin litros registrados el guion se apaga y se lee "sin dato" de un vistazo */
+.comb-cifra.es-cero .comb-cifra__valor {
+  color: var(--sand-500);
+}
+
+@media (max-width: 640px) {
+  .comb-mes {
+    align-items: flex-start;
+  }
+}
+
 /* --- BARRA DE HERRAMIENTAS (Buscador y alta) --- */
 .barra-herramientas {
   display: flex;
