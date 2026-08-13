@@ -2144,10 +2144,18 @@ def editar_gasto_viaje(modelo, id_gasto, tipo_gasto, monto, id_estacion=None, li
     ganancia) se recalculan solos, porque son properties derivadas de la suma
     de gastos. Si el gasto es de combustible, se sincroniza su carga.
     """
-    gasto = get_object_or_404(modelo, id=id_gasto)
-    gasto.gasto, gasto.monto = _validar_gasto_viaje(modelo, tipo_gasto, monto)
-    gasto.save()
-    _sincronizar_carga_combustible(gasto, id_estacion, litros, pagada)
+    tipo_val, monto_val = _validar_gasto_viaje(modelo, tipo_gasto, monto)
+    with transaction.atomic():
+        # Bloqueo la fila del gasto: sincronizar la carga es un check-then-create (si el
+        # gasto todavia no tiene carga, la crea) encadenado con varios save. Sin el lock,
+        # dos ediciones concurrentes del mismo gasto a Combustible leen ambas carga=None
+        # y crean dos CargaCombustible en la estacion. La transaccion ademas deja el par
+        # gasto/carga consistente: si la sincro falla a mitad, no queda un gasto guardado
+        # sin su carga vinculada.
+        gasto = get_object_or_404(modelo.objects.select_for_update(), id=id_gasto)
+        gasto.gasto, gasto.monto = tipo_val, monto_val
+        gasto.save()
+        _sincronizar_carga_combustible(gasto, id_estacion, litros, pagada)
     return gasto
 
 
@@ -2158,24 +2166,31 @@ def eliminar_gasto_viaje(modelo, id_gasto):
     al borrarlo, asi que no necesita la baja logica del resto del sistema. Si tenia
     una carga de combustible asociada, se da de baja para que no siga en la estacion.
     """
-    gasto = get_object_or_404(modelo, id=id_gasto)
-    carga = gasto.carga_combustible
-    if carga is not None:
-        carga.activa = False
-        carga.save(update_fields=["activa"])
-    gasto.delete()
+    with transaction.atomic():
+        # Bloqueo el gasto para serializar contra una edicion concurrente del mismo
+        # registro y para que dar de baja la carga y borrar el gasto sean un solo paso.
+        gasto = get_object_or_404(modelo.objects.select_for_update(), id=id_gasto)
+        carga = gasto.carga_combustible
+        if carga is not None:
+            carga.activa = False
+            carga.save(update_fields=["activa"])
+        gasto.delete()
 
 
 def crear_gasto(id_viaje, tipo_gasto, monto, id_estacion=None, litros=None, pagada=False):
     viaje = get_object_or_404(Viaje, id=id_viaje)
     tipo_gasto, monto_val = _validar_gasto_viaje(Gasto, tipo_gasto, monto)
 
-    nuevo_gasto = Gasto.objects.create(
-        viaje=viaje,
-        gasto=tipo_gasto,
-        monto=monto_val
-    )
-    _sincronizar_carga_combustible(nuevo_gasto, id_estacion, litros, pagada)
+    with transaction.atomic():
+        # El alta y la sincro de la carga van juntas: si el gasto es de combustible y
+        # falta la estacion (o cualquier dato de la carga), _sincronizar_carga_combustible
+        # corta, y la transaccion revierte el gasto para no dejarlo huerfano sin su carga.
+        nuevo_gasto = Gasto.objects.create(
+            viaje=viaje,
+            gasto=tipo_gasto,
+            monto=monto_val
+        )
+        _sincronizar_carga_combustible(nuevo_gasto, id_estacion, litros, pagada)
     return nuevo_gasto
 
 
@@ -2540,12 +2555,15 @@ def crear_gasto_viaje_cereal(id_viaje_cereal, tipo_gasto, monto, id_estacion=Non
     viaje_cereal = get_object_or_404(ViajeCereal, id=id_viaje_cereal)
     tipo_gasto, monto_val = _validar_gasto_viaje(GastoViajeCereal, tipo_gasto, monto)
 
-    nuevo_gasto = GastoViajeCereal.objects.create(
-        viaje_cereal=viaje_cereal,
-        gasto=tipo_gasto,
-        monto=monto_val
-    )
-    _sincronizar_carga_combustible(nuevo_gasto, id_estacion, litros, pagada)
+    with transaction.atomic():
+        # Igual que crear_gasto: alta y sincro de la carga en una sola transaccion para
+        # no dejar un gasto de combustible huerfano si falta algun dato de la carga.
+        nuevo_gasto = GastoViajeCereal.objects.create(
+            viaje_cereal=viaje_cereal,
+            gasto=tipo_gasto,
+            monto=monto_val
+        )
+        _sincronizar_carga_combustible(nuevo_gasto, id_estacion, litros, pagada)
     return nuevo_gasto
 
 
@@ -2815,12 +2833,15 @@ def crear_gasto_viaje_reparto(id_viaje_reparto, tipo_gasto, monto, id_estacion=N
     viaje_reparto = get_object_or_404(ViajeReparto, id=id_viaje_reparto)
     tipo_gasto, monto_val = _validar_gasto_viaje(GastoViajeReparto, tipo_gasto, monto)
 
-    nuevo_gasto = GastoViajeReparto.objects.create(
-        viaje_reparto=viaje_reparto,
-        gasto=tipo_gasto,
-        monto=monto_val
-    )
-    _sincronizar_carga_combustible(nuevo_gasto, id_estacion, litros, pagada)
+    with transaction.atomic():
+        # Igual que crear_gasto: alta y sincro de la carga en una sola transaccion para
+        # no dejar un gasto de combustible huerfano si falta algun dato de la carga.
+        nuevo_gasto = GastoViajeReparto.objects.create(
+            viaje_reparto=viaje_reparto,
+            gasto=tipo_gasto,
+            monto=monto_val
+        )
+        _sincronizar_carga_combustible(nuevo_gasto, id_estacion, litros, pagada)
     return nuevo_gasto
 
 
