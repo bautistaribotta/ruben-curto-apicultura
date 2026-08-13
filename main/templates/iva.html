@@ -1,18 +1,201 @@
 {% extends "base.html" %}
 {% load static %}
 
+{% comment %}
+  Listado de empresas / sociedades de las que se controla el IVA. Cada una es una
+  tarjeta (mismo lenguaje que la flota): identidad + el saldo como numero
+  protagonista y, debajo, sus dos componentes: IVA debito (ventas) y credito
+  (compras). Toda la tarjeta lleva a la ficha de la empresa. El alta y la edicion
+  usan el slide-over; la baja, el modal de confirmacion.
+{% endcomment %}
+
 {% block nombre-pestaña %}
   <title> IVA </title>
 {% endblock %}
 
+{% block links %}
+  <link rel="stylesheet" href="{% static 'iva.css' %}">
+{% endblock %}
+
 {% block cabecera %}
-  <div id="titulos-cabecera">
-    <h2> IVA </h2>
-    <p> Gestiona el IVA </p>
+  <div class="cabecera-seccion">
+    <span class="cabecera-seccion__tile">
+      <span class="material-symbols-outlined">account_balance</span>
+    </span>
+    <div class="cabecera-seccion__texto">
+      <h2>IVA</h2>
+      <p>Débito, crédito y saldo de cada empresa y sociedad</p>
+    </div>
   </div>
 {% endblock %}
 
 {% block area-trabajo %}
 <section id="area-trabajo">
+
+  <!-- Controles superiores: buscador + alta -->
+  <div class="barra-herramientas">
+    <div class="grupo-busqueda">
+      <div class="contenedor-input-busqueda">
+        <span class="material-symbols-outlined icono-busqueda">search</span>
+        <input type="text" id="buscar-empresa" class="input-busqueda" placeholder="Buscar empresa por nombre">
+      </div>
+    </div>
+
+    <button type="button" class="boton-nuevo" onclick="abrirNuevaEmpresa()">
+      <span class="material-symbols-outlined">add</span>
+      <span class="texto-boton">Nueva empresa</span>
+    </button>
+  </div>
+
+  <!-- Grilla de empresas: una tarjeta por empresa, clickeable a la ficha -->
+  <div class="grilla-iva" id="grilla-iva">
+    {% for empresa in empresas %}
+    <article class="tarjeta-empresa" data-nombre="{{ empresa.nombre|lower }}"
+             data-href="{% url 'informacion_empresa' empresa.id %}"
+             role="link" tabindex="0"
+             aria-label="Ver el IVA de {{ empresa.nombre }}">
+
+      <!-- Identidad: icono + nombre; acciones al margen -->
+      <header class="tarjeta-empresa__cabecera">
+        <span class="tarjeta-empresa__icono">
+          <span class="material-symbols-outlined">domain</span>
+        </span>
+        <div class="tarjeta-empresa__identidad">
+          <h3 class="tarjeta-empresa__nombre">{{ empresa.nombre }}</h3>
+          <span class="tarjeta-empresa__rotulo">Empresa / Sociedad</span>
+        </div>
+        <div class="tarjeta-empresa__acciones">
+          <button type="button" class="boton-accion-iva editar"
+                  title="Editar empresa"
+                  data-id="{{ empresa.id }}"
+                  data-nombre="{{ empresa.nombre }}"
+                  onclick="abrirEditarEmpresa(this)">
+            <span class="material-symbols-outlined">edit</span>
+          </button>
+          <button type="button" class="boton-accion-iva eliminar"
+                  title="Eliminar empresa"
+                  data-id="{{ empresa.id }}"
+                  data-nombre="{{ empresa.nombre }}"
+                  onclick="abrirEliminarEmpresa(this)">
+            <span class="material-symbols-outlined">delete</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Saldo: el numero protagonista, con su lectura (a pagar / a favor / al dia) -->
+      <div class="tarjeta-empresa__saldo saldo--{{ empresa.estado_saldo }}">
+        <span class="tarjeta-empresa__saldo-rotulo">Saldo de IVA</span>
+        <div class="tarjeta-empresa__saldo-linea">
+          <span class="tarjeta-empresa__saldo-valor">${{ empresa.saldo_iva_abs|floatformat:"0g" }}</span>
+          <span class="chip-saldo">
+            {% if empresa.estado_saldo == 'a_pagar' %}A pagar
+            {% elif empresa.estado_saldo == 'a_favor' %}A favor
+            {% else %}Al día{% endif %}
+          </span>
+        </div>
+      </div>
+
+      <!-- Debito y credito: los dos componentes del saldo -->
+      <dl class="tarjeta-empresa__estado">
+        <div class="dato-iva dato-iva--debito">
+          <span class="material-symbols-outlined dato-iva__icono">trending_up</span>
+          <dt class="dato-iva__rotulo">Débito</dt>
+          <dd class="dato-iva__valor">${{ empresa.iva_debito|floatformat:"0g" }}</dd>
+        </div>
+        <div class="dato-iva dato-iva--credito">
+          <span class="material-symbols-outlined dato-iva__icono">trending_down</span>
+          <dt class="dato-iva__rotulo">Crédito</dt>
+          <dd class="dato-iva__valor">${{ empresa.iva_credito|floatformat:"0g" }}</dd>
+        </div>
+      </dl>
+    </article>
+    {% empty %}
+    <div class="iva-vacia">
+      <span class="material-symbols-outlined">domain</span>
+      No hay empresas registradas.
+    </div>
+    {% endfor %}
+
+    <!-- Sin resultados de busqueda (lo muestra/oculta el JS) -->
+    <div class="iva-vacia" id="iva-sin-resultados" hidden>
+      <span class="material-symbols-outlined">search_off</span>
+      No hay empresas que coincidan con la búsqueda.
+    </div>
+  </div>
+
 </section>
+
+<!-- PANEL LATERAL NUEVA/EDITAR EMPRESA (SLIDE-OVER) -->
+<div id="contenedor-slide-over">
+  <div id="slide-over-fondo" onclick="cerrarSlideOver()"></div>
+
+  <div id="slide-over-panel">
+    <header class="panel-cabecera">
+      <div class="panel-titulo-fila">
+        <div class="icono-contenedor">
+          <span class="material-symbols-outlined">domain</span>
+        </div>
+        <div class="texto-cabecera">
+          <h3 id="titulo-empresa">Nueva empresa / sociedad</h3>
+          <p id="subtitulo-empresa">Registra una empresa o sociedad</p>
+        </div>
+      </div>
+      <button type="button" class="boton-cerrar-panel" onclick="cerrarSlideOver()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </header>
+
+    <div class="panel-cuerpo">
+      <form class="formulario-empresa" id="form-empresa" method="POST" autocomplete="off">
+        {% csrf_token %}
+        <input type="hidden" name="accion" id="accion-empresa" value="nueva_empresa">
+        <input type="hidden" name="id_empresa" id="id-empresa-input">
+        <div class="campo-formulario">
+          <label for="nombre-empresa">Nombre de la empresa o sociedad</label>
+          <input type="text" id="nombre-empresa" name="nombre" class="input-estandar"
+                 placeholder="Ej: MRM Acopio S.A." maxlength="60" required minlength="2">
+          <span class="mensaje-error">Escribí un nombre de al menos 2 caracteres.</span>
+        </div>
+      </form>
+    </div>
+
+    <div class="panel-pie">
+      <button type="submit" form="form-empresa" class="boton-primario" id="boton-guardar-empresa">Guardar empresa</button>
+      <button type="button" class="boton-secundario" onclick="cerrarSlideOver()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONFIRMAR ELIMINACIÓN -->
+<form id="formulario-eliminar" method="POST">
+  {% csrf_token %}
+  <input type="hidden" name="accion" value="eliminar_empresa">
+  <div id="contenedor-panel-eliminar">
+    <div id="contenedor-panel-fondo" onclick="cerrarPanelEliminar()"></div>
+
+    <div id="panel-eliminar">
+      <input type="hidden" id="id_eliminar" name="id_empresa" value="">
+
+      <button type="button" class="boton-cerrar-panel" id="icono-cerrar-panel-eliminar" onclick="cerrarPanelEliminar()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+
+      <div id="icono-advertencia">
+        <span class="material-symbols-outlined">warning</span>
+      </div>
+
+      <h3>Confirmar eliminación</h3>
+      <p id="texto-confirmacion-eliminar">¿Está seguro que quiere eliminar esta empresa?</p>
+
+      <div class="acciones-modal">
+        <button type="button" class="boton-secundario" onclick="cerrarPanelEliminar()">No, mantener</button>
+        <button type="button" class="boton-primario-eliminar" id="boton-confirmar-eliminar"><span>Sí, eliminar</span></button>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}
+
+{% block codigo-javascript %}
+  <script src="{% static 'js/iva.js' %}"></script>
 {% endblock %}

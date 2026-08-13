@@ -1,0 +1,368 @@
+{% extends "base.html" %}
+{% load static %}
+{% load l10n %}
+
+{% comment %}
+  Ficha de una empresa / sociedad: su resumen de IVA (debito, credito y saldo) y
+  el historial de operaciones de venta y compra. Cada operacion guarda su monto
+  neto y su alicuota; el IVA se calcula. Reutiliza el slide-over y el modal de
+  eliminacion, siguiendo el patron de informacion_estacion.
+{% endcomment %}
+
+{% block nombre-pestaña %}
+  <title> {{ empresa.nombre }} </title>
+{% endblock %}
+
+{% block links %}
+  <link rel="stylesheet" href="{% static 'iva.css' %}">
+  <link rel="stylesheet" href="{% static 'informacion_empresa.css' %}">
+{% endblock %}
+
+{% block cabecera %}
+  <a href="{% url 'iva' %}" class="boton-volver">
+    <span class="material-symbols-outlined">arrow_back</span>
+    Volver a IVA
+  </a>
+{% endblock %}
+
+{% block area-trabajo %}
+<section id="area-trabajo">
+
+  <!-- Identidad de la empresa + acciones -->
+  <div class="cabecera-empresa">
+    <div class="identidad-empresa">
+      <span class="identidad-empresa__tile material-symbols-outlined">domain</span>
+      <div class="identidad-empresa__datos">
+        <h2 class="identidad-empresa__nombre">{{ empresa.nombre }}</h2>
+        <span class="identidad-empresa__meta">
+          <span class="material-symbols-outlined">receipt_long</span>
+          {% if total_operaciones == 1 %}1 operación{% else %}{{ total_operaciones }} operaciones{% endif %}
+        </span>
+      </div>
+    </div>
+
+    <div class="acciones-empresa">
+      <button type="button" class="boton-nuevo" onclick="prepararNuevaOperacion()">
+        <span class="material-symbols-outlined">add</span>
+        Nueva operación
+      </button>
+      <button type="button" class="boton-accion boton-editar"
+              data-nombre="{{ empresa.nombre }}" onclick="prepararEditarEmpresa()">
+        <span class="material-symbols-outlined">edit</span>
+        Editar
+      </button>
+      <button type="button" class="boton-accion boton-cancelar" onclick="prepararEliminarEmpresa()">
+        <span class="material-symbols-outlined">delete</span>
+        Eliminar
+      </button>
+    </div>
+  </div>
+
+  <!-- Resumen de IVA: debito, credito y el saldo destacado con su lectura -->
+  <section class="resumen-iva">
+    <div class="resumen-iva__item">
+      <span class="resumen-iva__rotulo">
+        <span class="material-symbols-outlined resumen-iva__icono resumen-iva__icono--debito">trending_up</span>
+        IVA Débito
+      </span>
+      <span class="resumen-iva__valor">${{ empresa.iva_debito|floatformat:"2g" }}</span>
+      <span class="resumen-iva__ayuda">De las ventas</span>
+    </div>
+
+    <div class="resumen-iva__sep" aria-hidden="true"></div>
+
+    <div class="resumen-iva__item">
+      <span class="resumen-iva__rotulo">
+        <span class="material-symbols-outlined resumen-iva__icono">trending_down</span>
+        IVA Crédito
+      </span>
+      <span class="resumen-iva__valor">${{ empresa.iva_credito|floatformat:"2g" }}</span>
+      <span class="resumen-iva__ayuda">De las compras</span>
+    </div>
+
+    <div class="resumen-iva__sep" aria-hidden="true"></div>
+
+    <div class="resumen-iva__item resumen-iva__item--saldo saldo--{{ empresa.estado_saldo }}">
+      <span class="resumen-iva__rotulo">Saldo</span>
+      <span class="resumen-iva__valor resumen-iva__valor--saldo">${{ empresa.saldo_iva_abs|floatformat:"2g" }}</span>
+      <span class="chip-saldo">
+        {% if empresa.estado_saldo == 'a_pagar' %}A pagar
+        {% elif empresa.estado_saldo == 'a_favor' %}A favor
+        {% else %}Al día{% endif %}
+      </span>
+    </div>
+  </section>
+
+  <!-- Historial de operaciones -->
+  <section class="bloque-operaciones">
+    <header class="bloque-operaciones__cabecera">
+      <div class="bloque-operaciones__titulo">
+        <span class="material-symbols-outlined">receipt_long</span>
+        <h3>Operaciones</h3>
+      </div>
+
+      {% comment %}
+        Filtro por tipo (segmentado): navega server-side conservando el tipo en la
+        URL. Todas es el default.
+      {% endcomment %}
+      <div class="op-chips" role="group" aria-label="Filtrar por tipo de operación">
+        <a class="op-chip {% if tipo == 'todas' %}is-active{% endif %}" href="?tipo=todas">
+          <span class="material-symbols-outlined">list</span>
+          Todas
+        </a>
+        <a class="op-chip {% if tipo == 'ventas' %}is-active{% endif %}" href="?tipo=ventas">
+          <span class="material-symbols-outlined">trending_up</span>
+          Ventas
+        </a>
+        <a class="op-chip {% if tipo == 'compras' %}is-active{% endif %}" href="?tipo=compras">
+          <span class="material-symbols-outlined">trending_down</span>
+          Compras
+        </a>
+      </div>
+    </header>
+
+    <div class="contenedor-tabla">
+      <table class="tabla-operaciones-iva">
+        <thead>
+          <tr>
+            <th>Tipo</th>
+            <th>Fecha</th>
+            <th>Detalle</th>
+            <th class="texto-derecha">Neto</th>
+            <th class="texto-derecha">Alícuota</th>
+            <th class="texto-derecha">IVA</th>
+            <th class="texto-derecha">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for operacion in operaciones %}
+          <tr class="op-fila">
+            <td>
+              <span class="chip-tipo chip-tipo--{{ operacion.tipo }}">
+                <span class="material-symbols-outlined">{% if operacion.es_venta %}trending_up{% else %}trending_down{% endif %}</span>
+                {{ operacion.get_tipo_display }}
+              </span>
+            </td>
+            <td class="op-fecha">{{ operacion.fecha|date:"d/m/Y" }}</td>
+            <td class="op-detalle">{{ operacion.detalle|default:"—" }}</td>
+            <td class="texto-derecha op-neto">${{ operacion.monto_neto|floatformat:"2g" }}</td>
+            <td class="texto-derecha op-alicuota">{{ operacion.alicuota|floatformat:"-2" }}%</td>
+            <td class="texto-derecha op-iva op-iva--{{ operacion.tipo }}">${{ operacion.iva|floatformat:"2g" }}</td>
+            <td class="texto-derecha">
+              <div class="acciones-tabla">
+                <button class="boton-icono editar" title="Editar" data-id="{{ operacion.id }}">
+                  <span class="material-symbols-outlined">edit</span>
+                </button>
+                <button class="boton-icono eliminar" title="Eliminar"
+                        data-id="{{ operacion.id }}"
+                        data-descripcion="la {{ operacion.get_tipo_display|lower }} del {{ operacion.fecha|date:'d/m/Y' }} por ${{ operacion.monto_neto|floatformat:'2g' }}">
+                  <span class="material-symbols-outlined">delete</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7">
+              <div class="estado-vacio">
+                <span class="material-symbols-outlined">receipt_long</span>
+                <h4>Sin operaciones{% if tipo != 'todas' %} de este tipo{% endif %}</h4>
+                <p>Cargá una venta o una compra para empezar a controlar el IVA.</p>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <!-- PAGINACION: de a 8 operaciones, conservando el tipo del filtro -->
+      <div class="paginacion">
+        <div class="paginacion-info">
+          Mostrando <span>{{ page_obj.start_index|default:"0" }}-{{ page_obj.end_index|default:"0" }}</span>
+          de <span>{{ page_obj.paginator.count|default:"0" }}</span> {% if page_obj.paginator.count == 1 %}operación{% else %}operaciones{% endif %}
+        </div>
+        <div class="paginacion-botones">
+          {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}&tipo={{ tipo }}">
+              <button class="boton-paginacion">Anterior</button>
+            </a>
+          {% else %}
+            <button class="boton-paginacion" disabled>Anterior</button>
+          {% endif %}
+
+          {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}&tipo={{ tipo }}">
+              <button class="boton-paginacion">Siguiente</button>
+            </a>
+          {% else %}
+            <button class="boton-paginacion" disabled>Siguiente</button>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </section>
+</section>
+
+<!-- PANEL LATERAL NUEVA/EDITAR OPERACION (SLIDE-OVER) -->
+<div id="contenedor-slide-over">
+  <div id="slide-over-fondo" onclick="cerrarSlideOver()"></div>
+
+  <div id="slide-over-panel">
+    <header class="panel-cabecera">
+      <div class="panel-titulo-fila">
+        <div class="icono-contenedor">
+          <span class="material-symbols-outlined">receipt_long</span>
+        </div>
+        <div class="texto-cabecera">
+          <h3>Nueva operación</h3>
+          <p>Registra una venta o una compra</p>
+        </div>
+      </div>
+      <button type="button" class="boton-cerrar-panel" onclick="cerrarSlideOver()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </header>
+
+    <div class="panel-cuerpo">
+      <form class="formulario-empresa" id="form-operacion" method="POST" autocomplete="off">
+        {% csrf_token %}
+        <input type="hidden" name="accion" id="accion-operacion" value="nueva_operacion">
+        <input type="hidden" name="id_registro" id="id_registro">
+
+        <!-- Tipo: control segmentado venta / compra -->
+        <div class="campo-formulario">
+          <label>Tipo de operación</label>
+          <div class="segmento-tipo">
+            <label class="segmento-tipo__opcion segmento-tipo__opcion--venta">
+              <input type="radio" name="tipo" value="venta" checked>
+              <span class="segmento-tipo__cara">
+                <span class="material-symbols-outlined">trending_up</span>
+                Venta
+              </span>
+            </label>
+            <label class="segmento-tipo__opcion segmento-tipo__opcion--compra">
+              <input type="radio" name="tipo" value="compra">
+              <span class="segmento-tipo__cara">
+                <span class="material-symbols-outlined">trending_down</span>
+                Compra
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div class="campo-formulario">
+          <label for="fecha">Fecha</label>
+          <input type="date" id="fecha" name="fecha" class="input-estandar" required>
+        </div>
+
+        <div class="campo-formulario">
+          <label for="monto_neto">Monto neto <span class="opcional">(sin IVA)</span></label>
+          <input type="text" id="monto_neto" name="monto_neto"
+                 class="input-estandar input-miles-decimal" inputmode="decimal"
+                 autocomplete="off" placeholder="Ej: 100.000,00" required
+                 pattern="[1-9][0-9]{0,2}(\.[0-9]{3})*(,[0-9]{1,2})?|0,(0[1-9]|[1-9][0-9]?)">
+        </div>
+
+        <div class="campo-formulario">
+          <label for="alicuota">Alícuota de IVA</label>
+          <select id="alicuota" name="alicuota" class="input-estandar" required>
+            {% for valor, etiqueta in alicuotas %}
+              <option value="{{ valor|unlocalize }}"{% if forloop.first %} selected{% endif %}>{{ etiqueta }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="campo-formulario">
+          <label for="detalle">Detalle <span class="opcional">(opcional)</span></label>
+          <input type="text" id="detalle" name="detalle" class="input-estandar"
+                 placeholder="Ej: Factura A 0001-00012345" maxlength="120">
+        </div>
+
+        <!-- IVA calculado en vivo: ayuda a controlar antes de guardar -->
+        <div class="preview-iva" id="preview-iva">
+          <span class="preview-iva__rotulo">IVA de esta operación</span>
+          <span class="preview-iva__valor" id="preview-iva-valor">$0,00</span>
+        </div>
+      </form>
+    </div>
+
+    <div class="panel-pie">
+      <button type="submit" form="form-operacion" class="boton-primario" id="boton-guardar-operacion">Guardar operación</button>
+      <button type="button" class="boton-secundario" onclick="cerrarSlideOver()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- PANEL LATERAL EDITAR EMPRESA (SLIDE-OVER) -->
+<div id="contenedor-slide-over-empresa">
+  <div id="slide-over-fondo-empresa" onclick="cerrarSlideOver('contenedor-slide-over-empresa')"></div>
+
+  <div id="slide-over-panel-empresa" class="slide-over-panel-base">
+    <header class="panel-cabecera">
+      <div class="panel-titulo-fila">
+        <div class="icono-contenedor">
+          <span class="material-symbols-outlined">domain</span>
+        </div>
+        <div class="texto-cabecera">
+          <h3>Editar empresa / sociedad</h3>
+          <p>Modifica los datos de la empresa o sociedad</p>
+        </div>
+      </div>
+      <button type="button" class="boton-cerrar-panel" onclick="cerrarSlideOver('contenedor-slide-over-empresa')">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </header>
+
+    <div class="panel-cuerpo">
+      <form class="formulario-empresa" id="form-empresa" method="POST" autocomplete="off">
+        {% csrf_token %}
+        <input type="hidden" name="accion" value="editar_empresa">
+        <div class="campo-formulario">
+          <label for="nombre-empresa">Nombre de la empresa o sociedad</label>
+          <input type="text" id="nombre-empresa" name="nombre" class="input-estandar"
+                 placeholder="Ej: MRM Acopio S.A." maxlength="60" required minlength="2">
+          <span class="mensaje-error">Escribí un nombre de al menos 2 caracteres.</span>
+        </div>
+      </form>
+    </div>
+
+    <div class="panel-pie">
+      <button type="submit" form="form-empresa" class="boton-primario">Actualizar empresa</button>
+      <button type="button" class="boton-secundario" onclick="cerrarSlideOver('contenedor-slide-over-empresa')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DE ELIMINACION (sirve para operaciones y para la empresa: la accion la fija el JS) -->
+<form id="formulario-eliminar" method="POST">
+  {% csrf_token %}
+  <input type="hidden" name="accion" id="accion-eliminar" value="eliminar_operacion">
+  <div id="contenedor-panel-eliminar">
+    <div id="contenedor-panel-fondo" onclick="cerrarPanelEliminar()"></div>
+
+    <div id="panel-eliminar">
+      <input type="hidden" id="id_registro_eliminar" name="id_registro" value="">
+
+      <button type="button" class="boton-cerrar-panel" id="icono-cerrar-panel-eliminar" onclick="cerrarPanelEliminar()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+
+      <div id="icono-advertencia">
+        <span class="material-symbols-outlined">warning</span>
+      </div>
+
+      <h3>Confirmar eliminación</h3>
+      <p id="texto-confirmacion-eliminar">¿Confirma que quiere eliminar esta operación?</p>
+
+      <div class="acciones-modal">
+        <button type="button" class="boton-secundario" onclick="cerrarPanelEliminar()">No, mantener</button>
+        <button type="button" class="boton-primario-eliminar" id="boton-confirmar-eliminar"><span>Sí, eliminar</span></button>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}
+
+{% block codigo-javascript %}
+<script src="{% static 'js/informacion_empresa.js' %}"></script>
+{% endblock %}

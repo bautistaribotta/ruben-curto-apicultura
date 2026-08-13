@@ -5,6 +5,7 @@ from .models import (
     ViajeReparto, DetalleViajeReparto, DestinoViajeReparto, ViajeCereal, DetalleViajeCereal,
     GastoViajeCereal, Casa, Contrato, PagoAlquiler, GastoCasa, EstacionDeServicio,
     RegistroKilometraje, Seguro, VTV, Servis, ObservacionVehiculo,
+    Empresa, OperacionIva,
 )
 
 admin.site.register(Cliente)
@@ -157,3 +158,20 @@ class EstacionDeServicioAdmin(admin.ModelAdmin):
     list_display = ('id', 'nombre', 'activa')
     list_filter = ('activa',)
     search_fields = ('nombre',)
+
+
+class OperacionIvaInline(admin.TabularInline):
+    model = OperacionIva
+    extra = 1
+
+@admin.register(Empresa)
+class EmpresaAdmin(admin.ModelAdmin):
+    inlines = [OperacionIvaInline]
+    list_display = ('id', 'nombre', 'iva_debito', 'iva_credito', 'saldo_iva', 'activa')
+    list_filter = ('activa',)
+    search_fields = ('nombre',)
+
+@admin.register(OperacionIva)
+class OperacionIvaAdmin(admin.ModelAdmin):
+    list_display = ('id', 'empresa', 'tipo', 'fecha', 'monto_neto', 'alicuota', 'iva')
+    list_filter = ('tipo', 'empresa')

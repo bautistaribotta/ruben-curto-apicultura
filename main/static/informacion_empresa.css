@@ -1,0 +1,593 @@
+/* ============================================================
+   INFORMACION EMPRESA / SOCIEDAD (IVA)
+   Estilos propios de la ficha. El slide-over principal, el modal de
+   eliminacion, los inputs y los botones se reutilizan de iva.css
+   (se carga antes). Aca viven: la cabecera de identidad, el resumen
+   de IVA (debito / credito / saldo), la tabla de operaciones con
+   sus chips de tipo, el control segmentado del formulario y el
+   segundo slide-over de edicion de la empresa.
+   ============================================================ */
+
+/* --- CABECERA: IDENTIDAD + ACCIONES --- */
+.cabecera-empresa {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+}
+
+.identidad-empresa {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.identidad-empresa .identidad-empresa__tile {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--brand-secondary);
+  color: var(--sand-100);
+  font-size: 30px;
+  line-height: 1;
+}
+
+.identidad-empresa__nombre {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-strong);
+  margin: 0;
+}
+
+.identidad-empresa__meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-top: 0.375rem;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.identidad-empresa__meta .material-symbols-outlined {
+  font-size: 18px;
+}
+
+/* --- ACCIONES DE LA CABECERA --- */
+.acciones-empresa {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.acciones-empresa .boton-nuevo {
+  border: 1px solid transparent;
+}
+
+.acciones-empresa .boton-nuevo .material-symbols-outlined {
+  font-size: 1.25rem;
+}
+
+.boton-accion {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--dur-normal) var(--ease-standard);
+}
+
+.boton-accion .material-symbols-outlined {
+  font-size: 1.25rem;
+}
+
+.boton-editar {
+  background-color: var(--surface-card);
+  color: var(--text-body);
+  box-shadow: 0 1px 2px var(--color-sombra-1);
+}
+
+.boton-editar:hover {
+  background-color: var(--surface-hover);
+  border-color: var(--sand-400);
+}
+
+.boton-cancelar {
+  background-color: var(--surface-card);
+  color: var(--color-rojo-eliminacion);
+  border-color: var(--color-rojo-eliminacion-transparente-30);
+}
+
+.boton-cancelar:hover {
+  background-color: var(--danger-500);
+  border-color: var(--danger-500);
+  color: var(--text-on-inverse);
+}
+
+/* --- RESUMEN DE IVA (debito / credito / saldo) --- */
+.resumen-iva {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr;
+  align-items: stretch;
+  gap: 0.5rem 1.75rem;
+  padding: 1.5rem 1.75rem;
+  margin-bottom: 2rem;
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+}
+
+.resumen-iva__item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.resumen-iva__rotulo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-subtle);
+}
+
+.resumen-iva__icono {
+  font-size: 1.1rem;
+  color: var(--text-subtle);
+}
+
+.resumen-iva__icono--debito {
+  color: var(--success-600);
+}
+
+.resumen-iva__valor {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  color: var(--text-strong);
+}
+
+.resumen-iva__ayuda {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+/* Separador vertical entre columnas */
+.resumen-iva__sep {
+  width: 1px;
+  align-self: stretch;
+  background-color: var(--border-subtle);
+}
+
+/* El saldo destaca: numero mas grande y coloreado por su lectura. Los colores del
+   chip los aporta iva.css (.saldo--X .chip-saldo). */
+.resumen-iva__valor--saldo {
+  font-size: var(--text-3xl);
+  font-weight: var(--weight-extra);
+}
+
+.resumen-iva__item--saldo .chip-saldo {
+  align-self: flex-start;
+}
+
+.saldo--a_pagar .resumen-iva__valor--saldo {
+  color: var(--pine-900);
+}
+
+.saldo--a_favor .resumen-iva__valor--saldo {
+  color: var(--success-600);
+}
+
+.saldo--al_dia .resumen-iva__valor--saldo {
+  color: var(--text-muted);
+}
+
+/* --- BLOQUE DE OPERACIONES --- */
+.bloque-operaciones__cabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.bloque-operaciones__titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bloque-operaciones__titulo h3 {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-strong);
+  margin: 0;
+}
+
+.bloque-operaciones__titulo .material-symbols-outlined {
+  color: var(--text-muted);
+  font-size: 22px;
+}
+
+/* Chips de filtro por tipo (mismo lenguaje que las pildoras de Deudas) */
+.op-chips {
+  display: inline-flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.op-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-default);
+  background-color: var(--surface-card);
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color var(--dur-normal) var(--ease-standard),
+              color var(--dur-normal) var(--ease-standard),
+              border-color var(--dur-normal) var(--ease-standard);
+}
+
+.op-chip .material-symbols-outlined {
+  font-size: 1.05rem;
+}
+
+.op-chip:hover {
+  background-color: var(--surface-hover);
+  color: var(--text-body);
+}
+
+.op-chip.is-active {
+  background-color: var(--brand-secondary);
+  color: var(--text-on-inverse);
+  border-color: var(--brand-secondary);
+}
+
+/* Pista de color en los chips inactivos: verde para ventas, neutro para compras */
+.op-chip:not(.is-active):nth-child(2) .material-symbols-outlined {
+  color: var(--success-600);
+}
+
+/* --- CONTENEDOR Y TABLA DE OPERACIONES --- */
+.contenedor-tabla {
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.tabla-operaciones-iva {
+  width: 100%;
+  text-align: left;
+  border-collapse: collapse;
+}
+
+.texto-derecha {
+  text-align: right;
+}
+
+.tabla-operaciones-iva td {
+  padding: 1rem 1.5rem;
+  font-size: 0.875rem;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-body);
+}
+
+.tabla-operaciones-iva tbody tr {
+  transition: background-color var(--dur-normal) var(--ease-standard);
+}
+
+.tabla-operaciones-iva tbody tr:hover {
+  background-color: var(--surface-hover);
+}
+
+.tabla-operaciones-iva tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.op-fecha {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--text-body);
+}
+
+.op-detalle {
+  color: var(--text-muted);
+  max-width: 20rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.op-neto {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--text-body);
+}
+
+.op-alicuota {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--text-muted);
+}
+
+.op-iva {
+  font-weight: var(--weight-bold);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.op-iva--venta {
+  color: var(--success-600);
+}
+
+.op-iva--compra {
+  color: var(--text-strong);
+}
+
+/* Acciones de fila (editar / eliminar): mismo lenguaje que el resto de las
+   tablas de la app (combustible.css), replicado aca porque esa hoja no se carga
+   en esta vista. */
+.acciones-tabla {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.boton-icono {
+  background: none;
+  border: none;
+  padding: 0.375rem;
+  color: var(--sand-400);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--dur-normal) var(--ease-standard);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.boton-icono span {
+  font-size: 20px;
+}
+
+.boton-icono.editar:hover {
+  color: var(--brand-active);
+  background-color: var(--honey-tint-10);
+}
+
+.boton-icono.eliminar:hover {
+  color: var(--color-rojo-eliminacion);
+  background-color: var(--color-rosa-claro);
+}
+
+/* Chip de tipo de operacion */
+.chip-tipo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  white-space: nowrap;
+}
+
+.chip-tipo .material-symbols-outlined {
+  font-size: 1rem;
+}
+
+.chip-tipo--venta {
+  background-color: var(--success-50);
+  color: var(--success-600);
+}
+
+.chip-tipo--compra {
+  background-color: var(--color-verde-medio-transparente-10);
+  color: var(--pine-900);
+}
+
+/* --- CONTROL SEGMENTADO DE TIPO (formulario) --- */
+.segmento-tipo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.segmento-tipo__opcion {
+  position: relative;
+  margin: 0;
+}
+
+.segmento-tipo__opcion input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.segmento-tipo__cara {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.7rem 0.5rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--dur-normal) var(--ease-standard);
+}
+
+.segmento-tipo__cara .material-symbols-outlined {
+  font-size: 1.15rem;
+}
+
+.segmento-tipo__opcion:hover .segmento-tipo__cara {
+  background-color: var(--surface-hover);
+}
+
+.segmento-tipo__opcion--venta input:checked + .segmento-tipo__cara {
+  border-color: var(--success-600);
+  background-color: var(--success-50);
+  color: var(--success-600);
+}
+
+.segmento-tipo__opcion--compra input:checked + .segmento-tipo__cara {
+  border-color: var(--pine-900);
+  background-color: var(--color-verde-medio-transparente-10);
+  color: var(--pine-900);
+}
+
+.segmento-tipo__opcion input:focus-visible + .segmento-tipo__cara {
+  box-shadow: var(--ring);
+}
+
+/* --- PREVIEW DEL IVA CALCULADO --- */
+.preview-iva {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1.1rem;
+  border-radius: var(--radius-md);
+  background-color: var(--surface-sunken);
+  border: 1px dashed var(--border-default);
+}
+
+.preview-iva__rotulo {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--text-muted);
+}
+
+.preview-iva__valor {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-extra);
+  letter-spacing: var(--tracking-tight);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-strong);
+}
+
+/* --- ETIQUETA OPCIONAL --- */
+.opcional {
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+/* --- SEGUNDO SLIDE-OVER: EDICION DE EMPRESA ---
+   Recicla el panel del slide-over principal (iva.css apunta a
+   #contenedor-slide-over), espejado para este segundo contenedor. */
+#contenedor-slide-over-empresa {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  visibility: hidden;
+  overflow: hidden;
+  display: flex;
+  justify-content: flex-end;
+  transition: visibility 0.3s;
+}
+
+#contenedor-slide-over-empresa.slide-over-abierto {
+  visibility: visible;
+  transition: none;
+}
+
+#slide-over-fondo-empresa {
+  position: fixed;
+  inset: 0;
+  background-color: var(--overlay-ink);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+#contenedor-slide-over-empresa.slide-over-abierto #slide-over-fondo-empresa {
+  opacity: 1;
+}
+
+.slide-over-panel-base {
+  position: relative;
+  width: 100%;
+  max-width: 28rem;
+  background-color: var(--surface-card);
+  box-shadow: -12px 0 24px -8px var(--shadow-tint);
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+
+#contenedor-slide-over-empresa.slide-over-abierto .slide-over-panel-base {
+  transform: translateX(0);
+}
+
+/* --- RESPONSIVE --- */
+@media (max-width: 1024px) {
+  .acciones-empresa {
+    width: 100%;
+  }
+  .acciones-empresa .boton-nuevo,
+  .acciones-empresa .boton-accion {
+    flex: 1;
+    justify-content: center;
+  }
+  .contenedor-tabla {
+    overflow-x: auto;
+  }
+}
+
+/* El resumen de tres columnas se apila y los separadores se ocultan */
+@media (max-width: 720px) {
+  .resumen-iva {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+  .resumen-iva__sep {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  #slide-over-panel,
+  #slide-over-panel-empresa {
+    width: 100%;
+    border-radius: 0;
+  }
+}

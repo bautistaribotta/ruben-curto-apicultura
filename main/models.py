@@ -1294,3 +1294,180 @@ class CargaCombustible(models.Model):
 
     def __str__(self):
         return f"Carga de {self.monto} en {self.estacion} ({self.fecha})"
+
+
+def _expresion_iva():
+    """Suma del IVA de un grupo de operaciones: base imponible por su alicuota.
+
+    Cada operacion aporta monto_neto * alicuota / 100. Lo dejo en una funcion y no
+    en una constante porque una misma expresion no se puede reusar en dos subqueries
+    distintas sin arrastrar estado; asi cada subquery arma la suya limpia.
+    """
+    return Sum(F("monto_neto") * F("alicuota") / Value(100), output_field=DecimalField())
+
+
+class EmpresaQuerySet(models.QuerySet):
+    def con_totales_iva(self):
+        """Anota el IVA debito y el credito de cada empresa en una sola query.
+
+        El debito sale de las operaciones de venta y el credito de las de compra;
+        cada una aporta su base imponible por la alicuota (ver _expresion_iva). Uso
+        dos subqueries separadas y no un unico JOIN con filtros para no sufrir el
+        fan-out que multiplicaria los montos al cruzar ventas con compras, igual
+        que Operacion.con_totales().
+        """
+        debito = (
+            OperacionIva.objects.filter(empresa=OuterRef("pk"), tipo="venta")
+            .values("empresa")
+            .annotate(total=_expresion_iva())
+            .values("total")
+        )
+        credito = (
+            OperacionIva.objects.filter(empresa=OuterRef("pk"), tipo="compra")
+            .values("empresa")
+            .annotate(total=_expresion_iva())
+            .values("total")
+        )
+        return self.annotate(
+            _iva_debito_anotado=Coalesce(
+                Subquery(debito, output_field=DecimalField()),
+                Value(0),
+                output_field=DecimalField(),
+            ),
+            _iva_credito_anotado=Coalesce(
+                Subquery(credito, output_field=DecimalField()),
+                Value(0),
+                output_field=DecimalField(),
+            ),
+        )
+
+
+class Empresa(models.Model):
+    """Empresa o sociedad de la que se controla el IVA.
+
+    El sistema lo usan tres entidades para ver, cada una, cuanto IVA debito
+    juntaron con sus ventas y cuanto credito con sus compras. La empresa no
+    guarda esos totales: se derivan de sus operaciones para no descuadrarse
+    (ver iva_debito / iva_credito / saldo_iva), del mismo modo que la estacion
+    deriva su deuda de las cargas.
+
+    Lo unico propio de la empresa es el nombre. La baja es logica (activa=False)
+    para no perder las operaciones cargadas.
+    """
+    objects = EmpresaQuerySet.as_manager()
+
+    nombre = models.CharField(max_length=60, unique=True)
+    activa = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = "empresas"
+        verbose_name_plural = "Empresas"
+        ordering = ["nombre", "id"]
+
+    @property
+    def iva_debito(self):
+        """IVA debito fiscal: el IVA de todas las operaciones de venta.
+
+        Si el queryset vino de con_totales_iva() reuso el valor ya anotado para no
+        disparar una query por empresa en el listado; suelta, cae al aggregate.
+        """
+        if hasattr(self, "_iva_debito_anotado"):
+            return self._iva_debito_anotado or Decimal("0")
+        total = self.operaciones.filter(tipo="venta").aggregate(t=_expresion_iva())["t"]
+        return total or Decimal("0")
+
+    @property
+    def iva_credito(self):
+        """IVA credito fiscal: el IVA de todas las operaciones de compra."""
+        if hasattr(self, "_iva_credito_anotado"):
+            return self._iva_credito_anotado or Decimal("0")
+        total = self.operaciones.filter(tipo="compra").aggregate(t=_expresion_iva())["t"]
+        return total or Decimal("0")
+
+    @property
+    def saldo_iva(self):
+        """Saldo tecnico del periodo: debito menos credito.
+
+        Positivo es saldo a pagar (se le debe al fisco); negativo es saldo a favor
+        (queda para descontar el mes siguiente); cero es que esta al dia.
+        """
+        return (self.iva_debito - self.iva_credito).quantize(Decimal("0.01"))
+
+    @property
+    def saldo_iva_abs(self):
+        # El signo del saldo lo comunica la etiqueta (a pagar / a favor), asi que
+        # la tarjeta muestra el monto en positivo y no un "-$" que confunde.
+        return abs(self.saldo_iva)
+
+    @property
+    def estado_saldo(self):
+        # Etiqueta corta del saldo, para el chip de la tarjeta y la ficha
+        saldo = self.saldo_iva
+        if saldo > 0:
+            return "a_pagar"
+        if saldo < 0:
+            return "a_favor"
+        return "al_dia"
+
+    def __str__(self):
+        return self.nombre
+
+
+class OperacionIva(models.Model):
+    """Operacion de venta o compra de una empresa, con su IVA.
+
+    Es la unidad de la que se derivan los totales de la empresa: una venta suma
+    IVA debito y una compra suma IVA credito. Guardo el monto neto (base
+    imponible, sin IVA) y la alicuota, y el importe de IVA se calcula (ver iva);
+    no lo persisto para que no pueda quedar desalineado con la base.
+    """
+    TIPOS = [
+        ("venta", "Venta"),
+        ("compra", "Compra"),
+    ]
+    # Alicuotas de IVA vigentes en Argentina: 21% general, 10,5% reducida y 27%
+    # aumentada. Se guardan como porcentaje (21.00) y con eso se calcula el IVA.
+    ALICUOTAS = [
+        (Decimal("21.00"), "21%"),
+        (Decimal("10.50"), "10,5%"),
+        (Decimal("27.00"), "27%"),
+    ]
+
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name="operaciones",
+                                db_column="id_empresa")
+    tipo = models.CharField(max_length=10, choices=TIPOS)
+    # default y no auto_now_add: la operacion se carga cuando se puede y la fecha
+    # que vale es la del comprobante, no la de la carga
+    fecha = models.DateField(default=timezone.localdate)
+    # Base imponible en pesos, sin IVA
+    monto_neto = models.DecimalField(max_digits=15, decimal_places=2)
+    # Alicuota aplicada, en porcentaje
+    alicuota = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal("21.00"))
+    # Opcional: nro de factura o concepto para identificar la operacion
+    detalle = models.CharField(max_length=120, null=True, blank=True)
+
+    class Meta:
+        db_table = "operaciones_iva"
+        verbose_name = "Operacion de IVA"
+        verbose_name_plural = "Operaciones de IVA"
+        # De la mas nueva a la mas vieja; el id desempata las del mismo dia
+        ordering = ["-fecha", "-id"]
+
+    @property
+    def iva(self):
+        # Importe de IVA: base imponible por la alicuota
+        return (self.monto_neto * self.alicuota / Decimal("100")).quantize(Decimal("0.01"))
+
+    @property
+    def total(self):
+        # Monto final con IVA incluido
+        return self.monto_neto + self.iva
+
+    @property
+    def es_venta(self):
+        return self.tipo == "venta"
+
+    def __str__(self):
+        return f"{self.get_tipo_display()} de {self.monto_neto} ({self.empresa})"
+
+

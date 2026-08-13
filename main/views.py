@@ -19,7 +19,7 @@ from django.template.defaultfilters import floatformat
 
 from .models import (Cliente, Producto, Operacion, DetalleOperacion, Pago, Cotizaciones, Empleado,
                      Vehiculo, Viaje, ViajeCereal, ViajeReparto, Gasto, GastoViajeCereal, GastoViajeReparto,
-                     EstacionDeServicio, CargaCombustible, periodo_actual)
+                     EstacionDeServicio, CargaCombustible, Empresa, OperacionIva, periodo_actual)
 from .pdf_services import Remito, ResumenCuenta
 from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo_cliente, editar_cliente,
                        eliminar_cliente, buscar_clientes, get_cotizacion_dolar_oficial, get_cotizaciones, get_total_kilos_granel, get_articulos_granel, actualizar_cotizacion, obtener_datos_cliente,
@@ -60,7 +60,10 @@ from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo
                        crear_estacion, obtener_datos_estacion, editar_estacion, eliminar_estacion,
                        obtener_estaciones_activas,
                        crear_carga, editar_carga, eliminar_carga, alternar_pago_carga,
-                       obtener_cargas, obtener_datos_carga)
+                       obtener_cargas, obtener_datos_carga,
+                       obtener_empresas_activas, crear_empresa, editar_empresa, eliminar_empresa,
+                       obtener_datos_empresa, crear_operacion_iva, editar_operacion_iva,
+                       eliminar_operacion_iva, obtener_operaciones_iva, obtener_datos_operacion_iva)
 
 
 def _pagado_del_formulario(request):
@@ -2273,9 +2276,107 @@ def combustible(request):
 
 @staff_required
 def iva(request):
-    # Vista inicial de la seccion de IVA: por ahora solo cabecera y area de
-    # trabajo vacia. Aca calcularemos el IVA pagado y el que no.
-    return render(request, "iva.html")
+    """Listado de empresas/sociedades con su IVA debito, credito y saldo.
+
+    Cada empresa se muestra como tarjeta (mismo patron que la flota). Un solo POST
+    rutea por 'accion' hacia el servicio de alta, edicion o baja de la empresa; el
+    buscador filtra las tarjetas del lado del cliente, como en flota.
+    """
+    if request.method == "POST":
+        accion = request.POST.get("accion")
+        p = request.POST
+        try:
+            if accion == "nueva_empresa":
+                crear_empresa(p.get("nombre"))
+                messages.success(request, "Empresa agregada correctamente.")
+            elif accion == "editar_empresa":
+                editar_empresa(p.get("id_empresa"), p.get("nombre"))
+                messages.success(request, "Empresa actualizada correctamente.")
+            elif accion == "eliminar_empresa":
+                eliminar_empresa(p.get("id_empresa"))
+                messages.success(request, "Empresa eliminada correctamente.")
+        except ValueError as e:
+            messages.error(request, str(e))
+        except Exception as e:
+            messages.error(request, f"Ocurrió un error inesperado: {e}")
+
+        return redirect("iva")
+
+    return render(request, "iva.html", {"empresas": obtener_empresas_activas()})
+
+
+@login_required
+def obtener_empresa_json(request, id_empresa):
+    datos = obtener_datos_empresa(id_empresa)
+    if datos:
+        return JsonResponse(datos)
+    return JsonResponse({"Error": "Empresa no encontrada"}, status=404)
+
+
+@login_required
+def obtener_operacion_iva_json(request, id_operacion):
+    datos = obtener_datos_operacion_iva(id_operacion)
+    if datos:
+        return JsonResponse(datos)
+    return JsonResponse({"Error": "Operacion no encontrada"}, status=404)
+
+
+@staff_required
+def informacion_empresa(request, id_empresa):
+    """Ficha de una empresa: su IVA debito/credito/saldo y el historial de
+    operaciones. Un solo POST rutea por 'accion' hacia el servicio correspondiente
+    (mismo patron que informacion_estacion); el GET arma el historial filtrable.
+    """
+    # Con con_totales_iva ya llega anotada para el resumen, sin N+1 en el GET
+    empresa = get_object_or_404(Empresa.objects.con_totales_iva(), id=id_empresa, activa=True)
+
+    if request.method == "POST":
+        accion = request.POST.get("accion")
+        p = request.POST
+        try:
+            if accion == "editar_empresa":
+                editar_empresa(id_empresa, p.get("nombre"))
+                messages.success(request, "Empresa actualizada correctamente.")
+            elif accion == "eliminar_empresa":
+                eliminar_empresa(id_empresa)
+                messages.success(request, "Empresa eliminada correctamente.")
+                return redirect("iva")
+            elif accion == "nueva_operacion":
+                crear_operacion_iva(id_empresa, p.get("tipo"), p.get("fecha"), p.get("monto_neto"),
+                                    p.get("alicuota"), p.get("detalle"))
+                messages.success(request, "Operación agregada correctamente.")
+            elif accion == "editar_operacion":
+                editar_operacion_iva(p.get("id_registro"), p.get("tipo"), p.get("fecha"),
+                                     p.get("monto_neto"), p.get("alicuota"), p.get("detalle"))
+                messages.success(request, "Operación actualizada correctamente.")
+            elif accion == "eliminar_operacion":
+                eliminar_operacion_iva(p.get("id_registro"))
+                messages.success(request, "Operación eliminada.")
+        except ValueError as e:
+            messages.error(request, str(e))
+        except Exception as e:
+            messages.error(request, f"Ocurrió un error inesperado: {e}")
+
+        return redirect("informacion_empresa", id_empresa=id_empresa)
+
+    # Filtro por tipo de operacion (segmentado): todas por defecto
+    tipo = request.GET.get("tipo", "todas")
+    if tipo not in ("todas", "ventas", "compras"):
+        tipo = "todas"
+
+    operaciones = obtener_operaciones_iva(id_empresa, tipo)
+    paginator = Paginator(operaciones, 8)
+    page_obj = paginator.get_page(request.GET.get("page"))
+
+    contexto = {
+        "empresa": empresa,
+        "page_obj": page_obj,
+        "operaciones": page_obj,
+        "tipo": tipo,
+        "total_operaciones": OperacionIva.objects.filter(empresa_id=id_empresa).count(),
+        "alicuotas": OperacionIva.ALICUOTAS,
+    }
+    return render(request, "informacion_empresa.html", contexto)
 
 
 @login_required
