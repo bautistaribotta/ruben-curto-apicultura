@@ -2864,13 +2864,19 @@ def marcar_pago_viaje_reparto(id_viaje_reparto, pagado):
 
 
 def eliminar_viaje_reparto(id_viaje_reparto):
-    viaje_reparto = get_object_or_404(ViajeReparto, id=id_viaje_reparto)
-
-    # Guardo si estaba vigente antes de tocarlo: eliminar dos veces el mismo reparto
-    # no tiene que descontar dos viajes del destino.
-    estaba_activo = viaje_reparto.activo
-
     with transaction.atomic():
+        # Bloqueo la fila con select_for_update y leo 'activo' YA bloqueado: un
+        # segundo borrado concurrente espera aca y, al desbloquearse tras el commit,
+        # encuentra activo=False y sale por el guard. Sin el lock, ambos leian
+        # activo=True y descontaban el viaje del destino dos veces (TOCTOU).
+        viaje_reparto = get_object_or_404(
+            ViajeReparto.objects.select_for_update(), id=id_viaje_reparto
+        )
+
+        # Guardo si estaba vigente antes de tocarlo: eliminar dos veces el mismo reparto
+        # no tiene que descontar dos viajes del destino.
+        estaba_activo = viaje_reparto.activo
+
         # Borrado logico: lo marco inactivo para no perder el historial
         viaje_reparto.activo = False
         viaje_reparto.save()
@@ -3508,41 +3514,51 @@ def marcar_pago_alquiler(id_casa, periodo, pagado):
     precio cambio desde que se cargo, el usuario tiene que enterarse de lo que
     acaba de perder.
     """
-    casa = get_object_or_404(Casa, id=id_casa, activa=True)
     periodo = _parsear_periodo(periodo)
-    pago = PagoAlquiler.objects.filter(casa=casa, periodo=periodo).first()
 
-    if not pagado:
-        if pago is None:
-            return {"pagado": False, "monto": None, "periodo": periodo}
-        monto = pago.monto
-        pago.delete()
-        return {"pagado": False, "monto": monto, "periodo": periodo}
-
-    if pago is not None:
-        return {"pagado": True, "monto": pago.monto, "periodo": periodo}
-
-    # La casilla no puede inventar un monto: sin contrato no hay pago que crear
-    contrato = contratos_del_periodo(periodo).filter(casa=casa).first()
-    if contrato is None:
-        anterior = casa.contratos.filter(fin__lt=periodo).order_by("-fin").first()
-        if anterior is not None:
-            raise ValueError(
-                f"El contrato venció el {anterior.fin:%d/%m/%Y}, así que ese mes no corresponde "
-                "cobrarlo. Cargá el contrato nuevo para poder seguir."
-            )
-        raise ValueError(
-            "La casa no tiene contrato en ese mes, así que no se sabe por cuánto es el pago. "
-            "Cargale un contrato desde el botón de la fila."
+    with transaction.atomic():
+        # Bloqueo la fila de la casa con select_for_update para serializar todas las
+        # marcas/desmarcas de esa casa. Sin esto, dos "marcar" concurrentes del mismo
+        # mes leian ambos pago=None y ambos hacian INSERT: el segundo chocaba contra
+        # el UniqueConstraint(casa, periodo) y salia como IntegrityError (500), en vez
+        # del retorno idempotente que promete la casilla. Con el lock, el segundo espera
+        # y al desbloquearse ya ve el pago creado por el primero.
+        casa = get_object_or_404(
+            Casa.objects.select_for_update(), id=id_casa, activa=True
         )
+        pago = PagoAlquiler.objects.filter(casa=casa, periodo=periodo).first()
 
-    PagoAlquiler.objects.create(
-        casa=casa,
-        periodo=periodo,
-        monto=contrato.monto_mensual,
-        fecha=timezone.localdate(),
-    )
-    return {"pagado": True, "monto": contrato.monto_mensual, "periodo": periodo}
+        if not pagado:
+            if pago is None:
+                return {"pagado": False, "monto": None, "periodo": periodo}
+            monto = pago.monto
+            pago.delete()
+            return {"pagado": False, "monto": monto, "periodo": periodo}
+
+        if pago is not None:
+            return {"pagado": True, "monto": pago.monto, "periodo": periodo}
+
+        # La casilla no puede inventar un monto: sin contrato no hay pago que crear
+        contrato = contratos_del_periodo(periodo).filter(casa=casa).first()
+        if contrato is None:
+            anterior = casa.contratos.filter(fin__lt=periodo).order_by("-fin").first()
+            if anterior is not None:
+                raise ValueError(
+                    f"El contrato venció el {anterior.fin:%d/%m/%Y}, así que ese mes no corresponde "
+                    "cobrarlo. Cargá el contrato nuevo para poder seguir."
+                )
+            raise ValueError(
+                "La casa no tiene contrato en ese mes, así que no se sabe por cuánto es el pago. "
+                "Cargale un contrato desde el botón de la fila."
+            )
+
+        PagoAlquiler.objects.create(
+            casa=casa,
+            periodo=periodo,
+            monto=contrato.monto_mensual,
+            fecha=timezone.localdate(),
+        )
+        return {"pagado": True, "monto": contrato.monto_mensual, "periodo": periodo}
 
 
 def obtener_resumen_alquileres(casas, periodo=None):
