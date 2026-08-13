@@ -2271,6 +2271,13 @@ def combustible(request):
     return render(request, "combustible.html", contexto)
 
 
+@staff_required
+def iva(request):
+    # Vista inicial de la seccion de IVA: por ahora solo cabecera y area de
+    # trabajo vacia. Aca calcularemos el IVA pagado y el que no.
+    return render(request, "iva.html")
+
+
 @login_required
 def obtener_estacion_json(request, id_estacion):
     datos = obtener_datos_estacion(id_estacion)
