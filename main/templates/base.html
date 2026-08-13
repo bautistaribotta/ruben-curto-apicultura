@@ -144,7 +144,7 @@
           </a>
         </li>
         <li>
-          <a href="{% url 'iva' %}" class="item-menu {% if request.resolver_match.url_name == 'iva' %} activo {% endif %}">
+          <a href="{% url 'iva' %}" class="item-menu {% if request.resolver_match.url_name == 'iva' or request.resolver_match.url_name == 'informacion_empresa' %} activo {% endif %}">
             <span class="material-symbols-outlined">receipt_long</span>
             IVA
           </a>

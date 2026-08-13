@@ -17,7 +17,7 @@ from .models import (Producto, Cliente, Operacion, DetalleOperacion, Pago, Cotiz
                      ViajeReparto, GastoViajeReparto, DestinoViajeReparto, Casa, Contrato, PagoAlquiler,
                      GastoCasa, RegistroKilometraje, Seguro, VTV, Servis, ObservacionVehiculo,
                      EstacionDeServicio, CargaCombustible, Empresa, OperacionIva,
-                     contratos_del_periodo, periodo_actual)
+                     contratos_del_periodo, periodo_actual, _expresion_iva)
 
 
 def _aplicar_estado_pago(viaje, pagado):
@@ -3801,6 +3801,40 @@ def obtener_empresas_activas(q=None):
     if q:
         empresas = empresas.filter(filtro_tokens(q, "nombre"))
     return empresas.order_by("nombre", "id")
+
+
+def obtener_totales_iva(anio, mes=None):
+    """IVA debito, credito y saldo de TODAS las empresas activas juntas.
+
+    Totaliza el anio entero o, si llega 'mes' (1-12), solo ese mes. El debito sale
+    de las ventas y el credito de las compras; ambos son la suma de la base
+    imponible por su alicuota (misma expresion que en las tarjetas). El estado del
+    saldo sigue el mismo semaforo que la empresa: a pagar / a favor / al dia.
+    """
+    ops = OperacionIva.objects.filter(empresa__activa=True, fecha__year=anio)
+    if mes:
+        ops = ops.filter(fecha__month=mes)
+
+    debito = (ops.filter(tipo="venta").aggregate(t=_expresion_iva())["t"]
+              or Decimal("0")).quantize(Decimal("0.01"))
+    credito = (ops.filter(tipo="compra").aggregate(t=_expresion_iva())["t"]
+               or Decimal("0")).quantize(Decimal("0.01"))
+    saldo = debito - credito
+
+    if saldo > 0:
+        estado = "a_pagar"
+    elif saldo < 0:
+        estado = "a_favor"
+    else:
+        estado = "al_dia"
+
+    return {
+        "debito": debito,
+        "credito": credito,
+        "saldo": saldo,
+        "saldo_abs": abs(saldo),
+        "estado": estado,
+    }
 
 
 def _validar_nombre_empresa(nombre, excluir_id=None):

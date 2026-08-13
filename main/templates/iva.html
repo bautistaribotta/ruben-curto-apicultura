@@ -32,6 +32,65 @@
 {% block area-trabajo %}
 <section id="area-trabajo">
 
+  {% comment %}
+    Band de totales de IVA: la suma de TODAS las empresas y sociedades juntas en
+    un periodo. A la izquierda, el periodo navegable con flechas y el toggle
+    Mes / Año (arranca en el año en curso, ?anio=YYYY o ?mes=YYYY-MM). A la
+    derecha, débito, crédito y el saldo como cifra protagonista, coloreado segun
+    su lectura. Mismo lenguaje que la tarjeta de gasto de combustible.
+  {% endcomment %}
+  <section class="iva-totales saldo--{{ iva_totales.estado }}">
+    <div class="iva-totales__periodo">
+      <p class="iva-totales__eyebrow">IVA de</p>
+
+      <div class="iva-nav">
+        <a class="iva-nav__paso" href="{{ iva_url_anterior }}"
+           aria-label="{% if iva_modo == 'mes' %}Mes anterior{% else %}Año anterior{% endif %}">
+          <span class="material-symbols-outlined">chevron_left</span>
+        </a>
+        <p class="iva-totales__fecha">
+          {% if iva_modo == 'mes' %}
+            <span class="iva-totales__nombre">{{ iva_periodo|date:"F" }}</span>
+            <span class="iva-totales__anio">{{ iva_periodo|date:"Y" }}</span>
+          {% else %}
+            <span class="iva-totales__nombre">{{ iva_anio }}</span>
+          {% endif %}
+        </p>
+        <a class="iva-nav__paso" href="{{ iva_url_siguiente }}"
+           aria-label="{% if iva_modo == 'mes' %}Mes siguiente{% else %}Año siguiente{% endif %}">
+          <span class="material-symbols-outlined">chevron_right</span>
+        </a>
+      </div>
+
+      <!-- Granularidad: totalizar por mes o por año -->
+      <div class="iva-granularidad" role="group" aria-label="Ver el total por mes o por año">
+        <a class="iva-granularidad__opcion {% if iva_modo == 'mes' %}is-active{% endif %}"
+           href="{{ iva_url_mes }}"{% if iva_modo == 'mes' %} aria-current="true"{% endif %}>Mes</a>
+        <a class="iva-granularidad__opcion {% if iva_modo == 'anio' %}is-active{% endif %}"
+           href="{{ iva_url_anio }}"{% if iva_modo == 'anio' %} aria-current="true"{% endif %}>Año</a>
+      </div>
+    </div>
+
+    <div class="iva-totales__cifras">
+      <p class="iva-cifra">
+        <span class="iva-cifra__valor">${{ iva_totales.debito|floatformat:"0g" }}</span>
+        <span class="iva-cifra__rotulo">débito</span>
+      </p>
+      <p class="iva-cifra">
+        <span class="iva-cifra__valor">${{ iva_totales.credito|floatformat:"0g" }}</span>
+        <span class="iva-cifra__rotulo">crédito</span>
+      </p>
+      <p class="iva-cifra iva-cifra--saldo">
+        <span class="iva-cifra__valor">${{ iva_totales.saldo_abs|floatformat:"0g" }}</span>
+        <span class="iva-cifra__rotulo">
+          {% if iva_totales.estado == 'a_pagar' %}saldo a pagar
+          {% elif iva_totales.estado == 'a_favor' %}saldo a favor
+          {% else %}saldo al día{% endif %}
+        </span>
+      </p>
+    </div>
+  </section>
+
   <!-- Controles superiores: buscador + alta -->
   <div class="barra-herramientas">
     <div class="grupo-busqueda">

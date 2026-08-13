@@ -63,7 +63,8 @@ from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo
                        obtener_cargas, obtener_datos_carga,
                        obtener_empresas_activas, crear_empresa, editar_empresa, eliminar_empresa,
                        obtener_datos_empresa, crear_operacion_iva, editar_operacion_iva,
-                       eliminar_operacion_iva, obtener_operaciones_iva, obtener_datos_operacion_iva)
+                       eliminar_operacion_iva, obtener_operaciones_iva, obtener_datos_operacion_iva,
+                       obtener_totales_iva)
 
 
 def _pagado_del_formulario(request):
@@ -2274,6 +2275,52 @@ def combustible(request):
     return render(request, "combustible.html", contexto)
 
 
+def _contexto_totales_iva(request):
+    """Contexto de la barra superior de totales de IVA (todas las empresas juntas).
+
+    Por defecto totaliza el anio en curso. Con ?mes=YYYY-MM pasa a un mes puntual
+    y con ?anio=YYYY vuelve a un anio entero. Arma tambien las URLs de las flechas
+    y del toggle Mes/Ano aca, para no meter esa logica en la plantilla.
+    """
+    hoy = periodo_actual()
+
+    # --- Modo mes: ?mes=YYYY-MM ---
+    if request.GET.get("mes"):
+        periodo = resolver_periodo(request.GET.get("mes"))
+        anterior = mes_desplazado(periodo, -1)
+        siguiente = mes_desplazado(periodo, 1)
+        return {
+            "iva_modo": "mes",
+            "iva_totales": obtener_totales_iva(periodo.year, periodo.month),
+            "iva_periodo": periodo,
+            "iva_url_anterior": f"?mes={anterior:%Y-%m}",
+            "iva_url_siguiente": f"?mes={siguiente:%Y-%m}",
+            "iva_url_mes": f"?mes={periodo:%Y-%m}",
+            "iva_url_anio": f"?anio={periodo.year}",
+        }
+
+    # --- Modo anio (default): ?anio=YYYY ---
+    try:
+        anio = int(request.GET.get("anio", hoy.year))
+    except (TypeError, ValueError):
+        anio = hoy.year
+    # Acoto el rango para no totalizar anios absurdos escritos a mano en la URL
+    if not (2000 <= anio <= 2100):
+        anio = hoy.year
+
+    # El toggle "Mes" cae en el mes en curso si es el anio actual; si no, en enero
+    mes_destino = hoy.month if anio == hoy.year else 1
+    return {
+        "iva_modo": "anio",
+        "iva_totales": obtener_totales_iva(anio),
+        "iva_anio": anio,
+        "iva_url_anterior": f"?anio={anio - 1}",
+        "iva_url_siguiente": f"?anio={anio + 1}",
+        "iva_url_mes": f"?mes={anio}-{mes_destino:02d}",
+        "iva_url_anio": f"?anio={anio}",
+    }
+
+
 @staff_required
 def iva(request):
     """Listado de empresas/sociedades con su IVA debito, credito y saldo.
@@ -2302,7 +2349,9 @@ def iva(request):
 
         return redirect("iva")
 
-    return render(request, "iva.html", {"empresas": obtener_empresas_activas()})
+    contexto = {"empresas": obtener_empresas_activas()}
+    contexto.update(_contexto_totales_iva(request))
+    return render(request, "iva.html", contexto)
 
 
 @login_required
