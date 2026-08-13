@@ -11,48 +11,8 @@
   gap: 0.75rem;
 }
 
-/* --- TITULO DE LA SECCION (tile oscuro + titulo, mismo patron que op-head) --- */
-.cabecera-seccion {
-  display: flex;
-  align-items: center;
-  gap: 0.85rem;
-}
-
-.cabecera-seccion__tile {
-  width: 52px;
-  height: 52px;
-  flex: none;
-  border-radius: var(--radius-md);
-  background-color: var(--brand-secondary);
-  color: var(--sand-100);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.cabecera-seccion__tile .material-symbols-outlined {
-  font-size: 1.7rem;
-}
-
-.cabecera-seccion__texto {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-}
-
-.cabecera-seccion h2 {
-  font-size: var(--text-3xl);
-  font-weight: var(--weight-extra);
-  letter-spacing: var(--tracking-tight);
-  color: var(--text-strong);
-  margin: 0;
-}
-
-.cabecera-seccion__texto p {
-  font-size: var(--text-sm);
-  color: var(--text-muted);
-  margin: 0;
-}
+/* Titulo de la seccion (tile + titulo): componente compartido en base.css
+   (.cabecera-seccion) */
 
 /* --- BARRA DE HERRAMIENTAS (Buscador + alta) --- */
 .barra-herramientas {

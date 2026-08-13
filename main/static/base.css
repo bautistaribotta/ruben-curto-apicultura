@@ -537,17 +537,50 @@ body {
   border-bottom: 1px solid var(--border-subtle);
 }
 
-#titulos-cabecera h2 {
+/* --- CABECERA DE SECCION (tile con icono + titulo y subtitulo) ---
+   Componente compartido por todas las vistas de la barra de navegacion: el
+   mismo icono que la seccion muestra en el menu, en un tile pino, a la izquierda
+   del titulo. Antes vivia duplicado en flota.css e iva.css. */
+.cabecera-seccion {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.cabecera-seccion__tile {
+  width: 52px;
+  height: 52px;
+  flex: none;
+  border-radius: var(--radius-md);
+  background-color: var(--brand-secondary);
+  color: var(--sand-100);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cabecera-seccion__tile .material-symbols-outlined {
+  font-size: 1.7rem;
+}
+
+.cabecera-seccion__texto {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.cabecera-seccion h2 {
   font-size: var(--text-3xl);
   font-weight: var(--weight-extra);
   letter-spacing: var(--tracking-tight);
   color: var(--text-strong);
-  margin-bottom: 0.35rem;
+  margin: 0;
 }
 
-#titulos-cabecera p {
-  color: var(--text-muted);
+.cabecera-seccion__texto p {
   font-size: var(--text-sm);
+  color: var(--text-muted);
+  margin: 0;
 }
 
 /* --- ESTILOS DEL MENÚ DE USUARIO (DROPDOWN) --- */
@@ -1023,7 +1056,7 @@ body {
 
 /* --- ADAPTACIÓN PARA MÓVILES (600px) --- */
 @media (max-width: 600px) {
-  #titulos-cabecera p {
+  .cabecera-seccion__texto p {
     display: none;
   }
 }
