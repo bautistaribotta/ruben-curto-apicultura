@@ -125,9 +125,9 @@
       <table class="tabla-operaciones-iva">
         <thead>
           <tr>
-            <th>Tipo</th>
             <th>Fecha</th>
             <th>Detalle</th>
+            <th>Tipo</th>
             <th class="texto-derecha">Neto</th>
             <th class="texto-derecha">Alícuota</th>
             <th class="texto-derecha">IVA</th>
@@ -137,14 +137,14 @@
         <tbody>
           {% for operacion in operaciones %}
           <tr class="op-fila">
+            <td class="op-fecha">{{ operacion.fecha|date:"d/m/Y" }}</td>
+            <td class="op-detalle">{{ operacion.detalle|default:"—" }}</td>
             <td>
               <span class="chip-tipo chip-tipo--{{ operacion.tipo }}">
                 <span class="material-symbols-outlined">{% if operacion.es_venta %}trending_up{% else %}trending_down{% endif %}</span>
                 {{ operacion.get_tipo_display }}
               </span>
             </td>
-            <td class="op-fecha">{{ operacion.fecha|date:"d/m/Y" }}</td>
-            <td class="op-detalle">{{ operacion.detalle|default:"—" }}</td>
             <td class="texto-derecha op-neto">${{ operacion.monto_neto|floatformat:"2g" }}</td>
             <td class="texto-derecha op-alicuota">{{ operacion.alicuota|floatformat:"-2" }}%</td>
             <td class="texto-derecha op-iva op-iva--{{ operacion.tipo }}">${{ operacion.iva|floatformat:"2g" }}</td>
