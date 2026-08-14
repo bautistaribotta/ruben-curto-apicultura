@@ -6,9 +6,10 @@ ANCHO_DETALLE = 86
 ANCHO_DETALLE_SOLO = 121.5
 
 # Tope de caracteres del detalle para que no invada la columna siguiente ni el
-# borde del comprobante, proporcional al ancho disponible en cada caso
-CHARS_DETALLE = 48
-CHARS_DETALLE_SOLO = 67
+# borde del comprobante, proporcional al ancho disponible en cada caso. Al subir
+# el cuerpo de los items a 11 el renglon ocupa mas, asi que bajo los topes
+CHARS_DETALLE = 39
+CHARS_DETALLE_SOLO = 54
 
 
 def _formato_importe(valor):
@@ -131,50 +132,54 @@ class Remito(FPDF):
 
         if len(y) == 2: y = "20" + y
 
-        self.set_text_color(80, 80, 80) # Gris oscuro para la fecha
+        self.set_text_color(0, 0, 0)  # Los datos van en negro
+        self.set_font('Arial', '', 11)  # La fecha cargada, +2 sobre la etiqueta
         self.set_xy(offset_x + 90, 36)
         self.cell(12, 6, str(d)[:2], 0, 0, 'C')
         self.set_xy(offset_x + 104, 36)
         self.cell(12, 6, str(m)[:2], 0, 0, 'C')
         self.set_xy(offset_x + 118, 36)
         self.cell(16, 6, str(y)[:4], 0, 0, 'C')
-        self.set_text_color(0, 0, 0) # Volver a negro para las etiquetas
+        self.set_text_color(0, 0, 0)
 
-        # Datos del Cliente
-        self.set_font('Arial', '', 9)
+        # Datos del Cliente. La etiqueta va en su cuerpo base y el dato +2, ambos
+        # en negro para que el contenido cargado se lea lo mas fuerte posible
+        LABEL_SIZE = 9
+        DATO_SIZE = 11
+        self.set_text_color(0, 0, 0)
 
         # Señor/a
         self.set_xy(offset_x + 5, 47)
-        self.set_text_color(0, 0, 0) # Negro para etiquetas
+        self.set_font('Arial', '', LABEL_SIZE)
         self.cell(self.get_string_width(' Señor/a: '), 6, ' Señor/a: ')
-        self.set_text_color(80, 80, 80) # Gris oscuro para datos
+        self.set_font('Arial', '', DATO_SIZE)
         self.cell(0, 6, f'{self.nombre} {self.apellido}')
         self.line(offset_x + 5, 54, offset_x + 143.5, 54)
 
         # Fila 2: CUIT y Teléfono (intercambiada con Domicilio)
         # CUIT a la izquierda
         self.set_xy(offset_x + 5, 55)
-        self.set_text_color(0, 0, 0)
+        self.set_font('Arial', '', LABEL_SIZE)
         label_cuit = " CUIT: "
         self.cell(self.get_string_width(label_cuit), 6, label_cuit)
-        self.set_text_color(80, 80, 80)
+        self.set_font('Arial', '', DATO_SIZE)
         self.cell(0, 6, f'{self.cuit if self.cuit else ""}')
 
         # Teléfono desde la mitad (138.5 / 2 = 69.25)
         self.set_xy(offset_x + 5 + 69.25, 55)
-        self.set_text_color(0, 0, 0)
+        self.set_font('Arial', '', LABEL_SIZE)
         label_tel = " Teléfono: "
         self.cell(self.get_string_width(label_tel), 6, label_tel)
-        self.set_text_color(80, 80, 80)
+        self.set_font('Arial', '', DATO_SIZE)
         self.cell(0, 6, f'{self.telefono if self.telefono else ""}')
 
         self.line(offset_x + 5, 62, offset_x + 143.5, 62)
 
         # Fila 3: Domicilio
         self.set_xy(offset_x + 5, 63)
-        self.set_text_color(0, 0, 0)
+        self.set_font('Arial', '', LABEL_SIZE)
         self.cell(self.get_string_width(' Domicilio: '), 6, ' Domicilio: ')
-        self.set_text_color(80, 80, 80)
+        self.set_font('Arial', '', DATO_SIZE)
         dir_str = self.direccion if self.direccion else ""
         loc_str = self.localidad if self.localidad else ""
         domicilio_val = f'{dir_str}' + (f' - {loc_str}' if loc_str else '')
@@ -185,14 +190,14 @@ class Remito(FPDF):
         self.set_text_color(0, 0, 0)
 
         # Fila 4: Observaciones (debajo del domicilio). La etiqueta se imprime
-        # siempre; el texto va en gris y se parte en hasta 3 lineas
-        self.set_font('Arial', 'B', 9)
+        # siempre; el texto acompaña el cuerpo de los datos y se parte en 3 lineas
+        self.set_font('Arial', 'B', LABEL_SIZE)
         self.set_xy(offset_x + 5, 71)
         self.set_text_color(0, 0, 0)
         self.cell(self.get_string_width(' Observaciones: '), 4, ' Observaciones: ')
 
-        self.set_font('Arial', '', 8)
-        self.set_text_color(80, 80, 80)
+        self.set_font('Arial', '', 10)
+        self.set_text_color(0, 0, 0)
         y_obs = 75.5
         for texto_linea in self._lineas_observaciones(133):
             self.set_xy(offset_x + 6, y_obs)
@@ -227,8 +232,8 @@ class Remito(FPDF):
                 self.add_page()
                 y_pos = 92
 
-            self.set_font('Arial', '', 9)
-            self.set_text_color(80, 80, 80) # Datos de productos en gris oscuro
+            self.set_font('Arial', '', 11)
+            self.set_text_color(0, 0, 0) # Datos de productos en negro, +2
 
             cant = str(prod.get('cantidad', '')) if isinstance(prod, dict) else str(getattr(prod, 'cantidad', ''))
 
@@ -286,7 +291,7 @@ class Remito(FPDF):
         self.set_xy(offset_x + 103.5, 194)
         self.cell(40, 4, 'TOTAL', 0, 0, 'C')
 
-        self.set_font('Arial', 'B', 11)
+        self.set_font('Arial', 'B', 13)
         self.set_xy(offset_x + 103.5, 198)
         self.cell(40, 5, _formato_moneda(self.total), 0, 0, 'C')
 
