@@ -17,6 +17,7 @@ from .models import (Producto, Cliente, Operacion, DetalleOperacion, Pago, Cotiz
                      ViajeReparto, GastoViajeReparto, DestinoViajeReparto, Casa, Contrato, PagoAlquiler,
                      GastoCasa, RegistroKilometraje, Seguro, VTV, Servis, ObservacionVehiculo,
                      EstacionDeServicio, CargaCombustible, Empresa, OperacionIva,
+                     Banco, CuentaCorriente, Cheque,
                      contratos_del_periodo, periodo_actual, _expresion_iva)
 
 
@@ -3969,4 +3970,283 @@ def obtener_datos_operacion_iva(id_operacion):
         "monto_neto": str(operacion.monto_neto),
         "alicuota": str(operacion.alicuota),
         "detalle": operacion.detalle or "",
+    }
+
+
+# ==========================================================================
+#  CHEQUES
+# ==========================================================================
+# Tres piezas: el banco (catalogo compartido), la cuenta corriente (empresa +
+# banco) y el cheque (a cobrar / a pagar, cuelga de una cuenta). El saldo de una
+# empresa es la suma de sus cheques a cobrar menos la de los a pagar.
+
+MAX_IMPORTE_CHEQUE = Decimal("9999999999999.99")
+
+# --- BANCOS ------------------------------------------------------------------
+# Catalogo simple (nombre + activo), espejo de las estaciones de servicio. La
+# baja es logica para no perder las cuentas y los cheques que lo referencian.
+
+def _validar_nombre_banco(nombre, excluir_id=None):
+    """Limpia y valida el nombre de un banco. Devuelve el nombre normalizado."""
+    nombre = (nombre or "").strip()
+    if not (2 <= len(nombre) <= 60):
+        raise ValueError("El nombre del banco debe tener entre 2 y 60 caracteres.")
+
+    duplicado = (Banco.objects
+                 .filter(nombre__iexact=nombre, activo=True)
+                 .exclude(id=excluir_id)
+                 .exists())
+    if duplicado:
+        raise ValueError("Ya existe un banco con ese nombre.")
+    return nombre
+
+
+def obtener_bancos_activos(q=None):
+    """Bancos activos en orden alfabetico. Filtra por nombre si llega busqueda."""
+    bancos = Banco.objects.filter(activo=True)
+    if q:
+        bancos = bancos.filter(filtro_tokens(q, "nombre"))
+    return bancos.order_by("nombre", "id")
+
+
+def crear_banco(nombre):
+    nombre = _validar_nombre_banco(nombre)
+    return Banco.objects.create(nombre=nombre)
+
+
+def editar_banco(id_banco, nombre):
+    banco = get_object_or_404(Banco, id=id_banco)
+    banco.nombre = _validar_nombre_banco(nombre, excluir_id=banco.id)
+    banco.save()
+    return banco
+
+
+def eliminar_banco(id_banco):
+    """Baja logica: preserva las cuentas corrientes y cheques del banco."""
+    banco = get_object_or_404(Banco, id=id_banco)
+    banco.activo = False
+    banco.save(update_fields=["activo"])
+    return banco
+
+
+def obtener_datos_banco(id_banco):
+    """Datos de un banco para precargar el panel de edicion, o None."""
+    try:
+        banco = Banco.objects.get(id=id_banco, activo=True)
+    except Banco.DoesNotExist:
+        return None
+    return {"id": banco.id, "nombre": banco.nombre}
+
+
+# --- CUENTAS CORRIENTES ------------------------------------------------------
+
+def _validar_numero_cuenta(numero):
+    numero = (numero or "").strip()
+    if not (1 <= len(numero) <= 40):
+        raise ValueError("El número de cuenta corriente es obligatorio (hasta 40 caracteres).")
+    return numero
+
+
+def obtener_cuentas_corrientes(id_empresa):
+    """Cuentas corrientes activas de una empresa, con su saldo de cheques anotado.
+
+    Ordenadas por banco y numero. Trae el banco en la misma query (select_related)
+    para no disparar una consulta por cuenta al mostrar su nombre.
+    """
+    return (CuentaCorriente.objects
+            .filter(empresa_id=id_empresa, activa=True)
+            .select_related("banco")
+            .con_totales_cheques()
+            .order_by("banco__nombre", "numero", "id"))
+
+
+def crear_cuenta_corriente(id_empresa, id_banco, numero):
+    """Registra una cuenta corriente de una empresa en un banco."""
+    empresa = get_object_or_404(Empresa, id=id_empresa, activa=True)
+    if not id_banco:
+        raise ValueError("Elegí un banco para la cuenta corriente.")
+    banco = get_object_or_404(Banco, id=id_banco, activo=True)
+    numero = _validar_numero_cuenta(numero)
+
+    # No repetir la misma cuenta (empresa + banco + numero) entre las activas
+    duplicada = (CuentaCorriente.objects
+                 .filter(empresa=empresa, banco=banco, numero__iexact=numero, activa=True)
+                 .exists())
+    if duplicada:
+        raise ValueError("Esa cuenta corriente ya existe para esta empresa en ese banco.")
+
+    return CuentaCorriente.objects.create(empresa=empresa, banco=banco, numero=numero)
+
+
+def editar_cuenta_corriente(id_cuenta, id_banco, numero):
+    cuenta = get_object_or_404(CuentaCorriente, id=id_cuenta)
+    if not id_banco:
+        raise ValueError("Elegí un banco para la cuenta corriente.")
+    banco = get_object_or_404(Banco, id=id_banco, activo=True)
+    numero = _validar_numero_cuenta(numero)
+
+    duplicada = (CuentaCorriente.objects
+                 .filter(empresa=cuenta.empresa, banco=banco, numero__iexact=numero, activa=True)
+                 .exclude(id=cuenta.id)
+                 .exists())
+    if duplicada:
+        raise ValueError("Esa cuenta corriente ya existe para esta empresa en ese banco.")
+
+    cuenta.banco = banco
+    cuenta.numero = numero
+    cuenta.save()
+    return cuenta
+
+
+def eliminar_cuenta_corriente(id_cuenta):
+    """Baja logica: saca la cuenta (y sus cheques del saldo) sin perder el historial."""
+    cuenta = get_object_or_404(CuentaCorriente, id=id_cuenta)
+    cuenta.activa = False
+    cuenta.save(update_fields=["activa"])
+    return cuenta
+
+
+def obtener_datos_cuenta_corriente(id_cuenta):
+    """Datos de una cuenta corriente para precargar el panel de edicion, o None."""
+    try:
+        cuenta = CuentaCorriente.objects.get(id=id_cuenta, activa=True)
+    except CuentaCorriente.DoesNotExist:
+        return None
+    return {"id": cuenta.id, "id_banco": cuenta.banco_id, "numero": cuenta.numero}
+
+
+# --- CHEQUES -----------------------------------------------------------------
+
+def _validar_tipo_cheque(tipo):
+    if tipo not in dict(Cheque.TIPOS):
+        raise ValueError("Elegí si el cheque es a cobrar o a pagar.")
+    return tipo
+
+
+def _validar_cheque(tipo, fecha_emision, fecha_cobro, concepto, importe):
+    """Limpia y valida los datos de un cheque. Devuelve la tupla lista."""
+    tipo = _validar_tipo_cheque(tipo)
+    emision = _fecha_obligatoria(fecha_emision, "La fecha de emisión")
+    cobro = _fecha_obligatoria(fecha_cobro, "La fecha de cobro")
+    if cobro < emision:
+        raise ValueError("La fecha de cobro no puede ser anterior a la de emisión.")
+
+    texto = (concepto or "").strip()
+    if not (2 <= len(texto) <= 250):
+        raise ValueError("El concepto es obligatorio y puede tener hasta 250 caracteres.")
+
+    monto = _decimal_opcional(importe, "El importe", MAX_IMPORTE_CHEQUE)
+    if not monto:
+        raise ValueError("El importe es obligatorio y tiene que ser mayor a cero.")
+
+    return tipo, emision, cobro, texto, monto
+
+
+def obtener_cheques(id_empresa, tipo="todas"):
+    """Cheques de las cuentas corrientes activas de una empresa.
+
+    Ordenados por fecha de cobro (los mas proximos primero, ver Meta del modelo).
+    tipo filtra el listado: "a_cobrar", "a_pagar" o "todas" (por defecto). Trae la
+    cuenta y el banco en la misma query para la tabla.
+    """
+    cheques = (Cheque.objects
+               .filter(cuenta_corriente__empresa_id=id_empresa, cuenta_corriente__activa=True)
+               .select_related("cuenta_corriente__banco"))
+    if tipo in ("a_cobrar", "a_pagar"):
+        cheques = cheques.filter(tipo=tipo)
+    return cheques
+
+
+def crear_cheque(id_cuenta_corriente, tipo=None, fecha_emision=None, fecha_cobro=None,
+                 concepto=None, importe=None):
+    """Registra un cheque a cobrar o a pagar en una cuenta corriente activa."""
+    if not id_cuenta_corriente:
+        raise ValueError("Elegí la cuenta corriente del cheque.")
+    cuenta = get_object_or_404(CuentaCorriente, id=id_cuenta_corriente, activa=True)
+    tipo, emision, cobro, texto, monto = _validar_cheque(tipo, fecha_emision, fecha_cobro, concepto, importe)
+    return Cheque.objects.create(
+        cuenta_corriente=cuenta, tipo=tipo, fecha_emision=emision, fecha_cobro=cobro,
+        concepto=texto, importe=monto,
+    )
+
+
+def editar_cheque(id_cheque, id_cuenta_corriente=None, tipo=None, fecha_emision=None,
+                  fecha_cobro=None, concepto=None, importe=None):
+    """Corrige un cheque ya cargado (puede moverse a otra cuenta de la empresa)."""
+    cheque = get_object_or_404(Cheque, id=id_cheque)
+    if not id_cuenta_corriente:
+        raise ValueError("Elegí la cuenta corriente del cheque.")
+    cuenta = get_object_or_404(CuentaCorriente, id=id_cuenta_corriente, activa=True)
+    tipo, emision, cobro, texto, monto = _validar_cheque(tipo, fecha_emision, fecha_cobro, concepto, importe)
+    cheque.cuenta_corriente = cuenta
+    cheque.tipo, cheque.fecha_emision, cheque.fecha_cobro = tipo, emision, cobro
+    cheque.concepto, cheque.importe = texto, monto
+    cheque.save()
+    return cheque
+
+
+def eliminar_cheque(id_cheque):
+    """Borra un cheque: lo unico que se borra es un registro cargado mal, y ahi el
+    borrado real es lo correcto (no ensucia el saldo con bajas logicas)."""
+    cheque = get_object_or_404(Cheque, id=id_cheque)
+    cheque.delete()
+    return cheque
+
+
+def obtener_datos_cheque(id_cheque):
+    """Datos de un cheque para precargar el panel de edicion, o None."""
+    try:
+        cheque = Cheque.objects.get(id=id_cheque)
+    except Cheque.DoesNotExist:
+        return None
+    return {
+        "id": cheque.id,
+        "id_cuenta_corriente": cheque.cuenta_corriente_id,
+        "id_banco": cheque.cuenta_corriente.banco_id,
+        "tipo": cheque.tipo,
+        "fecha_emision": cheque.fecha_emision.strftime("%Y-%m-%d"),
+        "fecha_cobro": cheque.fecha_cobro.strftime("%Y-%m-%d"),
+        "concepto": cheque.concepto,
+        "importe": str(cheque.importe),
+    }
+
+
+# --- LISTADO Y TOTALES -------------------------------------------------------
+
+def obtener_empresas_con_cheques(q=None):
+    """Empresas activas con su total a cobrar y a pagar anotados, alfabeticamente."""
+    empresas = Empresa.objects.filter(activa=True).con_totales_cheques()
+    if q:
+        empresas = empresas.filter(filtro_tokens(q, "nombre"))
+    return empresas.order_by("nombre", "id")
+
+
+def obtener_totales_cheques():
+    """Total a cobrar, a pagar y saldo de TODAS las empresas activas juntas.
+
+    Suma sobre los cheques de cuentas corrientes activas de empresas activas. El
+    estado del saldo sigue el semaforo de los cheques: a favor / a pagar / al dia.
+    """
+    cheques = Cheque.objects.filter(cuenta_corriente__empresa__activa=True,
+                                    cuenta_corriente__activa=True)
+
+    a_cobrar = (cheques.filter(tipo="a_cobrar").aggregate(t=Sum("importe"))["t"]
+                or Decimal("0")).quantize(Decimal("0.01"))
+    a_pagar = (cheques.filter(tipo="a_pagar").aggregate(t=Sum("importe"))["t"]
+               or Decimal("0")).quantize(Decimal("0.01"))
+    saldo = a_cobrar - a_pagar
+
+    if saldo > 0:
+        estado = "a_favor"
+    elif saldo < 0:
+        estado = "a_pagar"
+    else:
+        estado = "al_dia"
+
+    return {
+        "a_cobrar": a_cobrar,
+        "a_pagar": a_pagar,
+        "saldo": saldo,
+        "saldo_abs": abs(saldo),
+        "estado": estado,
     }

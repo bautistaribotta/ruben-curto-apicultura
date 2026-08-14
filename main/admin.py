@@ -6,6 +6,7 @@ from .models import (
     GastoViajeCereal, Casa, Contrato, PagoAlquiler, GastoCasa, EstacionDeServicio,
     RegistroKilometraje, Seguro, VTV, Servis, ObservacionVehiculo,
     Empresa, OperacionIva,
+    Banco, CuentaCorriente, Cheque,
 )
 
 admin.site.register(Cliente)
@@ -175,3 +176,34 @@ class EmpresaAdmin(admin.ModelAdmin):
 class OperacionIvaAdmin(admin.ModelAdmin):
     list_display = ('id', 'empresa', 'tipo', 'fecha', 'monto_neto', 'alicuota', 'iva')
     list_filter = ('tipo', 'empresa')
+
+
+class CuentaCorrienteInline(admin.TabularInline):
+    model = CuentaCorriente
+    extra = 1
+
+
+@admin.register(Banco)
+class BancoAdmin(admin.ModelAdmin):
+    list_display = ('id', 'nombre', 'activo')
+    list_filter = ('activo',)
+    search_fields = ('nombre',)
+
+
+class ChequeInline(admin.TabularInline):
+    model = Cheque
+    extra = 1
+
+
+@admin.register(CuentaCorriente)
+class CuentaCorrienteAdmin(admin.ModelAdmin):
+    inlines = [ChequeInline]
+    list_display = ('id', 'empresa', 'banco', 'numero', 'saldo_cheques', 'activa')
+    list_filter = ('activa', 'banco', 'empresa')
+    search_fields = ('numero',)
+
+
+@admin.register(Cheque)
+class ChequeAdmin(admin.ModelAdmin):
+    list_display = ('id', 'cuenta_corriente', 'tipo', 'fecha_emision', 'fecha_cobro', 'importe', 'vencido')
+    list_filter = ('tipo', 'cuenta_corriente__banco', 'cuenta_corriente__empresa')

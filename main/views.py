@@ -19,7 +19,8 @@ from django.template.defaultfilters import floatformat
 
 from .models import (Cliente, Producto, Operacion, DetalleOperacion, Pago, Cotizaciones, Empleado,
                      Vehiculo, Viaje, ViajeCereal, ViajeReparto, Gasto, GastoViajeCereal, GastoViajeReparto,
-                     EstacionDeServicio, CargaCombustible, Empresa, OperacionIva, periodo_actual)
+                     EstacionDeServicio, CargaCombustible, Empresa, OperacionIva,
+                     Banco, CuentaCorriente, Cheque, periodo_actual)
 from .pdf_services import Remito, ResumenCuenta
 from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo_cliente, editar_cliente,
                        eliminar_cliente, buscar_clientes, get_cotizacion_dolar_oficial, get_cotizaciones, get_total_kilos_granel, get_articulos_granel, actualizar_cotizacion, obtener_datos_cliente,
@@ -64,7 +65,12 @@ from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo
                        obtener_empresas_activas, crear_empresa, editar_empresa, eliminar_empresa,
                        obtener_datos_empresa, crear_operacion_iva, editar_operacion_iva,
                        eliminar_operacion_iva, obtener_operaciones_iva, obtener_datos_operacion_iva,
-                       obtener_totales_iva)
+                       obtener_totales_iva,
+                       obtener_bancos_activos, crear_banco, editar_banco, eliminar_banco, obtener_datos_banco,
+                       obtener_cuentas_corrientes, crear_cuenta_corriente, editar_cuenta_corriente,
+                       eliminar_cuenta_corriente, obtener_datos_cuenta_corriente,
+                       obtener_cheques, crear_cheque, editar_cheque, eliminar_cheque, obtener_datos_cheque,
+                       obtener_empresas_con_cheques, obtener_totales_cheques)
 
 
 def _pagado_del_formulario(request):
@@ -2426,6 +2432,138 @@ def informacion_empresa(request, id_empresa):
         "alicuotas": OperacionIva.ALICUOTAS,
     }
     return render(request, "informacion_empresa.html", contexto)
+
+
+# ==========================================================================
+#  CHEQUES
+# ==========================================================================
+
+@staff_required
+def cheques(request):
+    """Listado de empresas/sociedades con su saldo de cheques (a cobrar / a pagar).
+
+    Espejo de la vista iva: tarjetas por empresa, buscador client-side y un POST que
+    rutea por 'accion' hacia el alta/edicion de la empresa (compartida con IVA). La
+    baja de empresa no se ofrece aca: se hace desde IVA para no ocultarla de ambas
+    secciones sin querer.
+    """
+    if request.method == "POST":
+        accion = request.POST.get("accion")
+        p = request.POST
+        try:
+            if accion == "nueva_empresa":
+                crear_empresa(p.get("nombre"))
+                messages.success(request, "Empresa agregada correctamente.")
+            elif accion == "editar_empresa":
+                editar_empresa(p.get("id_empresa"), p.get("nombre"))
+                messages.success(request, "Empresa actualizada correctamente.")
+        except ValueError as e:
+            messages.error(request, str(e))
+        except Exception as e:
+            messages.error(request, f"Ocurrió un error inesperado: {e}")
+
+        return redirect("cheques")
+
+    contexto = {
+        "empresas": obtener_empresas_con_cheques(),
+        "totales": obtener_totales_cheques(),
+    }
+    return render(request, "cheques.html", contexto)
+
+
+@staff_required
+def informacion_empresa_cheques(request, id_empresa):
+    """Ficha de cheques de una empresa: sus cuentas corrientes (con saldo desglosado)
+    y el historial de cheques filtrable. Un solo POST rutea por 'accion' hacia el
+    servicio correspondiente (cuenta corriente o cheque); el GET arma el historial.
+    """
+    empresa = get_object_or_404(Empresa.objects.con_totales_cheques(), id=id_empresa, activa=True)
+
+    if request.method == "POST":
+        accion = request.POST.get("accion")
+        p = request.POST
+        try:
+            if accion == "nueva_cuenta":
+                crear_cuenta_corriente(id_empresa, p.get("id_banco"), p.get("numero"))
+                messages.success(request, "Cuenta corriente agregada correctamente.")
+            elif accion == "editar_cuenta":
+                editar_cuenta_corriente(p.get("id_registro"), p.get("id_banco"), p.get("numero"))
+                messages.success(request, "Cuenta corriente actualizada correctamente.")
+            elif accion == "eliminar_cuenta":
+                eliminar_cuenta_corriente(p.get("id_registro"))
+                messages.success(request, "Cuenta corriente eliminada.")
+            elif accion == "nuevo_cheque":
+                crear_cheque(p.get("id_cuenta_corriente"), p.get("tipo"), p.get("fecha_emision"),
+                             p.get("fecha_cobro"), p.get("concepto"), p.get("importe"))
+                messages.success(request, "Cheque agregado correctamente.")
+            elif accion == "editar_cheque":
+                editar_cheque(p.get("id_registro"), p.get("id_cuenta_corriente"), p.get("tipo"),
+                              p.get("fecha_emision"), p.get("fecha_cobro"), p.get("concepto"), p.get("importe"))
+                messages.success(request, "Cheque actualizado correctamente.")
+            elif accion == "eliminar_cheque":
+                eliminar_cheque(p.get("id_registro"))
+                messages.success(request, "Cheque eliminado.")
+        except ValueError as e:
+            messages.error(request, str(e))
+        except Exception as e:
+            messages.error(request, f"Ocurrió un error inesperado: {e}")
+
+        return redirect("informacion_empresa_cheques", id_empresa=id_empresa)
+
+    # Filtro por tipo de cheque (segmentado): todos por defecto
+    tipo = request.GET.get("tipo", "todas")
+    if tipo not in ("todas", "a_cobrar", "a_pagar"):
+        tipo = "todas"
+
+    lista_cheques = obtener_cheques(id_empresa, tipo)
+    paginator = Paginator(lista_cheques, 8)
+    page_obj = paginator.get_page(request.GET.get("page"))
+
+    contexto = {
+        "empresa": empresa,
+        "cuentas": obtener_cuentas_corrientes(id_empresa),
+        "bancos": obtener_bancos_activos(),
+        "page_obj": page_obj,
+        "cheques": page_obj,
+        "tipo": tipo,
+        "total_cheques": Cheque.objects.filter(cuenta_corriente__empresa_id=id_empresa,
+                                               cuenta_corriente__activa=True).count(),
+    }
+    return render(request, "informacion_empresa_cheques.html", contexto)
+
+
+@staff_required
+def bancos(request):
+    """Catalogo de bancos (alta / edicion / baja logica). Espejo del de destinos."""
+    if request.method == "POST":
+        accion = request.POST.get("accion")
+        p = request.POST
+        try:
+            if accion == "nuevo_banco":
+                crear_banco(p.get("nombre"))
+                messages.success(request, "Banco agregado correctamente.")
+            elif accion == "editar_banco":
+                editar_banco(p.get("id_banco"), p.get("nombre"))
+                messages.success(request, "Banco actualizado correctamente.")
+            elif accion == "eliminar_banco":
+                eliminar_banco(p.get("id_banco"))
+                messages.success(request, "Banco eliminado correctamente.")
+        except ValueError as e:
+            messages.error(request, str(e))
+        except Exception as e:
+            messages.error(request, f"Ocurrió un error inesperado: {e}")
+
+        return redirect("bancos")
+
+    return render(request, "bancos.html", {"bancos": obtener_bancos_activos()})
+
+
+@staff_required
+def obtener_cheque_json(request, id_cheque):
+    datos = obtener_datos_cheque(id_cheque)
+    if datos:
+        return JsonResponse(datos)
+    return JsonResponse({"Error": "Cheque no encontrado"}, status=404)
 
 
 @login_required
