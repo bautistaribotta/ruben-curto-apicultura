@@ -44,8 +44,7 @@
     </div>
 
     <div class="acciones-empresa">
-      <button type="button" class="boton-nuevo" onclick="prepararNuevoCheque()"
-              {% if not cuentas %}disabled title="Primero creá una cuenta corriente"{% endif %}>
+      <button type="button" class="boton-nuevo" onclick="prepararNuevoCheque()">
         <span class="material-symbols-outlined">add</span>
         Nuevo cheque
       </button>
@@ -440,6 +439,30 @@
     <div class="panel-pie">
       <button type="submit" form="form-cuenta" class="boton-primario" id="boton-guardar-cuenta">Guardar cuenta</button>
       <button type="button" class="boton-secundario" onclick="cerrarSlideOver('contenedor-slide-over-cuenta')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DE AVISO: no se puede cargar un cheque sin una cuenta corriente -->
+<div id="contenedor-modal-aviso">
+  <div id="modal-aviso-fondo" onclick="cerrarModalSinCuenta()"></div>
+
+  <div id="modal-aviso">
+    <button type="button" class="boton-cerrar-panel" id="icono-cerrar-modal-aviso" onclick="cerrarModalSinCuenta()">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+
+    <div id="modal-aviso__icono">
+      <span class="material-symbols-outlined">account_balance</span>
+    </div>
+
+    <h3>Falta una cuenta corriente</h3>
+    <p>Esta empresa todavía no tiene una cuenta corriente. Un cheque siempre cuelga
+       de una cuenta, así que primero creá una para poder cargarlo.</p>
+
+    <div class="acciones-modal">
+      <button type="button" class="boton-secundario" onclick="cerrarModalSinCuenta()">Ahora no</button>
+      <button type="button" class="boton-primario" onclick="crearCuentaDesdeAviso()">Crear cuenta corriente</button>
     </div>
   </div>
 </div>

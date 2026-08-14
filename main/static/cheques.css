@@ -346,6 +346,98 @@
   transform: translateX(0);
 }
 
+/* --- MODAL DE AVISO (falta cuenta corriente) ---
+   Misma mecanica que el modal de eliminar, pero en tono de marca (no de error):
+   informa y ofrece crear la cuenta en vez de deshabilitar el boton de cheque. */
+#contenedor-modal-aviso {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  visibility: hidden;
+  transition: visibility 0.3s;
+}
+
+#contenedor-modal-aviso.abierto {
+  visibility: visible;
+  transition: none;
+}
+
+#modal-aviso-fondo {
+  position: absolute;
+  inset: 0;
+  background-color: var(--overlay-ink);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+#contenedor-modal-aviso.abierto #modal-aviso-fondo {
+  opacity: 1;
+}
+
+#modal-aviso {
+  position: relative;
+  background-color: var(--surface-card);
+  border-radius: 12px;
+  border: 1px solid var(--border-subtle);
+  padding: 2rem;
+  width: 90%;
+  max-width: 440px;
+  box-shadow: var(--shadow-xl);
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  opacity: 0;
+  transform: scale(0.95);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#contenedor-modal-aviso.abierto #modal-aviso {
+  opacity: 1;
+  transform: scale(1);
+}
+
+#icono-cerrar-modal-aviso {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+}
+
+#modal-aviso__icono {
+  align-self: center;
+  margin-bottom: 1rem;
+  width: 4rem;
+  height: 4rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-verde-medio-transparente-10);
+  color: var(--brand-secondary);
+}
+
+#modal-aviso__icono .material-symbols-outlined {
+  font-size: 2.25rem;
+}
+
+#modal-aviso h3 {
+  font-size: 1.25rem;
+  font-weight: var(--weight-bold);
+  color: var(--text-strong);
+  margin-bottom: 0.5rem;
+}
+
+#modal-aviso p {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
 /* --- RESPONSIVE --- */
 @media (max-width: 1024px) {
   /* La barra se apila; los dos botones comparten la fila en vez de estirarse a

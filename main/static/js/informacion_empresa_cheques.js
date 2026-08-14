@@ -122,8 +122,36 @@ const actualizarContadorConcepto = () => {
   if (concepto && conteo) conteo.textContent = concepto.value.length;
 };
 
+/**
+ * Aviso cuando la empresa todavia no tiene cuentas corrientes: un cheque cuelga
+ * de una cuenta, asi que sin cuentas no se puede cargar. En vez de un boton
+ * deshabilitado (que no explica el porque), el boton queda activo y este modal
+ * guia a crear la cuenta primero.
+ */
+const abrirModalSinCuenta = () => {
+  document.getElementById('contenedor-modal-aviso').classList.add('abierto');
+  document.body.style.overflow = 'hidden';
+};
+
+const cerrarModalSinCuenta = () => {
+  document.getElementById('contenedor-modal-aviso').classList.remove('abierto');
+  document.body.style.overflow = 'auto';
+};
+
+/** Desde el aviso, encadena a la creacion de la cuenta corriente. */
+const crearCuentaDesdeAviso = () => {
+  cerrarModalSinCuenta();
+  prepararNuevaCuenta();
+};
+
 /** Abre el panel para cargar un nuevo cheque. */
 const prepararNuevoCheque = () => {
+  // Sin cuentas corrientes no hay de donde colgar el cheque: aviso y freno aca.
+  if (!cuentasData.length) {
+    abrirModalSinCuenta();
+    return;
+  }
+
   document.getElementById('titulo-cheque').textContent = 'Nuevo cheque';
   document.getElementById('subtitulo-cheque').textContent = 'Registra un cheque a cobrar o a pagar';
   document.getElementById('boton-guardar-cheque').textContent = 'Guardar cheque';
@@ -275,3 +303,5 @@ window.prepararNuevaCuenta = prepararNuevaCuenta;
 window.prepararEditarCuenta = prepararEditarCuenta;
 window.prepararEliminarCuenta = prepararEliminarCuenta;
 window.prepararEliminarCheque = prepararEliminarCheque;
+window.cerrarModalSinCuenta = cerrarModalSinCuenta;
+window.crearCuentaDesdeAviso = crearCuentaDesdeAviso;
