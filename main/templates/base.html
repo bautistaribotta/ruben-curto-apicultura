@@ -143,6 +143,17 @@
             Combustible
           </a>
         </li>
+        {% comment %}
+          El catalogo de bancos no cuelga de la barra: se entra desde un boton en
+          la vista de Cheques (barra de herramientas). Igual mantengo 'bancos' en la
+          condicion de activo para que el item de Cheques quede resaltado ahi.
+        {% endcomment %}
+        <li>
+          <a href="{% url 'cheques' %}" class="item-menu {% if request.resolver_match.url_name == 'cheques' or request.resolver_match.url_name == 'informacion_empresa_cheques' or request.resolver_match.url_name == 'bancos' %} activo {% endif %}">
+            <span class="material-symbols-outlined">account_balance</span>
+            Cheques
+          </a>
+        </li>
         <li>
           <a href="{% url 'iva' %}" class="item-menu {% if request.resolver_match.url_name == 'iva' or request.resolver_match.url_name == 'informacion_empresa' %} activo {% endif %}">
             <span class="material-symbols-outlined">receipt_long</span>

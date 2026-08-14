@@ -1,0 +1,95 @@
+/* ============================================================
+   BANCOS - catalogo simple. Reusa iva.css (barra de herramientas,
+   grilla, slide-over y modal de eliminar). Aca vive solo la tarjeta
+   de banco, que no lleva saldo: icono + nombre + acciones.
+   ============================================================ */
+
+/* Titulo de la seccion en el cuerpo (la cabecera lleva el boton "Volver a
+   Cheques"), mismo patron que el catalogo de destinos de reparto. */
+.bancos-intro {
+  margin-bottom: 1.5rem;
+}
+
+.bancos-intro h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: var(--weight-bold);
+  color: var(--text-strong);
+}
+
+.bancos-intro p {
+  margin: 0.25rem 0 0;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.tarjeta-banco {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 1.1rem 1.25rem;
+  transition: box-shadow var(--dur-normal) var(--ease-standard),
+              border-color var(--dur-normal) var(--ease-standard);
+}
+
+/* El display:flex pisa el atributo hidden: lo restauro para que el buscador
+   pueda ocultar las tarjetas que no coinciden. */
+.tarjeta-banco[hidden] {
+  display: none;
+}
+
+.tarjeta-banco:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-default);
+}
+
+.tarjeta-banco__icono {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: var(--radius-md);
+  background-color: var(--brand-secondary);
+  color: var(--sand-100);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tarjeta-banco__icono .material-symbols-outlined {
+  font-size: 1.5rem;
+}
+
+.tarjeta-banco__nombre {
+  margin: 0;
+  min-width: 0;
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
+  color: var(--text-strong);
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tarjeta-banco__acciones {
+  margin-left: auto;
+  display: flex;
+  gap: 0.15rem;
+  opacity: 0;
+  transition: opacity var(--dur-normal) var(--ease-standard);
+}
+
+.tarjeta-banco:hover .tarjeta-banco__acciones,
+.tarjeta-banco:focus-within .tarjeta-banco__acciones {
+  opacity: 1;
+}
+
+@media (max-width: 600px) {
+  .tarjeta-banco__acciones {
+    opacity: 1;
+  }
+}

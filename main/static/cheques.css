@@ -1,0 +1,370 @@
+/* ============================================================
+   CHEQUES - deltas sobre iva.css / informacion_empresa.css.
+   El band de totales, la tarjeta de empresa, el slide-over, la
+   tabla y el modal se reusan de esas hojas (se cargan antes). Aca
+   viven solo las piezas propias de cheques: las tarjetas de cuenta
+   corriente, los chips a cobrar / a pagar, la fila vencida, el
+   segundo slide-over de la cuenta y el formulario del cheque.
+   La firma de la vista es la lectura del saldo neto: a favor
+   (verde), a pagar (pino) o al dia (neutro), y la alerta de los
+   cheques vencidos.
+   ============================================================ */
+
+/* --- BARRA DE HERRAMIENTAS: alta de empresa + acceso a Bancos --- */
+.acciones-herramientas {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* --- CUENTAS CORRIENTES: grilla de tarjetas dentro de la ficha --- */
+.bloque-cuentas {
+  margin-bottom: 2.5rem;
+}
+
+.grilla-cuentas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: 1.25rem;
+}
+
+.tarjeta-cuenta {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 1.15rem 1.25rem;
+}
+
+.tarjeta-cuenta__cabecera {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.tarjeta-cuenta__icono {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border-radius: var(--radius-md);
+  background-color: var(--color-verde-medio-transparente-10);
+  color: var(--brand-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tarjeta-cuenta__icono .material-symbols-outlined {
+  font-size: 1.35rem;
+}
+
+.tarjeta-cuenta__identidad {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.tarjeta-cuenta__banco {
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
+  color: var(--text-strong);
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tarjeta-cuenta__numero {
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-subtle);
+}
+
+.tarjeta-cuenta__acciones {
+  margin-left: auto;
+  display: flex;
+  gap: 0.15rem;
+  opacity: 0;
+  transition: opacity var(--dur-normal) var(--ease-standard);
+}
+
+.tarjeta-cuenta:hover .tarjeta-cuenta__acciones,
+.tarjeta-cuenta:focus-within .tarjeta-cuenta__acciones {
+  opacity: 1;
+}
+
+.tarjeta-cuenta__saldo {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1rem 0 0.9rem;
+}
+
+.tarjeta-cuenta__saldo-valor {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-extra);
+  letter-spacing: var(--tracking-tight);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+/* Semaforo del saldo de la cuenta (el chip lo colorea iva.css) */
+.tarjeta-cuenta.saldo--a_favor .tarjeta-cuenta__saldo-valor {
+  color: var(--success-600);
+}
+.tarjeta-cuenta.saldo--a_pagar .tarjeta-cuenta__saldo-valor {
+  color: var(--pine-900);
+}
+.tarjeta-cuenta.saldo--al_dia .tarjeta-cuenta__saldo-valor {
+  color: var(--text-muted);
+}
+
+.tarjeta-cuenta__detalle {
+  margin: 0;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.tarjeta-cuenta__dato {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.tarjeta-cuenta__dato dt {
+  font-size: 0.7rem;
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-subtle);
+}
+
+.tarjeta-cuenta__dato dd {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--text-body);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Estado vacio de cuentas corrientes */
+.cuentas-vacia {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 2.5rem 1rem;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  background-color: var(--surface-card);
+  border: 1px dashed var(--border-default);
+  border-radius: var(--radius-lg);
+}
+
+.cuentas-vacia .material-symbols-outlined {
+  font-size: 2.25rem;
+  color: var(--sand-400);
+}
+
+.cuentas-vacia p {
+  margin: 0;
+  font-weight: var(--weight-semibold);
+  color: var(--text-body);
+}
+
+/* --- CHIPS DE TIPO (a cobrar / a pagar) en la tabla de cheques --- */
+.chip-tipo--a_cobrar {
+  background-color: var(--success-50);
+  color: var(--success-600);
+}
+
+.chip-tipo--a_pagar {
+  background-color: var(--honey-tint-10);
+  color: var(--honey-600);
+}
+
+/* Importe coloreado por el tipo: entra (verde) o sale (neutro fuerte) */
+.op-iva--a_cobrar {
+  color: var(--success-600);
+}
+
+.op-iva--a_pagar {
+  color: var(--text-strong);
+}
+
+/* Pista de color en los chips de filtro inactivos (a cobrar = verde) */
+.op-chip:not(.is-active):nth-child(2) .material-symbols-outlined {
+  color: var(--success-600);
+}
+
+/* --- CELDA DE CUENTA (banco + numero apilados) --- */
+.cheque-cuenta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.cheque-cuenta__banco {
+  font-weight: var(--weight-semibold);
+  color: var(--text-body);
+}
+
+.cheque-cuenta__numero {
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-subtle);
+}
+
+.cheque-concepto {
+  color: var(--text-muted);
+  max-width: 18rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* --- FECHA DE COBRO + VENCIMIENTO --- */
+.cheque-cobro {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  white-space: nowrap;
+}
+
+.cheque-vence {
+  font-size: 0.72rem;
+  color: var(--text-subtle);
+}
+
+.cheque-badge {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  padding: 0.1rem 0.5rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.68rem;
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.cheque-badge--vencido {
+  background-color: var(--danger-50);
+  color: var(--danger-600);
+}
+
+/* Fila de cheque vencido: fondo rojo muy tenue para llamar la atencion */
+.cheque-fila--vencido td {
+  background-color: var(--danger-50);
+}
+
+.cheque-fila--vencido:hover td {
+  background-color: var(--danger-50);
+}
+
+/* --- CONTROL SEGMENTADO (a cobrar / a pagar) en el formulario --- */
+.segmento-tipo__opcion--a_cobrar input:checked + .segmento-tipo__cara {
+  border-color: var(--success-600);
+  background-color: var(--success-50);
+  color: var(--success-600);
+}
+
+.segmento-tipo__opcion--a_pagar input:checked + .segmento-tipo__cara {
+  border-color: var(--honey-600);
+  background-color: var(--honey-tint-10);
+  color: var(--honey-600);
+}
+
+/* --- FORMULARIO DEL CHEQUE: textarea + contador --- */
+.cheque-textarea {
+  resize: vertical;
+  min-height: 3.75rem;
+  line-height: 1.4;
+}
+
+.cheque-contador {
+  align-self: flex-end;
+  font-size: 0.72rem;
+  color: var(--text-subtle);
+  font-variant-numeric: tabular-nums;
+}
+
+.cuenta-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.cuenta-hint a {
+  color: var(--brand-active);
+  font-weight: var(--weight-semibold);
+}
+
+/* --- SEGUNDO SLIDE-OVER: CUENTA CORRIENTE ---
+   Recicla .slide-over-panel-base (informacion_empresa.css) para el panel;
+   aca van el contenedor, el fondo y el estado abierto de este segundo panel. */
+#contenedor-slide-over-cuenta {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  visibility: hidden;
+  overflow: hidden;
+  display: flex;
+  justify-content: flex-end;
+  transition: visibility 0.3s;
+}
+
+#contenedor-slide-over-cuenta.slide-over-abierto {
+  visibility: visible;
+  transition: none;
+}
+
+#slide-over-fondo-cuenta {
+  position: fixed;
+  inset: 0;
+  background-color: var(--overlay-ink);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+#contenedor-slide-over-cuenta.slide-over-abierto #slide-over-fondo-cuenta {
+  opacity: 1;
+}
+
+#contenedor-slide-over-cuenta.slide-over-abierto .slide-over-panel-base {
+  transform: translateX(0);
+}
+
+/* --- RESPONSIVE --- */
+@media (max-width: 1024px) {
+  /* La barra se apila; los dos botones comparten la fila en vez de estirarse a
+     ancho completo cada uno (iva.css lo hace por defecto para .boton-nuevo). */
+  .acciones-herramientas {
+    width: 100%;
+  }
+  .barra-herramientas .acciones-herramientas .boton-nuevo {
+    width: auto;
+    flex: 1;
+  }
+}
+
+@media (max-width: 600px) {
+  #slide-over-panel-cuenta {
+    width: 100%;
+    border-radius: 0;
+  }
+  .tarjeta-cuenta__acciones {
+    opacity: 1;
+  }
+}

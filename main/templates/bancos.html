@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% comment %}
+  Catalogo de bancos: alimenta las cuentas corrientes de la seccion Cheques. Cada
+  banco es una tarjeta simple (solo nombre). El alta/edicion usan el slide-over y
+  la baja el modal de confirmacion. Reutiliza iva.css (barra, slide-over, modal);
+  bancos.css solo agrega la tarjeta compacta.
+{% endcomment %}
+
+{% block nombre-pestaña %}
+  <title> Bancos </title>
+{% endblock %}
+
+{% block links %}
+  <link rel="stylesheet" href="{% static 'iva.css' %}">
+  <link rel="stylesheet" href="{% static 'bancos.css' %}">
+{% endblock %}
+
+{% block cabecera %}
+  <a href="{% url 'cheques' %}" class="boton-volver">
+    <span class="material-symbols-outlined">arrow_back</span>
+    Volver a Cheques
+  </a>
+{% endblock %}
+
+{% block area-trabajo %}
+<section id="area-trabajo">
+
+  <div class="bancos-intro">
+    <h2>Bancos</h2>
+    <p>Bancos disponibles para las cuentas corrientes de cheques</p>
+  </div>
+
+  <!-- Controles superiores: buscador + alta -->
+  <div class="barra-herramientas">
+    <div class="grupo-busqueda">
+      <div class="contenedor-input-busqueda">
+        <span class="material-symbols-outlined icono-busqueda">search</span>
+        <input type="text" id="buscar-banco" class="input-busqueda" placeholder="Buscar banco por nombre">
+      </div>
+    </div>
+
+    <button type="button" class="boton-nuevo" onclick="abrirNuevoBanco()">
+      <span class="material-symbols-outlined">add</span>
+      <span class="texto-boton">Nuevo banco</span>
+    </button>
+  </div>
+
+  <!-- Grilla de bancos -->
+  <div class="grilla-iva" id="grilla-bancos">
+    {% for banco in bancos %}
+    <article class="tarjeta-banco" data-nombre="{{ banco.nombre|lower }}">
+      <span class="tarjeta-banco__icono">
+        <span class="material-symbols-outlined">account_balance</span>
+      </span>
+      <h3 class="tarjeta-banco__nombre">{{ banco.nombre }}</h3>
+      <div class="tarjeta-banco__acciones">
+        <button type="button" class="boton-accion-iva editar" title="Editar banco"
+                data-id="{{ banco.id }}" data-nombre="{{ banco.nombre }}"
+                onclick="abrirEditarBanco(this)">
+          <span class="material-symbols-outlined">edit</span>
+        </button>
+        <button type="button" class="boton-accion-iva eliminar" title="Eliminar banco"
+                data-id="{{ banco.id }}" data-nombre="{{ banco.nombre }}"
+                onclick="abrirEliminarBanco(this)">
+          <span class="material-symbols-outlined">delete</span>
+        </button>
+      </div>
+    </article>
+    {% empty %}
+    <div class="iva-vacia">
+      <span class="material-symbols-outlined">account_balance</span>
+      No hay bancos registrados.
+    </div>
+    {% endfor %}
+
+    <!-- Sin resultados de busqueda (lo muestra/oculta el JS) -->
+    <div class="iva-vacia" id="bancos-sin-resultados" hidden>
+      <span class="material-symbols-outlined">search_off</span>
+      No hay bancos que coincidan con la búsqueda.
+    </div>
+  </div>
+
+</section>
+
+<!-- PANEL LATERAL NUEVO/EDITAR BANCO (SLIDE-OVER) -->
+<div id="contenedor-slide-over">
+  <div id="slide-over-fondo" onclick="cerrarSlideOver()"></div>
+
+  <div id="slide-over-panel">
+    <header class="panel-cabecera">
+      <div class="panel-titulo-fila">
+        <div class="icono-contenedor">
+          <span class="material-symbols-outlined">account_balance</span>
+        </div>
+        <div class="texto-cabecera">
+          <h3 id="titulo-banco">Nuevo banco</h3>
+          <p id="subtitulo-banco">Registra un banco</p>
+        </div>
+      </div>
+      <button type="button" class="boton-cerrar-panel" onclick="cerrarSlideOver()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </header>
+
+    <div class="panel-cuerpo">
+      <form class="formulario-empresa" id="form-banco" method="POST" autocomplete="off">
+        {% csrf_token %}
+        <input type="hidden" name="accion" id="accion-banco" value="nuevo_banco">
+        <input type="hidden" name="id_banco" id="id-banco-input">
+        <div class="campo-formulario">
+          <label for="nombre-banco">Nombre del banco</label>
+          <input type="text" id="nombre-banco" name="nombre" class="input-estandar"
+                 placeholder="Ej: Banco Nación" maxlength="60" required minlength="2">
+          <span class="mensaje-error">Escribí un nombre de al menos 2 caracteres.</span>
+        </div>
+      </form>
+    </div>
+
+    <div class="panel-pie">
+      <button type="submit" form="form-banco" class="boton-primario" id="boton-guardar-banco">Guardar banco</button>
+      <button type="button" class="boton-secundario" onclick="cerrarSlideOver()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONFIRMAR ELIMINACIÓN -->
+<form id="formulario-eliminar" method="POST">
+  {% csrf_token %}
+  <input type="hidden" name="accion" value="eliminar_banco">
+  <div id="contenedor-panel-eliminar">
+    <div id="contenedor-panel-fondo" onclick="cerrarPanelEliminar()"></div>
+
+    <div id="panel-eliminar">
+      <input type="hidden" id="id_eliminar" name="id_banco" value="">
+
+      <button type="button" class="boton-cerrar-panel" id="icono-cerrar-panel-eliminar" onclick="cerrarPanelEliminar()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+
+      <div id="icono-advertencia">
+        <span class="material-symbols-outlined">warning</span>
+      </div>
+
+      <h3>Confirmar eliminación</h3>
+      <p id="texto-confirmacion-eliminar">¿Está seguro que quiere eliminar este banco?</p>
+
+      <div class="acciones-modal">
+        <button type="button" class="boton-secundario" onclick="cerrarPanelEliminar()">No, mantener</button>
+        <button type="button" class="boton-primario-eliminar" id="boton-confirmar-eliminar"><span>Sí, eliminar</span></button>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}
+
+{% block codigo-javascript %}
+  <script src="{% static 'js/bancos.js' %}"></script>
+{% endblock %}
