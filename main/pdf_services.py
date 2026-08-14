@@ -483,8 +483,9 @@ class ResumenCuenta(FPDF):
         ancho_etiqueta = self.get_string_width(etiqueta)
         self.cell(ancho_etiqueta, 4, etiqueta, 0, 0, 'L')
 
-        self.set_font('Arial', 'B' if negrita_dato else '', 8.5 if negrita_dato else 8)
-        self.set_text_color(*GRIS_DATO)
+        # El dato va +2 sobre la etiqueta y en negro para que se lea mas fuerte
+        self.set_font('Arial', 'B' if negrita_dato else '', 10.5 if negrita_dato else 10)
+        self.set_text_color(0, 0, 0)
         self.cell(ancho - ancho_etiqueta, 4, self._recortar(dato, ancho - ancho_etiqueta), 0, 0, 'L')
         self.set_text_color(0, 0, 0)
 
@@ -575,8 +576,9 @@ class ResumenCuenta(FPDF):
         self.line(MARGEN, y_final, X_FIN, y_final)
 
     def _dibujar_fila(self, y, movimiento):
-        self.set_font('Arial', '', 8)
-        self.set_text_color(*GRIS_DATO)
+        # Los datos de cada movimiento van +2 y en negro para leerse mas fuerte
+        self.set_font('Arial', '', 10)
+        self.set_text_color(0, 0, 0)
 
         self.set_xy(X_FECHA + 1, y)
         self.cell(X_COMPROBANTE - X_FECHA - 1, ALTO_FILA, self._fecha_corta(movimiento['fecha']), 0, 0, 'L')
@@ -586,9 +588,9 @@ class ResumenCuenta(FPDF):
         self.cell(X_DETALLE - X_COMPROBANTE - 2, ALTO_FILA,
                   self._recortar(movimiento['comprobante'], X_DETALLE - X_COMPROBANTE - 2), 0, 0, 'L')
 
-        self.set_font('Arial', '', 8)
+        self.set_font('Arial', '', 10)
         self.set_xy(X_DETALLE + 1, y)
-        self.set_text_color(*GRIS_DATO)
+        self.set_text_color(0, 0, 0)
         self.cell(X_DEBE - X_DETALLE - 2, ALTO_FILA,
                   self._recortar(movimiento['detalle'], X_DEBE - X_DETALLE - 2), 0, 0, 'L')
 
@@ -599,7 +601,7 @@ class ResumenCuenta(FPDF):
         self._importe(X_HABER, y, movimiento['haber'])
 
         saldo = _formato_importe(movimiento['saldo'])
-        self._fuente_que_entra(saldo, ANCHO_IMPORTE - 2, 'B', 8)
+        self._fuente_que_entra(saldo, ANCHO_IMPORTE - 2, 'B', 10)
         self.set_xy(X_SALDO, y)
         self.cell(ANCHO_IMPORTE - 2, ALTO_FILA, saldo, 0, 0, 'R')
 
@@ -610,13 +612,13 @@ class ResumenCuenta(FPDF):
         x_subtotal = X_DEBE - 2 - ANCHO_SUBTOTAL_ITEM
         ancho_texto = x_subtotal - x_texto - 2
 
-        self.set_text_color(*GRIS_DATO)
-        self.set_font('Arial', '', 7)
+        self.set_text_color(0, 0, 0)
+        self.set_font('Arial', '', 9)
         self.set_xy(x_texto, y)
         self.cell(ancho_texto, ALTO_ITEM, self._recortar(item['texto'], ancho_texto), 0, 0, 'L')
 
         subtotal = _formato_importe(item['subtotal'])
-        self._fuente_que_entra(subtotal, ANCHO_SUBTOTAL_ITEM, '', 7)
+        self._fuente_que_entra(subtotal, ANCHO_SUBTOTAL_ITEM, '', 9)
         self.set_xy(x_subtotal, y)
         self.cell(ANCHO_SUBTOTAL_ITEM, ALTO_ITEM, subtotal, 0, 0, 'R')
         self.set_text_color(0, 0, 0)
@@ -647,7 +649,7 @@ class ResumenCuenta(FPDF):
         if not valor:
             return
         texto = _formato_importe(valor)
-        self._fuente_que_entra(texto, ANCHO_IMPORTE - 2, '', 8)
+        self._fuente_que_entra(texto, ANCHO_IMPORTE - 2, '', 10)
         self.set_xy(x, y)
         self.cell(ANCHO_IMPORTE - 2, ALTO_FILA, texto, 0, 0, 'R')
 
@@ -681,7 +683,7 @@ class ResumenCuenta(FPDF):
             self.cell(ANCHO_IMPORTE - 2, 3.5, etiqueta, 0, 0, 'R')
 
             texto = _formato_importe(valor)
-            self._fuente_que_entra(texto, ANCHO_IMPORTE - 2, 'B', 10 if x == X_SALDO else 8.5)
+            self._fuente_que_entra(texto, ANCHO_IMPORTE - 2, 'B', 12 if x == X_SALDO else 10.5)
             self.set_text_color(0, 0, 0)
             self.set_xy(x, y + 7)
             self.cell(ANCHO_IMPORTE - 2, 5, texto, 0, 0, 'R')
