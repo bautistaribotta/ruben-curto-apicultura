@@ -48,6 +48,15 @@
         <span class="material-symbols-outlined">add</span>
         Nuevo cheque
       </button>
+      <button type="button" class="boton-accion boton-editar"
+              data-nombre="{{ empresa.nombre }}" onclick="prepararEditarEmpresa()">
+        <span class="material-symbols-outlined">edit</span>
+        Editar empresa
+      </button>
+      <button type="button" class="boton-accion boton-cancelar" onclick="prepararEliminarEmpresa()">
+        <span class="material-symbols-outlined">delete</span>
+        Eliminar empresa
+      </button>
     </div>
   </div>
 
@@ -443,6 +452,46 @@
   </div>
 </div>
 
+<!-- PANEL LATERAL EDITAR EMPRESA (SLIDE-OVER) -->
+<div id="contenedor-slide-over-empresa">
+  <div id="slide-over-fondo-empresa" onclick="cerrarSlideOver('contenedor-slide-over-empresa')"></div>
+
+  <div id="slide-over-panel-empresa" class="slide-over-panel-base">
+    <header class="panel-cabecera">
+      <div class="panel-titulo-fila">
+        <div class="icono-contenedor">
+          <span class="material-symbols-outlined">domain</span>
+        </div>
+        <div class="texto-cabecera">
+          <h3>Editar empresa / sociedad</h3>
+          <p>Modifica los datos de la empresa o sociedad</p>
+        </div>
+      </div>
+      <button type="button" class="boton-cerrar-panel" onclick="cerrarSlideOver('contenedor-slide-over-empresa')">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </header>
+
+    <div class="panel-cuerpo">
+      <form class="formulario-empresa" id="form-empresa" method="POST" autocomplete="off">
+        {% csrf_token %}
+        <input type="hidden" name="accion" value="editar_empresa">
+        <div class="campo-formulario">
+          <label for="nombre-empresa">Nombre de la empresa o sociedad</label>
+          <input type="text" id="nombre-empresa" name="nombre" class="input-estandar"
+                 placeholder="Ej: MRM Acopio S.A." maxlength="60" required minlength="2">
+          <span class="mensaje-error">Escribí un nombre de al menos 2 caracteres.</span>
+        </div>
+      </form>
+    </div>
+
+    <div class="panel-pie">
+      <button type="submit" form="form-empresa" class="boton-primario">Actualizar empresa</button>
+      <button type="button" class="boton-secundario" onclick="cerrarSlideOver('contenedor-slide-over-empresa')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL DE AVISO: no se puede cargar un cheque sin una cuenta corriente -->
 <div id="contenedor-modal-aviso">
   <div id="modal-aviso-fondo" onclick="cerrarModalSinCuenta()"></div>
@@ -461,8 +510,8 @@
        de una cuenta, así que primero creá una para poder cargarlo.</p>
 
     <div class="acciones-modal">
-      <button type="button" class="boton-secundario" onclick="cerrarModalSinCuenta()">Ahora no</button>
       <button type="button" class="boton-primario" onclick="crearCuentaDesdeAviso()">Crear cuenta corriente</button>
+      <button type="button" class="boton-secundario" onclick="cerrarModalSinCuenta()">Ahora no</button>
     </div>
   </div>
 </div>

@@ -2457,6 +2457,10 @@ def cheques(request):
             elif accion == "editar_empresa":
                 editar_empresa(p.get("id_empresa"), p.get("nombre"))
                 messages.success(request, "Empresa actualizada correctamente.")
+            elif accion == "eliminar_empresa":
+                # Baja logica compartida con IVA: la empresa es la misma entidad.
+                eliminar_empresa(p.get("id_empresa"))
+                messages.success(request, "Empresa eliminada correctamente.")
         except ValueError as e:
             messages.error(request, str(e))
         except Exception as e:
@@ -2483,7 +2487,15 @@ def informacion_empresa_cheques(request, id_empresa):
         accion = request.POST.get("accion")
         p = request.POST
         try:
-            if accion == "nueva_cuenta":
+            if accion == "editar_empresa":
+                editar_empresa(id_empresa, p.get("nombre"))
+                messages.success(request, "Empresa actualizada correctamente.")
+            elif accion == "eliminar_empresa":
+                # Baja logica compartida con IVA: vuelve al listado de Cheques.
+                eliminar_empresa(id_empresa)
+                messages.success(request, "Empresa eliminada correctamente.")
+                return redirect("cheques")
+            elif accion == "nueva_cuenta":
                 crear_cuenta_corriente(id_empresa, p.get("id_banco"), p.get("numero"))
                 messages.success(request, "Cuenta corriente agregada correctamente.")
             elif accion == "editar_cuenta":

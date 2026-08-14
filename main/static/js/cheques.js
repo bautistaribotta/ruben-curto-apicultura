@@ -73,6 +73,19 @@ function abrirEditarEmpresa(boton) {
     abrirSlideOver();
 }
 
+// ---------- ELIMINAR (modal de confirmacion) ----------
+// La empresa es la misma entidad que en IVA: la baja logica la oculta de ambas
+// secciones, asi que lo aviso en el texto para que no sorprenda.
+
+function abrirEliminarEmpresa(boton) {
+    document.getElementById('id_eliminar').value = boton.dataset.id;
+    document.getElementById('texto-confirmacion-eliminar').innerHTML =
+        `¿Seguro que quiere eliminar la empresa <b>${boton.dataset.nombre}</b>? ` +
+        'Dejará de aparecer tanto en Cheques como en IVA, pero se conservan sus ' +
+        'cheques y operaciones.';
+    if (typeof abrirPanelEliminar === 'function') abrirPanelEliminar();
+}
+
 // Autocapitaliza la primera letra del nombre al escribir
 const inputNombreEmpresa = document.getElementById('nombre-empresa');
 if (inputNombreEmpresa) {
@@ -87,3 +100,4 @@ if (inputNombreEmpresa) {
 // Accesibles desde los onclick del HTML
 window.abrirNuevaEmpresa = abrirNuevaEmpresa;
 window.abrirEditarEmpresa = abrirEditarEmpresa;
+window.abrirEliminarEmpresa = abrirEliminarEmpresa;

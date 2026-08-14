@@ -120,6 +120,13 @@
                   onclick="abrirEditarEmpresa(this)">
             <span class="material-symbols-outlined">edit</span>
           </button>
+          <button type="button" class="boton-accion-iva eliminar"
+                  title="Eliminar empresa"
+                  data-id="{{ empresa.id }}"
+                  data-nombre="{{ empresa.nombre }}"
+                  onclick="abrirEliminarEmpresa(this)">
+            <span class="material-symbols-outlined">delete</span>
+          </button>
         </div>
       </header>
 
@@ -206,6 +213,35 @@
     </div>
   </div>
 </div>
+
+<!-- MODAL CONFIRMAR ELIMINACIÓN DE EMPRESA -->
+<form id="formulario-eliminar" method="POST">
+  {% csrf_token %}
+  <input type="hidden" name="accion" value="eliminar_empresa">
+  <div id="contenedor-panel-eliminar">
+    <div id="contenedor-panel-fondo" onclick="cerrarPanelEliminar()"></div>
+
+    <div id="panel-eliminar">
+      <input type="hidden" id="id_eliminar" name="id_empresa" value="">
+
+      <button type="button" class="boton-cerrar-panel" id="icono-cerrar-panel-eliminar" onclick="cerrarPanelEliminar()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+
+      <div id="icono-advertencia">
+        <span class="material-symbols-outlined">warning</span>
+      </div>
+
+      <h3>Confirmar eliminación</h3>
+      <p id="texto-confirmacion-eliminar">¿Está seguro que quiere eliminar esta empresa?</p>
+
+      <div class="acciones-modal">
+        <button type="button" class="boton-secundario" onclick="cerrarPanelEliminar()">No, mantener</button>
+        <button type="button" class="boton-primario-eliminar" id="boton-confirmar-eliminar"><span>Sí, eliminar</span></button>
+      </div>
+    </div>
+  </div>
+</form>
 {% endblock %}
 
 {% block codigo-javascript %}

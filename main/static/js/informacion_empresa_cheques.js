@@ -267,6 +267,30 @@ const prepararEliminarCuenta = (boton) => {
   if (typeof abrirPanelEliminar === 'function') abrirPanelEliminar();
 };
 
+/**
+ * -----------------------------------------------------------------------------
+ * ACCIONES SOBRE LA EMPRESA (editar nombre / eliminar)
+ * La empresa es la misma entidad que en IVA: la baja logica la oculta de ambas
+ * secciones, asi que el aviso lo dice para que no sorprenda.
+ * -----------------------------------------------------------------------------
+ */
+const prepararEditarEmpresa = () => {
+  const boton = document.querySelector('.boton-accion.boton-editar');
+  document.getElementById('nombre-empresa').value = boton.dataset.nombre || '';
+  if (typeof abrirSlideOver === 'function') abrirSlideOver('contenedor-slide-over-empresa');
+};
+
+const prepararEliminarEmpresa = () => {
+  // El mismo modal sirve para cheques, cuentas y empresa: solo cambia la accion
+  // y el texto. La empresa sale del id de la URL, asi que no hace falta id_registro.
+  document.getElementById('accion-eliminar').value = 'eliminar_empresa';
+  document.getElementById('id_registro_eliminar').value = '';
+  document.getElementById('texto-confirmacion-eliminar').innerHTML =
+    'Se dará de baja la empresa y dejará de aparecer tanto en Cheques como en IVA. ' +
+    'Se conservan sus cheques y operaciones. ¿Confirma?';
+  if (typeof abrirPanelEliminar === 'function') abrirPanelEliminar();
+};
+
 const prepararEliminarCheque = (boton) => {
   document.getElementById('accion-eliminar').value = 'eliminar_cheque';
   document.getElementById('id_registro_eliminar').value = boton.dataset.id;
@@ -303,5 +327,7 @@ window.prepararNuevaCuenta = prepararNuevaCuenta;
 window.prepararEditarCuenta = prepararEditarCuenta;
 window.prepararEliminarCuenta = prepararEliminarCuenta;
 window.prepararEliminarCheque = prepararEliminarCheque;
+window.prepararEditarEmpresa = prepararEditarEmpresa;
+window.prepararEliminarEmpresa = prepararEliminarEmpresa;
 window.cerrarModalSinCuenta = cerrarModalSinCuenta;
 window.crearCuentaDesdeAviso = crearCuentaDesdeAviso;
