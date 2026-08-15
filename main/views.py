@@ -2440,7 +2440,7 @@ def informacion_empresa(request, id_empresa):
 
 @staff_required
 def cheques(request):
-    """Listado de empresas/sociedades con su saldo de cheques (a cobrar / a pagar).
+    """Listado de empresas/sociedades con su total a pagar en cheques.
 
     Espejo de la vista iva: tarjetas por empresa, buscador client-side y un POST que
     rutea por 'accion' hacia el alta/edicion de la empresa (compartida con IVA). La
@@ -2505,11 +2505,11 @@ def informacion_empresa_cheques(request, id_empresa):
                 eliminar_cuenta_corriente(p.get("id_registro"))
                 messages.success(request, "Cuenta corriente eliminada.")
             elif accion == "nuevo_cheque":
-                crear_cheque(p.get("id_cuenta_corriente"), p.get("tipo"), p.get("fecha_emision"),
+                crear_cheque(p.get("id_cuenta_corriente"), p.get("fecha_emision"),
                              p.get("fecha_cobro"), p.get("concepto"), p.get("importe"))
                 messages.success(request, "Cheque agregado correctamente.")
             elif accion == "editar_cheque":
-                editar_cheque(p.get("id_registro"), p.get("id_cuenta_corriente"), p.get("tipo"),
+                editar_cheque(p.get("id_registro"), p.get("id_cuenta_corriente"),
                               p.get("fecha_emision"), p.get("fecha_cobro"), p.get("concepto"), p.get("importe"))
                 messages.success(request, "Cheque actualizado correctamente.")
             elif accion == "eliminar_cheque":
@@ -2522,12 +2522,7 @@ def informacion_empresa_cheques(request, id_empresa):
 
         return redirect("informacion_empresa_cheques", id_empresa=id_empresa)
 
-    # Filtro por tipo de cheque (segmentado): todos por defecto
-    tipo = request.GET.get("tipo", "todas")
-    if tipo not in ("todas", "a_cobrar", "a_pagar"):
-        tipo = "todas"
-
-    lista_cheques = obtener_cheques(id_empresa, tipo)
+    lista_cheques = obtener_cheques(id_empresa)
     paginator = Paginator(lista_cheques, 8)
     page_obj = paginator.get_page(request.GET.get("page"))
 
@@ -2537,7 +2532,6 @@ def informacion_empresa_cheques(request, id_empresa):
         "bancos": obtener_bancos_activos(),
         "page_obj": page_obj,
         "cheques": page_obj,
-        "tipo": tipo,
         "total_cheques": Cheque.objects.filter(cuenta_corriente__empresa_id=id_empresa,
                                                cuenta_corriente__activa=True).count(),
     }

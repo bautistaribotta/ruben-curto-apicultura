@@ -153,16 +153,13 @@ const prepararNuevoCheque = () => {
   }
 
   document.getElementById('titulo-cheque').textContent = 'Nuevo cheque';
-  document.getElementById('subtitulo-cheque').textContent = 'Registra un cheque a cobrar o a pagar';
+  document.getElementById('subtitulo-cheque').textContent = 'Registra un cheque a pagar';
   document.getElementById('boton-guardar-cheque').textContent = 'Guardar cheque';
 
   const form = document.getElementById('form-cheque');
   if (form) form.reset();
   document.getElementById('accion-cheque').value = 'nuevo_cheque';
   document.getElementById('id-registro-cheque').value = '';
-
-  const radioCobrar = document.querySelector('input[name="tipo"][value="a_cobrar"]');
-  if (radioCobrar) radioCobrar.checked = true;
 
   construirBancosCheque();
   const selectBanco = document.getElementById('cheque-banco');
@@ -189,9 +186,6 @@ const prepararEditarCheque = (id) => {
 
       document.getElementById('accion-cheque').value = 'editar_cheque';
       document.getElementById('id-registro-cheque').value = cheque.id;
-
-      const radioTipo = document.querySelector(`input[name="tipo"][value="${cheque.tipo}"]`);
-      if (radioTipo) radioTipo.checked = true;
 
       construirBancosCheque();
       const selectBanco = document.getElementById('cheque-banco');
@@ -263,7 +257,7 @@ const prepararEliminarCuenta = (boton) => {
   document.getElementById('id_registro_eliminar').value = boton.dataset.id;
   document.getElementById('texto-confirmacion-eliminar').innerHTML =
     `¿Confirma que quiere eliminar <b>${boton.dataset.descripcion}</b>? ` +
-    'Sus cheques dejarán de contar en el saldo.';
+    'Sus cheques dejarán de contar en el total a pagar.';
   if (typeof abrirPanelEliminar === 'function') abrirPanelEliminar();
 };
 

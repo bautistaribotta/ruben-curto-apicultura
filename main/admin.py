@@ -198,12 +198,12 @@ class ChequeInline(admin.TabularInline):
 @admin.register(CuentaCorriente)
 class CuentaCorrienteAdmin(admin.ModelAdmin):
     inlines = [ChequeInline]
-    list_display = ('id', 'empresa', 'banco', 'numero', 'saldo_cheques', 'activa')
+    list_display = ('id', 'empresa', 'banco', 'numero', 'cheques_a_pagar', 'activa')
     list_filter = ('activa', 'banco', 'empresa')
     search_fields = ('numero',)
 
 
 @admin.register(Cheque)
 class ChequeAdmin(admin.ModelAdmin):
-    list_display = ('id', 'cuenta_corriente', 'tipo', 'fecha_emision', 'fecha_cobro', 'importe', 'vencido')
-    list_filter = ('tipo', 'cuenta_corriente__banco', 'cuenta_corriente__empresa')
+    list_display = ('id', 'cuenta_corriente', 'fecha_emision', 'fecha_cobro', 'importe', 'vencido')
+    list_filter = ('cuenta_corriente__banco', 'cuenta_corriente__empresa')

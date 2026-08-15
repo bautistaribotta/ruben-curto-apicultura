@@ -3977,8 +3977,8 @@ def obtener_datos_operacion_iva(id_operacion):
 #  CHEQUES
 # ==========================================================================
 # Tres piezas: el banco (catalogo compartido), la cuenta corriente (empresa +
-# banco) y el cheque (a cobrar / a pagar, cuelga de una cuenta). El saldo de una
-# empresa es la suma de sus cheques a cobrar menos la de los a pagar.
+# banco) y el cheque (siempre a pagar, cuelga de una cuenta). La empresa no recibe
+# cheques como cobro; su total a pagar es la suma de los importes de sus cheques.
 
 MAX_IMPORTE_CHEQUE = Decimal("9999999999999.99")
 
@@ -4117,15 +4117,8 @@ def obtener_datos_cuenta_corriente(id_cuenta):
 
 # --- CHEQUES -----------------------------------------------------------------
 
-def _validar_tipo_cheque(tipo):
-    if tipo not in dict(Cheque.TIPOS):
-        raise ValueError("Elegí si el cheque es a cobrar o a pagar.")
-    return tipo
-
-
-def _validar_cheque(tipo, fecha_emision, fecha_cobro, concepto, importe):
+def _validar_cheque(fecha_emision, fecha_cobro, concepto, importe):
     """Limpia y valida los datos de un cheque. Devuelve la tupla lista."""
-    tipo = _validar_tipo_cheque(tipo)
     emision = _fecha_obligatoria(fecha_emision, "La fecha de emisión")
     cobro = _fecha_obligatoria(fecha_cobro, "La fecha de cobro")
     if cobro < emision:
@@ -4139,47 +4132,43 @@ def _validar_cheque(tipo, fecha_emision, fecha_cobro, concepto, importe):
     if not monto:
         raise ValueError("El importe es obligatorio y tiene que ser mayor a cero.")
 
-    return tipo, emision, cobro, texto, monto
+    return emision, cobro, texto, monto
 
 
-def obtener_cheques(id_empresa, tipo="todas"):
-    """Cheques de las cuentas corrientes activas de una empresa.
+def obtener_cheques(id_empresa):
+    """Cheques a pagar de las cuentas corrientes activas de una empresa.
 
     Ordenados por fecha de cobro (los mas proximos primero, ver Meta del modelo).
-    tipo filtra el listado: "a_cobrar", "a_pagar" o "todas" (por defecto). Trae la
-    cuenta y el banco en la misma query para la tabla.
+    Trae la cuenta y el banco en la misma query para la tabla.
     """
-    cheques = (Cheque.objects
-               .filter(cuenta_corriente__empresa_id=id_empresa, cuenta_corriente__activa=True)
-               .select_related("cuenta_corriente__banco"))
-    if tipo in ("a_cobrar", "a_pagar"):
-        cheques = cheques.filter(tipo=tipo)
-    return cheques
+    return (Cheque.objects
+            .filter(cuenta_corriente__empresa_id=id_empresa, cuenta_corriente__activa=True)
+            .select_related("cuenta_corriente__banco"))
 
 
-def crear_cheque(id_cuenta_corriente, tipo=None, fecha_emision=None, fecha_cobro=None,
+def crear_cheque(id_cuenta_corriente, fecha_emision=None, fecha_cobro=None,
                  concepto=None, importe=None):
-    """Registra un cheque a cobrar o a pagar en una cuenta corriente activa."""
+    """Registra un cheque a pagar en una cuenta corriente activa."""
     if not id_cuenta_corriente:
         raise ValueError("Elegí la cuenta corriente del cheque.")
     cuenta = get_object_or_404(CuentaCorriente, id=id_cuenta_corriente, activa=True)
-    tipo, emision, cobro, texto, monto = _validar_cheque(tipo, fecha_emision, fecha_cobro, concepto, importe)
+    emision, cobro, texto, monto = _validar_cheque(fecha_emision, fecha_cobro, concepto, importe)
     return Cheque.objects.create(
-        cuenta_corriente=cuenta, tipo=tipo, fecha_emision=emision, fecha_cobro=cobro,
+        cuenta_corriente=cuenta, fecha_emision=emision, fecha_cobro=cobro,
         concepto=texto, importe=monto,
     )
 
 
-def editar_cheque(id_cheque, id_cuenta_corriente=None, tipo=None, fecha_emision=None,
+def editar_cheque(id_cheque, id_cuenta_corriente=None, fecha_emision=None,
                   fecha_cobro=None, concepto=None, importe=None):
     """Corrige un cheque ya cargado (puede moverse a otra cuenta de la empresa)."""
     cheque = get_object_or_404(Cheque, id=id_cheque)
     if not id_cuenta_corriente:
         raise ValueError("Elegí la cuenta corriente del cheque.")
     cuenta = get_object_or_404(CuentaCorriente, id=id_cuenta_corriente, activa=True)
-    tipo, emision, cobro, texto, monto = _validar_cheque(tipo, fecha_emision, fecha_cobro, concepto, importe)
+    emision, cobro, texto, monto = _validar_cheque(fecha_emision, fecha_cobro, concepto, importe)
     cheque.cuenta_corriente = cuenta
-    cheque.tipo, cheque.fecha_emision, cheque.fecha_cobro = tipo, emision, cobro
+    cheque.fecha_emision, cheque.fecha_cobro = emision, cobro
     cheque.concepto, cheque.importe = texto, monto
     cheque.save()
     return cheque
@@ -4203,7 +4192,6 @@ def obtener_datos_cheque(id_cheque):
         "id": cheque.id,
         "id_cuenta_corriente": cheque.cuenta_corriente_id,
         "id_banco": cheque.cuenta_corriente.banco_id,
-        "tipo": cheque.tipo,
         "fecha_emision": cheque.fecha_emision.strftime("%Y-%m-%d"),
         "fecha_cobro": cheque.fecha_cobro.strftime("%Y-%m-%d"),
         "concepto": cheque.concepto,
@@ -4214,7 +4202,7 @@ def obtener_datos_cheque(id_cheque):
 # --- LISTADO Y TOTALES -------------------------------------------------------
 
 def obtener_empresas_con_cheques(q=None):
-    """Empresas activas con su total a cobrar y a pagar anotados, alfabeticamente."""
+    """Empresas activas con su total a pagar en cheques anotado, alfabeticamente."""
     empresas = Empresa.objects.filter(activa=True).con_totales_cheques()
     if q:
         empresas = empresas.filter(filtro_tokens(q, "nombre"))
@@ -4222,31 +4210,12 @@ def obtener_empresas_con_cheques(q=None):
 
 
 def obtener_totales_cheques():
-    """Total a cobrar, a pagar y saldo de TODAS las empresas activas juntas.
+    """Total a pagar en cheques de TODAS las empresas activas juntas.
 
-    Suma sobre los cheques de cuentas corrientes activas de empresas activas. El
-    estado del saldo sigue el semaforo de los cheques: a favor / a pagar / al dia.
+    Suma sobre los cheques de cuentas corrientes activas de empresas activas.
     """
-    cheques = Cheque.objects.filter(cuenta_corriente__empresa__activa=True,
-                                    cuenta_corriente__activa=True)
+    a_pagar = (Cheque.objects
+               .filter(cuenta_corriente__empresa__activa=True, cuenta_corriente__activa=True)
+               .aggregate(t=Sum("importe"))["t"] or Decimal("0")).quantize(Decimal("0.01"))
 
-    a_cobrar = (cheques.filter(tipo="a_cobrar").aggregate(t=Sum("importe"))["t"]
-                or Decimal("0")).quantize(Decimal("0.01"))
-    a_pagar = (cheques.filter(tipo="a_pagar").aggregate(t=Sum("importe"))["t"]
-               or Decimal("0")).quantize(Decimal("0.01"))
-    saldo = a_cobrar - a_pagar
-
-    if saldo > 0:
-        estado = "a_favor"
-    elif saldo < 0:
-        estado = "a_pagar"
-    else:
-        estado = "al_dia"
-
-    return {
-        "a_cobrar": a_cobrar,
-        "a_pagar": a_pagar,
-        "saldo": saldo,
-        "saldo_abs": abs(saldo),
-        "estado": estado,
-    }
+    return {"a_pagar": a_pagar}

@@ -1342,33 +1342,20 @@ class EmpresaQuerySet(models.QuerySet):
         )
 
     def con_totales_cheques(self):
-        """Anota el total de cheques a cobrar y a pagar de cada empresa.
+        """Anota el total de cheques a pagar de cada empresa.
 
-        A cobrar suma los cheques a cobrar de todas sus cuentas corrientes y a
-        pagar los a pagar; el saldo neto se deriva. Uso dos subqueries separadas
-        (y no un JOIN con filtros) para no sufrir el fan-out que multiplicaria los
-        importes al cruzar los dos tipos, igual que con_totales_iva().
+        Los cheques son siempre a pagar (plata que sale), asi que el total a pagar
+        es todo lo que hay para saldar. Una subquery con Sum sobre los cheques de
+        las cuentas activas, igual que con_totales_iva() pero de un solo tipo.
         """
-        a_cobrar = (
-            Cheque.objects.filter(cuenta_corriente__empresa=OuterRef("pk"),
-                                  cuenta_corriente__activa=True, tipo="a_cobrar")
-            .values("cuenta_corriente__empresa")
-            .annotate(total=Sum("importe"))
-            .values("total")
-        )
         a_pagar = (
             Cheque.objects.filter(cuenta_corriente__empresa=OuterRef("pk"),
-                                  cuenta_corriente__activa=True, tipo="a_pagar")
+                                  cuenta_corriente__activa=True)
             .values("cuenta_corriente__empresa")
             .annotate(total=Sum("importe"))
             .values("total")
         )
         return self.annotate(
-            _cheques_a_cobrar_anotado=Coalesce(
-                Subquery(a_cobrar, output_field=DecimalField()),
-                Value(0),
-                output_field=DecimalField(),
-            ),
             _cheques_a_pagar_anotado=Coalesce(
                 Subquery(a_pagar, output_field=DecimalField()),
                 Value(0),
@@ -1445,52 +1432,17 @@ class Empresa(models.Model):
         return "al_dia"
 
     # --- CHEQUES ---------------------------------------------------------
-    # La misma empresa maneja sus cheques a cobrar y a pagar, agrupados por sus
-    # cuentas corrientes. El saldo de cheques es independiente del de IVA.
-
-    @property
-    def cheques_a_cobrar(self):
-        """Total de cheques a cobrar de todas las cuentas corrientes de la empresa."""
-        if hasattr(self, "_cheques_a_cobrar_anotado"):
-            return self._cheques_a_cobrar_anotado or Decimal("0")
-        total = (Cheque.objects.filter(cuenta_corriente__empresa=self, cuenta_corriente__activa=True,
-                                       tipo="a_cobrar").aggregate(t=Sum("importe"))["t"])
-        return total or Decimal("0")
+    # La empresa maneja sus cheques a pagar (nunca recibe cheques), agrupados por
+    # sus cuentas corrientes. El total a pagar es independiente del saldo de IVA.
 
     @property
     def cheques_a_pagar(self):
-        """Total de cheques a pagar de todas las cuentas corrientes de la empresa."""
+        """Total a pagar en cheques de todas las cuentas corrientes de la empresa."""
         if hasattr(self, "_cheques_a_pagar_anotado"):
             return self._cheques_a_pagar_anotado or Decimal("0")
-        total = (Cheque.objects.filter(cuenta_corriente__empresa=self, cuenta_corriente__activa=True,
-                                       tipo="a_pagar").aggregate(t=Sum("importe"))["t"])
+        total = (Cheque.objects.filter(cuenta_corriente__empresa=self,
+                                       cuenta_corriente__activa=True).aggregate(t=Sum("importe"))["t"])
         return total or Decimal("0")
-
-    @property
-    def saldo_cheques(self):
-        """Saldo neto de cheques: lo que se va a cobrar menos lo que se va a pagar.
-
-        Positivo es saldo a favor (entra mas de lo que sale); negativo es a pagar
-        (sale mas de lo que entra); cero es que esta al dia.
-        """
-        return (self.cheques_a_cobrar - self.cheques_a_pagar).quantize(Decimal("0.01"))
-
-    @property
-    def saldo_cheques_abs(self):
-        # El signo lo comunica la etiqueta (a favor / a pagar); la tarjeta muestra
-        # el monto en positivo, sin un "-$" que confunde.
-        return abs(self.saldo_cheques)
-
-    @property
-    def estado_saldo_cheques(self):
-        # A cobrar neto = a favor (verde); a pagar neto = a pagar (rojo). Reusa el
-        # semaforo de saldo del CSS, con la semantica invertida respecto de IVA.
-        saldo = self.saldo_cheques
-        if saldo > 0:
-            return "a_favor"
-        if saldo < 0:
-            return "a_pagar"
-        return "al_dia"
 
     def __str__(self):
         return self.nombre
@@ -1575,29 +1527,18 @@ class Banco(models.Model):
 
 class CuentaCorrienteQuerySet(models.QuerySet):
     def con_totales_cheques(self):
-        """Anota el total a cobrar y a pagar de cada cuenta corriente en una query.
+        """Anota el total a pagar de cada cuenta corriente en una sola query.
 
-        Dos subqueries separadas por tipo para no sufrir el fan-out, igual que
+        Una subquery con Sum sobre los cheques de la cuenta, igual que
         EmpresaQuerySet.con_totales_cheques() pero al nivel de la cuenta.
         """
-        a_cobrar = (
-            Cheque.objects.filter(cuenta_corriente=OuterRef("pk"), tipo="a_cobrar")
-            .values("cuenta_corriente")
-            .annotate(total=Sum("importe"))
-            .values("total")
-        )
         a_pagar = (
-            Cheque.objects.filter(cuenta_corriente=OuterRef("pk"), tipo="a_pagar")
+            Cheque.objects.filter(cuenta_corriente=OuterRef("pk"))
             .values("cuenta_corriente")
             .annotate(total=Sum("importe"))
             .values("total")
         )
         return self.annotate(
-            _a_cobrar_anotado=Coalesce(
-                Subquery(a_cobrar, output_field=DecimalField()),
-                Value(0),
-                output_field=DecimalField(),
-            ),
             _a_pagar_anotado=Coalesce(
                 Subquery(a_pagar, output_field=DecimalField()),
                 Value(0),
@@ -1610,8 +1551,8 @@ class CuentaCorriente(models.Model):
     """Cuenta corriente de una empresa en un banco.
 
     Es la cuenta bancaria desde/hacia la que se emiten los cheques: pertenece a una
-    empresa y a un banco, y su numero la identifica. El saldo de cheques se deriva
-    de los cheques que cuelgan de ella (ver saldo_cheques); la baja es logica para
+    empresa y a un banco, y su numero la identifica. El total a pagar se deriva
+    de los cheques que cuelgan de ella (ver cheques_a_pagar); la baja es logica para
     no perder ese historial.
     """
     objects = CuentaCorrienteQuerySet.as_manager()
@@ -1632,46 +1573,23 @@ class CuentaCorriente(models.Model):
         ordering = ["banco__nombre", "numero", "id"]
 
     @property
-    def cheques_a_cobrar(self):
-        if hasattr(self, "_a_cobrar_anotado"):
-            return self._a_cobrar_anotado or Decimal("0")
-        total = self.cheques.filter(tipo="a_cobrar").aggregate(t=Sum("importe"))["t"]
-        return total or Decimal("0")
-
-    @property
     def cheques_a_pagar(self):
+        """Total a pagar en cheques de esta cuenta corriente."""
         if hasattr(self, "_a_pagar_anotado"):
             return self._a_pagar_anotado or Decimal("0")
-        total = self.cheques.filter(tipo="a_pagar").aggregate(t=Sum("importe"))["t"]
+        total = self.cheques.aggregate(t=Sum("importe"))["t"]
         return total or Decimal("0")
-
-    @property
-    def saldo_cheques(self):
-        return (self.cheques_a_cobrar - self.cheques_a_pagar).quantize(Decimal("0.01"))
-
-    @property
-    def saldo_cheques_abs(self):
-        return abs(self.saldo_cheques)
-
-    @property
-    def estado_saldo_cheques(self):
-        saldo = self.saldo_cheques
-        if saldo > 0:
-            return "a_favor"
-        if saldo < 0:
-            return "a_pagar"
-        return "al_dia"
 
     def __str__(self):
         return f"{self.banco} - {self.numero}"
 
 
 class Cheque(models.Model):
-    """Cheque a cobrar o a pagar de una cuenta corriente.
+    """Cheque a pagar de una cuenta corriente.
 
     Cuelga de una cuenta corriente, de la que se derivan el banco y la empresa. Un
-    cheque a cobrar es plata que entra y uno a pagar plata que sale: el saldo de la
-    cuenta (y de la empresa) es la suma de los a cobrar menos la de los a pagar.
+    cheque siempre es plata que sale (la empresa no recibe cheques como cobro): el
+    total a pagar de la cuenta (y de la empresa) es la suma de sus importes.
 
     El cheque vence 30 dias despues de su fecha de cobro: pasado ese plazo ya no se
     puede cobrar (ver vencido). El plazo de 30/60/90 dias es solo una ayuda del alta
@@ -1679,14 +1597,8 @@ class Cheque(models.Model):
     """
     DIAS_VENCIMIENTO = 30
 
-    TIPOS = [
-        ("a_cobrar", "A cobrar"),
-        ("a_pagar", "A pagar"),
-    ]
-
     cuenta_corriente = models.ForeignKey(CuentaCorriente, on_delete=models.CASCADE, related_name="cheques",
                                          db_column="id_cuenta_corriente")
-    tipo = models.CharField(max_length=10, choices=TIPOS)
     # default y no auto_now_add: la fecha que vale es la del cheque, no la de la carga
     fecha_emision = models.DateField(default=timezone.localdate)
     fecha_cobro = models.DateField()
@@ -1712,11 +1624,7 @@ class Cheque(models.Model):
         # Ya paso el plazo de cobro: nadie lo puede cobrar mas
         return timezone.localdate() > self.vencimiento
 
-    @property
-    def es_a_cobrar(self):
-        return self.tipo == "a_cobrar"
-
     def __str__(self):
-        return f"{self.get_tipo_display()} de {self.importe} ({self.cuenta_corriente})"
+        return f"Cheque de {self.importe} ({self.cuenta_corriente})"
 
 

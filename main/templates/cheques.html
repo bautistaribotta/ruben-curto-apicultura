@@ -29,7 +29,7 @@
     </span>
     <div class="cabecera-seccion__texto">
       <h2>Cheques</h2>
-      <p>Cheques a cobrar y a pagar de cada empresa y sociedad</p>
+      <p>Cheques a pagar de cada empresa y sociedad</p>
     </div>
   </div>
 {% endblock %}
@@ -38,34 +38,22 @@
 <section id="area-trabajo">
 
   {% comment %}
-    Band de totales de cheques: la suma de TODAS las empresas y sociedades juntas.
-    A la izquierda el rotulo; a la derecha, total a cobrar, a pagar y el saldo neto
-    como cifra protagonista, coloreado segun su lectura (a favor / a pagar / al dia).
+    Band de totales de cheques: el total a pagar de TODAS las empresas y sociedades
+    juntas. Los cheques son siempre a pagar (la empresa no recibe cheques), asi que
+    hay una sola cifra protagonista, sin saldo neto ni semaforo.
   {% endcomment %}
-  <section class="iva-totales cheque-totales saldo--{{ totales.estado }}">
+  <section class="iva-totales cheque-totales saldo--a_pagar">
     <div class="iva-totales__periodo">
-      <p class="iva-totales__eyebrow">Cheques de</p>
+      <p class="iva-totales__eyebrow">Cheques a pagar de</p>
       <p class="iva-totales__fecha">
         <span class="iva-totales__nombre">Todas las empresas</span>
       </p>
     </div>
 
     <div class="iva-totales__cifras">
-      <p class="iva-cifra">
-        <span class="iva-cifra__valor">${{ totales.a_cobrar|floatformat:"0g" }}</span>
-        <span class="iva-cifra__rotulo">a cobrar</span>
-      </p>
-      <p class="iva-cifra">
-        <span class="iva-cifra__valor">${{ totales.a_pagar|floatformat:"0g" }}</span>
-        <span class="iva-cifra__rotulo">a pagar</span>
-      </p>
       <p class="iva-cifra iva-cifra--saldo">
-        <span class="iva-cifra__valor">${{ totales.saldo_abs|floatformat:"0g" }}</span>
-        <span class="iva-cifra__rotulo">
-          {% if totales.estado == 'a_pagar' %}saldo a pagar
-          {% elif totales.estado == 'a_favor' %}saldo a favor
-          {% else %}saldo al día{% endif %}
-        </span>
+        <span class="iva-cifra__valor">${{ totales.a_pagar|floatformat:"0g" }}</span>
+        <span class="iva-cifra__rotulo">total a pagar</span>
       </p>
     </div>
   </section>
@@ -130,32 +118,13 @@
         </div>
       </header>
 
-      <!-- Saldo neto: el numero protagonista, con su lectura (a favor / a pagar / al dia) -->
-      <div class="tarjeta-empresa__saldo saldo--{{ empresa.estado_saldo_cheques }}">
-        <span class="tarjeta-empresa__saldo-rotulo">Saldo de cheques</span>
+      <!-- Total a pagar: el unico numero, en tono de marca (los cheques son a pagar) -->
+      <div class="tarjeta-empresa__saldo saldo--a_pagar">
+        <span class="tarjeta-empresa__saldo-rotulo">Cheques a pagar</span>
         <div class="tarjeta-empresa__saldo-linea">
-          <span class="tarjeta-empresa__saldo-valor">${{ empresa.saldo_cheques_abs|floatformat:"0g" }}</span>
-          <span class="chip-saldo">
-            {% if empresa.estado_saldo_cheques == 'a_pagar' %}A pagar
-            {% elif empresa.estado_saldo_cheques == 'a_favor' %}A favor
-            {% else %}Al día{% endif %}
-          </span>
+          <span class="tarjeta-empresa__saldo-valor">${{ empresa.cheques_a_pagar|floatformat:"0g" }}</span>
         </div>
       </div>
-
-      <!-- A cobrar y a pagar: los dos componentes del saldo -->
-      <dl class="tarjeta-empresa__estado">
-        <div class="dato-iva dato-iva--debito">
-          <span class="material-symbols-outlined dato-iva__icono">trending_up</span>
-          <dt class="dato-iva__rotulo">A cobrar</dt>
-          <dd class="dato-iva__valor">${{ empresa.cheques_a_cobrar|floatformat:"0g" }}</dd>
-        </div>
-        <div class="dato-iva dato-iva--credito">
-          <span class="material-symbols-outlined dato-iva__icono">trending_down</span>
-          <dt class="dato-iva__rotulo">A pagar</dt>
-          <dd class="dato-iva__valor">${{ empresa.cheques_a_pagar|floatformat:"0g" }}</dd>
-        </div>
-      </dl>
     </article>
     {% empty %}
     <div class="iva-vacia">
