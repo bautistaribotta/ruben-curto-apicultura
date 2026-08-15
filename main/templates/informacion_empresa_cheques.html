@@ -83,44 +83,51 @@
       </button>
     </header>
 
-    <div class="grilla-cuentas">
-      {% for cuenta in cuentas %}
-      <article class="tarjeta-cuenta saldo--a_pagar">
-        <header class="tarjeta-cuenta__cabecera">
-          <span class="tarjeta-cuenta__icono">
-            <span class="material-symbols-outlined">account_balance</span>
-          </span>
-          <div class="tarjeta-cuenta__identidad">
-            <h4 class="tarjeta-cuenta__banco">{{ cuenta.banco.nombre }}</h4>
-            <span class="tarjeta-cuenta__numero">N.º {{ cuenta.numero }}</span>
-          </div>
-          <div class="tarjeta-cuenta__acciones">
-            <button type="button" class="boton-icono editar" title="Editar cuenta corriente"
-                    data-id="{{ cuenta.id }}" data-banco="{{ cuenta.banco_id }}"
-                    data-numero="{{ cuenta.numero }}" onclick="prepararEditarCuenta(this)">
-              <span class="material-symbols-outlined">edit</span>
-            </button>
-            <button type="button" class="boton-icono eliminar" title="Eliminar cuenta corriente"
-                    data-id="{{ cuenta.id }}"
-                    data-descripcion="la cuenta {{ cuenta.numero }} de {{ cuenta.banco.nombre }}"
-                    onclick="prepararEliminarCuenta(this)">
-              <span class="material-symbols-outlined">delete</span>
-            </button>
-          </div>
-        </header>
-
-        <div class="tarjeta-cuenta__saldo">
-          <span class="tarjeta-cuenta__saldo-rotulo">A pagar</span>
-          <span class="tarjeta-cuenta__saldo-valor">${{ cuenta.cheques_a_pagar|floatformat:"0g" }}</span>
-        </div>
-      </article>
-      {% empty %}
-      <div class="cuentas-vacia">
-        <span class="material-symbols-outlined">account_balance</span>
-        <p>Todavía no hay cuentas corrientes.</p>
-        <span>Creá una para empezar a cargar cheques.</span>
-      </div>
-      {% endfor %}
+    <div class="contenedor-tabla">
+      <table class="tabla-operaciones-iva tabla-cuentas">
+        <thead>
+          <tr>
+            <th>Banco</th>
+            <th>Número de cuenta</th>
+            <th class="texto-derecha">A pagar</th>
+            <th class="texto-derecha">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for cuenta in cuentas %}
+          <tr class="op-fila">
+            <td class="cuenta-banco">{{ cuenta.banco.nombre }}</td>
+            <td class="cuenta-numero">N.º {{ cuenta.numero }}</td>
+            <td class="texto-derecha op-iva">${{ cuenta.cheques_a_pagar|floatformat:"2g" }}</td>
+            <td class="texto-derecha">
+              <div class="acciones-tabla">
+                <button type="button" class="boton-icono editar" title="Editar cuenta corriente"
+                        data-id="{{ cuenta.id }}" data-banco="{{ cuenta.banco_id }}"
+                        data-numero="{{ cuenta.numero }}" onclick="prepararEditarCuenta(this)">
+                  <span class="material-symbols-outlined">edit</span>
+                </button>
+                <button type="button" class="boton-icono eliminar" title="Eliminar cuenta corriente"
+                        data-id="{{ cuenta.id }}"
+                        data-descripcion="la cuenta {{ cuenta.numero }} de {{ cuenta.banco.nombre }}"
+                        onclick="prepararEliminarCuenta(this)">
+                  <span class="material-symbols-outlined">delete</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="4">
+              <div class="estado-vacio">
+                <span class="material-symbols-outlined">account_balance</span>
+                <h4>Sin cuentas corrientes</h4>
+                <p>Creá una para empezar a cargar cheques.</p>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
   </section>
 

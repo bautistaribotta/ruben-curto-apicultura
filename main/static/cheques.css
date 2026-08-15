@@ -17,135 +17,20 @@
   gap: 0.75rem;
 }
 
-/* --- CUENTAS CORRIENTES: grilla de tarjetas dentro de la ficha --- */
+/* --- CUENTAS CORRIENTES: tabla dentro de la ficha --- */
 .bloque-cuentas {
   margin-bottom: 2.5rem;
 }
 
-.grilla-cuentas {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
-  gap: 1.25rem;
-}
-
-.tarjeta-cuenta {
-  display: flex;
-  flex-direction: column;
-  background-color: var(--surface-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  padding: 1.15rem 1.25rem;
-}
-
-.tarjeta-cuenta__cabecera {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-}
-
-.tarjeta-cuenta__icono {
-  width: 40px;
-  height: 40px;
-  flex: none;
-  border-radius: var(--radius-md);
-  background-color: var(--color-verde-medio-transparente-10);
-  color: var(--brand-secondary);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.tarjeta-cuenta__icono .material-symbols-outlined {
-  font-size: 1.35rem;
-}
-
-.tarjeta-cuenta__identidad {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-}
-
-.tarjeta-cuenta__banco {
-  margin: 0;
-  font-size: var(--text-md);
-  font-weight: var(--weight-bold);
-  color: var(--text-strong);
-  line-height: 1.2;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.tarjeta-cuenta__numero {
-  font-size: 0.75rem;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-subtle);
-}
-
-.tarjeta-cuenta__acciones {
-  margin-left: auto;
-  display: flex;
-  gap: 0.15rem;
-  opacity: 0;
-  transition: opacity var(--dur-normal) var(--ease-standard);
-}
-
-.tarjeta-cuenta:hover .tarjeta-cuenta__acciones,
-.tarjeta-cuenta:focus-within .tarjeta-cuenta__acciones {
-  opacity: 1;
-}
-
-/* Total a pagar de la cuenta: rotulo corto arriba, cifra de marca (pino) abajo */
-.tarjeta-cuenta__saldo {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  margin: 1rem 0 0.25rem;
-}
-
-.tarjeta-cuenta__saldo-rotulo {
-  font-size: var(--text-xs);
-  font-weight: var(--weight-semibold);
-  letter-spacing: var(--tracking-wide);
-  text-transform: uppercase;
-  color: var(--text-subtle);
-}
-
-.tarjeta-cuenta__saldo-valor {
-  font-size: var(--text-2xl);
-  font-weight: var(--weight-extra);
-  letter-spacing: var(--tracking-tight);
-  font-variant-numeric: tabular-nums;
-  line-height: 1;
-  color: var(--pine-900);
-}
-
-/* Estado vacio de cuentas corrientes */
-.cuentas-vacia {
-  grid-column: 1 / -1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 2.5rem 1rem;
-  color: var(--text-muted);
-  font-size: var(--text-sm);
-  background-color: var(--surface-card);
-  border: 1px dashed var(--border-default);
-  border-radius: var(--radius-lg);
-}
-
-.cuentas-vacia .material-symbols-outlined {
-  font-size: 2.25rem;
-  color: var(--sand-400);
-}
-
-.cuentas-vacia p {
-  margin: 0;
+/* El banco es la identidad de la fila; el numero, dato secundario tabular */
+.cuenta-banco {
   font-weight: var(--weight-semibold);
   color: var(--text-body);
+}
+
+.cuenta-numero {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-subtle);
 }
 
 /* --- RESUMEN DE LA FICHA: el total a pagar de la empresa, cifra unica ---
@@ -428,8 +313,5 @@
   #slide-over-panel-cuenta {
     width: 100%;
     border-radius: 0;
-  }
-  .tarjeta-cuenta__acciones {
-    opacity: 1;
   }
 }
