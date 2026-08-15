@@ -10,6 +10,7 @@
 {% block links %}
 <link rel="stylesheet" href="{% static_v 'mercado_libre.css' %}">
 <link rel="stylesheet" href="{% static_v 'filtro_fechas.css' %}">
+<link rel="stylesheet" href="{% static_v 'filtro_pago.css' %}">
 <link rel="stylesheet" href="{% static_v 'filtro_entidad.css' %}">
 <link rel="stylesheet" href="{% static_v 'selector_entidad.css' %}">
 <link rel="stylesheet" href="{% static_v 'pago_viaje.css' %}">
@@ -35,6 +36,16 @@
        refresca esta region por AJAX junto con la tabla. Los usuarios no
        administrativos no ven los totales, asi que se omite el contenedor -->
   {% if user.is_staff %}
+  {% comment %}
+    Encabezado del resumen: etiqueta + segmentado de estado de cobro (Por cobrar /
+    Todas) en la esquina superior derecha, mismo lugar y diseno que el interruptor
+    de valuacion de Deudas. Va FUERA de #meli-stats-region para conservar su estado
+    y listeners entre refrescos AJAX.
+  {% endcomment %}
+  <div class="filtro-pago-fila">
+    <span class="filtro-pago-fila__label">Estado de cobro</span>
+    {% include 'filtro_pago.html' %}
+  </div>
   <div class="meli-stats" id="meli-stats-region">
     {% include 'tarjetas_reparto.html' %}
   </div>
@@ -277,6 +288,7 @@
 
 {% block codigo-javascript %}
 <script src="{% static_v 'js/filtro_fechas.js' %}"></script>
+<script src="{% static_v 'js/filtro_pago.js' %}"></script>
 <script src="{% static_v 'js/selector_entidad.js' %}"></script>
 <script src="{% static_v 'js/filtros_entidad.js' %}"></script>
 <script src="{% static_v 'js/mercado_libre.js' %}"></script>

@@ -1,0 +1,17 @@
+{% comment %}
+  Segmentado de estado de cobro (Por cobrar / Todas). Filtra a la vez la tabla y las
+  tarjetas de resumen de las vistas de viajes (reparto y cereal). Por defecto arranca
+  en "Por cobrar" (viajes con pagado=False), asi el numero principal de las tarjetas
+  es lo que todavia falta cobrar; "Todas" muestra el historico completo.
+
+  Vive con las tarjetas, en la esquina superior derecha del bloque de resumen (mismo
+  lugar y diseno que el interruptor de valuacion de Deudas), pero FUERA de la region
+  que reemplaza el AJAX, asi el estado elegido sobrevive a la busqueda y la paginacion.
+  filtro_pago.js lo cablea. Espera 'pago' en el contexto: 'cobrar' (default) o 'todas'.
+{% endcomment %}
+<div class="filtro-pago" id="filtro-pago" role="group" aria-label="Filtrar por estado de cobro">
+  <button type="button" class="filtro-pago__opt {% if pago != 'todas' %}is-active{% endif %}"
+          data-pago="cobrar" aria-pressed="{% if pago != 'todas' %}true{% else %}false{% endif %}">Por cobrar</button>
+  <button type="button" class="filtro-pago__opt {% if pago == 'todas' %}is-active{% endif %}"
+          data-pago="todas" aria-pressed="{% if pago == 'todas' %}true{% else %}false{% endif %}">Todas</button>
+</div>

@@ -2714,6 +2714,17 @@ def mercado_libre(request):
     if destino.isdigit():
         lista_viajes = lista_viajes.filter(destino_id=destino)
 
+    # Estado de cobro (segmentado "Por cobrar / Todas"). Por defecto "cobrar": la
+    # tabla y las tarjetas arrancan mostrando lo que todavia falta cobrar (viajes
+    # con pagado=False), que es lo que el cliente mira primero. El segmentado vive
+    # con las tarjetas (solo staff), asi que el filtro solo aplica para el staff:
+    # el resto sigue viendo el listado completo como antes.
+    pago = request.GET.get("pago", "cobrar")
+    if pago not in ("cobrar", "todas"):
+        pago = "cobrar"
+    if request.user.is_staff and pago == "cobrar":
+        lista_viajes = lista_viajes.filter(pagado=False)
+
     # Filtro por rango de fechas (chip + popover), por la fecha del reparto.
     desde, hasta, ctx_fechas = _rango_fechas(request)
     if desde:
@@ -2738,6 +2749,7 @@ def mercado_libre(request):
         "vehiculo_nombre": nombre_vehiculo_filtro(vehiculo),
         "destino": destino,
         "destino_nombre": nombre_destino_reparto_filtro(destino),
+        "pago": pago,
         "empleados_filtro": opciones_empleados_filtro(),
         "vehiculos_filtro": opciones_vehiculos_filtro(),
         "destinos_filtro": opciones_destinos_reparto_filtro(),
@@ -2983,6 +2995,17 @@ def viaje_cereales(request):
     if destino:
         lista_viajes = lista_viajes.filter(destinos__destino=destino).distinct()
 
+    # Estado de cobro (segmentado "Por cobrar / Todas"). Por defecto "cobrar": la
+    # tabla y las tarjetas arrancan mostrando lo que todavia falta cobrar (viajes
+    # con pagado=False), que es lo que el cliente mira primero. El segmentado vive
+    # con las tarjetas (solo staff), asi que el filtro solo aplica para el staff:
+    # el resto sigue viendo el listado completo como antes.
+    pago = request.GET.get("pago", "cobrar")
+    if pago not in ("cobrar", "todas"):
+        pago = "cobrar"
+    if request.user.is_staff and pago == "cobrar":
+        lista_viajes = lista_viajes.filter(pagado=False)
+
     # Filtro por rango de fechas (chip + popover), por la fecha del viaje.
     desde, hasta, ctx_fechas = _rango_fechas(request)
     if desde:
@@ -3006,6 +3029,7 @@ def viaje_cereales(request):
         "vehiculo_nombre": nombre_vehiculo_filtro(vehiculo),
         "destino": destino,
         "destino_nombre": destino,
+        "pago": pago,
         "empleados_filtro": opciones_empleados_filtro(),
         "vehiculos_filtro": opciones_vehiculos_filtro(),
         "destinos_filtro": opciones_destinos_cereal(),

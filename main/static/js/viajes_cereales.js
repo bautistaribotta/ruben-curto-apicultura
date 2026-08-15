@@ -40,6 +40,7 @@ const buscar = (urlString = null) => {
   // Los filtros por entidad y por fecha viven en sus chips (fuera de la region que
   // reemplaza el AJAX); los vuelco en la URL tanto al buscar como al paginar.
   if (typeof aplicarFiltrosEntidad === 'function') aplicarFiltrosEntidad(url);
+  if (typeof aplicarFiltroPago === 'function') aplicarFiltroPago(url);
   aplicarFechasCereal(url);
 
   fetch(url, {
@@ -92,5 +93,8 @@ document.addEventListener('filtroentidad:cambio', () => buscar());
 
 // El filtro de fecha avisa por evento; recargo la tabla con el rango aplicado.
 document.addEventListener('filtrofechas:cambio', () => buscar());
+
+// El segmentado de estado de cobro avisa por evento; recargo tabla y tarjetas.
+document.addEventListener('filtropago:cambio', () => buscar());
 
 vincularPaginacion();
