@@ -82,19 +82,8 @@ document.addEventListener('filtroentidad:cambio', () => buscar());
 // El filtro de fecha avisa por evento; recargo la tabla con el rango aplicado.
 document.addEventListener('filtrofechas:cambio', () => buscar());
 
-// Chips de estado
-const chipsEstado = document.getElementById('chips-estado');
-if (chipsEstado) {
-  chipsEstado.addEventListener('click', (e) => {
-    const chip = e.target.closest('.prod-chip');
-    if (!chip) return;
-
-    chipsEstado.querySelectorAll('.prod-chip').forEach((c) => c.classList.remove('is-active'));
-    chip.classList.add('is-active');
-
-    if (filtroEstado) filtroEstado.value = chip.dataset.estado;
-    buscar();
-  });
-}
+// La pildora de estado (filtro_estado_viaje.js) avisa por evento tras escribir el
+// nuevo valor en #filtro-estado; recargo la tabla con ese estado.
+document.addEventListener('filtroestado:cambio', () => buscar());
 
 vincularPaginacion();

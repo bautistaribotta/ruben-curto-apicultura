@@ -1,0 +1,36 @@
+{% comment %}
+  Filtro de estado del viaje como una sola pildora con menu desplegable. Reemplaza a
+  las tres pildoras sueltas (Todos / En curso / Finalizado): ocupa menos y queda en
+  linea con los chips de filtro por entidad. El estado aplicado vive en el data-* del
+  contenedor y en el input hidden #filtro-estado que ya lee viajes.js para la busqueda
+  AJAX. La pildora se pinta de pino (is-active) cuando hay un estado distinto de Todos.
+{% endcomment %}
+<div class="filtro-estado" id="filtro-estado-viaje" data-estado="{{ estado|default:'' }}">
+  <button type="button"
+          class="filtro-estado__trigger {% if estado %}is-active{% endif %}"
+          id="filtro-estado-trigger" aria-haspopup="listbox" aria-expanded="false">
+    <span class="material-symbols-outlined" aria-hidden="true">filter_alt</span>
+    <span class="filtro-estado__label" id="filtro-estado-label">{% if estado %}{{ estado }}{% else %}Todos{% endif %}</span>
+    <span class="material-symbols-outlined filtro-estado__chevron" aria-hidden="true">expand_more</span>
+  </button>
+
+  <ul class="filtro-estado__menu" id="filtro-estado-menu" role="listbox" aria-label="Estado del viaje" hidden>
+    <li class="filtro-estado__opt {% if not estado %}is-selected{% endif %}" role="option"
+        data-estado="" aria-selected="{% if not estado %}true{% else %}false{% endif %}" tabindex="-1">
+      <span class="filtro-estado__opt-label">Todos</span>
+      <span class="vje-chipcount">{{ count_total }}</span>
+    </li>
+    <li class="filtro-estado__opt {% if estado == 'En curso' %}is-selected{% endif %}" role="option"
+        data-estado="En curso" aria-selected="{% if estado == 'En curso' %}true{% else %}false{% endif %}" tabindex="-1">
+      <span class="prod-chip__dot prod-chip__dot--encurso"></span>
+      <span class="filtro-estado__opt-label">En curso</span>
+      <span class="vje-chipcount">{{ count_en_curso }}</span>
+    </li>
+    <li class="filtro-estado__opt {% if estado == 'Finalizado' %}is-selected{% endif %}" role="option"
+        data-estado="Finalizado" aria-selected="{% if estado == 'Finalizado' %}true{% else %}false{% endif %}" tabindex="-1">
+      <span class="prod-chip__dot prod-chip__dot--finalizado"></span>
+      <span class="filtro-estado__opt-label">Finalizado</span>
+      <span class="vje-chipcount">{{ count_finalizado }}</span>
+    </li>
+  </ul>
+</div>

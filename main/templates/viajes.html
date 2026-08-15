@@ -44,6 +44,9 @@
           {% include "chip_filtro_entidad.html" with chip_id="chip-destino" param="destino" modal_id="selector-destino-viaje" icono="location_on" etiqueta="Destino" valor_id=destino valor_nombre=destino_nombre %}
         </div>
         {% include 'filtro_fechas.html' %}
+        {% comment %} El estado aplicado vive en este hidden que lee viajes.js para la busqueda AJAX. {% endcomment %}
+        <input type="hidden" id="filtro-estado" value="{{ estado|default:'' }}">
+        {% include 'filtro_estado_viaje.html' %}
       </div>
 
       <!-- Flota se llega desde la barra lateral, como sub-item de esta seccion -->
@@ -53,20 +56,6 @@
           <span class="texto-boton">Nuevo Viaje</span>
         </button>
       </div>
-    </div>
-
-    <!-- Filtros de estado como pildoras -->
-    <input type="hidden" id="filtro-estado" value="{{ estado|default:'' }}">
-    <div class="prod-chips" id="chips-estado">
-      <button type="button" class="prod-chip {% if not estado %}is-active{% endif %}" data-estado="">
-        Todos <span class="vje-chipcount">{{ count_total }}</span>
-      </button>
-      <button type="button" class="prod-chip {% if estado == 'En curso' %}is-active{% endif %}" data-estado="En curso">
-        <span class="prod-chip__dot prod-chip__dot--encurso"></span>En curso <span class="vje-chipcount">{{ count_en_curso }}</span>
-      </button>
-      <button type="button" class="prod-chip {% if estado == 'Finalizado' %}is-active{% endif %}" data-estado="Finalizado">
-        <span class="prod-chip__dot prod-chip__dot--finalizado"></span>Finalizado <span class="vje-chipcount">{{ count_finalizado }}</span>
-      </button>
     </div>
 
     <!-- Tabla de Viajes -->
@@ -236,6 +225,7 @@
 <script src="{% static_v 'js/filtro_fechas.js' %}"></script>
 <script src="{% static_v 'js/selector_entidad.js' %}"></script>
 <script src="{% static_v 'js/filtros_entidad.js' %}"></script>
+<script src="{% static_v 'js/filtro_estado_viaje.js' %}"></script>
 <script src="{% static_v 'js/viajes.js' %}"></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
