@@ -280,6 +280,22 @@ def obtener_cargas(id_estacion, estado="impagas", desde=None, hasta=None):
     return cargas
 
 
+def obtener_totales_cargas(id_estacion, estado="impagas", desde=None, hasta=None):
+    """Total de dinero y de litros de las cargas que muestran los filtros activos.
+
+    Reusa el mismo queryset filtrado que obtener_cargas para que el resumen siga
+    exactamente el estado de pago y el rango de fechas elegidos (no es un total
+    historico). Los litros son opcionales: Sum ignora los None, asi que el total
+    suma solo las cargas que los tienen. Coalesce deja 0 cuando no hay ninguna
+    carga en el filtro (evita None en la plantilla).
+    """
+    cargas = obtener_cargas(id_estacion, estado, desde, hasta)
+    return cargas.aggregate(
+        total_monto=Coalesce(Sum("monto"), Decimal("0")),
+        total_litros=Coalesce(Sum("litros"), Decimal("0")),
+    )
+
+
 def obtener_datos_carga(id_carga):
     """Datos de una carga para precargar el panel de edicion, o None si no existe."""
     try:

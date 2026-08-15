@@ -197,6 +197,69 @@
   color: var(--color-blanco);
 }
 
+/* --- RESUMEN DEL RECORTE (total dinero + total litros) ---
+   Tira de dos cifras que resumen las cargas que dejan pasar los filtros. Se apoya
+   entre la barra de filtros y la tabla para que se lea como el total de lo que hay
+   debajo. Mismo tile olivo/pino que la identidad y el chip de origen. */
+.resumen-cargas {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.resumen-cargas__stat {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius-lg);
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 1px 2px var(--color-sombra-1);
+}
+
+/* Selector de dos clases a proposito: la regla global .material-symbols-outlined
+   de fonts.css se carga despues y con una sola clase le ganaria a display:flex,
+   dejando el glifo sin centrar (mismo truco que .identidad-estacion__tile). */
+.resumen-cargas .resumen-cargas__icono {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: oklch(25.391% 0.0349 170.220 / 0.1);
+  color: var(--brand-olive);
+  font-size: 24px;
+  line-height: 1;
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+.resumen-cargas__cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.resumen-cargas__label {
+  font-size: 0.72rem;
+  font-weight: var(--weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.resumen-cargas__valor {
+  font-size: 1.375rem;
+  font-weight: var(--weight-bold);
+  color: var(--text-strong);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
 /* --- TABLA DE CARGAS --- */
 .tabla-cargas {
   width: 100%;
@@ -618,5 +681,9 @@
   #slide-over-panel-estacion {
     width: 100%;
     border-radius: 0;
+  }
+  /* Las dos cifras se apilan: en pantalla angosta el valor no entra a la par. */
+  .resumen-cargas {
+    grid-template-columns: 1fr;
   }
 }

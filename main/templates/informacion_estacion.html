@@ -102,6 +102,31 @@
       {% include 'filtro_fechas.html' %}
     </div>
 
+    {% comment %}
+      Resumen del recorte activo: total de dinero y de litros de las cargas que dejan
+      pasar los filtros de arriba (no es un total historico). La etiqueta del dinero se
+      adapta al estado para que el numero no sea ambiguo: con "impagas" es lo que se
+      debe, con "pagadas" lo ya pagado, con "todas" lo gastado.
+    {% endcomment %}
+    <div class="resumen-cargas">
+      <div class="resumen-cargas__stat">
+        <span class="resumen-cargas__icono material-symbols-outlined">payments</span>
+        <div class="resumen-cargas__cuerpo">
+          <span class="resumen-cargas__label">
+            {% if estado == 'impagas' %}Total impago{% elif estado == 'pagadas' %}Total pagado{% else %}Total gastado{% endif %}
+          </span>
+          <span class="resumen-cargas__valor">$ {{ total_monto|floatformat:'-2g' }}</span>
+        </div>
+      </div>
+      <div class="resumen-cargas__stat">
+        <span class="resumen-cargas__icono material-symbols-outlined">local_gas_station</span>
+        <div class="resumen-cargas__cuerpo">
+          <span class="resumen-cargas__label">Litros cargados</span>
+          <span class="resumen-cargas__valor">{{ total_litros|floatformat:'-2g' }} L</span>
+        </div>
+      </div>
+    </div>
+
     <div class="contenedor-tabla">
       <table class="tabla-cargas">
         <thead>

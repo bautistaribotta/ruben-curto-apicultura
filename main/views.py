@@ -61,7 +61,7 @@ from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo
                        crear_estacion, obtener_datos_estacion, editar_estacion, eliminar_estacion,
                        obtener_estaciones_activas,
                        crear_carga, editar_carga, eliminar_carga, alternar_pago_carga,
-                       obtener_cargas, obtener_datos_carga,
+                       obtener_cargas, obtener_totales_cargas, obtener_datos_carga,
                        obtener_empresas_activas, crear_empresa, editar_empresa, eliminar_empresa,
                        obtener_datos_empresa, crear_operacion_iva, editar_operacion_iva,
                        eliminar_operacion_iva, obtener_operaciones_iva, obtener_datos_operacion_iva,
@@ -2636,11 +2636,16 @@ def informacion_estacion(request, id_estacion):
     paginator = Paginator(cargas, 5)
     page_obj = paginator.get_page(request.GET.get("page"))
 
+    # Totales de dinero y litros del mismo recorte que muestran los filtros.
+    totales = obtener_totales_cargas(id_estacion, estado, desde, hasta)
+
     contexto = {
         "estacion": estacion,
         "page_obj": page_obj,
         "cargas": page_obj,
         "estado": estado,
+        "total_monto": totales["total_monto"],
+        "total_litros": totales["total_litros"],
         "total_cargas": estacion.cargas.filter(activa=True).count(),
         "empleados": obtener_empleados_activos(),
         "vehiculos": obtener_vehiculos_activos(),
