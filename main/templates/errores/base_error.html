@@ -1,0 +1,46 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+
+    <title>{% block titulo-pestana %}Error{% endblock %}</title>
+
+    {% comment %}
+      Pantalla de error autonoma: NO hereda de base.html a proposito. Un 500 se
+      renderiza con un contexto minimo (sin procesadores de contexto ni datos del
+      usuario), asi que la barra lateral podria romper. Ademas debe verse igual
+      con sesion iniciada o sin ella. Por eso solo usa {% static %} y href="/".
+    {% endcomment %}
+    <link rel="stylesheet" href="{% static 'base.css' %}">
+    <link rel="stylesheet" href="{% static 'error.css' %}">
+    <link rel="icon" type="image/svg+xml" href="{% static 'icons/abeja_southern_honey_group.svg' %}">
+    <link rel="stylesheet" href="{% static 'fonts.css' %}">
+  </head>
+
+  <body class="pagina-error">
+    <main id="escena-error">
+      {% comment %}
+        Firma de la marca: ilustracion de apicultores y panales, recoloreada a los
+        tokens (miel + pino + arena) en imagenes/error_apicultores.svg. Es
+        decorativa, por eso va sin alt (el texto de abajo ya nombra el error).
+      {% endcomment %}
+      <img src="{% static 'imagenes/error_apicultores.svg' %}" alt="" id="ilustracion-error">
+
+      <p id="etiqueta-error">Error {% block codigo %}{% endblock %} · {% block etiqueta %}{% endblock %}</p>
+      <h1 id="titulo-error">Algo salió mal</h1>
+      <p id="descripcion-error">{% block descripcion %}{% endblock %}</p>
+
+      <p id="contacto-error">
+        Si el problema sigue, comunicate con el administrador al
+        <a href="tel:2302649671">2302 649671</a>.
+      </p>
+
+      <a href="/" id="boton-volver">
+        <span class="material-symbols-outlined">home</span>
+        Volver al inicio
+      </a>
+    </main>
+  </body>
+</html>

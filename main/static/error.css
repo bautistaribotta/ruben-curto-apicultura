@@ -1,0 +1,176 @@
+/* Pantalla de error autonoma (404 / 403 / 500 / 400).
+   Reutiliza los tokens de marca de base.css (pino + miel + arena, todo oklch).
+   Se carga despues de base.css, asi que redefine el body sin la barra lateral. */
+
+body.pagina-error {
+  margin: 0;
+  min-height: 100vh;
+  /* dvh sigue al viewport real en Safari iOS (barra dinamica); ver base.css */
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  font-family: var(--font-main);
+  background-color: var(--brand-cream);
+  color: var(--sand-700);
+}
+
+#escena-error {
+  width: 100%;
+  max-width: 30rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  animation: aparecer-error 0.5s ease-out both;
+}
+
+/* ---- Firma: ilustracion de apicultores y panales ---- */
+#ilustracion-error {
+  width: 100%;
+  max-width: 17.5rem;
+  height: auto;
+  margin-bottom: 1.75rem;
+  animation: flotar-ilustracion 6s ease-in-out infinite;
+}
+
+/* ---- Texto ---- */
+#etiqueta-error {
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--honey-700);
+  margin: 0 0 0.75rem;
+}
+
+#titulo-error {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  color: var(--pine-950);
+  margin: 0 0 0.85rem;
+}
+
+#descripcion-error {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--sand-600);
+  margin: 0 0 1.5rem;
+}
+
+#contacto-error {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--sand-700);
+  margin: 0 0 2.25rem;
+}
+
+#contacto-error a {
+  color: var(--pine-900);
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  border-bottom: 2px solid var(--honey-500);
+  padding-bottom: 1px;
+  transition: color 0.2s;
+}
+
+#contacto-error a:hover {
+  color: var(--honey-700);
+}
+
+/* ---- Boton volver: mismo lenguaje que el boton pino del login ---- */
+#boton-volver {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 3.25rem;
+  padding: 0 1.75rem;
+  background-color: var(--pine-900);
+  color: var(--sand-50);
+  font-size: 1rem;
+  font-weight: 700;
+  text-decoration: none;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 15px -3px oklch(20.493% 0.0261 168.787 / 0.18);
+  transition: transform 0.2s, background-color 0.2s, box-shadow 0.2s;
+}
+
+#boton-volver:hover {
+  transform: translateY(-1px);
+  background-color: var(--pine-950);
+  box-shadow: 0 20px 25px -5px oklch(20.493% 0.0261 168.787 / 0.22);
+}
+
+#boton-volver:active {
+  transform: translateY(1px) scale(0.98);
+  transition-duration: 0.08s;
+}
+
+#boton-volver .material-symbols-outlined {
+  font-size: 20px;
+}
+
+/* Foco visible para navegacion por teclado */
+#boton-volver:focus-visible,
+#contacto-error a:focus-visible {
+  outline: 2px solid var(--honey-600);
+  outline-offset: 3px;
+  border-radius: 0.25rem;
+}
+
+@keyframes aparecer-error {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes flotar-ilustracion {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+/* ---- Accesibilidad: respeto de movimiento reducido ---- */
+@media (prefers-reduced-motion: reduce) {
+  #escena-error,
+  #ilustracion-error {
+    animation: none;
+  }
+}
+
+/* ---- Escalado en pantallas grandes (coherente con login.css) ---- */
+@media (min-width: 1440px) {
+  html {
+    font-size: 18px;
+  }
+}
+
+@media (min-width: 1920px) {
+  html {
+    font-size: 20px;
+  }
+}
+
+/* ---- Movil ---- */
+@media (max-width: 480px) {
+  #ilustracion-error {
+    max-width: 13.5rem;
+    margin-bottom: 1.25rem;
+  }
+
+  #titulo-error {
+    font-size: 1.6rem;
+  }
+}
