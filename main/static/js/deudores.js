@@ -20,20 +20,10 @@ document.addEventListener('DOMContentLoaded', () => {
         return activo ? activo.dataset.valuacion : 'hoy';
     };
 
-    // --- Filtro por fecha (chip + popover) ---
-    // El contenedor guarda el estado APLICADO (desde/hasta en ISO) en sus data-*.
-    // Es la fuente de verdad que lee buscar(); los inputs del popover son solo el
-    // borrador hasta que el usuario toca "Aplicar".
-    const fechas = document.getElementById('deu-fechas');
-    const fechasTrigger = document.getElementById('deu-fechas-trigger');
-    const fechasLabel = document.getElementById('deu-fechas-label');
-    const fechasPop = document.getElementById('deu-fechas-pop');
-    const segOpts = fechasPop ? fechasPop.querySelectorAll('.deu-seg__opt') : [];
-    const inputDia = document.getElementById('deu-fechas-dia');
-    const inputDesde = document.getElementById('deu-fechas-desde');
-    const inputHasta = document.getElementById('deu-fechas-hasta');
-    const btnAplicar = document.getElementById('deu-fechas-aplicar');
-    const btnLimpiar = document.getElementById('deu-fechas-limpiar');
+    // --- Filtro por fecha (componente compartido #filtro-fechas) ---
+    // filtro_fechas.js administra el popover y guarda el estado aplicado (desde/
+    // hasta en ISO) en los data-* del contenedor, que es lo unico que lee buscar().
+    const fechas = document.getElementById('filtro-fechas');
 
     // Devuelve el tipo filtrado (cobros/pagos) o '' si no hay ninguno activo (= todas)
     const tipoActivo = () => {
@@ -294,164 +284,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ---------------------------------------------------------------------------
-    // Filtro por fecha
+    // Filtro por fecha (componente compartido)
     // ---------------------------------------------------------------------------
-    if (fechas && fechasTrigger && fechasPop) {
-        // Formatea una fecha ISO (yyyy-mm-dd) a dd/mm/yyyy o dd/mm (version corta).
-        const fmt = (iso) => {
-            const [y, m, d] = iso.split('-');
-            return `${d}/${m}/${y}`;
-        };
-        const fmtCorto = (iso) => {
-            const [, m, d] = iso.split('-');
-            return `${d}/${m}`;
-        };
-
-        // Mismo criterio de etiqueta que el server (views.deudores): un solo dia,
-        // rango cerrado, o rango abierto con un unico extremo.
-        const armarLabel = (desde, hasta) => {
-            if (desde && hasta && desde === hasta) return fmt(desde);
-            if (desde && hasta) return `${fmtCorto(desde)} – ${fmt(hasta)}`;
-            if (desde) return `Desde ${fmt(desde)}`;
-            if (hasta) return `Hasta ${fmt(hasta)}`;
-            return 'Fechas';
-        };
-
-        const modoActivo = () => {
-            const opt = fechasPop.querySelector('.deu-seg__opt.is-active');
-            return opt ? opt.dataset.modo : 'dia';
-        };
-
-        const setModo = (modo) => {
-            segOpts.forEach((o) => o.classList.toggle('is-active', o.dataset.modo === modo));
-            fechasPop.querySelectorAll('.deu-fechas__panel').forEach((p) => {
-                p.hidden = p.dataset.panel !== modo;
-            });
-        };
-
-        // Crea o quita la "x" para limpiar dentro del chip segun haya filtro activo.
-        const actualizarClear = (activo) => {
-            let clearEl = fechasTrigger.querySelector('.deu-fechas__clear');
-            if (activo && !clearEl) {
-                clearEl = document.createElement('span');
-                clearEl.className = 'material-symbols-outlined deu-fechas__clear';
-                clearEl.id = 'deu-fechas-clear';
-                clearEl.setAttribute('role', 'button');
-                clearEl.setAttribute('tabindex', '0');
-                clearEl.setAttribute('aria-label', 'Quitar filtro de fechas');
-                clearEl.textContent = 'close';
-                fechasTrigger.appendChild(clearEl);
-            } else if (!activo && clearEl) {
-                clearEl.remove();
-            }
-        };
-
-        // Vuelca el estado aplicado al chip (label, activo, boton de limpiar) y a los
-        // data-* que lee buscar().
-        const setEstado = (desde, hasta) => {
-            fechas.dataset.desde = desde || '';
-            fechas.dataset.hasta = hasta || '';
-            const activo = Boolean(desde || hasta);
-            fechasLabel.textContent = armarLabel(desde, hasta);
-            fechasTrigger.classList.toggle('is-active', activo);
-            actualizarClear(activo);
-        };
-
-        const abrirPop = () => {
-            fechasPop.hidden = false;
-            fechasTrigger.setAttribute('aria-expanded', 'true');
-        };
-        const cerrarPop = () => {
-            fechasPop.hidden = true;
-            fechasTrigger.setAttribute('aria-expanded', 'false');
-        };
-        const togglePop = () => (fechasPop.hidden ? abrirPop() : cerrarPop());
-
-        const aplicar = () => {
-            let desde = '';
-            let hasta = '';
-            if (modoActivo() === 'dia') {
-                desde = inputDia.value;
-                hasta = inputDia.value;
-            } else {
-                desde = inputDesde.value;
-                hasta = inputHasta.value;
-            }
-            // Normalizo el rango invertido para que el label coincida con lo que
-            // devuelve el server (que tambien lo normaliza).
-            if (desde && hasta && desde > hasta) {
-                [desde, hasta] = [hasta, desde];
-            }
-            setEstado(desde, hasta);
-            cerrarPop();
-            buscar();
-        };
-
-        const limpiar = () => {
-            if (inputDia) inputDia.value = '';
-            if (inputDesde) inputDesde.value = '';
-            if (inputHasta) inputHasta.value = '';
-            setEstado('', '');
-            cerrarPop();
-            buscar();
-        };
-
-        // Rehidrato el popover con el estado que vino del server: infiero el modo a
-        // partir de si las dos fechas coinciden (un dia) o no (rango).
-        const dIni = fechas.dataset.desde;
-        const hIni = fechas.dataset.hasta;
-        if (dIni && hIni && dIni === hIni) {
-            setModo('dia');
-            if (inputDia) inputDia.value = dIni;
-        } else if (dIni || hIni) {
-            setModo('rango');
-            if (inputDesde) inputDesde.value = dIni;
-            if (inputHasta) inputHasta.value = hIni;
-        } else {
-            setModo('dia');
-        }
-
-        // El chip abre/cierra el popover; si el click cae en la "x", limpia en su lugar
-        // (la "x" vive dentro del boton, asi que un solo handler cubre ambos casos).
-        fechasTrigger.addEventListener('click', (e) => {
-            if (e.target.closest('.deu-fechas__clear')) {
-                e.stopPropagation();
-                limpiar();
-                return;
-            }
-            togglePop();
-        });
-
-        segOpts.forEach((opt) => {
-            opt.addEventListener('click', () => setModo(opt.dataset.modo));
-        });
-
-        if (btnAplicar) btnAplicar.addEventListener('click', aplicar);
-        if (btnLimpiar) btnLimpiar.addEventListener('click', limpiar);
-
-        // Enter dentro de cualquier input del popover aplica.
-        fechasPop.querySelectorAll('.deu-campo__input').forEach((inp) => {
-            inp.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    aplicar();
-                }
-            });
-        });
-
-        // Cierro al hacer click fuera del filtro o con Escape.
-        document.addEventListener('click', (e) => {
-            if (!fechasPop.hidden && !fechas.contains(e.target)) {
-                cerrarPop();
-            }
-        });
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && !fechasPop.hidden) {
-                cerrarPop();
-                fechasTrigger.focus();
-            }
-        });
-    }
+    // filtro_fechas.js administra el popover y avisa con 'filtrofechas:cambio' al
+    // aplicar o limpiar; aca lo traducimos a la busqueda AJAX. El estado (desde/
+    // hasta) ya vive en los data-* de #filtro-fechas, que buscar() lee.
+    document.addEventListener('filtrofechas:cambio', () => buscar());
 
     vincularPaginacion();
 });

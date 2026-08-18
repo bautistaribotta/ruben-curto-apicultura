@@ -146,7 +146,7 @@
         o limpiar, informacion_empresa_cheques.js recarga preservando el estado en la
         URL. Cada cheque cae en el rango por su fecha de cobro, igual que el listado.
       {% endcomment %}
-      {% include 'filtro_fechas.html' %}
+      {% include 'filtro_fechas.html' with modos="dia,mes,rango" %}
     </header>
 
     <div class="contenedor-tabla">

@@ -8,6 +8,7 @@
 {% block links %}
   <link rel="stylesheet" href="{% static 'deudores.css' %}">
   <link rel="stylesheet" href="{% static 'selector_entidad.css' %}">
+  <link rel="stylesheet" href="{% static 'filtro_fechas.css' %}">
 {% endblock %}
 
 {% block cabecera %}
@@ -87,53 +88,12 @@
           </button>
         </div>
         {% comment %}
-          Filtro por fecha de la operacion. El chip abre un popover que alterna entre
-          un solo dia y un rango; el estado aplicado (desde/hasta en ISO) viaja en
-          data-* para que el JS rehidrate inputs y modo al cargar.
+          Filtro por fecha de la operacion (componente compartido: chip + popover con
+          modos dia / mes / rango). El estado aplicado (desde/hasta en ISO) viaja en
+          data-* de #filtro-fechas; filtro_fechas.js administra el popover y avisa con
+          'filtrofechas:cambio', que deudores.js engancha a la busqueda AJAX.
         {% endcomment %}
-        <div class="deu-fechas" id="deu-fechas" data-desde="{{ desde }}" data-hasta="{{ hasta }}">
-          <button type="button"
-                  class="prod-chip deu-fechas__trigger {% if desde or hasta %}is-active{% endif %}"
-                  id="deu-fechas-trigger" aria-haspopup="dialog" aria-expanded="false">
-            <span class="material-symbols-outlined">calendar_month</span>
-            <span class="deu-fechas__label" id="deu-fechas-label">{{ fecha_label }}</span>
-            {% if desde or hasta %}
-              <span class="material-symbols-outlined deu-fechas__clear" id="deu-fechas-clear"
-                    role="button" tabindex="0" aria-label="Quitar filtro de fechas">close</span>
-            {% endif %}
-          </button>
-
-          <div class="deu-fechas__pop" id="deu-fechas-pop" role="dialog"
-               aria-label="Filtrar por fecha" hidden>
-            <div class="deu-seg" role="tablist" aria-label="Tipo de filtro">
-              <button type="button" class="deu-seg__opt is-active" data-modo="dia" role="tab">Un día</button>
-              <button type="button" class="deu-seg__opt" data-modo="rango" role="tab">Rango</button>
-            </div>
-
-            <div class="deu-fechas__panel" data-panel="dia">
-              <label class="deu-campo">
-                <span class="deu-campo__lbl">Fecha</span>
-                <input type="date" class="deu-campo__input" id="deu-fechas-dia">
-              </label>
-            </div>
-
-            <div class="deu-fechas__panel" data-panel="rango" hidden>
-              <label class="deu-campo">
-                <span class="deu-campo__lbl">Desde</span>
-                <input type="date" class="deu-campo__input" id="deu-fechas-desde">
-              </label>
-              <label class="deu-campo">
-                <span class="deu-campo__lbl">Hasta</span>
-                <input type="date" class="deu-campo__input" id="deu-fechas-hasta">
-              </label>
-            </div>
-
-            <div class="deu-fechas__acciones">
-              <button type="button" class="deu-fechas__btn deu-fechas__btn--aplicar" id="deu-fechas-aplicar">Aplicar</button>
-              <button type="button" class="deu-fechas__btn deu-fechas__btn--ghost" id="deu-fechas-limpiar">Limpiar</button>
-            </div>
-          </div>
-        </div>
+        {% include 'filtro_fechas.html' with modos="dia,mes,rango" %}
       </div>
       <div class="prod-chips prod-chips--tipo" id="chips-tipo" role="group" aria-label="Ver el saldo, los cobros o los pagos">
         <button type="button" class="prod-chip prod-chip--saldo {% if tipo != 'cobros' and tipo != 'pagos' %}is-active{% endif %}" data-tipo=""
@@ -172,5 +132,6 @@
 
 {% block codigo-javascript %}
   <script src="{% static 'js/selector_entidad.js' %}"></script>
+  <script src="{% static 'js/filtro_fechas.js' %}"></script>
   <script src="{% static 'js/deudores.js' %}"></script>
 {% endblock %}

@@ -117,13 +117,38 @@ def _volver_estacion_url(request):
     return ""
 
 
+def _etiqueta_rango(desde, hasta):
+    """Texto del chip de fechas para un rango ya normalizado (desde/hasta date o None).
+
+    Un mes entero (del 1 al ultimo dia del mismo mes) se nombra por su mes y año
+    ("Julio 2026"), que es lo que arma el modo "mes" del popover; si no, cae en un
+    solo dia, un rango cerrado o un rango abierto con un unico extremo. Es la unica
+    fuente del texto del chip, compartida por todas las vistas que filtran por fecha.
+    """
+    if (desde and hasta and desde.day == 1
+            and (desde.year, desde.month) == (hasta.year, hasta.month)
+            and hasta + timedelta(days=1) == mes_desplazado(desde, 1)):
+        return date_format(desde, "F Y").capitalize()
+    if desde and hasta and desde == hasta:
+        return desde.strftime("%d/%m/%Y")
+    if desde and hasta:
+        return f"{desde.strftime('%d/%m')} – {hasta.strftime('%d/%m/%Y')}"
+    if desde:
+        return f"Desde {desde.strftime('%d/%m/%Y')}"
+    if hasta:
+        return f"Hasta {hasta.strftime('%d/%m/%Y')}"
+    return "Fechas"
+
+
 def _rango_fechas(request):
-    """Lee y normaliza el rango de fechas del filtro (chip + popover) reutilizado
-    en las vistas de viajes. Reciclado de la logica del filtro de Deudas.
+    """Lee y normaliza el rango de fechas del filtro (chip + popover) reutilizado en
+    varias vistas (viajes, estacion, alquileres, cheques, deudas).
 
     Devuelve (desde, hasta, ctx) donde desde/hasta son date o None (ya listos para
     filtrar el queryset) y ctx trae desde/hasta en ISO y fecha_label para la
-    plantilla (rellenan el popover y pintan el chip ya al cargar la pagina).
+    plantilla (rellenan el popover y pintan el chip ya al cargar la pagina). El
+    popover ofrece los modos dia / mes / rango; los tres terminan en un desde y un
+    hasta, asi que el mes entero se reconoce por sus extremos (ver _etiqueta_rango).
     """
     desde = parse_date(request.GET.get("desde", ""))
     hasta = parse_date(request.GET.get("hasta", ""))
@@ -131,43 +156,11 @@ def _rango_fechas(request):
     if desde and hasta and desde > hasta:
         desde, hasta = hasta, desde
 
-    if desde and hasta and desde == hasta:
-        fecha_label = desde.strftime("%d/%m/%Y")
-    elif desde and hasta:
-        fecha_label = f"{desde.strftime('%d/%m')} – {hasta.strftime('%d/%m/%Y')}"
-    elif desde:
-        fecha_label = f"Desde {desde.strftime('%d/%m/%Y')}"
-    elif hasta:
-        fecha_label = f"Hasta {hasta.strftime('%d/%m/%Y')}"
-    else:
-        fecha_label = "Fechas"
-
     ctx = {
         "desde": desde.isoformat() if desde else "",
         "hasta": hasta.isoformat() if hasta else "",
-        "fecha_label": fecha_label,
+        "fecha_label": _etiqueta_rango(desde, hasta),
     }
-    return desde, hasta, ctx
-
-
-def _rango_gastos(request):
-    """Igual que _rango_fechas pero etiquetando el mes entero por su nombre.
-
-    Los gastos de una casa se miran casi siempre de a un mes, y ahi "Julio 2026"
-    se lee mejor que "01/07 – 31/07/2026". Como el popover manda el mes expandido
-    a sus dos extremos, el mes entero se reconoce por las fechas y no hace falta
-    ningun parametro nuevo.
-
-    Va aparte y no dentro de _rango_fechas para no cambiarle la etiqueta a
-    deudores y a viajes, que no ofrecen el modo mes.
-    """
-    desde, hasta, ctx = _rango_fechas(request)
-
-    if (desde and hasta and desde.day == 1
-            and (desde.year, desde.month) == (hasta.year, hasta.month)
-            and hasta + timedelta(days=1) == mes_desplazado(desde, 1)):
-        ctx["fecha_label"] = date_format(desde, "F Y").capitalize()
-
     return desde, hasta, ctx
 
 
@@ -1848,19 +1841,10 @@ def deudores(request):
         total_miel = _total_equiv(filas_tarjetas, "kg_miel")
         total_cera = _total_equiv(filas_tarjetas, "kg_cera")
 
-    # Texto del chip de fechas: un solo dia (desde == hasta), rango cerrado, o
-    # rango abierto con un solo extremo. Se calcula en el server para que el chip
-    # ya se pinte correcto al cargar, sin depender del JS.
-    if desde and hasta and desde == hasta:
-        fecha_label = desde.strftime("%d/%m/%Y")
-    elif desde and hasta:
-        fecha_label = f"{desde.strftime('%d/%m')} – {hasta.strftime('%d/%m/%Y')}"
-    elif desde:
-        fecha_label = f"Desde {desde.strftime('%d/%m/%Y')}"
-    elif hasta:
-        fecha_label = f"Hasta {hasta.strftime('%d/%m/%Y')}"
-    else:
-        fecha_label = "Fechas"
+    # Texto del chip de fechas (mismo helper que el resto de las vistas): mes entero
+    # por su nombre, un solo dia, rango cerrado o abierto. Se calcula en el server
+    # para que el chip ya se pinte correcto al cargar, sin depender del JS.
+    fecha_label = _etiqueta_rango(desde, hasta)
 
     # Las deudas se ordenan siempre de la más antigua a la más nueva
     lista_deudores.sort(key=lambda d: d["dias"], reverse=True)
@@ -2124,7 +2108,7 @@ def informacion_alquileres(request, id_casa):
     # El rango solo recorta los gastos; el contrato y el historial no dependen
     # de ningun periodo. Viaja en la URL, asi que el filtro sobrevive al POST de
     # cualquier accion y se puede compartir el enlace ya filtrado.
-    desde, hasta, ctx_fechas = _rango_gastos(request)
+    desde, hasta, ctx_fechas = _rango_fechas(request)
 
     contexto = obtener_detalle_alquiler(id_casa, desde, hasta)
     contexto.update(ctx_fechas)

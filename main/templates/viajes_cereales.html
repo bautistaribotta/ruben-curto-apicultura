@@ -63,7 +63,7 @@
         {% include "chip_filtro_entidad.html" with chip_id="chip-vehiculo" param="vehiculo" modal_id="selector-vehiculo-cereal" icono="local_shipping" etiqueta="Vehículo" valor_id=vehiculo valor_nombre=vehiculo_nombre %}
         {% include "chip_filtro_entidad.html" with chip_id="chip-destino" param="destino" modal_id="selector-destino-cereal" icono="location_on" etiqueta="Destino" valor_id=destino valor_nombre=destino_nombre %}
       </div>
-      {% include 'filtro_fechas.html' %}
+      {% include 'filtro_fechas.html' with modos="dia,mes,rango" %}
     </div>
 
     <!-- Flota se llega desde la barra lateral, como sub-item de esta seccion -->
