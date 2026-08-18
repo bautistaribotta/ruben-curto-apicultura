@@ -19,6 +19,7 @@
   <link rel="stylesheet" href="{% static_v 'iva.css' %}">
   <link rel="stylesheet" href="{% static_v 'informacion_empresa.css' %}">
   <link rel="stylesheet" href="{% static_v 'pago_viaje.css' %}">
+  <link rel="stylesheet" href="{% static_v 'filtro_fechas.css' %}">
   <link rel="stylesheet" href="{% static_v 'cheques.css' %}">
 {% endblock %}
 
@@ -140,6 +141,12 @@
         <span class="material-symbols-outlined">receipt_long</span>
         <h3>Cheques a pagar</h3>
       </div>
+      {% comment %}
+        Filtro por fecha de cobro (chip + popover, reutilizado de deudas). Al aplicar
+        o limpiar, informacion_empresa_cheques.js recarga preservando el estado en la
+        URL. Cada cheque cae en el rango por su fecha de cobro, igual que el listado.
+      {% endcomment %}
+      {% include 'filtro_fechas.html' %}
     </header>
 
     <div class="contenedor-tabla">
@@ -198,8 +205,13 @@
             <td colspan="6">
               <div class="estado-vacio">
                 <span class="material-symbols-outlined">receipt_long</span>
-                <h4>Sin cheques</h4>
-                <p>Cargá un cheque a pagar para empezar.</p>
+                {% if desde or hasta %}
+                  <h4>Sin cheques en el rango</h4>
+                  <p>No hay cheques con fecha de cobro en el período elegido.</p>
+                {% else %}
+                  <h4>Sin cheques</h4>
+                  <p>Cargá un cheque a pagar para empezar.</p>
+                {% endif %}
               </div>
             </td>
           </tr>
@@ -215,7 +227,7 @@
         </div>
         <div class="paginacion-botones">
           {% if page_obj.has_previous %}
-            <a href="?page={{ page_obj.previous_page_number }}">
+            <a href="?page={{ page_obj.previous_page_number }}{% if desde %}&desde={{ desde }}{% endif %}{% if hasta %}&hasta={{ hasta }}{% endif %}">
               <button class="boton-paginacion">Anterior</button>
             </a>
           {% else %}
@@ -223,7 +235,7 @@
           {% endif %}
 
           {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}">
+            <a href="?page={{ page_obj.next_page_number }}{% if desde %}&desde={{ desde }}{% endif %}{% if hasta %}&hasta={{ hasta }}{% endif %}">
               <button class="boton-paginacion">Siguiente</button>
             </a>
           {% else %}
@@ -549,5 +561,6 @@
 
 {% block codigo-javascript %}
 <script src="{% static_v 'js/pago_viaje.js' %}"></script>
+<script src="{% static_v 'js/filtro_fechas.js' %}"></script>
 <script src="{% static_v 'js/informacion_empresa_cheques.js' %}"></script>
 {% endblock %}

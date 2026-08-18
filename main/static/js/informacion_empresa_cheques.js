@@ -478,6 +478,21 @@ document.getElementById('cheque-fecha-cobro')?.addEventListener('input', () => {
 
 document.getElementById('cheque-concepto')?.addEventListener('input', actualizarContadorConcepto);
 
+// El filtro de fechas es agnostico: dispara 'filtrofechas:cambio' y aca lo
+// traducimos a una recarga server-side, volviendo a la primera pagina. El estado
+// aplicado (desde/hasta) ya vive en los data-* del contenedor #filtro-fechas.
+document.addEventListener('filtrofechas:cambio', () => {
+  const cont = document.getElementById('filtro-fechas');
+  if (!cont) return;
+  const params = new URLSearchParams(window.location.search);
+  if (cont.dataset.desde) params.set('desde', cont.dataset.desde);
+  else params.delete('desde');
+  if (cont.dataset.hasta) params.set('hasta', cont.dataset.hasta);
+  else params.delete('hasta');
+  params.delete('page');
+  window.location.search = params.toString();
+});
+
 // Accesibles desde los onclick del HTML
 window.prepararNuevoCheque = prepararNuevoCheque;
 window.prepararEditarCheque = prepararEditarCheque;
