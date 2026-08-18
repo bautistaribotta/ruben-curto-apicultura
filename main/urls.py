@@ -12,7 +12,8 @@ from main.views import (login, inicio, actualizar_cotizacion_ajax,
                         informacion_alquileres, obtener_estacion_json,
                         informacion_estacion, obtener_carga_json, iva,
                         informacion_empresa, obtener_empresa_json, obtener_operacion_iva_json,
-                        cheques, informacion_empresa_cheques, bancos, obtener_cheque_json)
+                        cheques, informacion_empresa_cheques, bancos, obtener_cheque_json,
+                        marcar_cobrado_cheque_ajax)
 
 """
 La sentencia name="nombre_del_archivo" se usa 
@@ -64,6 +65,7 @@ urlpatterns = [
          name="informacion_empresa_cheques"),
     path('bancos/', bancos, name="bancos"),
     path('api/cheques/<int:id_cheque>/', obtener_cheque_json, name="obtener_cheque_json"),
+    path('api/cheques/<int:id_cheque>/cobrado/', marcar_cobrado_cheque_ajax, name="marcar_cobrado_cheque"),
     path('mercado_libre/', mercado_libre, name="mercado_libre"),
     path('destinos_reparto/', destinos_reparto, name="destinos_reparto"),
     path('informacion_viaje_reparto/<int:id_viaje_reparto>/', informacion_viaje_reparto, name="informacion_viaje_reparto"),

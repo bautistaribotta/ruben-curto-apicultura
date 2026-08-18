@@ -71,7 +71,7 @@ from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo
                        obtener_cuentas_corrientes, crear_cuenta_corriente, editar_cuenta_corriente,
                        eliminar_cuenta_corriente, obtener_datos_cuenta_corriente,
                        obtener_cheques, crear_cheque, editar_cheque, eliminar_cheque, obtener_datos_cheque,
-                       obtener_empresas_con_cheques, obtener_totales_cheques)
+                       marcar_cobrado_cheque, obtener_empresas_con_cheques, obtener_totales_cheques)
 
 
 def _pagado_del_formulario(request):
@@ -2542,11 +2542,11 @@ def informacion_empresa_cheques(request, id_empresa):
                 eliminar_cuenta_corriente(p.get("id_registro"))
                 messages.success(request, "Cuenta corriente eliminada.")
             elif accion == "nuevo_cheque":
-                crear_cheque(p.get("id_cuenta_corriente"), p.get("fecha_emision"),
+                crear_cheque(p.get("id_cuenta_corriente"), p.get("numero"), p.get("fecha_emision"),
                              p.get("fecha_cobro"), p.get("concepto"), p.get("importe"))
                 messages.success(request, "Cheque agregado correctamente.")
             elif accion == "editar_cheque":
-                editar_cheque(p.get("id_registro"), p.get("id_cuenta_corriente"),
+                editar_cheque(p.get("id_registro"), p.get("id_cuenta_corriente"), p.get("numero"),
                               p.get("fecha_emision"), p.get("fecha_cobro"), p.get("concepto"), p.get("importe"))
                 messages.success(request, "Cheque actualizado correctamente.")
             elif accion == "eliminar_cheque":
@@ -2607,6 +2607,31 @@ def obtener_cheque_json(request, id_cheque):
     if datos:
         return JsonResponse(datos)
     return JsonResponse({"Error": "Cheque no encontrado"}, status=404)
+
+
+@staff_required
+def marcar_cobrado_cheque_ajax(request, id_cheque):
+    """Casilla de cobrado de la tabla de cheques: alterna 'cobrado' sin recargar.
+
+    Como el cobrado saca al cheque del total a pagar, la respuesta trae los saldos
+    ya recalculados (empresa y cuenta) para que la vista los actualice sin refrescar.
+    Devuelve 'pagado' ademas de 'cobrado' para reutilizar pago_viaje.js tal cual.
+    """
+    if request.method != "POST":
+        return JsonResponse({"error": "Método no permitido"}, status=405)
+
+    cheque = marcar_cobrado_cheque(id_cheque, request.POST.get("pagado") == "1")
+    cuenta = cheque.cuenta_corriente
+    mensaje = "Cheque marcado como cobrado." if cheque.cobrado else "Cheque marcado como no cobrado."
+    return JsonResponse({
+        "ok": True,
+        "pagado": cheque.cobrado,
+        "cobrado": cheque.cobrado,
+        "mensaje": mensaje,
+        "id_cuenta": cuenta.id,
+        "total_empresa_txt": floatformat(cuenta.empresa.cheques_a_pagar, "2g"),
+        "total_cuenta_txt": floatformat(cuenta.cheques_a_pagar, "2g"),
+    })
 
 
 @login_required

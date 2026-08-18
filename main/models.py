@@ -1408,7 +1408,7 @@ class EmpresaQuerySet(models.QuerySet):
         """
         a_pagar = (
             Cheque.objects.filter(cuenta_corriente__empresa=OuterRef("pk"),
-                                  cuenta_corriente__activa=True)
+                                  cuenta_corriente__activa=True, cobrado=False)
             .values("cuenta_corriente__empresa")
             .annotate(total=Sum("importe"))
             .values("total")
@@ -1499,7 +1499,8 @@ class Empresa(models.Model):
         if hasattr(self, "_cheques_a_pagar_anotado"):
             return self._cheques_a_pagar_anotado or Decimal("0")
         total = (Cheque.objects.filter(cuenta_corriente__empresa=self,
-                                       cuenta_corriente__activa=True).aggregate(t=Sum("importe"))["t"])
+                                       cuenta_corriente__activa=True,
+                                       cobrado=False).aggregate(t=Sum("importe"))["t"])
         return total or Decimal("0")
 
     def __str__(self):
@@ -1591,7 +1592,7 @@ class CuentaCorrienteQuerySet(models.QuerySet):
         EmpresaQuerySet.con_totales_cheques() pero al nivel de la cuenta.
         """
         a_pagar = (
-            Cheque.objects.filter(cuenta_corriente=OuterRef("pk"))
+            Cheque.objects.filter(cuenta_corriente=OuterRef("pk"), cobrado=False)
             .values("cuenta_corriente")
             .annotate(total=Sum("importe"))
             .values("total")
@@ -1635,7 +1636,7 @@ class CuentaCorriente(models.Model):
         """Total a pagar en cheques de esta cuenta corriente."""
         if hasattr(self, "_a_pagar_anotado"):
             return self._a_pagar_anotado or Decimal("0")
-        total = self.cheques.aggregate(t=Sum("importe"))["t"]
+        total = self.cheques.filter(cobrado=False).aggregate(t=Sum("importe"))["t"]
         return total or Decimal("0")
 
     def __str__(self):
@@ -1652,11 +1653,18 @@ class Cheque(models.Model):
     El cheque vence 30 dias despues de su fecha de cobro: pasado ese plazo ya no se
     puede cobrar (ver vencido). El plazo de 30/60/90 dias es solo una ayuda del alta
     para calcular la fecha de cobro; lo que se guarda es la fecha, no el plazo.
+
+    'cobrado' marca que la plata ya salio: un cheque cobrado deja de contar en el
+    total a pagar de la cuenta y de la empresa (esos totales suman solo los
+    pendientes, cobrado=False).
     """
     DIAS_VENCIMIENTO = 30
 
     cuenta_corriente = models.ForeignKey(CuentaCorriente, on_delete=models.CASCADE, related_name="cheques",
                                          db_column="id_cuenta_corriente")
+    # Numero impreso del cheque. Texto y no entero: puede tener ceros a la izquierda
+    # que hay que conservar. default="" para los cheques ya cargados sin numero.
+    numero = models.CharField(max_length=20, default="")
     # default y no auto_now_add: la fecha que vale es la del cheque, no la de la carga
     fecha_emision = models.DateField(default=timezone.localdate)
     fecha_cobro = models.DateField()
@@ -1664,6 +1672,8 @@ class Cheque(models.Model):
     concepto = models.CharField(max_length=250)
     # Importe en pesos
     importe = models.DecimalField(max_digits=15, decimal_places=2)
+    # La plata ya salio: no cuenta mas en el total a pagar (pendientes)
+    cobrado = models.BooleanField(default=False)
 
     class Meta:
         db_table = "cheques"
