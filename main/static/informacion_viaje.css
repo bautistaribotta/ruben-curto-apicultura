@@ -278,6 +278,13 @@ html {
   border-bottom: 1px solid var(--border-subtle);
 }
 
+/* Las filas de venta/compra van a la misma altura que las de gasto y las de
+   transferencia (.vd-gasto, 0.5rem), no al padding mas alto del resto de la caja. */
+.vd-caja__row--op {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
 .vd-caja__k {
   display: inline-flex;
   align-items: center;
