@@ -71,7 +71,8 @@ from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo
                        obtener_cuentas_corrientes, crear_cuenta_corriente, editar_cuenta_corriente,
                        eliminar_cuenta_corriente, obtener_datos_cuenta_corriente,
                        obtener_cheques, crear_cheque, editar_cheque, eliminar_cheque, obtener_datos_cheque,
-                       marcar_cobrado_cheque, obtener_empresas_con_cheques, obtener_totales_cheques)
+                       marcar_cobrado_cheque, obtener_empresas_con_cheques, obtener_totales_cheques,
+                       obtener_empresas_para_selector_cheques)
 
 
 def _pagado_del_formulario(request):
@@ -2475,14 +2476,74 @@ def informacion_empresa(request, id_empresa):
 #  CHEQUES
 # ==========================================================================
 
+def _url_cheques(empresa_id, **params):
+    """Query string del listado de cheques preservando la empresa elegida.
+
+    Las flechas y el toggle Mes/Año cambian el periodo pero no deben perder el
+    filtro de empresa de la pildora, asi que este helper lo reinyecta en cada URL.
+    """
+    partes = []
+    if empresa_id:
+        partes.append(f"empresa={empresa_id}")
+    partes += [f"{clave}={valor}" for clave, valor in params.items()]
+    return "?" + "&".join(partes)
+
+
+def _contexto_totales_cheques(request, empresa_id=""):
+    """Contexto de la banda de totales de cheques (todas las empresas juntas).
+
+    A diferencia de IVA, arranca en el MES en curso: los cheques son flujo mensual
+    (fecha de cobro, vencimiento a 30 dias). ?mes=YYYY-MM fija un mes puntual y
+    ?anio=YYYY totaliza el anio entero. Devuelve tambien el (anio, mes) del periodo
+    para que la vista arme las cifras y las tarjetas. Cada cheque cae en el periodo
+    por su fecha de cobro.
+    """
+    hoy = periodo_actual()
+
+    # --- Modo anio: ?anio=YYYY (explicito, sin ?mes) ---
+    if request.GET.get("anio") and not request.GET.get("mes"):
+        try:
+            anio = int(request.GET.get("anio"))
+        except (TypeError, ValueError):
+            anio = hoy.year
+        if not (2000 <= anio <= 2100):
+            anio = hoy.year
+        # El toggle "Mes" cae en el mes en curso si es el anio actual; si no, enero
+        mes_destino = hoy.month if anio == hoy.year else 1
+        ctx = {
+            "cheque_modo": "anio",
+            "cheque_anio": anio,
+            "cheque_url_anterior": _url_cheques(empresa_id, anio=anio - 1),
+            "cheque_url_siguiente": _url_cheques(empresa_id, anio=anio + 1),
+            "cheque_url_mes": _url_cheques(empresa_id, mes=f"{anio}-{mes_destino:02d}"),
+            "cheque_url_anio": _url_cheques(empresa_id, anio=anio),
+        }
+        return ctx, anio, None
+
+    # --- Modo mes (default): ?mes=YYYY-MM o el mes en curso ---
+    periodo = resolver_periodo(request.GET.get("mes"))
+    anterior = mes_desplazado(periodo, -1)
+    siguiente = mes_desplazado(periodo, 1)
+    ctx = {
+        "cheque_modo": "mes",
+        "cheque_periodo": periodo,
+        "cheque_url_anterior": _url_cheques(empresa_id, mes=f"{anterior:%Y-%m}"),
+        "cheque_url_siguiente": _url_cheques(empresa_id, mes=f"{siguiente:%Y-%m}"),
+        "cheque_url_mes": _url_cheques(empresa_id, mes=f"{periodo:%Y-%m}"),
+        "cheque_url_anio": _url_cheques(empresa_id, anio=periodo.year),
+    }
+    return ctx, periodo.year, periodo.month
+
+
 @staff_required
 def cheques(request):
-    """Listado de empresas/sociedades con su total a pagar en cheques.
+    """Listado de empresas/sociedades con su total a pagar en cheques del periodo.
 
-    Espejo de la vista iva: tarjetas por empresa, buscador client-side y un POST que
-    rutea por 'accion' hacia el alta/edicion de la empresa (compartida con IVA). La
-    baja de empresa no se ofrece aca: se hace desde IVA para no ocultarla de ambas
-    secciones sin querer.
+    Espejo de la vista iva: tarjetas por empresa y un POST que rutea por 'accion'
+    hacia el alta/edicion de la empresa (compartida con IVA). La banda navega el
+    periodo (Mes/Año, arrancando en el mes en curso) y una pildora filtra por
+    empresa; cada cheque cae en el periodo por su fecha de cobro. La baja de empresa
+    no se ofrece aca: se hace desde IVA para no ocultarla de ambas secciones.
     """
     if request.method == "POST":
         accion = request.POST.get("accion")
@@ -2505,10 +2566,29 @@ def cheques(request):
 
         return redirect("cheques")
 
+    # Empresa elegida en la pildora (filtra la grilla). Un id invalido se ignora
+    # para no dejar el filtro pegado sobre una empresa inexistente o dada de baja.
+    empresa_id = request.GET.get("empresa") or ""
+    empresa_sel = None
+    if empresa_id:
+        empresa_sel = Empresa.objects.filter(activa=True, id=empresa_id).first()
+        if empresa_sel is None:
+            empresa_id = ""
+
+    ctx_periodo, anio, mes = _contexto_totales_cheques(request, empresa_id)
+
+    empresas = obtener_empresas_con_cheques(anio, mes)
+    if empresa_sel:
+        empresas = empresas.filter(id=empresa_sel.id)
+
     contexto = {
-        "empresas": obtener_empresas_con_cheques(),
-        "totales": obtener_totales_cheques(),
+        "empresas": empresas,
+        "totales": obtener_totales_cheques(anio, mes),
+        "empresas_selector": obtener_empresas_para_selector_cheques(),
+        "empresa_filtro": empresa_id,
+        "empresa_filtro_nombre": empresa_sel.nombre if empresa_sel else "",
     }
+    contexto.update(ctx_periodo)
     return render(request, "cheques.html", contexto)
 
 

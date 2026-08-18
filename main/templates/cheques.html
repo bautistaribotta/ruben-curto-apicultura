@@ -19,6 +19,7 @@
 
 {% block links %}
   <link rel="stylesheet" href="{% static 'iva.css' %}">
+  <link rel="stylesheet" href="{% static 'selector_entidad.css' %}">
   <link rel="stylesheet" href="{% static 'cheques.css' %}">
 {% endblock %}
 
@@ -39,15 +40,42 @@
 
   {% comment %}
     Band de totales de cheques: el total a pagar de TODAS las empresas y sociedades
-    juntas. Los cheques son siempre a pagar (la empresa no recibe cheques), asi que
-    hay una sola cifra protagonista, sin saldo neto ni semaforo.
+    juntas EN EL PERIODO. A la izquierda, el periodo navegable con flechas y el
+    toggle Mes / Año (arranca en el mes en curso porque los cheques son flujo
+    mensual; ?mes=YYYY-MM o ?anio=YYYY). Cada cheque cae en el periodo por su fecha
+    de cobro. Los cheques son siempre a pagar, asi que hay una sola cifra
+    protagonista, sin saldo neto ni semaforo.
   {% endcomment %}
   <section class="iva-totales cheque-totales saldo--a_pagar">
     <div class="iva-totales__periodo">
-      <p class="iva-totales__eyebrow">Cheques a pagar de</p>
-      <p class="iva-totales__fecha">
-        <span class="iva-totales__nombre">Todas las empresas</span>
-      </p>
+      <p class="iva-totales__eyebrow">Cheques a pagar de todas las empresas</p>
+
+      <div class="iva-nav">
+        <a class="iva-nav__paso" href="{{ cheque_url_anterior }}"
+           aria-label="{% if cheque_modo == 'mes' %}Mes anterior{% else %}Año anterior{% endif %}">
+          <span class="material-symbols-outlined">chevron_left</span>
+        </a>
+        <p class="iva-totales__fecha">
+          {% if cheque_modo == 'mes' %}
+            <span class="iva-totales__nombre">{{ cheque_periodo|date:"F" }}</span>
+            <span class="iva-totales__anio">{{ cheque_periodo|date:"Y" }}</span>
+          {% else %}
+            <span class="iva-totales__nombre">{{ cheque_anio }}</span>
+          {% endif %}
+        </p>
+        <a class="iva-nav__paso" href="{{ cheque_url_siguiente }}"
+           aria-label="{% if cheque_modo == 'mes' %}Mes siguiente{% else %}Año siguiente{% endif %}">
+          <span class="material-symbols-outlined">chevron_right</span>
+        </a>
+      </div>
+
+      <!-- Granularidad: totalizar por mes o por año -->
+      <div class="iva-granularidad" role="group" aria-label="Ver el total por mes o por año">
+        <a class="iva-granularidad__opcion {% if cheque_modo == 'mes' %}is-active{% endif %}"
+           href="{{ cheque_url_mes }}"{% if cheque_modo == 'mes' %} aria-current="true"{% endif %}>Mes</a>
+        <a class="iva-granularidad__opcion {% if cheque_modo == 'anio' %}is-active{% endif %}"
+           href="{{ cheque_url_anio }}"{% if cheque_modo == 'anio' %} aria-current="true"{% endif %}>Año</a>
+      </div>
     </div>
 
     <div class="iva-totales__cifras">
@@ -58,13 +86,25 @@
     </div>
   </section>
 
-  <!-- Controles superiores: buscador + alta -->
+  <!-- Controles superiores: pildora de empresa + alta -->
   <div class="barra-herramientas">
-    <div class="grupo-busqueda">
-      <div class="contenedor-input-busqueda">
-        <span class="material-symbols-outlined icono-busqueda">search</span>
-        <input type="text" id="buscar-empresa" class="input-busqueda" placeholder="Buscar empresa por nombre">
-      </div>
+    {% comment %}
+      Pildora selectora de empresa (reemplaza al buscador de texto). Abre el modal
+      para elegir de la lista; el estado aplicado (id + nombre) vive en data-* y lo
+      lee cheques.js para recargar preservando el periodo. La "×" limpia el filtro.
+    {% endcomment %}
+    <div class="che-empresa" id="che-empresa"
+         data-filtro-id="{{ empresa_filtro }}" data-filtro-nombre="{{ empresa_filtro_nombre }}">
+      <button type="button"
+              class="che-chip che-empresa__trigger {% if empresa_filtro %}is-active{% endif %}"
+              id="che-empresa-trigger" aria-haspopup="dialog" aria-expanded="false">
+        <span class="material-symbols-outlined">domain</span>
+        <span class="che-empresa__label" id="che-empresa-label">{{ empresa_filtro_nombre|default:"Empresa" }}</span>
+        {% if empresa_filtro %}
+          <span class="material-symbols-outlined che-empresa__clear" id="che-empresa-clear"
+                role="button" tabindex="0" aria-label="Quitar filtro de empresa">close</span>
+        {% endif %}
+      </button>
     </div>
 
     <div class="acciones-herramientas">
@@ -132,13 +172,13 @@
       No hay empresas registradas.
     </div>
     {% endfor %}
-
-    <!-- Sin resultados de busqueda (lo muestra/oculta el JS) -->
-    <div class="iva-vacia" id="iva-sin-resultados" hidden>
-      <span class="material-symbols-outlined">search_off</span>
-      No hay empresas que coincidan con la búsqueda.
-    </div>
   </div>
+
+  {% comment %}
+    Modal selector de empresa (chip -> modal). Lista todas las empresas activas;
+    cheques.js escucha 'selector-entidad:elegir' y recarga con ?empresa=ID.
+  {% endcomment %}
+  {% include "selector_entidad.html" with selector_id="selector-empresa-cheque" icono="domain" titulo="Elegir empresa" descripcion="Filtrá los cheques por la empresa o sociedad que elijas de la lista." placeholder="Buscar por nombre" items=empresas_selector sin_items="No hay empresas registradas." %}
 
 </section>
 
@@ -214,5 +254,6 @@
 {% endblock %}
 
 {% block codigo-javascript %}
+  <script src="{% static 'js/selector_entidad.js' %}"></script>
   <script src="{% static 'js/cheques.js' %}"></script>
 {% endblock %}

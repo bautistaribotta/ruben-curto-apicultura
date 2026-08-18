@@ -17,6 +17,79 @@
   gap: 0.75rem;
 }
 
+/* --- PILDORA DE EMPRESA (chip -> modal selector) ---
+   Reemplaza al buscador de texto. Mismo lenguaje que los chips de deudores: pildora
+   neutra que, al elegir una empresa, toma el pino de marca (is-active) y muestra su
+   nombre con una "×" para limpiar el filtro. Autocontenida para no depender de
+   deudores.css (no se carga en esta vista). */
+.che-empresa {
+  display: inline-flex;
+  min-width: 0;
+}
+
+.che-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  max-width: 18rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-default);
+  background-color: var(--surface-card);
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color var(--dur-normal) var(--ease-standard),
+              color var(--dur-normal) var(--ease-standard),
+              border-color var(--dur-normal) var(--ease-standard);
+}
+
+.che-chip .material-symbols-outlined {
+  font-size: 1.05rem;
+}
+
+.che-chip:hover {
+  background-color: var(--surface-hover);
+  color: var(--text-body);
+}
+
+.che-chip:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.che-chip.is-active {
+  background-color: var(--brand-secondary);
+  color: var(--text-on-inverse);
+  border-color: var(--brand-secondary);
+}
+
+/* El nombre puede ser largo: se acota con puntos suspensivos para no desbordar. */
+.che-empresa__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* La "×" vive dentro del chip activo; target propio, sin abrir el modal (lo frena el JS). */
+.che-empresa__clear {
+  font-size: 1rem;
+  margin-left: 0.1rem;
+  margin-right: -0.2rem;
+  border-radius: var(--radius-pill);
+  opacity: 0.8;
+  transition: opacity var(--dur-fast) var(--ease-standard),
+              background-color var(--dur-fast) var(--ease-standard);
+}
+
+.che-empresa__clear:hover {
+  opacity: 1;
+  background-color: oklch(100% 0 0 / 0.18);
+}
+
 /* --- CUENTAS CORRIENTES: tabla dentro de la ficha --- */
 .bloque-cuentas {
   margin-bottom: 2.5rem;

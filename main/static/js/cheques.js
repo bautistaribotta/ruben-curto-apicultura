@@ -1,33 +1,60 @@
 // =============================================
 //  CHEQUES - EMPRESAS / SOCIEDADES
-//  Buscador client-side sobre las tarjetas y slide-over de alta/edicion de la
-//  empresa (compartida con IVA). Reusa abrirSlideOver / cerrarSlideOver de
-//  paneles.js. La baja de empresa se hace desde IVA, asi que aca no esta.
+//  Pildora selectora de empresa (filtro server-side) y slide-over de alta/edicion
+//  de la empresa (compartida con IVA). Reusa abrirSlideOver / cerrarSlideOver de
+//  paneles.js y el selector modal de selector_entidad.js. La baja de empresa se
+//  hace desde IVA, asi que aca no esta.
 // =============================================
 
-// ---------- BUSQUEDA (filtro por nombre, client-side) ----------
+// ---------- PILDORA DE EMPRESA (filtro server-side) ----------
+// Reemplaza al buscador: al elegir una empresa recargo con ?empresa=ID preservando
+// el periodo (mes/anio) que ya viaja en la URL; la "×" saca ese parametro.
 
-function filtrarEmpresas() {
-    const input = document.getElementById('buscar-empresa');
-    if (!input) return;
+(function () {
+    const contenedor = document.getElementById('che-empresa');
+    const trigger = document.getElementById('che-empresa-trigger');
+    const modal = document.getElementById('selector-empresa-cheque');
+    if (!contenedor || !trigger || !modal) return;
 
-    const termino = input.value.trim().toLowerCase();
-    const tarjetas = document.querySelectorAll('#grilla-iva .tarjeta-empresa');
-    let visibles = 0;
+    function irAEmpresa(id) {
+        const params = new URLSearchParams(window.location.search);
+        if (id) {
+            params.set('empresa', id);
+        } else {
+            params.delete('empresa');
+        }
+        const qs = params.toString();
+        window.location.href = qs ? `?${qs}` : window.location.pathname;
+    }
 
-    tarjetas.forEach((tarjeta) => {
-        const coincide = tarjeta.dataset.nombre.includes(termino);
-        tarjeta.hidden = !coincide;
-        if (coincide) visibles++;
+    trigger.addEventListener('click', (evento) => {
+        // La "×" limpia el filtro sin abrir el modal
+        if (evento.target.closest('.che-empresa__clear')) {
+            evento.stopPropagation();
+            irAEmpresa('');
+            return;
+        }
+        if (typeof abrirSelectorEntidad === 'function') {
+            abrirSelectorEntidad('selector-empresa-cheque');
+        }
     });
 
-    const sinResultados = document.getElementById('iva-sin-resultados');
-    if (sinResultados) {
-        sinResultados.hidden = !(tarjetas.length > 0 && visibles === 0);
+    const limpiar = document.getElementById('che-empresa-clear');
+    if (limpiar) {
+        limpiar.addEventListener('keydown', (evento) => {
+            if (evento.key === 'Enter' || evento.key === ' ') {
+                evento.preventDefault();
+                evento.stopPropagation();
+                irAEmpresa('');
+            }
+        });
     }
-}
 
-document.getElementById('buscar-empresa')?.addEventListener('input', filtrarEmpresas);
+    // El modal avisa la eleccion; recargo con la empresa elegida.
+    modal.addEventListener('selector-entidad:elegir', (evento) => {
+        irAEmpresa(evento.detail.id);
+    });
+})();
 
 // ---------- NAVEGACION A LA FICHA (click en la tarjeta) ----------
 // La tarjeta entera lleva a la ficha de cheques de la empresa, salvo que el click

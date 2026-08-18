@@ -4295,22 +4295,42 @@ def obtener_datos_cheque(id_cheque):
 
 # --- LISTADO Y TOTALES -------------------------------------------------------
 
-def obtener_empresas_con_cheques(q=None):
-    """Empresas activas con su total a pagar en cheques anotado, alfabeticamente."""
-    empresas = Empresa.objects.filter(activa=True).con_totales_cheques()
-    if q:
-        empresas = empresas.filter(filtro_tokens(q, "nombre"))
+def obtener_empresas_con_cheques(anio=None, mes=None):
+    """Empresas activas con su total a pagar en cheques anotado, alfabeticamente.
+
+    El total se acota al periodo (anio/mes) por la fecha de cobro de cada cheque,
+    que es con la que el listado agrupa mes a mes. Sin periodo suma todos los
+    pendientes.
+    """
+    empresas = Empresa.objects.filter(activa=True).con_totales_cheques(anio, mes)
     return empresas.order_by("nombre", "id")
 
 
-def obtener_totales_cheques():
-    """Total a pagar en cheques de TODAS las empresas activas juntas.
+def obtener_empresas_para_selector_cheques():
+    """Items para la pildora de empresa del listado de cheques: todas las activas.
 
-    Suma sobre los cheques de cuentas corrientes activas de empresas activas.
+    Forma que espera selector_entidad (id, principal, busqueda). La lista es fija
+    (no depende del periodo): la pildora deja elegir cualquier empresa activa.
     """
-    a_pagar = (Cheque.objects
-               .filter(cuenta_corriente__empresa__activa=True, cuenta_corriente__activa=True,
-                       cobrado=False)
-               .aggregate(t=Sum("importe"))["t"] or Decimal("0")).quantize(Decimal("0.01"))
+    return [
+        {"id": e.id, "principal": e.nombre, "busqueda": e.nombre.lower()}
+        for e in Empresa.objects.filter(activa=True).order_by("nombre", "id")
+    ]
+
+
+def obtener_totales_cheques(anio=None, mes=None):
+    """Total a pagar en cheques de TODAS las empresas activas juntas, en el periodo.
+
+    Suma sobre los cheques pendientes de cuentas corrientes activas de empresas
+    activas cuya fecha de cobro cae en el periodo (anio/mes). Sin periodo suma
+    todos los pendientes.
+    """
+    qs = Cheque.objects.filter(cuenta_corriente__empresa__activa=True,
+                               cuenta_corriente__activa=True, cobrado=False)
+    if anio:
+        qs = qs.filter(fecha_cobro__year=anio)
+    if mes:
+        qs = qs.filter(fecha_cobro__month=mes)
+    a_pagar = (qs.aggregate(t=Sum("importe"))["t"] or Decimal("0")).quantize(Decimal("0.01"))
 
     return {"a_pagar": a_pagar}

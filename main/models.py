@@ -1399,16 +1399,28 @@ class EmpresaQuerySet(models.QuerySet):
             ),
         )
 
-    def con_totales_cheques(self):
+    def con_totales_cheques(self, anio=None, mes=None):
         """Anota el total de cheques a pagar de cada empresa.
 
         Los cheques son siempre a pagar (plata que sale), asi que el total a pagar
         es todo lo que hay para saldar. Una subquery con Sum sobre los cheques de
         las cuentas activas, igual que con_totales_iva() pero de un solo tipo.
+
+        Con 'anio' (y opcionalmente 'mes') acota a los cheques cuya fecha de cobro
+        cae en ese periodo: es la fecha con la que el listado agrupa mes a mes. Sin
+        periodo suma todos los pendientes, como en la ficha de la empresa.
         """
+        filtros = {
+            "cuenta_corriente__empresa": OuterRef("pk"),
+            "cuenta_corriente__activa": True,
+            "cobrado": False,
+        }
+        if anio:
+            filtros["fecha_cobro__year"] = anio
+        if mes:
+            filtros["fecha_cobro__month"] = mes
         a_pagar = (
-            Cheque.objects.filter(cuenta_corriente__empresa=OuterRef("pk"),
-                                  cuenta_corriente__activa=True, cobrado=False)
+            Cheque.objects.filter(**filtros)
             .values("cuenta_corriente__empresa")
             .annotate(total=Sum("importe"))
             .values("total")
