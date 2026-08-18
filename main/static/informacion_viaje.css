@@ -449,6 +449,18 @@ html {
   color: var(--success-600);
 }
 
+/* Cuando el total restante es negativo, todo el bloque pasa a rojo. */
+.vd-caja__row--total-neg {
+  background-color: var(--danger-50);
+  border-top-color: var(--danger-200);
+}
+
+.vd-caja__row--total-neg .vd-caja__k,
+.vd-caja__row--total-neg .vd-caja__k .material-symbols-outlined,
+.vd-caja__row--total-neg .vd-caja__v {
+  color: var(--danger-600);
+}
+
 /* --- Operaciones: seccion (cabecera y barra fuera de la tarjeta, igual que informacion_cliente) --- */
 .vd-ops {
   display: flex;

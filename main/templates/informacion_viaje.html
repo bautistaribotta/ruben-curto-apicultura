@@ -160,7 +160,7 @@
           <span class="vd-caja__k"><span class="vd-caja__ico"><span class="material-symbols-outlined">trending_down</span></span>Compras</span>
           <span class="vd-caja__v vd-caja__v--neg">-${{ viaje.total_compras|intcomma }}</span>
         </div>
-        <div class="vd-caja__row vd-caja__row--total">
+        <div class="vd-caja__row vd-caja__row--total{% if viaje.final_caja < 0 %} vd-caja__row--total-neg{% endif %}">
           <span class="vd-caja__k"><span class="material-symbols-outlined">savings</span>Total restante</span>
           <span class="vd-caja__v">${{ viaje.final_caja|intcomma }}</span>
         </div>
