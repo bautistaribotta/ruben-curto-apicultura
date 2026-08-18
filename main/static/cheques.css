@@ -404,12 +404,20 @@
   transform: scale(1);
 }
 
+/* La cruz va anclada arriba a la derecha del panel, no en el flujo. */
+#det-cheque-cerrar {
+  position: absolute;
+  top: 0.9rem;
+  right: 0.9rem;
+  z-index: 3;
+}
+
 /* --- CABECERA: icono + numero + estado --- */
 .det-cheque__head {
   display: flex;
   align-items: center;
   gap: 0.85rem;
-  padding-right: 2rem;
+  padding-right: 2.25rem;
   margin-bottom: 1.25rem;
 }
 
@@ -544,23 +552,73 @@
   line-height: 1.45;
 }
 
-/* --- ACCIONES --- */
+/* --- ACCIONES ---
+   Editar (secundario) y Eliminar comparten la fila mitad y mitad. Eliminar no abre
+   modal: se mantiene apretado 2s y la barra ::before se llena hasta disparar el
+   borrado (misma mecanica que #boton-confirmar-eliminar). */
 .det-cheque__acciones {
   display: flex;
   gap: 0.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border-subtle);
 }
 
-.det-cheque__acciones .boton-secundario,
-.det-cheque__acciones .boton-primario-eliminar {
+.det-cheque__editar,
+.det-cheque__eliminar {
   flex: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
+  padding: 0.75rem;
+  border-radius: var(--radius-md);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
 }
 
 .det-cheque__acciones .material-symbols-outlined {
   font-size: 1.15rem;
+}
+
+/* Boton de eliminar: rojo, con barra de progreso del hold. */
+.det-cheque__eliminar {
+  position: relative;
+  overflow: hidden;
+  border: none;
+  background-color: var(--color-rojo-eliminacion);
+  color: var(--color-blanco);
+  user-select: none;
+  -webkit-user-select: none;
+  transition: filter 0.2s;
+}
+
+.det-cheque__eliminar:hover {
+  filter: brightness(0.9);
+}
+
+/* El icono y el texto van sobre la barra que se llena por detras. */
+.det-cheque__eliminar-ico,
+.det-cheque__eliminar-texto {
+  position: relative;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.det-cheque__eliminar::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 0%;
+  background-color: var(--color-sombra-oscuro);
+  transition: width 0.2s ease-out;
+  z-index: 1;
+}
+
+.det-cheque__eliminar.manteniendo::before {
+  width: 100%;
+  transition: width 2s linear;
 }
 
 /* --- RESPONSIVE --- */

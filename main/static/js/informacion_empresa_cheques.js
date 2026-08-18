@@ -363,21 +363,48 @@ document.getElementById('det-cheque-editar')?.addEventListener('click', () => {
   if (id) prepararEditarCheque(id);
 });
 
-// Eliminar desde el detalle: cierro el detalle y abro el modal de confirmacion,
-// armando el texto con el numero (o la fecha si no tiene numero).
-document.getElementById('det-cheque-eliminar')?.addEventListener('click', () => {
-  const cheque = chequeDetalleActual;
-  cerrarDetalleCheque();
-  if (!cheque) return;
-  const descripcion = cheque.numero
-    ? `el cheque N.º ${cheque.numero} por $${cheque.importe_txt}`
-    : `el cheque del ${cheque.fecha_cobro_txt} por $${cheque.importe_txt}`;
-  document.getElementById('accion-eliminar').value = 'eliminar_cheque';
-  document.getElementById('id_registro_eliminar').value = cheque.id;
-  document.getElementById('texto-confirmacion-eliminar').innerHTML =
-    `¿Confirma que quiere eliminar <b>${descripcion}</b>?`;
-  if (typeof abrirPanelEliminar === 'function') abrirPanelEliminar();
-});
+// Eliminar desde el detalle SIN modal de confirmacion: se mantiene apretado 2s y
+// recien ahi se envia el borrado. Mismo gesto que #boton-confirmar-eliminar
+// (paneles.js): al arrancar el hold cargo la accion y el id del cheque abierto en
+// el formulario de eliminacion compartido, y al completarse lo envio. Soltar antes
+// cancela. El texto pasa a "Mantenga presionado..." mientras se sostiene.
+(() => {
+  const boton = document.getElementById('det-cheque-eliminar');
+  if (!boton) return;
+  const texto = boton.querySelector('.det-cheque__eliminar-texto');
+  const etiqueta = texto.textContent;
+  let cuentaRegresiva;
+
+  const arrancarBorrado = (evento) => {
+    if (evento.type === 'mousedown' && evento.button !== 0) return;
+    // En el celular, mantener apretado abre el menu del navegador si no lo freno
+    if (evento.type === 'touchstart') evento.preventDefault();
+
+    const cheque = chequeDetalleActual;
+    if (!cheque) return;
+    document.getElementById('accion-eliminar').value = 'eliminar_cheque';
+    document.getElementById('id_registro_eliminar').value = cheque.id;
+
+    boton.classList.add('manteniendo');
+    texto.textContent = 'Mantenga presionado...';
+    cuentaRegresiva = setTimeout(() => {
+      document.getElementById('formulario-eliminar').submit();
+    }, 2000);
+  };
+
+  const soltarBorrado = () => {
+    clearTimeout(cuentaRegresiva);
+    boton.classList.remove('manteniendo');
+    texto.textContent = etiqueta;
+  };
+
+  boton.addEventListener('mousedown', arrancarBorrado);
+  boton.addEventListener('mouseup', soltarBorrado);
+  boton.addEventListener('mouseleave', soltarBorrado);
+  boton.addEventListener('touchstart', arrancarBorrado, { passive: false });
+  boton.addEventListener('touchend', soltarBorrado);
+  boton.addEventListener('touchcancel', soltarBorrado);
+})();
 
 // Escape cierra el detalle (el resto de los modales tienen su propio manejo).
 document.addEventListener('keydown', (evento) => {

@@ -149,6 +149,7 @@
             <th class="pago-col">Cobrado</th>
             <th>N.º cheque</th>
             <th>Cuenta</th>
+            <th>Concepto</th>
             <th>Cobro</th>
             <th class="texto-derecha">Importe</th>
           </tr>
@@ -179,6 +180,7 @@
               <span class="cheque-cuenta__banco">{{ cheque.cuenta_corriente.banco.nombre }}</span>
               <span class="cheque-cuenta__numero">N.º {{ cheque.cuenta_corriente.numero }}</span>
             </td>
+            <td class="cheque-concepto" title="{{ cheque.concepto }}">{{ cheque.concepto }}</td>
             <td class="cheque-cobro" data-vencido="{{ cheque.vencido|yesno:'1,0' }}" data-vence="{{ cheque.vencimiento|date:'d/m/Y' }}">
               <span class="op-fecha">{{ cheque.fecha_cobro|date:"d/m/Y" }}</span>
               {% if cheque.cobrado %}
@@ -193,7 +195,7 @@
           </tr>
           {% empty %}
           <tr>
-            <td colspan="5">
+            <td colspan="6">
               <div class="estado-vacio">
                 <span class="material-symbols-outlined">receipt_long</span>
                 <h4>Sin cheques</h4>
@@ -528,13 +530,17 @@
     </dl>
 
     <div class="det-cheque__acciones">
-      <button type="button" class="boton-secundario" id="det-cheque-editar">
+      <button type="button" class="boton-secundario det-cheque__editar" id="det-cheque-editar">
         <span class="material-symbols-outlined">edit</span>
         Editar
       </button>
-      <button type="button" class="boton-primario-eliminar" id="det-cheque-eliminar">
-        <span class="material-symbols-outlined">delete</span>
-        Eliminar
+      {% comment %}
+        Eliminar sin modal de confirmacion: se mantiene apretado 2s (barra .manteniendo)
+        y recien ahi envia el borrado. El gesto largo reemplaza al "¿confirma?".
+      {% endcomment %}
+      <button type="button" class="det-cheque__eliminar" id="det-cheque-eliminar">
+        <span class="material-symbols-outlined det-cheque__eliminar-ico">delete</span>
+        <span class="det-cheque__eliminar-texto">Eliminar</span>
       </button>
     </div>
   </div>
