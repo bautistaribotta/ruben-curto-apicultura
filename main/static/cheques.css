@@ -77,20 +77,25 @@
   color: var(--text-muted);
 }
 
-/* --- CELDA DE CUENTA (banco + numero apilados) --- */
+/* --- CELDA DE CUENTA (banco + numero apilados) ---
+   Se deja como celda de tabla normal (sin display:flex): un <td> con flex deja de
+   estirarse al alto de la fila y arranca arriba, por eso quedaba mas alto que las
+   celdas de una sola linea. Como celda de tabla, el vertical-align middle centra
+   el par banco/numero y toda la fila queda pareja. Los spans van en bloque para
+   apilarse. */
 .cheque-cuenta {
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
   min-width: 0;
 }
 
 .cheque-cuenta__banco {
+  display: block;
   font-weight: var(--weight-semibold);
   color: var(--text-body);
 }
 
 .cheque-cuenta__numero {
+  display: block;
+  margin-top: 0.1rem;
   font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
   color: var(--text-subtle);
@@ -104,15 +109,22 @@
   white-space: nowrap;
 }
 
-/* --- FECHA DE COBRO + VENCIMIENTO --- */
+/* --- FECHA DE COBRO + VENCIMIENTO ---
+   Misma idea que la celda de cuenta: celda de tabla normal (sin flex) para que se
+   estire al alto de la fila y el vertical-align middle centre la fecha y su
+   subrotulo (vence / vencido). La fecha va en bloque para que el subrotulo caiga
+   debajo; el badge queda como pildora inline en su propia linea. */
 .cheque-cobro {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
   white-space: nowrap;
 }
 
+.cheque-cobro .op-fecha {
+  display: block;
+  margin-bottom: 0.2rem;
+}
+
 .cheque-vence {
+  display: block;
   font-size: 0.72rem;
   color: var(--text-subtle);
 }
