@@ -146,6 +146,11 @@
   color: var(--danger-600);
 }
 
+.cheque-badge--cobrado {
+  background-color: var(--success-50);
+  color: var(--success-600);
+}
+
 /* Fila de cheque vencido: fondo rojo muy tenue para llamar la atencion */
 .cheque-fila--vencido td {
   background-color: var(--danger-50);
@@ -153,6 +158,44 @@
 
 .cheque-fila--vencido:hover td {
   background-color: var(--danger-50);
+}
+
+/* Fila de cheque cobrado: la plata ya salio, baja de tono y el importe queda
+   tachado para que se lea "cerrado" de un vistazo, sin sacarlo de la tabla. */
+.cheque-fila--cobrado td {
+  color: var(--text-subtle);
+}
+
+.cheque-fila--cobrado .cheque-cuenta__banco {
+  color: var(--text-muted);
+}
+
+.cheque-fila--cobrado .cheque-importe-cel {
+  text-decoration: line-through;
+  color: var(--text-subtle);
+}
+
+/* --- FILA CLICKEABLE (abre el modal de detalle) --- */
+.cheque-fila {
+  cursor: pointer;
+}
+
+.cheque-fila:focus-visible {
+  outline: 2px solid var(--brand-active);
+  outline-offset: -2px;
+}
+
+/* --- CELDA DE NUMERO DE CHEQUE --- */
+.cheque-numero-cel {
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--weight-semibold);
+  color: var(--text-body);
+  white-space: nowrap;
+}
+
+.cheque-sin-numero {
+  font-style: italic;
+  color: var(--text-subtle);
 }
 
 /* --- FORMULARIO DEL CHEQUE: textarea + contador --- */
@@ -306,6 +349,218 @@
   color: var(--text-muted);
   margin-bottom: 1.5rem;
   line-height: 1.5;
+}
+
+/* --- MODAL DE DETALLE DEL CHEQUE ---
+   Misma mecanica de apertura que el modal de aviso (.abierto), pero con contenido
+   de ficha: cabecera con estado, importe protagonista y una grilla de datos. */
+#contenedor-modal-cheque {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem;
+  visibility: hidden;
+  transition: visibility 0.3s;
+}
+
+#contenedor-modal-cheque.abierto {
+  visibility: visible;
+  transition: none;
+}
+
+#modal-cheque-fondo {
+  position: absolute;
+  inset: 0;
+  background-color: var(--overlay-ink);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+#contenedor-modal-cheque.abierto #modal-cheque-fondo {
+  opacity: 1;
+}
+
+#modal-cheque {
+  position: relative;
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 1.75rem;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: var(--shadow-xl);
+  opacity: 0;
+  transform: scale(0.95);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#contenedor-modal-cheque.abierto #modal-cheque {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* --- CABECERA: icono + numero + estado --- */
+.det-cheque__head {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding-right: 2rem;
+  margin-bottom: 1.25rem;
+}
+
+.det-cheque__tile {
+  flex: none;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-verde-medio-transparente-10);
+  color: var(--brand-secondary);
+}
+
+.det-cheque__tile .material-symbols-outlined {
+  font-size: 1.5rem;
+}
+
+.det-cheque__id {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.det-cheque__id h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: var(--weight-bold);
+  color: var(--text-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+.det-cheque__estado {
+  align-self: flex-start;
+  padding: 0.1rem 0.6rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.68rem;
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.det-cheque__estado--cobrado {
+  background-color: var(--success-50);
+  color: var(--success-600);
+}
+
+.det-cheque__estado--vencido {
+  background-color: var(--danger-50);
+  color: var(--danger-600);
+}
+
+.det-cheque__estado--pendiente {
+  background-color: var(--surface-sunken);
+  color: var(--text-muted);
+}
+
+/* --- IMPORTE PROTAGONISTA --- */
+.det-cheque__importe {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 1rem 1.15rem;
+  margin-bottom: 1.25rem;
+  background-color: var(--surface-sunken);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.det-cheque__importe-rotulo {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-subtle);
+}
+
+.det-cheque__importe-valor {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-extra);
+  letter-spacing: var(--tracking-tight);
+  font-variant-numeric: tabular-nums;
+  color: var(--pine-900);
+}
+
+/* --- GRILLA DE DATOS --- */
+.det-cheque__grid {
+  margin: 0 0 1.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.det-cheque__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.det-cheque__row:last-child {
+  border-bottom: none;
+}
+
+.det-cheque__row dt {
+  flex: none;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.det-cheque__row dd {
+  margin: 0;
+  text-align: right;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--text-body);
+}
+
+/* El concepto puede ser largo: se apila debajo del rotulo y usa todo el ancho. */
+.det-cheque__row--full {
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.det-cheque__row--full dd {
+  text-align: left;
+  font-weight: var(--weight-regular);
+  color: var(--text-body);
+  line-height: 1.45;
+}
+
+/* --- ACCIONES --- */
+.det-cheque__acciones {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.det-cheque__acciones .boton-secundario,
+.det-cheque__acciones .boton-primario-eliminar {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.det-cheque__acciones .material-symbols-outlined {
+  font-size: 1.15rem;
 }
 
 /* --- RESPONSIVE --- */

@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load static_version %}
 {% load l10n %}
 
 {% comment %}
@@ -15,9 +16,10 @@
 {% endblock %}
 
 {% block links %}
-  <link rel="stylesheet" href="{% static 'iva.css' %}">
-  <link rel="stylesheet" href="{% static 'informacion_empresa.css' %}">
-  <link rel="stylesheet" href="{% static 'cheques.css' %}">
+  <link rel="stylesheet" href="{% static_v 'iva.css' %}">
+  <link rel="stylesheet" href="{% static_v 'informacion_empresa.css' %}">
+  <link rel="stylesheet" href="{% static_v 'pago_viaje.css' %}">
+  <link rel="stylesheet" href="{% static_v 'cheques.css' %}">
 {% endblock %}
 
 {% block cabecera %}
@@ -95,10 +97,10 @@
         </thead>
         <tbody>
           {% for cuenta in cuentas %}
-          <tr class="op-fila">
+          <tr class="op-fila" data-cuenta="{{ cuenta.id }}">
             <td class="cuenta-banco">{{ cuenta.banco.nombre }}</td>
             <td class="cuenta-numero">N.º {{ cuenta.numero }}</td>
-            <td class="texto-derecha op-iva">${{ cuenta.cheques_a_pagar|floatformat:"2g" }}</td>
+            <td class="texto-derecha op-iva cuenta-a-pagar">${{ cuenta.cheques_a_pagar|floatformat:"2g" }}</td>
             <td class="texto-derecha">
               <div class="acciones-tabla">
                 <button type="button" class="boton-icono editar" title="Editar cuenta corriente"
@@ -144,50 +146,54 @@
       <table class="tabla-operaciones-iva tabla-cheques">
         <thead>
           <tr>
-            <th>Emisión</th>
+            <th class="pago-col">Cobrado</th>
+            <th>N.º cheque</th>
             <th>Cuenta</th>
-            <th>Concepto</th>
             <th>Cobro</th>
             <th class="texto-derecha">Importe</th>
-            <th class="texto-derecha">Acciones</th>
           </tr>
         </thead>
         <tbody>
           {% for cheque in cheques %}
-          <tr class="op-fila {% if cheque.vencido %}cheque-fila--vencido{% endif %}">
-            <td class="op-fecha">{{ cheque.fecha_emision|date:"d/m/Y" }}</td>
+          {% comment %}
+            La fila entera abre el detalle (toda la info del cheque + editar/eliminar).
+            La celda de la casilla corta el click para que marcar el cobro no lo abra.
+          {% endcomment %}
+          <tr class="op-fila cheque-fila{% if cheque.cobrado %} cheque-fila--cobrado{% elif cheque.vencido %} cheque-fila--vencido{% endif %}"
+              data-id="{{ cheque.id }}"
+              onclick="abrirDetalleCheque({{ cheque.id }})"
+              onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();abrirDetalleCheque({{ cheque.id }})}"
+              role="button" tabindex="0"
+              aria-label="Ver el detalle del cheque {% if cheque.numero %}N.º {{ cheque.numero }}{% else %}sin número{% endif %} por ${{ cheque.importe|floatformat:'2g' }}">
+            <td class="pago-celda" onclick="event.stopPropagation()">
+              <input type="checkbox" class="pago-check"
+                     data-pago-url="{% url 'marcar_cobrado_cheque' cheque.id %}"
+                     data-pago-entidad="Cheque"
+                     aria-label="Marcar como cobrado el cheque {% if cheque.numero %}N.º {{ cheque.numero }}{% else %}sin número{% endif %}"
+                     {% if cheque.cobrado %}checked{% endif %}>
+            </td>
+            <td class="cheque-numero-cel">
+              {% if cheque.numero %}N.º {{ cheque.numero }}{% else %}<span class="cheque-sin-numero">Sin número</span>{% endif %}
+            </td>
             <td class="cheque-cuenta">
               <span class="cheque-cuenta__banco">{{ cheque.cuenta_corriente.banco.nombre }}</span>
               <span class="cheque-cuenta__numero">N.º {{ cheque.cuenta_corriente.numero }}</span>
             </td>
-            <td class="cheque-concepto" title="{{ cheque.concepto }}">{{ cheque.concepto }}</td>
-            <td class="cheque-cobro">
+            <td class="cheque-cobro" data-vencido="{{ cheque.vencido|yesno:'1,0' }}" data-vence="{{ cheque.vencimiento|date:'d/m/Y' }}">
               <span class="op-fecha">{{ cheque.fecha_cobro|date:"d/m/Y" }}</span>
-              {% if cheque.vencido %}
+              {% if cheque.cobrado %}
+                <span class="cheque-badge cheque-badge--cobrado">Cobrado</span>
+              {% elif cheque.vencido %}
                 <span class="cheque-badge cheque-badge--vencido" title="Venció el {{ cheque.vencimiento|date:'d/m/Y' }}">Vencido</span>
               {% else %}
                 <span class="cheque-vence">Vence {{ cheque.vencimiento|date:"d/m/Y" }}</span>
               {% endif %}
             </td>
-            <td class="texto-derecha op-iva">${{ cheque.importe|floatformat:"2g" }}</td>
-            <td class="texto-derecha">
-              <div class="acciones-tabla">
-                <button class="boton-icono editar" title="Editar" data-id="{{ cheque.id }}"
-                        onclick="prepararEditarCheque(this.dataset.id)">
-                  <span class="material-symbols-outlined">edit</span>
-                </button>
-                <button class="boton-icono eliminar" title="Eliminar"
-                        data-id="{{ cheque.id }}"
-                        data-descripcion="el cheque del {{ cheque.fecha_cobro|date:'d/m/Y' }} por ${{ cheque.importe|floatformat:'2g' }}"
-                        onclick="prepararEliminarCheque(this)">
-                  <span class="material-symbols-outlined">delete</span>
-                </button>
-              </div>
-            </td>
+            <td class="texto-derecha op-iva cheque-importe-cel">${{ cheque.importe|floatformat:"2g" }}</td>
           </tr>
           {% empty %}
           <tr>
-            <td colspan="6">
+            <td colspan="5">
               <div class="estado-vacio">
                 <span class="material-symbols-outlined">receipt_long</span>
                 <h4>Sin cheques</h4>
@@ -268,6 +274,13 @@
                       data-banco-nombre="{{ cuenta.banco.nombre }}">{{ cuenta.banco.nombre }} · N.º {{ cuenta.numero }}</option>
             {% endfor %}
           </select>
+        </div>
+
+        <div class="campo-formulario">
+          <label for="cheque-numero">Número de cheque</label>
+          <input type="text" id="cheque-numero" name="numero" class="input-estandar"
+                 inputmode="numeric" autocomplete="off" placeholder="Ej: 00123456"
+                 maxlength="20" pattern="[0-9]{1,20}" required>
         </div>
 
         <div class="campo-formulario">
@@ -468,8 +481,67 @@
     </div>
   </div>
 </form>
+
+<!-- MODAL DE DETALLE DEL CHEQUE (toda la info + editar / eliminar) -->
+<div id="contenedor-modal-cheque">
+  <div id="modal-cheque-fondo" onclick="cerrarDetalleCheque()"></div>
+
+  <div id="modal-cheque" role="dialog" aria-modal="true" aria-labelledby="det-cheque-titulo">
+    <button type="button" class="boton-cerrar-panel" id="det-cheque-cerrar" onclick="cerrarDetalleCheque()">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+
+    <header class="det-cheque__head">
+      <span class="det-cheque__tile"><span class="material-symbols-outlined">receipt_long</span></span>
+      <div class="det-cheque__id">
+        <h3 id="det-cheque-titulo">Cheque</h3>
+        <span class="det-cheque__estado" id="det-cheque-estado">Pendiente</span>
+      </div>
+    </header>
+
+    <div class="det-cheque__importe">
+      <span class="det-cheque__importe-rotulo">Importe</span>
+      <span class="det-cheque__importe-valor" id="det-cheque-importe">$0,00</span>
+    </div>
+
+    <dl class="det-cheque__grid">
+      <div class="det-cheque__row">
+        <dt>Cuenta corriente</dt>
+        <dd id="det-cheque-cuenta">—</dd>
+      </div>
+      <div class="det-cheque__row">
+        <dt>Emisión</dt>
+        <dd id="det-cheque-emision">—</dd>
+      </div>
+      <div class="det-cheque__row">
+        <dt>Cobro</dt>
+        <dd id="det-cheque-cobro">—</dd>
+      </div>
+      <div class="det-cheque__row">
+        <dt>Vencimiento</dt>
+        <dd id="det-cheque-vencimiento">—</dd>
+      </div>
+      <div class="det-cheque__row det-cheque__row--full">
+        <dt>Concepto</dt>
+        <dd id="det-cheque-concepto">—</dd>
+      </div>
+    </dl>
+
+    <div class="det-cheque__acciones">
+      <button type="button" class="boton-secundario" id="det-cheque-editar">
+        <span class="material-symbols-outlined">edit</span>
+        Editar
+      </button>
+      <button type="button" class="boton-primario-eliminar" id="det-cheque-eliminar">
+        <span class="material-symbols-outlined">delete</span>
+        Eliminar
+      </button>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block codigo-javascript %}
-<script src="{% static 'js/informacion_empresa_cheques.js' %}"></script>
+<script src="{% static_v 'js/pago_viaje.js' %}"></script>
+<script src="{% static_v 'js/informacion_empresa_cheques.js' %}"></script>
 {% endblock %}

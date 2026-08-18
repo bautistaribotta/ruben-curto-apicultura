@@ -186,6 +186,7 @@ const prepararEditarCheque = (id) => {
 
       document.getElementById('accion-cheque').value = 'editar_cheque';
       document.getElementById('id-registro-cheque').value = cheque.id;
+      document.getElementById('cheque-numero').value = cheque.numero || '';
 
       construirBancosCheque();
       const selectBanco = document.getElementById('cheque-banco');
@@ -295,6 +296,142 @@ const prepararEliminarCheque = (boton) => {
 
 /**
  * -----------------------------------------------------------------------------
+ * MODAL DE DETALLE DEL CHEQUE
+ * La tabla muestra solo lo justo (cobrado, numero, cuenta, cobro, importe); toda
+ * la info del cheque vive aca, y desde aca se edita o elimina. Los datos vienen
+ * del mismo endpoint que la edicion (/api/cheques/<id>/), ya con los campos
+ * formateados para mostrar.
+ * -----------------------------------------------------------------------------
+ */
+let chequeDetalleActual = null;
+
+/** Pone la pildora de estado (cobrado gana sobre vencido gana sobre pendiente). */
+const pintarEstadoCheque = (cobrado, vencido) => {
+  const pill = document.getElementById('det-cheque-estado');
+  pill.classList.remove('det-cheque__estado--cobrado', 'det-cheque__estado--vencido',
+    'det-cheque__estado--pendiente');
+  if (cobrado) {
+    pill.textContent = 'Cobrado';
+    pill.classList.add('det-cheque__estado--cobrado');
+  } else if (vencido) {
+    pill.textContent = 'Vencido';
+    pill.classList.add('det-cheque__estado--vencido');
+  } else {
+    pill.textContent = 'Pendiente';
+    pill.classList.add('det-cheque__estado--pendiente');
+  }
+};
+
+const abrirDetalleCheque = (id) => {
+  fetch(`/api/cheques/${id}/`)
+    .then((response) => response.json())
+    .then((cheque) => {
+      chequeDetalleActual = cheque;
+      document.getElementById('det-cheque-titulo').textContent = cheque.numero
+        ? `Cheque N.º ${cheque.numero}`
+        : 'Cheque sin número';
+      pintarEstadoCheque(cheque.cobrado, cheque.vencido);
+      document.getElementById('det-cheque-importe').textContent = `$${cheque.importe_txt}`;
+      document.getElementById('det-cheque-cuenta').textContent =
+        `${cheque.banco_nombre} · N.º ${cheque.cuenta_numero}`;
+      document.getElementById('det-cheque-emision').textContent = cheque.fecha_emision_txt;
+      document.getElementById('det-cheque-cobro').textContent = cheque.fecha_cobro_txt;
+      document.getElementById('det-cheque-vencimiento').textContent = cheque.vencimiento_txt;
+      document.getElementById('det-cheque-concepto').textContent = cheque.concepto || '—';
+
+      document.getElementById('contenedor-modal-cheque').classList.add('abierto');
+      document.body.style.overflow = 'hidden';
+    })
+    .catch((error) => {
+      console.error(error);
+      if (typeof abrirModalError === 'function') {
+        abrirModalError('Error al cargar el detalle del cheque');
+      }
+    });
+};
+
+const cerrarDetalleCheque = () => {
+  document.getElementById('contenedor-modal-cheque').classList.remove('abierto');
+  document.body.style.overflow = 'auto';
+};
+
+// Editar desde el detalle: cierro el detalle y abro el slide-over de edicion, que
+// vuelve a pedir el cheque al servidor (mismo id).
+document.getElementById('det-cheque-editar')?.addEventListener('click', () => {
+  const id = chequeDetalleActual && chequeDetalleActual.id;
+  cerrarDetalleCheque();
+  if (id) prepararEditarCheque(id);
+});
+
+// Eliminar desde el detalle: cierro el detalle y abro el modal de confirmacion,
+// armando el texto con el numero (o la fecha si no tiene numero).
+document.getElementById('det-cheque-eliminar')?.addEventListener('click', () => {
+  const cheque = chequeDetalleActual;
+  cerrarDetalleCheque();
+  if (!cheque) return;
+  const descripcion = cheque.numero
+    ? `el cheque N.º ${cheque.numero} por $${cheque.importe_txt}`
+    : `el cheque del ${cheque.fecha_cobro_txt} por $${cheque.importe_txt}`;
+  document.getElementById('accion-eliminar').value = 'eliminar_cheque';
+  document.getElementById('id_registro_eliminar').value = cheque.id;
+  document.getElementById('texto-confirmacion-eliminar').innerHTML =
+    `¿Confirma que quiere eliminar <b>${descripcion}</b>?`;
+  if (typeof abrirPanelEliminar === 'function') abrirPanelEliminar();
+});
+
+// Escape cierra el detalle (el resto de los modales tienen su propio manejo).
+document.addEventListener('keydown', (evento) => {
+  if (evento.key === 'Escape'
+      && document.getElementById('contenedor-modal-cheque')?.classList.contains('abierto')) {
+    cerrarDetalleCheque();
+  }
+});
+
+/**
+ * -----------------------------------------------------------------------------
+ * CASILLA DE COBRADO (reusa pago_viaje.js para el fetch)
+ * pago_viaje.js hace el POST y emite 'pago:cambiado'. Aca, solo para las casillas
+ * de cheque (la respuesta trae total_empresa_txt), actualizo lo que depende del
+ * cobro sin recargar: el estilo de la fila, el badge de la columna Cobro y los dos
+ * totales (el de la empresa y el de la cuenta), que ya no cuentan el cobrado.
+ * -----------------------------------------------------------------------------
+ */
+document.addEventListener('pago:cambiado', (evento) => {
+  const { casilla, datos } = evento.detail;
+  if (!casilla || datos.total_empresa_txt === undefined) return;
+
+  const fila = casilla.closest('tr');
+  if (fila) {
+    fila.classList.toggle('cheque-fila--cobrado', Boolean(datos.cobrado));
+    // Un cobrado no puede seguir mostrandose como vencido
+    if (datos.cobrado) fila.classList.remove('cheque-fila--vencido');
+
+    const celdaCobro = fila.querySelector('.cheque-cobro');
+    if (celdaCobro) {
+      const fechaHTML = celdaCobro.querySelector('.op-fecha').outerHTML;
+      let sub;
+      if (datos.cobrado) {
+        sub = '<span class="cheque-badge cheque-badge--cobrado">Cobrado</span>';
+      } else if (celdaCobro.dataset.vencido === '1') {
+        sub = '<span class="cheque-badge cheque-badge--vencido">Vencido</span>';
+        fila.classList.add('cheque-fila--vencido');
+      } else {
+        sub = `<span class="cheque-vence">Vence ${celdaCobro.dataset.vence}</span>`;
+      }
+      celdaCobro.innerHTML = fechaHTML + sub;
+    }
+  }
+
+  const totalEmpresa = document.querySelector('.resumen-cheques__valor');
+  if (totalEmpresa) totalEmpresa.textContent = `$${datos.total_empresa_txt}`;
+
+  const celdaCuenta = document.querySelector(
+    `.tabla-cuentas tr[data-cuenta="${datos.id_cuenta}"] .cuenta-a-pagar`);
+  if (celdaCuenta) celdaCuenta.textContent = `$${datos.total_cuenta_txt}`;
+});
+
+/**
+ * -----------------------------------------------------------------------------
  * LISTENERS DE LOS CAMPOS DEL FORMULARIO DE CHEQUE
  * -----------------------------------------------------------------------------
  */
@@ -325,3 +462,5 @@ window.prepararEditarEmpresa = prepararEditarEmpresa;
 window.prepararEliminarEmpresa = prepararEliminarEmpresa;
 window.cerrarModalSinCuenta = cerrarModalSinCuenta;
 window.crearCuentaDesdeAviso = crearCuentaDesdeAviso;
+window.abrirDetalleCheque = abrirDetalleCheque;
+window.cerrarDetalleCheque = cerrarDetalleCheque;
