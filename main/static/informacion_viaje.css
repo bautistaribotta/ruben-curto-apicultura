@@ -618,6 +618,12 @@ html {
 
 /* Estado vacio (.estado-vacio): estilos unificados en base.css */
 
+/* En la ficha de viaje las dos tarjetas de arriba (datos generales y resumen de
+   caja) reparten el ancho mitad y mitad, en vez del 1.35fr/1fr de operaciones. */
+.op-grid {
+  grid-template-columns: 1fr 1fr;
+}
+
 /* Grilla sin panel de caja (usuario no-staff): datos generales a todo el ancho */
 .op-grid--solo {
   grid-template-columns: 1fr;
