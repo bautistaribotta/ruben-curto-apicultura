@@ -152,14 +152,18 @@
         <div class="vd-gastos">
           {% include "gastos_viaje.html" with gastos=viaje.detalle_gastos.all vacio="Sin gastos registrados." %}
         </div>
-        <div class="vd-caja__row">
-          <span class="vd-caja__k"><span class="vd-caja__ico"><span class="material-symbols-outlined">trending_up</span></span>Ventas</span>
-          <span class="vd-caja__v vd-caja__v--pos">+${{ viaje.total_ventas|intcomma }}</span>
+        {% for operacion in operaciones %}
+        {% if operacion.activa %}
+        <div class="vd-caja__row vd-caja__row--op">
+          <span class="vd-caja__k">
+            <span class="vd-caja__ico"><span class="material-symbols-outlined">{% if operacion.tipo_operacion == 'venta' %}trending_up{% else %}trending_down{% endif %}</span></span>
+            {% if operacion.tipo_operacion == 'venta' %}Venta{% else %}Compra{% endif %}
+            <span class="vd-caja__date">{{ operacion.fecha|date:"d/m/Y" }}</span>
+          </span>
+          <span class="vd-caja__v vd-caja__v--{% if operacion.tipo_operacion == 'venta' %}pos{% else %}neg{% endif %}">{% if operacion.tipo_operacion == 'venta' %}+{% else %}-{% endif %}${{ operacion.monto_total|floatformat:"-2g" }}</span>
         </div>
-        <div class="vd-caja__row">
-          <span class="vd-caja__k"><span class="vd-caja__ico"><span class="material-symbols-outlined">trending_down</span></span>Compras</span>
-          <span class="vd-caja__v vd-caja__v--neg">-${{ viaje.total_compras|intcomma }}</span>
-        </div>
+        {% endif %}
+        {% endfor %}
         <div class="vd-caja__row vd-caja__row--total{% if viaje.final_caja < 0 %} vd-caja__row--total-neg{% endif %}">
           <span class="vd-caja__k"><span class="material-symbols-outlined">savings</span>Total restante</span>
           <span class="vd-caja__v">${{ viaje.final_caja|intcomma }}</span>

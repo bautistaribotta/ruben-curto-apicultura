@@ -288,6 +288,14 @@ html {
   color: var(--text-strong);
 }
 
+/* La fecha de cada operacion va al lado del tipo, igual que en los gastos. */
+.vd-caja__date {
+  font-size: var(--text-xs);
+  color: var(--text-subtle);
+  margin-left: 0.4rem;
+  font-variant-numeric: tabular-nums;
+}
+
 .vd-caja__v {
   font-size: var(--text-sm);
   font-weight: var(--weight-bold);
