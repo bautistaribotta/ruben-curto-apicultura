@@ -58,17 +58,10 @@ body.pagina-error {
   font-size: 1rem;
   line-height: 1.6;
   color: var(--sand-600);
-  margin: 0 0 1.5rem;
-}
-
-#contacto-error {
-  font-size: 0.95rem;
-  line-height: 1.6;
-  color: var(--sand-700);
   margin: 0 0 2.25rem;
 }
 
-#contacto-error a {
+#descripcion-error a {
   color: var(--pine-900);
   font-weight: 700;
   text-decoration: none;
@@ -78,7 +71,7 @@ body.pagina-error {
   transition: color 0.2s;
 }
 
-#contacto-error a:hover {
+#descripcion-error a:hover {
   color: var(--honey-700);
 }
 
@@ -116,7 +109,7 @@ body.pagina-error {
 
 /* Foco visible para navegacion por teclado */
 #boton-volver:focus-visible,
-#contacto-error a:focus-visible {
+#descripcion-error a:focus-visible {
   outline: 2px solid var(--honey-600);
   outline-offset: 3px;
   border-radius: 0.25rem;

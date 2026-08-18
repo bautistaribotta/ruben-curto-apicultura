@@ -30,9 +30,8 @@
 
       <p id="etiqueta-error">Error {% block codigo %}{% endblock %} · {% block etiqueta %}{% endblock %}</p>
       <h1 id="titulo-error">Algo salió mal</h1>
-      <p id="descripcion-error">{% block descripcion %}{% endblock %}</p>
-
-      <p id="contacto-error">
+      <p id="descripcion-error">
+        {% block descripcion %}{% endblock %}
         Si el problema sigue, comunicate con el administrador al
         <a href="tel:2302649671">2302 649671</a>.
       </p>
