@@ -296,6 +296,28 @@ html {
   white-space: nowrap;
 }
 
+/* Mismo recuadro miel que los gastos, pero sin pisar el color propio del icono
+   (la flecha de ventas/compras conserva el tono de marca). */
+.vd-caja__ico {
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border-radius: var(--radius-sm);
+  background-color: var(--surface-sunken);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Ventas suman a la caja, compras la restan: verde de ingreso y rojo de egreso. */
+.vd-caja__v--pos {
+  color: var(--success-600);
+}
+
+.vd-caja__v--neg {
+  color: var(--danger-600);
+}
+
 .vd-gastos {
   max-height: 220px;
   overflow-y: auto;

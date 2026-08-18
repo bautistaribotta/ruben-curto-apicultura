@@ -152,6 +152,14 @@
         <div class="vd-gastos">
           {% include "gastos_viaje.html" with gastos=viaje.detalle_gastos.all vacio="Sin gastos registrados." %}
         </div>
+        <div class="vd-caja__row">
+          <span class="vd-caja__k"><span class="vd-caja__ico"><span class="material-symbols-outlined">trending_up</span></span>Ventas</span>
+          <span class="vd-caja__v vd-caja__v--pos">+${{ viaje.total_ventas|intcomma }}</span>
+        </div>
+        <div class="vd-caja__row">
+          <span class="vd-caja__k"><span class="vd-caja__ico"><span class="material-symbols-outlined">trending_down</span></span>Compras</span>
+          <span class="vd-caja__v vd-caja__v--neg">-${{ viaje.total_compras|intcomma }}</span>
+        </div>
         <div class="vd-caja__row vd-caja__row--total">
           <span class="vd-caja__k"><span class="material-symbols-outlined">savings</span>Total restante</span>
           <span class="vd-caja__v">${{ viaje.final_caja|intcomma }}</span>

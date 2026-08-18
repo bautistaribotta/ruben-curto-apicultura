@@ -6,6 +6,7 @@ from django.db.models import (Sum, F, Subquery, OuterRef, Exists, DecimalField, 
                               DateField, Value, Q)
 from django.db.models.functions import Coalesce
 from django.utils import timezone
+from django.utils.functional import cached_property
 
 
 class Producto(models.Model):
@@ -490,9 +491,35 @@ class Viaje(models.Model):
         else:
             return 0
 
+    @cached_property
+    def _operaciones_caja(self):
+        # Ventas y compras activas del viaje en una sola consulta: en la caja del
+        # viaje las ventas ingresan dinero y las compras lo sacan. Sumo linea por
+        # linea (cantidad * precio) igual que la property monto_total de Operacion.
+        agg = self.operaciones.filter(activa=True).aggregate(
+            ventas=Sum(F("detalleoperacion__cantidad") * F("detalleoperacion__precio_unitario"),
+                       filter=Q(tipo_operacion="venta")),
+            compras=Sum(F("detalleoperacion__cantidad") * F("detalleoperacion__precio_unitario"),
+                        filter=Q(tipo_operacion="compra")),
+        )
+        return {
+            "ventas": int(agg["ventas"] or 0),
+            "compras": int(agg["compras"] or 0),
+        }
+
+    @property
+    def total_ventas(self) -> int:
+        return self._operaciones_caja["ventas"]
+
+    @property
+    def total_compras(self) -> int:
+        return self._operaciones_caja["compras"]
+
     @property
     def final_caja(self) -> int:
-        return int(self.inicio_caja) - self.total_gastos
+        # La caja arranca en inicio_caja, se le restan los gastos, se le suma lo
+        # vendido y se le resta lo comprado. Puede quedar negativa.
+        return int(self.inicio_caja) - self.total_gastos + self.total_ventas - self.total_compras
 
     @property
     def estado(self):
