@@ -516,10 +516,22 @@ class Viaje(models.Model):
         return self._operaciones_caja["compras"]
 
     @property
+    def total_ingresos(self) -> int:
+        from django.db.models import Sum
+
+        # Dinero que entra a la caja por fuera de las ventas (hoy, la transferencia
+        # que se le manda al chofer). Si el viaje no tiene ninguno, aggregate devuelve
+        # None y lo normalizo a 0.
+        resultado = self.ingresos_caja.aggregate(total=Sum('monto'))['total']
+        return resultado if resultado is not None else 0
+
+    @property
     def final_caja(self) -> int:
         # La caja arranca en inicio_caja, se le restan los gastos, se le suma lo
-        # vendido y se le resta lo comprado. Puede quedar negativa.
-        return int(self.inicio_caja) - self.total_gastos + self.total_ventas - self.total_compras
+        # vendido y lo transferido al chofer, y se le resta lo comprado. Puede
+        # quedar negativa.
+        return (int(self.inicio_caja) - self.total_gastos + self.total_ventas
+                - self.total_compras + self.total_ingresos)
 
     @property
     def estado(self):
@@ -584,6 +596,25 @@ class Gasto(GastoBase):
 
     def __str__(self):
         return f"Gasto {self.gasto} de {self.monto} pesos (Viaje: {self.viaje})"
+
+
+class IngresoCaja(models.Model):
+    """Dinero que entra a la caja del viaje por fuera de las ventas.
+
+    Hoy tiene un unico concepto: la transferencia que se le manda al chofer para
+    los gastos del viaje. Suma al Total restante igual que una venta, pero no es
+    una operacion con cliente, asi que vive en su propia tabla. Solo miel/cera
+    maneja caja (reparto y cereal calculan ganancia), por eso cuelga de Viaje.
+    """
+    viaje = models.ForeignKey(Viaje, on_delete=models.CASCADE, related_name="ingresos_caja", db_column="id_viaje")
+    fecha = models.DateField(auto_now_add=True)
+    monto = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        db_table = "ingresos_caja"
+
+    def __str__(self):
+        return f"Ingreso a caja de {self.monto} pesos (Viaje: {self.viaje})"
 
 
 class ViajeReparto(models.Model):

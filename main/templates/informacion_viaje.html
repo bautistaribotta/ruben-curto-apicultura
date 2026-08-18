@@ -139,10 +139,16 @@
       <div class="op-card__head">
         <span class="material-symbols-outlined">payments</span>
         <h4>Resumen de caja</h4>
-        <button class="op-btn op-btn--secondary op-btn--sm vd-headbtn" onclick="abrirModalGasto()">
-          <span class="material-symbols-outlined">add</span>
-          Añadir gasto
-        </button>
+        <div class="vd-headbtns">
+          <button class="op-btn op-btn--secondary op-btn--sm" onclick="abrirModalIngreso()">
+            <span class="material-symbols-outlined">add</span>
+            Añadir dinero
+          </button>
+          <button class="op-btn op-btn--secondary op-btn--sm" onclick="abrirModalGasto()">
+            <span class="material-symbols-outlined">add</span>
+            Añadir gasto
+          </button>
+        </div>
       </div>
       <div class="vd-caja">
         <div class="vd-caja__row vd-caja__row--head">
@@ -163,6 +169,16 @@
           <span class="vd-caja__v vd-caja__v--{% if operacion.tipo_operacion == 'venta' %}pos{% else %}neg{% endif %}">{% if operacion.tipo_operacion == 'venta' %}+{% else %}-{% endif %}${{ operacion.monto_total|floatformat:"-2g" }}</span>
         </div>
         {% endif %}
+        {% endfor %}
+        {% for ingreso in viaje.ingresos_caja.all %}
+        <button type="button" class="vd-gasto vd-gasto--editable vd-gasto--ingreso" id="ingreso-{{ ingreso.id }}"
+                data-ingreso="{{ ingreso.id }}"
+                data-monto="{{ ingreso.monto }}"
+                aria-label="Editar la transferencia al chofer del {{ ingreso.fecha|date:'d/m/Y' }} por ${{ ingreso.monto|intcomma }}">
+          <span class="vd-gasto__ico"><span class="material-symbols-outlined">swap_horiz</span></span>
+          <span class="vd-gasto__name">Transferencia al chofer<span class="vd-gasto__date">{{ ingreso.fecha|date:"d/m/Y" }}</span></span>
+          <span class="vd-gasto__amt vd-gasto__amt--pos">+${{ ingreso.monto|intcomma }}</span>
+        </button>
         {% endfor %}
         <div class="vd-caja__row vd-caja__row--total{% if viaje.final_caja < 0 %} vd-caja__row--total-neg{% endif %}">
           <span class="vd-caja__k"><span class="material-symbols-outlined">savings</span>Total restante</span>
@@ -355,6 +371,70 @@
           <span class="gasto-borrar__label">
             <span class="material-symbols-outlined">delete</span>
             <span id="gasto-borrar-texto">Eliminar gasto</span>
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
+</form>
+
+<!-- Panel de ingreso a caja: mismo estilo que el de gasto, pero solo pide el
+     monto. El concepto es fijo (transferencia al chofer), asi que va como texto
+     del modal y no como campo. Sirve para cargar uno nuevo y para corregir uno,
+     y el borrado usa el mismo gesto de mantener apretado que el gasto. -->
+<form id="formulario-ingreso" method="POST">
+  {% csrf_token %}
+  <div id="contenedor-modal-ingreso">
+    <div id="contenedor-modal-fondo-ingreso" onclick="cerrarModalIngreso()"> </div>
+
+    <!-- Panel -->
+    <div id="panel-ingreso">
+      <input type="hidden" name="accion" id="ingreso-accion" value="nuevo_ingreso">
+      <input type="hidden" name="id_ingreso" id="ingreso-id">
+
+      <button type="button" class="boton-cerrar" onclick="cerrarModalIngreso()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+
+      <div id="icono-ingreso">
+        <span class="material-symbols-outlined">swap_horiz</span>
+      </div>
+
+      <h3 id="ingreso-titulo">Añadir dinero a caja</h3>
+      <p id="ingreso-bajada">Ingresá el monto transferido al chofer. Suma al total de la caja.</p>
+
+      <div class="grupo-input">
+        <label for="monto-ingreso">Monto en concepto de transferencia al chofer</label>
+        <div class="input-con-icono">
+          <span>$</span>
+          <input
+            type="text"
+            id="monto-ingreso"
+            name="monto_ingreso"
+            class="input-miles"
+            inputmode="numeric"
+            autocomplete="off"
+            placeholder="0"
+            pattern="[1-9][0-9]{0,2}(\.[0-9]{3})*"
+            required>
+        </div>
+        <span class="vd-hint">Número entero. Los puntos se agregan solos.</span>
+      </div>
+
+      <div class="acciones-modal">
+        <button type="submit" class="boton-primario" id="ingreso-guardar">Guardar</button>
+        <button type="button" class="boton-secundario" onclick="cerrarModalIngreso()">Cancelar</button>
+      </div>
+
+      {% comment %}
+        Igual que el gasto: eliminar vive dentro del mismo modal de edicion y hay
+        que mantener apretado el boton tres segundos, sin un segundo modal.
+      {% endcomment %}
+      <div class="gasto-borrar" id="ingreso-zona-borrar" hidden>
+        <button type="button" class="op-btn op-btn--danger gasto-borrar__btn" id="ingreso-borrar">
+          <span class="gasto-borrar__label">
+            <span class="material-symbols-outlined">delete</span>
+            <span id="ingreso-borrar-texto">Eliminar ingreso</span>
           </span>
         </button>
       </div>
@@ -563,6 +643,7 @@
   <script src="{% static 'js/autocompletado_ciudades.js' %}"></script>
   <script src="{% static 'js/selector_entidad.js' %}"></script>
   <script src="{% static 'js/gastos_viaje.js' %}"></script>
+  <script src="{% static 'js/ingreso_caja.js' %}"></script>
   <script src="{% static 'js/informacion_viaje.js' %}"></script>
   <script>
     // Filtro de operaciones por tipo (Todas / Compras / Ventas)

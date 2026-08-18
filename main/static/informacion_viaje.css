@@ -74,6 +74,14 @@ html {
   margin-left: auto;
 }
 
+/* Los dos botones de la cabecera de caja (anadir dinero y anadir gasto) van
+   juntos, empujados a la derecha del titulo. */
+.vd-headbtns {
+  margin-left: auto;
+  display: flex;
+  gap: 0.5rem;
+}
+
 /* --- Datos generales: filas --- */
 .vd-data {
   display: flex;
@@ -375,6 +383,11 @@ html {
   color: var(--danger-600);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+/* La transferencia al chofer es dinero que entra: verde de ingreso, como las ventas. */
+.vd-gasto__amt--pos {
+  color: var(--success-600);
 }
 
 .vd-gastos__empty {
@@ -1230,6 +1243,152 @@ html {
 .gasto-borrar__btn.manteniendo::before {
   width: 100%;
   transition: width 3s linear;
+}
+
+/* ============================================================
+   Modal de ingreso a caja (transferencia al chofer).
+
+   Misma caja, mismo fondo y misma animacion que el modal de gasto: los
+   estilos de campos y botones salen de las clases compartidas (.grupo-input,
+   .input-con-icono, .acciones-modal, .boton-primario, .boton-secundario,
+   .boton-cerrar, .gasto-borrar), asi que aca solo va la cascara con id propio
+   y los mismos retoques scoped que lleva #panel-gasto.
+   ============================================================ */
+#contenedor-modal-ingreso {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  visibility: hidden;
+  transition: visibility 0.3s;
+}
+
+#contenedor-modal-ingreso.abierto {
+  visibility: visible;
+  transition: none;
+}
+
+#contenedor-modal-fondo-ingreso {
+  position: absolute;
+  inset: 0;
+  background-color: var(--color-slate-900-transparente-40);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+#contenedor-modal-ingreso.abierto #contenedor-modal-fondo-ingreso {
+  opacity: 1;
+}
+
+#panel-ingreso {
+  position: relative;
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 2rem;
+  width: 90%;
+  max-width: 450px;
+  max-height: 88vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-xl);
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  opacity: 0;
+  transform: scale(0.95);
+  transition: all var(--dur-slow) var(--ease-standard);
+}
+
+#contenedor-modal-ingreso.abierto #panel-ingreso {
+  opacity: 1;
+  transform: scale(1);
+}
+
+#icono-ingreso {
+  color: var(--brand-active);
+  align-self: center;
+  margin-bottom: 0.5rem;
+  display: flex;
+  justify-content: center;
+}
+
+#icono-ingreso span {
+  font-size: 2.75rem;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 48;
+}
+
+#panel-ingreso h3 {
+  font-size: 1.25rem;
+  font-weight: var(--weight-bold);
+  color: var(--text-strong);
+  margin-bottom: 0.5rem;
+}
+
+#panel-ingreso p {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+  line-height: 1.4;
+}
+
+#panel-ingreso .grupo-input {
+  text-align: left;
+  margin-bottom: 1rem;
+}
+
+#panel-ingreso .vd-hint {
+  display: block;
+  text-align: left;
+  font-size: var(--text-xs);
+  color: var(--text-subtle);
+}
+
+/* Alineo el borde del input de monto igual que en el modal de gasto. */
+#panel-ingreso .grupo-input input {
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-strong);
+  transition: all var(--dur-normal) var(--ease-standard);
+}
+
+#panel-ingreso .grupo-input input:focus {
+  border-color: var(--brand);
+  background-color: var(--surface-card);
+  box-shadow: var(--ring);
+}
+
+/* Separo los botones del cuerpo con una linea, igual que el modal de gasto. */
+#panel-ingreso .acciones-modal {
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 1.25rem;
+  margin-top: 0.25rem;
+}
+
+#panel-ingreso .boton-primario {
+  background-color: var(--brand-secondary);
+  color: var(--text-on-inverse);
+  border: none;
+  padding: 0.75rem;
+  border-radius: var(--radius-md);
+  font-weight: var(--weight-bold);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  transition: all var(--dur-normal) var(--ease-standard);
+}
+
+#panel-ingreso .boton-primario:hover {
+  background-color: var(--pine-950);
+}
+
+/* El hidden hay que forzarlo porque .acciones-modal es un grid. */
+#panel-ingreso [hidden] {
+  display: none;
 }
 
 /* ============================================================

@@ -13,7 +13,7 @@ from django.db.models import (Sum, F, Value, Count, Q, Subquery, OuterRef, Exist
 from django.db.models.functions import Coalesce
 from django.core.cache import cache
 from .models import (Producto, Cliente, Operacion, DetalleOperacion, Pago, Cotizaciones, Empleado, PagosEmpleados,
-                     Vehiculo, Viaje, DetalleViaje, Gasto, ViajeCereal, DetalleViajeCereal, GastoViajeCereal,
+                     Vehiculo, Viaje, DetalleViaje, Gasto, IngresoCaja, ViajeCereal, DetalleViajeCereal, GastoViajeCereal,
                      ViajeReparto, GastoViajeReparto, DestinoViajeReparto, Casa, Contrato, PagoAlquiler,
                      GastoCasa, RegistroKilometraje, Seguro, VTV, Servis, ObservacionVehiculo,
                      EstacionDeServicio, CargaCombustible, Empresa, OperacionIva,
@@ -2209,6 +2209,44 @@ def crear_gasto(id_viaje, tipo_gasto, monto, id_estacion=None, litros=None, paga
         )
         _sincronizar_carga_combustible(nuevo_gasto, id_estacion, litros, pagada)
     return nuevo_gasto
+
+
+# --- Ingresos a la caja del viaje (transferencia al chofer) ---
+#
+# Dinero que entra a la caja por fuera de las ventas. Es mas simple que un gasto:
+# no tiene tipo ni carga de combustible, solo un monto. Al guardar, el Total
+# restante del viaje se recalcula solo, porque final_caja suma total_ingresos.
+
+def _validar_monto_ingreso(monto):
+    """Un ingreso a caja es siempre un entero positivo, igual que un gasto."""
+    try:
+        monto_val = int(monto)
+        if monto_val <= 0:
+            raise ValueError()
+    except (ValueError, TypeError):
+        raise ValueError("El monto debe ser un número entero positivo mayor a 0.")
+    return monto_val
+
+
+def crear_ingreso_caja(id_viaje, monto):
+    viaje = get_object_or_404(Viaje, id=id_viaje)
+    monto_val = _validar_monto_ingreso(monto)
+    return IngresoCaja.objects.create(viaje=viaje, monto=monto_val)
+
+
+def editar_ingreso_caja(id_ingreso, monto):
+    """Corrige el monto de un ingreso ya cargado. La fecha no se toca."""
+    monto_val = _validar_monto_ingreso(monto)
+    ingreso = get_object_or_404(IngresoCaja, id=id_ingreso)
+    ingreso.monto = monto_val
+    ingreso.save(update_fields=["monto"])
+    return ingreso
+
+
+def eliminar_ingreso_caja(id_ingreso):
+    """Borrado de verdad: un ingreso mal cargado no es historia y no cuelga nada."""
+    ingreso = get_object_or_404(IngresoCaja, id=id_ingreso)
+    ingreso.delete()
 
 
 # --- Viajes de cereales ---

@@ -18,7 +18,7 @@ from django.contrib.humanize.templatetags.humanize import intcomma
 from django.template.defaultfilters import floatformat
 
 from .models import (Cliente, Producto, Operacion, DetalleOperacion, Pago, Cotizaciones, Empleado,
-                     Vehiculo, Viaje, ViajeCereal, ViajeReparto, Gasto, GastoViajeCereal, GastoViajeReparto,
+                     Vehiculo, Viaje, ViajeCereal, ViajeReparto, Gasto, IngresoCaja, GastoViajeCereal, GastoViajeReparto,
                      EstacionDeServicio, CargaCombustible, Empresa, OperacionIva,
                      Banco, CuentaCorriente, Cheque, periodo_actual)
 from .pdf_services import Remito, ResumenCuenta
@@ -29,6 +29,7 @@ from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo
                        obtener_listado_deudores, _iniciales, filtro_nombre_apellido, filtro_tokens, crear_empleado, crear_vehiculo, crear_viaje, obtener_empleados_activos,
                        obtener_vehiculos_activos, obtener_viajes, obtener_datos_viaje, editar_viaje, eliminar_viaje, crear_gasto,
                        editar_gasto_viaje, eliminar_gasto_viaje,
+                       crear_ingreso_caja, editar_ingreso_caja, eliminar_ingreso_caja,
                        incluir_asignado,
                        opciones_empleados_filtro, opciones_vehiculos_filtro,
                        opciones_destinos_viaje, opciones_destinos_cereal, opciones_destinos_reparto_filtro,
@@ -1581,6 +1582,42 @@ def informacion_viaje(request, id_viaje):
                 messages.error(request, f"Ocurrió un error inesperado: {e}")
 
             return redirect(_url_con_gasto(url_detalle, gasto_marcado))
+
+        elif accion in ("nuevo_ingreso", "editar_ingreso", "eliminar_ingreso"):
+            # El dinero de la caja lo maneja solo el staff, igual que el resumen
+            # y los botones que abren el modal: el servidor dice lo mismo que el
+            # template, que muestra todo esto dentro de {% if user.is_staff %}.
+            if not request.user.is_staff:
+                messages.error(request, "No tenés permiso para tocar la caja del viaje.")
+                return redirect("informacion_viaje", id_viaje=id_viaje)
+
+            url_detalle = reverse("informacion_viaje", kwargs={"id_viaje": id_viaje})
+            monto_ingreso = request.POST.get("monto_ingreso")
+            id_ingreso = request.POST.get("id_ingreso")
+            ingreso_marcado = ""
+
+            try:
+                if accion == "nuevo_ingreso":
+                    ingreso_marcado = crear_ingreso_caja(id_viaje, monto_ingreso).id
+                    messages.success(request, "Dinero agregado a la caja exitosamente.")
+                elif accion == "editar_ingreso":
+                    ingreso_marcado = editar_ingreso_caja(id_ingreso, monto_ingreso).id
+                    messages.success(request, "Ingreso a caja actualizado correctamente.")
+                else:
+                    eliminar_ingreso_caja(id_ingreso)
+                    messages.success(request, "Ingreso a caja eliminado correctamente.")
+            except ValueError as e:
+                messages.error(request, str(e))
+            except Exception as e:
+                messages.error(request, f"Ocurrió un error inesperado: {e}")
+
+            # Misma marca que los gastos, pero con su propia clave para que el
+            # front resalte la fila del ingreso recien tocado (ver ingreso_caja.js).
+            destino = url_detalle
+            if ingreso_marcado:
+                separador = "&" if "?" in destino else "?"
+                destino = f"{destino}{separador}ingreso={ingreso_marcado}"
+            return redirect(destino)
 
     # Operaciones asociadas al viaje, para el listado
     operaciones_viaje = (
