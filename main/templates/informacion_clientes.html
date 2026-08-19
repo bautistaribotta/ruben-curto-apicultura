@@ -318,6 +318,7 @@
                         <th>Cereal</th>
                         <th>Ruta</th>
                         <th class="vcc-columna-toneladas">Toneladas</th>
+                        <th class="vcc-columna-monto">Monto</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -356,6 +357,9 @@
                         </td>
                         <td class="vcc-toneladas">
                             {{ viaje.toneladas|floatformat:"-2g" }}<span class="vcc-toneladas__unidad">t</span>
+                        </td>
+                        <td class="vcc-monto">
+                            <span class="vcc-monto__signo">$</span>{{ viaje.total_bruto|floatformat:"-2g" }}
                         </td>
                     </tr>
                     {% endfor %}

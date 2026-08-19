@@ -622,6 +622,30 @@ html {
   color: var(--text-muted);
 }
 
+.vcc-columna-monto {
+  width: 10rem;
+  text-align: right;
+}
+
+/* El monto factura del flete (toneladas x precio) alineado a la derecha del todo,
+   con el mismo tratamiento tabular y fuerte que las toneladas para que la fila
+   cierre pareja. El signo va atenuado para que lo que se lea sea el numero. */
+.vcc-monto {
+  text-align: right;
+  font-size: 1.125rem;
+  font-weight: var(--weight-bold);
+  color: var(--text-strong);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.vcc-monto__signo {
+  margin-right: 0.25rem;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--text-muted);
+}
+
 /* Estado vacio (.estado-vacio): estilos unificados en base.css */
 
 .acciones-operacion {
@@ -1183,7 +1207,8 @@ html {
   .tabla-viajes-cereal td:first-child,
   .tabla-viajes-cereal th:nth-child(2),
   .tabla-viajes-cereal td:nth-child(2),
-  .vcc-columna-toneladas {
+  .vcc-columna-toneladas,
+  .vcc-columna-monto {
     width: auto;
   }
   /* Ninguna de las dos tablas entra entera en un telefono, y el contenedor recorta
