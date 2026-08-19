@@ -169,7 +169,6 @@
             <span class="vd-caja__date">{{ operacion.fecha|date:"d/m/Y" }}</span>
           </span>
           <span class="vd-caja__v vd-caja__v--{% if operacion.tipo_operacion == 'venta' %}pos{% else %}neg{% endif %}">{% if operacion.tipo_operacion == 'venta' %}+{% else %}-{% endif %}${{ operacion.monto_total|floatformat:"-2g" }}</span>
-          <span class="vd-caja__goto material-symbols-outlined" aria-hidden="true">arrow_downward</span>
         </button>
         {% endif %}
         {% endfor %}

@@ -308,21 +308,6 @@ html {
   outline-offset: -2px;
 }
 
-/* La flecha de salto queda tenue y aparece del todo al pasar o enfocar la fila. */
-.vd-caja__goto {
-  font-size: 1.05rem;
-  color: var(--text-subtle);
-  opacity: 0;
-  transform: translateY(-2px);
-  transition: opacity 0.15s ease, transform 0.15s ease;
-}
-
-.vd-caja__row--link:hover .vd-caja__goto,
-.vd-caja__row--link:focus-visible .vd-caja__goto {
-  opacity: 1;
-  transform: translateY(0);
-}
-
 .vd-caja__k {
   display: inline-flex;
   align-items: center;
