@@ -285,6 +285,44 @@ html {
   padding-bottom: 0.5rem;
 }
 
+/* La fila de venta/compra de la caja es un boton que lleva a su fila en la tabla
+   de operaciones. Reseteo la apariencia nativa del boton y le doy afordancia. */
+.vd-caja__row--link {
+  width: 100%;
+  border: none;
+  background-color: transparent;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: background-color 0.15s ease;
+}
+
+.vd-caja__row--link:hover {
+  background-color: var(--surface-hover);
+}
+
+.vd-caja__row--link:focus-visible {
+  outline: 2px solid var(--brand-active);
+  outline-offset: -2px;
+}
+
+/* La flecha de salto queda tenue y aparece del todo al pasar o enfocar la fila. */
+.vd-caja__goto {
+  font-size: 1.05rem;
+  color: var(--text-subtle);
+  opacity: 0;
+  transform: translateY(-2px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.vd-caja__row--link:hover .vd-caja__goto,
+.vd-caja__row--link:focus-visible .vd-caja__goto {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .vd-caja__k {
   display: inline-flex;
   align-items: center;
@@ -614,6 +652,86 @@ html {
 
 .vd-opstable tbody tr:hover {
   background-color: var(--surface-hover);
+}
+
+/* Fila destacada al llegar desde el resumen de caja: pulso pino con un recuadro
+   que contornea toda la fila y se desvanece solo. Como el <tr> no dibuja bien
+   box-shadow, se reparte por celda: borde superior e inferior en todas, y el
+   izquierdo/derecho solo en la primera y ultima, para que el recuadro cierre sin
+   lineas internas entre columnas. El color de marca (pino) se usa para la
+   atencion; la miel queda reservada al sidebar y al foco. */
+@keyframes destacar-fila {
+  0% {
+    background-color: var(--success-50);
+    box-shadow: inset 0 3px 0 0 var(--brand-secondary),
+                inset 0 -3px 0 0 var(--brand-secondary);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: inset 0 3px 0 0 transparent,
+                inset 0 -3px 0 0 transparent;
+  }
+}
+
+@keyframes destacar-fila-izq {
+  0% {
+    background-color: var(--success-50);
+    box-shadow: inset 0 3px 0 0 var(--brand-secondary),
+                inset 0 -3px 0 0 var(--brand-secondary),
+                inset 3px 0 0 0 var(--brand-secondary);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: inset 0 3px 0 0 transparent,
+                inset 0 -3px 0 0 transparent,
+                inset 3px 0 0 0 transparent;
+  }
+}
+
+@keyframes destacar-fila-der {
+  0% {
+    background-color: var(--success-50);
+    box-shadow: inset 0 3px 0 0 var(--brand-secondary),
+                inset 0 -3px 0 0 var(--brand-secondary),
+                inset -3px 0 0 0 var(--brand-secondary);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: inset 0 3px 0 0 transparent,
+                inset 0 -3px 0 0 transparent,
+                inset -3px 0 0 0 transparent;
+  }
+}
+
+.fila-operacion--destacada > td {
+  animation: destacar-fila 1.8s ease-out forwards;
+}
+
+.fila-operacion--destacada > td:first-child {
+  animation-name: destacar-fila-izq;
+}
+
+.fila-operacion--destacada > td:last-child {
+  animation-name: destacar-fila-der;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fila-operacion--destacada > td {
+    animation: none;
+    background-color: var(--success-50);
+    box-shadow: inset 0 3px 0 0 var(--brand-secondary),
+                inset 0 -3px 0 0 var(--brand-secondary);
+  }
+  .fila-operacion--destacada > td:first-child {
+    box-shadow: inset 0 3px 0 0 var(--brand-secondary),
+                inset 0 -3px 0 0 var(--brand-secondary),
+                inset 3px 0 0 0 var(--brand-secondary);
+  }
+  .fila-operacion--destacada > td:last-child {
+    box-shadow: inset 0 3px 0 0 var(--brand-secondary),
+                inset 0 -3px 0 0 var(--brand-secondary),
+                inset -3px 0 0 0 var(--brand-secondary);
+  }
 }
 
 .vd-ops-empty-filtro {

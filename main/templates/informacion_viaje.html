@@ -160,14 +160,17 @@
         </div>
         {% for operacion in operaciones %}
         {% if operacion.activa %}
-        <div class="vd-caja__row vd-caja__row--op">
+        <button type="button" class="vd-caja__row vd-caja__row--op vd-caja__row--link"
+                data-ir-operacion="{{ operacion.id }}"
+                aria-label="Ver la {% if operacion.tipo_operacion == 'venta' %}venta{% else %}compra{% endif %} del {{ operacion.fecha|date:'d/m/Y' }} en la tabla de operaciones">
           <span class="vd-caja__k">
             <span class="vd-caja__ico"><span class="material-symbols-outlined">{% if operacion.tipo_operacion == 'venta' %}trending_up{% else %}trending_down{% endif %}</span></span>
             {% if operacion.tipo_operacion == 'venta' %}Venta{% else %}Compra{% endif %}
             <span class="vd-caja__date">{{ operacion.fecha|date:"d/m/Y" }}</span>
           </span>
           <span class="vd-caja__v vd-caja__v--{% if operacion.tipo_operacion == 'venta' %}pos{% else %}neg{% endif %}">{% if operacion.tipo_operacion == 'venta' %}+{% else %}-{% endif %}${{ operacion.monto_total|floatformat:"-2g" }}</span>
-        </div>
+          <span class="vd-caja__goto material-symbols-outlined" aria-hidden="true">arrow_downward</span>
+        </button>
         {% endif %}
         {% endfor %}
         {% for ingreso in viaje.ingresos_caja.all %}
@@ -231,7 +234,7 @@
         </thead>
         <tbody>
           {% for operacion in operaciones %}
-          <tr data-url="{% url 'informacion_operacion' operacion.id %}?origen=viaje" data-tipo="{{ operacion.tipo_operacion }}" onclick="window.location.href=this.dataset.url" class="fila-operacion">
+          <tr id="fila-op-{{ operacion.id }}" data-operacion="{{ operacion.id }}" data-url="{% url 'informacion_operacion' operacion.id %}?origen=viaje" data-tipo="{{ operacion.tipo_operacion }}" onclick="window.location.href=this.dataset.url" class="fila-operacion">
             <td class="vd-op-fecha">{{ operacion.fecha|date:"d/m/Y" }}</td>
             <td><span class="vd-op-cli">{{ operacion.cliente.nombre }} {{ operacion.cliente.apellido|default:"" }}</span></td>
             <td>
@@ -652,7 +655,6 @@
       const filas = document.querySelectorAll('.vd-opstable tbody .fila-operacion');
       const vacioFiltro = document.querySelector('.vd-ops-empty-filtro');
       const tabla = document.querySelector('.vd-opstable');
-      if (!tabs.length) return;
 
       const aplicarFiltro = (filtro) => {
         let visibles = 0;
@@ -668,11 +670,47 @@
         }
       };
 
+      const activarTab = (filtro) => {
+        tabs.forEach((t) => t.classList.toggle('is-active', t.dataset.filtro === filtro));
+        aplicarFiltro(filtro);
+      };
+
       tabs.forEach((tab) => {
-        tab.addEventListener('click', () => {
-          tabs.forEach((t) => t.classList.remove('is-active'));
-          tab.classList.add('is-active');
-          aplicarFiltro(tab.dataset.filtro);
+        tab.addEventListener('click', () => activarTab(tab.dataset.filtro));
+      });
+
+      // Salto desde una fila de la caja (venta/compra) a su fila en la tabla de
+      // operaciones: reseteo el filtro para garantizar que la fila este visible,
+      // hago scroll suave y la destaco con un pulso que se desvanece solo.
+      const enlacesCaja = document.querySelectorAll('[data-ir-operacion]');
+      const prefiereMenosMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      enlacesCaja.forEach((enlace) => {
+        enlace.addEventListener('click', () => {
+          const id = enlace.dataset.irOperacion;
+          const destino = document.getElementById('fila-op-' + id);
+          if (!destino) return;
+
+          // Si un filtro dejaba oculta la fila, vuelvo a "Todas" antes de saltar.
+          if (destino.hidden && tabs.length) activarTab('todas');
+
+          destino.scrollIntoView({
+            behavior: prefiereMenosMovimiento ? 'auto' : 'smooth',
+            block: 'center',
+          });
+
+          destino.classList.remove('fila-operacion--destacada');
+          // Reinicio el reflow para que la animacion se dispare aunque se
+          // haga clic dos veces seguidas sobre la misma fila.
+          void destino.offsetWidth;
+          destino.classList.add('fila-operacion--destacada');
+
+          // Limpio la clase pasado el pulso (con menos movimiento, dejo el
+          // resaltado estatico un instante mas para que igual se note).
+          clearTimeout(destino._timeoutDestacado);
+          destino._timeoutDestacado = setTimeout(() => {
+            destino.classList.remove('fila-operacion--destacada');
+          }, prefiereMenosMovimiento ? 2200 : 1800);
         });
       });
     });
