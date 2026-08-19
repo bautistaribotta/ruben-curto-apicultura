@@ -578,7 +578,7 @@ html {
 
 .vcc-columna-toneladas {
   width: 9rem;
-  text-align: right;
+  text-align: center;
 }
 
 /* La ruta del flete: las paradas en el orden en que las recorre el camion,
@@ -607,7 +607,7 @@ html {
 /* Mismo tratamiento que el monto de las operaciones (tabular y fuerte) para que
    las dos tablas rimen, con la unidad atenuada: lo que se lee es el numero. */
 .vcc-toneladas {
-  text-align: right;
+  text-align: center;
   font-size: 1.125rem;
   font-weight: var(--weight-bold);
   color: var(--text-strong);
