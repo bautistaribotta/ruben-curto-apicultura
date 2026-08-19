@@ -804,6 +804,9 @@ html {
   --info-50: oklch(96.5% 0.018 250);
   --info-200: oklch(88% 0.06 250);
   --info-700: oklch(48% 0.15 250);
+  /* Azul profundo para texto/links azules sobre fondos claros: llega a 7.7:1
+     sobre --info-50 y 8.5:1 sobre blanco (AAA), sin perder la identidad azul. */
+  --info-800: oklch(42% 0.13 255);
 }
 
 /* Panel de eliminacion */
@@ -1749,6 +1752,385 @@ html {
   }
 }
 
+/* ============================================================
+   Devolucion del sobrante: pie del resumen de caja.
+
+   Aparece bajo el "Total restante" cuando hay sobrante o cuando ya se registro
+   una devolucion. Tres estados: pendiente (aviso + accion, neutro), total
+   (resuelto, verde) y parcial (aviso informativo, azul, con el pago que se le
+   cargo al empleado).
+   ============================================================ */
+.vd-devol {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.9rem 1.15rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.vd-devol--total {
+  background-color: var(--success-50);
+}
+
+.vd-devol--parcial {
+  background-color: var(--info-50);
+}
+
+.vd-devol__ico {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--surface-sunken);
+  color: var(--brand-active);
+}
+
+.vd-devol__ico .material-symbols-outlined {
+  font-size: 1.2rem;
+}
+
+/* Sobre las filas tintadas, el icono va en blanco para destacar del fondo. */
+.vd-devol__ico--ok {
+  background-color: var(--surface-card);
+  color: var(--success-600);
+}
+
+.vd-devol__ico--parcial {
+  background-color: var(--surface-card);
+  color: var(--info-700);
+}
+
+.vd-devol__texto {
+  flex: 1;
+  min-width: 0;
+}
+
+.vd-devol__titulo {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--text-strong);
+}
+
+.vd-devol__sub {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  margin-top: 1px;
+  line-height: 1.45;
+}
+
+.vd-devol__sub strong {
+  font-weight: var(--weight-bold);
+  color: var(--text-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+.vd-devol__link {
+  color: var(--info-800);
+  font-weight: var(--weight-semibold);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.vd-devol__link:hover {
+  color: var(--info-800);
+  filter: brightness(0.92);
+}
+
+.vd-devol__link:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+
+/* Lapiz para reabrir el modal y corregir la devolucion ya cargada. */
+.vd-devol__edit {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background-color: var(--surface-card);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--dur-normal) var(--ease-standard);
+}
+
+.vd-devol__edit:hover {
+  background-color: var(--surface-hover);
+  color: var(--text-body);
+}
+
+.vd-devol__edit:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+}
+
+.vd-devol__edit .material-symbols-outlined {
+  font-size: 1.05rem;
+}
+
+/* ============================================================
+   Modal de devolucion del sobrante.
+
+   Misma cascara, fondo y animacion que el modal de ingreso; solo suma las dos
+   opciones (todo / una parte) y el campo de cuanto devolvio.
+   ============================================================ */
+#contenedor-modal-devolucion {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  visibility: hidden;
+  transition: visibility 0.3s;
+}
+
+#contenedor-modal-devolucion.abierto {
+  visibility: visible;
+  transition: none;
+}
+
+#contenedor-modal-fondo-devolucion {
+  position: absolute;
+  inset: 0;
+  background-color: var(--color-slate-900-transparente-40);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+#contenedor-modal-devolucion.abierto #contenedor-modal-fondo-devolucion {
+  opacity: 1;
+}
+
+#panel-devolucion {
+  position: relative;
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 2rem;
+  width: 90%;
+  max-width: 460px;
+  max-height: 88vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-xl);
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  opacity: 0;
+  transform: scale(0.95);
+  transition: all var(--dur-slow) var(--ease-standard);
+}
+
+#contenedor-modal-devolucion.abierto #panel-devolucion {
+  opacity: 1;
+  transform: scale(1);
+}
+
+#icono-devolucion {
+  color: var(--brand-active);
+  align-self: center;
+  margin-bottom: 0.5rem;
+  display: flex;
+  justify-content: center;
+}
+
+#icono-devolucion span {
+  font-size: 2.75rem;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 48;
+}
+
+#panel-devolucion h3 {
+  font-size: 1.25rem;
+  font-weight: var(--weight-bold);
+  color: var(--text-strong);
+  margin-bottom: 0.5rem;
+}
+
+#panel-devolucion p {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  margin-bottom: 1.25rem;
+  line-height: 1.4;
+}
+
+#panel-devolucion p strong {
+  font-weight: var(--weight-bold);
+  color: var(--text-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Las dos opciones: todo / una parte, como tarjetas seleccionables. */
+.devol-opciones {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+  text-align: left;
+  margin-bottom: 1rem;
+}
+
+.devol-opcion {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  padding: 0.8rem;
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background-color: var(--surface-card);
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition: border-color var(--dur-normal) var(--ease-standard),
+              background-color var(--dur-normal) var(--ease-standard);
+}
+
+.devol-opcion:hover {
+  border-color: var(--border-default);
+  background-color: var(--surface-hover);
+}
+
+.devol-opcion:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+}
+
+/* Elegida: acento pino (color de accion/atencion del sistema). */
+.devol-opcion.is-sel {
+  border-color: var(--brand-secondary);
+  background-color: var(--success-50);
+}
+
+.devol-opcion__ico {
+  flex: none;
+  color: var(--text-subtle);
+  line-height: 1;
+}
+
+.devol-opcion__ico .material-symbols-outlined {
+  font-size: 1.35rem;
+}
+
+.devol-opcion.is-sel .devol-opcion__ico {
+  color: var(--brand-secondary);
+}
+
+.devol-opcion__txt {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.devol-opcion__titulo {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--text-strong);
+}
+
+.devol-opcion__sub {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  margin-top: 1px;
+  line-height: 1.35;
+}
+
+/* Campo de cuanto devolvio: mismo alineado que el resto de los modales. */
+#panel-devolucion .devol-monto {
+  text-align: left;
+  margin-bottom: 1rem;
+}
+
+#panel-devolucion .devol-monto label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--text-body);
+}
+
+#panel-devolucion .devol-monto input {
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-strong);
+  transition: all var(--dur-normal) var(--ease-standard);
+}
+
+#panel-devolucion .devol-monto input:focus {
+  border-color: var(--brand);
+  background-color: var(--surface-card);
+  box-shadow: var(--ring);
+}
+
+.devol-hint {
+  display: block;
+  text-align: left;
+  margin-top: 0.4rem;
+  font-size: var(--text-xs);
+  color: var(--text-subtle);
+  line-height: 1.4;
+}
+
+.devol-hint--ok {
+  color: var(--success-600);
+  font-weight: var(--weight-semibold);
+}
+
+.devol-hint--error {
+  color: var(--danger-600);
+  font-weight: var(--weight-semibold);
+}
+
+#panel-devolucion .acciones-modal {
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 1.25rem;
+  margin-top: 0.25rem;
+}
+
+#panel-devolucion .boton-primario {
+  background-color: var(--brand-secondary);
+  color: var(--text-on-inverse);
+  border: none;
+  padding: 0.75rem;
+  border-radius: var(--radius-md);
+  font-weight: var(--weight-bold);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  transition: all var(--dur-normal) var(--ease-standard);
+}
+
+#panel-devolucion .boton-primario:hover:not(:disabled) {
+  background-color: var(--pine-950);
+}
+
+#panel-devolucion .boton-primario:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* El hidden hay que forzarlo dentro del grid de acciones. */
+#panel-devolucion [hidden] {
+  display: none;
+}
+
+@media (max-width: 600px) {
+  .devol-opciones {
+    grid-template-columns: 1fr;
+  }
+  #panel-devolucion {
+    width: 95%;
+  }
+}
+
 /* fallback-oklch-autogenerado */
 /* Safari < 15.4 no soporta oklch(): redefinimos las variables en sRGB. */
 @supports not (color: oklch(0% 0 0)) {
@@ -1756,6 +2138,7 @@ html {
     --info-50: #ebf5ff;
     --info-200: #badbfe;
     --info-700: #005fad;
+    --info-800: #0b4c92;
     --color-rojo-eliminacion: #dc2626;
   }
 }

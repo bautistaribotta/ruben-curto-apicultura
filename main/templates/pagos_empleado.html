@@ -128,14 +128,27 @@
             </tr>
 
             {% else %}
-            <tr class="fila-cuenta">
+            {% comment %}
+              Un pago de devolucion (el chofer se quedo con parte del sobrante de
+              la caja de un viaje) se muestra con badge y acento propios, aunque se
+              edita y borra igual que cualquier pago. Un pago comun va sin acento.
+            {% endcomment %}
+            <tr class="fila-cuenta{% if fila.es_devolucion %} fila-pago--devolucion{% endif %}">
               <td class="celda-fecha-pago">{{ fila.fecha|date:"d/m/Y" }}</td>
               <td class="celda-observacion">
+                {% if fila.es_devolucion %}
+                <span class="etiqueta-mov etiqueta-mov--devolucion">
+                  <span class="material-symbols-outlined">wallet</span>
+                  Devolución
+                </span>
+                <span class="mov-detalle">Sobrante de caja{% if fila.viaje_devolucion_id %} · viaje #{{ fila.viaje_devolucion_id }}{% endif %}</span>
+                {% else %}
                 <span class="etiqueta-mov etiqueta-mov--pago">
                   <span class="material-symbols-outlined">payments</span>
                   Pago
                 </span>
                 <span class="mov-detalle">{{ fila.observaciones|default:"Sin observación" }}</span>
+                {% endif %}
               </td>
               <td class="texto-derecha celda-monto-mov">${{ fila.monto_abs|floatformat:"0"|intcomma }}</td>
               <td class="celda-acciones-pago">

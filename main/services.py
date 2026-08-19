@@ -1434,10 +1434,22 @@ def _movimientos_cuenta_corriente(empleado, desde, hasta):
 
     pagos = PagosEmpleados.objects.filter(empleado=empleado, fecha__gte=desde, fecha__lte=hasta)
     for pago in pagos:
+        # Los pagos que nacen de una devolucion de caja se muestran diferenciados
+        # (badge propio y viaje de origen), aunque se editen como cualquier pago.
+        es_devolucion = pago.origen == PagosEmpleados.ORIGEN_DEVOLUCION
+        viaje_devolucion_id = None
+        if es_devolucion:
+            try:
+                viaje_devolucion_id = pago.viaje_devolucion.id
+            except Viaje.DoesNotExist:
+                viaje_devolucion_id = None
         eventos.append({
             "fecha": pago.fecha,
             "orden": 1,
             "tipo": "pago",
+            "origen": pago.origen,
+            "es_devolucion": es_devolucion,
+            "viaje_devolucion_id": viaje_devolucion_id,
             "concepto": pago.observaciones or "Pago",
             "monto": pago.monto,
             "pago_id": pago.id,
@@ -2248,6 +2260,116 @@ def eliminar_ingreso_caja(id_ingreso):
     """Borrado de verdad: un ingreso mal cargado no es historia y no cuelga nada."""
     ingreso = get_object_or_404(IngresoCaja, id=id_ingreso)
     ingreso.delete()
+
+
+# --- Devolucion del sobrante de la caja (miel/cera) ---
+#
+# Cuando la caja de un viaje cierra con sobrante (final_caja > 0), el chofer tiene
+# esa plata fisica. Aca se registra que hizo con ella: la devolvio toda (no queda
+# nada pendiente) o devolvio una parte y se quedo con el resto. Lo que se queda no
+# vuelve a la empresa: cuenta como plata que ya cobro, asi que se anota como un
+# pago del empleado (PagosEmpleados con origen "devolucion") y figura en su cuenta
+# corriente, diferenciado de los pagos que se cargan a mano.
+
+
+def _validar_monto_devuelto(monto, sobrante):
+    """Valida cuanto devolvio el chofer en una devolucion parcial.
+
+    Tiene que ser un entero entre 0 y el sobrante, sin llegar a el: devolver todo
+    es la otra opcion ("Devolvió todo"), no una parcial. Cero es valido: el chofer
+    no devolvio nada y se quedo con todo el sobrante.
+    """
+    try:
+        monto_val = int(monto)
+    except (ValueError, TypeError):
+        raise ValueError("El monto devuelto debe ser un número entero.")
+    if monto_val < 0:
+        raise ValueError("El monto devuelto no puede ser negativo.")
+    if monto_val >= sobrante:
+        raise ValueError(
+            'Lo devuelto tiene que ser menor al sobrante. Si devolvió todo, usá "Devolvió todo".'
+        )
+    return monto_val
+
+
+def _limpiar_devolucion(viaje):
+    """Deja el viaje sin devolucion registrada y borra el pago que la respaldaba."""
+    if viaje.pago_devolucion_id:
+        viaje.pago_devolucion.delete()  # SET_NULL deja el vinculo en null solo
+    viaje.pago_devolucion = None
+    viaje.devolucion_estado = Viaje.DEVOLUCION_SIN_REGISTRAR
+    viaje.monto_devuelto = 0
+    viaje.sobrante_devolucion = 0
+    viaje.save(update_fields=[
+        "pago_devolucion", "devolucion_estado", "monto_devuelto", "sobrante_devolucion",
+    ])
+
+
+def registrar_devolucion_caja(id_viaje, estado, monto_devuelto=None):
+    """Registra que hizo el chofer con el sobrante de la caja del viaje.
+
+    - estado "" (sin registrar): borra lo que hubiera cargado y su pago.
+    - estado "total": devolvio todo el sobrante. No genera pago.
+    - estado "parcial": devolvio 'monto_devuelto' y se quedo con el resto, que se
+      registra como un pago del empleado (lo que retuvo = sobrante - devuelto).
+
+    El sobrante se toma de final_caja en el momento y queda congelado en
+    sobrante_devolucion, asi el registro no se descuadra si despues cambian las
+    operaciones o los gastos.
+    """
+    viaje = get_object_or_404(Viaje, id=id_viaje, activo=True)
+
+    if estado not in (Viaje.DEVOLUCION_SIN_REGISTRAR, Viaje.DEVOLUCION_TOTAL, Viaje.DEVOLUCION_PARCIAL):
+        raise ValueError("El estado de la devolución no es válido.")
+
+    with transaction.atomic():
+        if estado == Viaje.DEVOLUCION_SIN_REGISTRAR:
+            _limpiar_devolucion(viaje)
+            return viaje
+
+        sobrante = viaje.final_caja
+        if sobrante <= 0:
+            raise ValueError("No hay sobrante en la caja para registrar una devolución.")
+
+        if estado == Viaje.DEVOLUCION_TOTAL:
+            devuelto = sobrante
+            retenido = 0
+        else:  # parcial
+            devuelto = _validar_monto_devuelto(monto_devuelto, sobrante)
+            retenido = sobrante - devuelto
+
+        if retenido > 0:
+            # El chofer se quedo con plata: nace o se actualiza el pago del empleado.
+            pago = viaje.pago_devolucion
+            if pago is None:
+                pago = PagosEmpleados.objects.create(
+                    empleado=viaje.empleado,
+                    fecha=viaje.fecha_vuelta or timezone.localdate(),
+                    monto=retenido,
+                    observaciones=f"Devolución de caja — viaje #{viaje.id}",
+                    origen=PagosEmpleados.ORIGEN_DEVOLUCION,
+                )
+                viaje.pago_devolucion = pago
+            else:
+                # Reescribo el monto y me aseguro empleado/origen; fecha y
+                # observacion no las piso, por si se corrigieron a mano.
+                pago.empleado = viaje.empleado
+                pago.monto = retenido
+                pago.origen = PagosEmpleados.ORIGEN_DEVOLUCION
+                pago.save(update_fields=["empleado", "monto", "origen"])
+        elif viaje.pago_devolucion_id:
+            # Devolvio todo: si venia de una parcial, el pago ya no corresponde.
+            viaje.pago_devolucion.delete()
+            viaje.pago_devolucion = None
+
+        viaje.devolucion_estado = estado
+        viaje.monto_devuelto = devuelto
+        viaje.sobrante_devolucion = sobrante
+        viaje.save(update_fields=[
+            "devolucion_estado", "monto_devuelto", "sobrante_devolucion", "pago_devolucion",
+        ])
+
+    return viaje
 
 
 # --- Viajes de cereales ---

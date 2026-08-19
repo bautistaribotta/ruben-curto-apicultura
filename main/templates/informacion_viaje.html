@@ -186,6 +186,50 @@
           <span class="vd-caja__k"><span class="material-symbols-outlined">savings</span>Total restante</span>
           <span class="vd-caja__v">${{ viaje.final_caja|intcomma }}</span>
         </div>
+
+        {% comment %}
+          Devolución del sobrante: qué hizo el chofer con la plata que le quedó en
+          la caja. Solo aparece si hay sobrante (final_caja > 0) o si ya se
+          registró una devolución, para no perder el dato si la caja se movió después.
+        {% endcomment %}
+        {% if viaje.final_caja > 0 or viaje.devolucion_registrada %}
+        <div class="vd-devol vd-devol--{{ viaje.devolucion_estado|default:'pendiente' }}">
+          {% if not viaje.devolucion_registrada %}
+          <div class="vd-devol__ico"><span class="material-symbols-outlined">wallet</span></div>
+          <div class="vd-devol__texto">
+            <div class="vd-devol__titulo">El chofer tiene ${{ viaje.final_caja|intcomma }} de sobrante</div>
+            <div class="vd-devol__sub">Registrá si devolvió la plata al volver.</div>
+          </div>
+          <button type="button" class="op-btn op-btn--dark op-btn--sm" onclick="abrirModalDevolucion()">
+            <span class="material-symbols-outlined">undo</span>
+            Registrar devolución
+          </button>
+
+          {% elif viaje.devolucion_estado == 'total' %}
+          <div class="vd-devol__ico vd-devol__ico--ok"><span class="material-symbols-outlined">check_circle</span></div>
+          <div class="vd-devol__texto">
+            <div class="vd-devol__titulo">Devolvió todo el sobrante</div>
+            <div class="vd-devol__sub">${{ viaje.sobrante_devolucion|intcomma }} devueltos. No quedó nada en su poder.</div>
+          </div>
+          <button type="button" class="vd-devol__edit" onclick="abrirModalDevolucion()" aria-label="Editar la devolución">
+            <span class="material-symbols-outlined">edit</span>
+          </button>
+
+          {% else %}
+          <div class="vd-devol__ico vd-devol__ico--parcial"><span class="material-symbols-outlined">call_split</span></div>
+          <div class="vd-devol__texto">
+            <div class="vd-devol__titulo">Devolvió ${{ viaje.monto_devuelto|intcomma }} de ${{ viaje.sobrante_devolucion|intcomma }}</div>
+            <div class="vd-devol__sub">
+              Se quedó con <strong>${{ viaje.devolucion_retenido|intcomma }}</strong>, que figura como
+              <a href="{% url 'informacion_empleado' viaje.empleado.id %}" class="vd-devol__link">pago de {{ viaje.empleado.nombre }}</a>.
+            </div>
+          </div>
+          <button type="button" class="vd-devol__edit" onclick="abrirModalDevolucion()" aria-label="Editar la devolución">
+            <span class="material-symbols-outlined">edit</span>
+          </button>
+          {% endif %}
+        </div>
+        {% endif %}
       </div>
     </div>
     {% endif %}
@@ -444,6 +488,91 @@
   </div>
 </form>
 
+{% if user.is_staff %}
+<!-- Panel de devolucion del sobrante de la caja. Deja elegir entre "devolvió
+     todo" y "devolvió una parte"; en el segundo caso pide cuánto devolvió y
+     muestra en vivo el pago que se le cargará al empleado por lo que retuvo.
+     El botón de quitar usa el mismo gesto de mantener apretado que gasto/ingreso. -->
+<form id="formulario-devolucion" method="POST"
+      data-sobrante="{{ viaje.final_caja }}"
+      data-estado="{{ viaje.devolucion_estado }}"
+      data-devuelto="{{ viaje.monto_devuelto }}"
+      data-empleado="{{ viaje.empleado.nombre|default:'el chofer' }}">
+  {% csrf_token %}
+  <input type="hidden" name="accion" value="registrar_devolucion">
+  <input type="hidden" name="estado_devolucion" id="devol-estado" value="">
+  <div id="contenedor-modal-devolucion">
+    <div id="contenedor-modal-fondo-devolucion" onclick="cerrarModalDevolucion()"> </div>
+
+    <div id="panel-devolucion">
+      <button type="button" class="boton-cerrar" onclick="cerrarModalDevolucion()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+
+      <div id="icono-devolucion">
+        <span class="material-symbols-outlined">wallet</span>
+      </div>
+
+      <h3 id="devolucion-titulo">Devolución del sobrante</h3>
+      <p id="devolucion-bajada">Sobran <strong>${{ viaje.final_caja|intcomma }}</strong> en la caja. ¿Qué hizo el chofer con esa plata?</p>
+
+      <div class="devol-opciones" role="radiogroup" aria-label="Qué hizo el chofer con el sobrante">
+        <button type="button" class="devol-opcion" data-opcion="total" role="radio" aria-checked="false">
+          <span class="devol-opcion__ico"><span class="material-symbols-outlined">check_circle</span></span>
+          <span class="devol-opcion__txt">
+            <span class="devol-opcion__titulo">Devolvió todo</span>
+            <span class="devol-opcion__sub">Entregó el sobrante completo</span>
+          </span>
+        </button>
+        <button type="button" class="devol-opcion" data-opcion="parcial" role="radio" aria-checked="false">
+          <span class="devol-opcion__ico"><span class="material-symbols-outlined">call_split</span></span>
+          <span class="devol-opcion__txt">
+            <span class="devol-opcion__titulo">Devolvió una parte</span>
+            <span class="devol-opcion__sub">Se quedó con el resto</span>
+          </span>
+        </button>
+      </div>
+
+      <div class="grupo-input devol-monto" id="devol-monto-campo" hidden>
+        <label for="monto-devuelto">¿Cuánto devolvió?</label>
+        <div class="input-con-icono">
+          <span>$</span>
+          <input
+            type="text"
+            id="monto-devuelto"
+            name="monto_devuelto"
+            class="input-miles"
+            inputmode="numeric"
+            autocomplete="off"
+            placeholder="0"
+            pattern="0|[1-9][0-9]{0,2}(\.[0-9]{3})*">
+        </div>
+        <span class="vd-hint devol-hint" id="devol-hint">El resto queda como pago del empleado.</span>
+      </div>
+
+      <div class="acciones-modal">
+        <button type="submit" class="boton-primario" id="devolucion-guardar" disabled>Guardar</button>
+        <button type="button" class="boton-secundario" onclick="cerrarModalDevolucion()">Cancelar</button>
+      </div>
+
+      {% comment %}
+        Quitar la devolución vuelve el viaje a "sin registrar" y borra el pago que
+        hubiera generado. Mismo gesto de mantener apretado que gasto/ingreso, sin
+        segundo modal. Solo aparece cuando ya hay una devolución cargada.
+      {% endcomment %}
+      <div class="gasto-borrar" id="devolucion-zona-borrar" hidden>
+        <button type="button" class="op-btn op-btn--danger gasto-borrar__btn" id="devolucion-borrar">
+          <span class="gasto-borrar__label">
+            <span class="material-symbols-outlined">delete</span>
+            <span id="devolucion-borrar-texto">Quitar devolución</span>
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
+</form>
+{% endif %}
+
 <!-- Panel de eliminacion y Fondo -->
 <form id="formulario-eliminar" method="POST">
   {% csrf_token %}
@@ -646,6 +775,7 @@
   <script src="{% static 'js/selector_entidad.js' %}"></script>
   <script src="{% static 'js/gastos_viaje.js' %}"></script>
   <script src="{% static 'js/ingreso_caja.js' %}"></script>
+  <script src="{% static 'js/devolucion_caja.js' %}"></script>
   <script src="{% static 'js/informacion_viaje.js' %}"></script>
   <script>
     // Filtro de operaciones por tipo (Todas / Compras / Ventas)

@@ -730,6 +730,14 @@
   color: var(--text-muted);
 }
 
+/* Devolución: pago que nace del sobrante de la caja de un viaje. Se distingue
+   del pago común con un tono informativo (azul), sin llegar al verde de la
+   comisión ni al gris del pago manual. */
+.etiqueta-mov--devolucion {
+  background-color: var(--info-50);
+  color: var(--info-800);
+}
+
 .mov-detalle {
   color: var(--text-body);
 }
@@ -749,6 +757,30 @@
 .fila-pago--comision {
   cursor: pointer;
   box-shadow: inset 0.2rem 0 0 var(--success-500);
+}
+
+/* Devolucion: acento azul a la izquierda, igual peso que el de la comision pero
+   con el tono informativo que la diferencia del pago manual. */
+.fila-pago--devolucion {
+  box-shadow: inset 0.2rem 0 0 var(--info-800);
+}
+
+/* Tokens de estado informativo (no viven en base.css). --info-800 es el azul
+   profundo para texto sobre fondos claros (AAA: 7.7:1 sobre --info-50). */
+:root {
+  --info-50: oklch(96.5% 0.018 250);
+  --info-200: oklch(88% 0.06 250);
+  --info-700: oklch(48% 0.15 250);
+  --info-800: oklch(42% 0.13 255);
+}
+
+@supports not (color: oklch(0% 0 0)) {
+  :root {
+    --info-50: #ebf5ff;
+    --info-200: #badbfe;
+    --info-700: #005fad;
+    --info-800: #0b4c92;
+  }
 }
 
 /* --- Cierre del mes (pie de la tabla) ---

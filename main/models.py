@@ -277,10 +277,24 @@ class Empleado(models.Model):
 
 
 class PagosEmpleados(models.Model):
+    # De donde salio el pago. "manual" es el pago comun que se carga a mano desde
+    # el perfil; "devolucion" es el que nace solo cuando un chofer se queda con
+    # parte del sobrante de la caja de un viaje de miel/cera (ver
+    # Viaje.registrar_devolucion en services). El origen no cambia al editar el
+    # pago, asi la cuenta corriente lo puede seguir distinguiendo visualmente
+    # aunque se le corrija el monto desde cualquiera de los dos lados.
+    ORIGEN_MANUAL = "manual"
+    ORIGEN_DEVOLUCION = "devolucion"
+    ORIGEN_CHOICES = [
+        (ORIGEN_MANUAL, "Manual"),
+        (ORIGEN_DEVOLUCION, "Devolución de caja"),
+    ]
+
     empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE, db_column="id_empleado")
     fecha = models.DateField(default=timezone.now)
     monto = models.DecimalField(max_digits=12, decimal_places=2)
     observaciones = models.CharField(max_length=250, blank=True, default="")
+    origen = models.CharField(max_length=15, choices=ORIGEN_CHOICES, default=ORIGEN_MANUAL)
 
     class Meta:
         db_table = "pagos_empleados"
@@ -473,12 +487,45 @@ class ObservacionVehiculo(models.Model):
 
 
 class Viaje(models.Model):
+    # Que hizo el chofer con el sobrante de la caja al volver. Solo tiene sentido
+    # cuando final_caja > 0. "" es que todavia no se registro; "total" es que
+    # devolvio todo el sobrante y no queda nada pendiente; "parcial" es que
+    # devolvio una parte y se quedo con el resto, que pasa a figurar como un pago
+    # del empleado (pago_devolucion). Ver services.registrar_devolucion_caja.
+    DEVOLUCION_SIN_REGISTRAR = ""
+    DEVOLUCION_TOTAL = "total"
+    DEVOLUCION_PARCIAL = "parcial"
+    DEVOLUCION_CHOICES = [
+        (DEVOLUCION_SIN_REGISTRAR, "Sin registrar"),
+        (DEVOLUCION_TOTAL, "Devolvió todo"),
+        (DEVOLUCION_PARCIAL, "Devolvió una parte"),
+    ]
+
     empleado = models.ForeignKey(Empleado, on_delete=models.PROTECT, db_column="id_empleado")
     vehiculo = models.ForeignKey(Vehiculo, on_delete=models.PROTECT, db_column="id_vehiculo")
     inicio_caja = models.PositiveIntegerField(default=0)
     fecha_inicio = models.DateField()
     fecha_vuelta = models.DateField(null=True, blank=True)
     activo = models.BooleanField(default=True)
+
+    # Estado de la devolucion del sobrante (ver DEVOLUCION_CHOICES).
+    devolucion_estado = models.CharField(
+        max_length=10, choices=DEVOLUCION_CHOICES, default=DEVOLUCION_SIN_REGISTRAR, blank=True
+    )
+    # Cuanto devolvio el chofer del sobrante. En "total" es igual al sobrante.
+    monto_devuelto = models.PositiveIntegerField(default=0)
+    # Foto del sobrante (final_caja) al momento de registrar la devolucion. Se
+    # guarda para que el registro quede coherente aunque despues cambien las
+    # operaciones o los gastos y final_caja se mueva.
+    sobrante_devolucion = models.PositiveIntegerField(default=0)
+    # El pago que genero una devolucion parcial (lo que el chofer se quedo). Es un
+    # PagosEmpleados con origen "devolucion". OneToOne para poder actualizarlo o
+    # borrarlo al editar la devolucion desde el viaje. SET_NULL: si el pago se
+    # borra desde el perfil del empleado, el viaje no se cae, solo pierde el vinculo.
+    pago_devolucion = models.OneToOneField(
+        "PagosEmpleados", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="viaje_devolucion",
+    )
 
     @property
     def total_gastos(self) -> int:
@@ -532,6 +579,20 @@ class Viaje(models.Model):
         # quedar negativa.
         return (int(self.inicio_caja) - self.total_gastos + self.total_ventas
                 - self.total_compras + self.total_ingresos)
+
+    @property
+    def devolucion_registrada(self) -> bool:
+        # La devolucion esta cargada cuando el estado no es el vacio.
+        return self.devolucion_estado in (self.DEVOLUCION_TOTAL, self.DEVOLUCION_PARCIAL)
+
+    @property
+    def devolucion_retenido(self) -> int:
+        # Lo que el chofer se quedo en una devolucion parcial: el sobrante del que
+        # se partio menos lo que devolvio. Es el monto que figura como pago del
+        # empleado. En "total" o sin registrar es cero.
+        if self.devolucion_estado != self.DEVOLUCION_PARCIAL:
+            return 0
+        return int(self.sobrante_devolucion) - int(self.monto_devuelto)
 
     @property
     def estado(self):

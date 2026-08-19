@@ -30,6 +30,7 @@ from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo
                        obtener_vehiculos_activos, obtener_viajes, obtener_datos_viaje, editar_viaje, eliminar_viaje, crear_gasto,
                        editar_gasto_viaje, eliminar_gasto_viaje,
                        crear_ingreso_caja, editar_ingreso_caja, eliminar_ingreso_caja,
+                       registrar_devolucion_caja,
                        incluir_asignado,
                        opciones_empleados_filtro, opciones_vehiculos_filtro,
                        opciones_destinos_viaje, opciones_destinos_cereal, opciones_destinos_reparto_filtro,
@@ -1612,6 +1613,29 @@ def informacion_viaje(request, id_viaje):
                 separador = "&" if "?" in destino else "?"
                 destino = f"{destino}{separador}ingreso={ingreso_marcado}"
             return redirect(destino)
+
+        elif accion == "registrar_devolucion":
+            # La devolucion del sobrante toca la caja y puede generar un pago del
+            # empleado: es solo del staff, igual que el resto del resumen de caja.
+            if not request.user.is_staff:
+                messages.error(request, "No tenés permiso para tocar la caja del viaje.")
+                return redirect("informacion_viaje", id_viaje=id_viaje)
+
+            estado = request.POST.get("estado_devolucion", "")
+            monto_devuelto = request.POST.get("monto_devuelto")
+
+            try:
+                registrar_devolucion_caja(id_viaje, estado, monto_devuelto)
+                if estado == Viaje.DEVOLUCION_SIN_REGISTRAR:
+                    messages.success(request, "Devolución de caja borrada correctamente.")
+                else:
+                    messages.success(request, "Devolución de caja registrada correctamente.")
+            except ValueError as e:
+                messages.error(request, str(e))
+            except Exception as e:
+                messages.error(request, f"Ocurrió un error inesperado: {e}")
+
+            return redirect("informacion_viaje", id_viaje=id_viaje)
 
     # Operaciones asociadas al viaje, para el listado
     operaciones_viaje = (
