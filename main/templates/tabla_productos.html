@@ -9,6 +9,42 @@
     </tr>
   </thead>
   <tbody>
+    {% if granel %}
+      {% for articulo in granel %}
+        {% with tipo=articulo.articulo|slice:":4"|lower %}
+        <tr class="fila-granel fila-granel--{{ tipo }}">
+          <td>
+            <div class="producto-info"> {{ articulo.articulo }} </div>
+            <div class="producto-id granel-sub"> Venta por kilo </div>
+          </td>
+          <td class="texto-centrado categoria-valor">
+            <span class="etiqueta etiqueta-granel etiqueta-granel--{{ tipo }}">
+              <span class="material-symbols-outlined">scale</span> Granel
+            </span>
+          </td>
+          <td class="stock-valor texto-centrado">
+            {% if articulo.cantidad <= 0 %}
+              <span class="badge-estado badge-estado--danger">
+                <span class="material-symbols-outlined">warning</span> Sin stock
+              </span>
+            {% else %}
+              <span class="prod-stock">
+                <strong>{{ articulo.cantidad|floatformat:"-2g" }}</strong> kg
+              </span>
+            {% endif %}
+          </td>
+          <td class="precio-valor"> $ {{ articulo.monto|floatformat:"-2g" }}<span class="granel-unidad">/kg</span> </td>
+          <td>
+            <div class="acciones-tabla">
+              <span class="granel-solo-lectura" title="Stock gestionado desde cotizaciones">
+                <span class="material-symbols-outlined">lock</span>
+              </span>
+            </div>
+          </td>
+        </tr>
+        {% endwith %}
+      {% endfor %}
+    {% endif %}
     {% for producto in productos %}
       <tr class="fila-producto" data-id="{{ producto.id }}">
         <td>
@@ -49,34 +85,35 @@
           </div>
         </td>
       </tr>
-    {% empty %}
+    {% endfor %}
+    {% if not granel and not productos %}
       <tr class="fila-vacia">
         <td colspan="5" class="celda-vacia">
           <span class="material-symbols-outlined">inventory_2</span>
           {% if q or categoria %}No se encontraron productos con esos filtros.{% else %}No hay productos registrados.{% endif %}
         </td>
       </tr>
-    {% endfor %}
+    {% endif %}
   </tbody>
 </table>
 
 <!-- Paginación -->
 <div class="paginacion">
   <div class="paginacion-info">
-    Mostrando <span>{{ productos.start_index }}-{{ productos.end_index }}</span>
-    de <span>{{ productos.paginator.count }}</span> productos
+    Mostrando <span>{{ pagina.start_index }}-{{ pagina.end_index }}</span>
+    de <span>{{ pagina.paginator.count }}</span> productos
   </div>
   <div class="paginacion-botones">
-    {% if productos.has_previous %}
-      <a href="?page={{ productos.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if categoria %}&categoria={{ categoria }}{% endif %}">
+    {% if pagina.has_previous %}
+      <a href="?page={{ pagina.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if categoria %}&categoria={{ categoria }}{% endif %}">
         <button class="boton-paginacion">Anterior</button>
       </a>
     {% else %}
       <button class="boton-paginacion" disabled>Anterior</button>
     {% endif %}
 
-    {% if productos.has_next %}
-      <a href="?page={{ productos.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if categoria %}&categoria={{ categoria }}{% endif %}">
+    {% if pagina.has_next %}
+      <a href="?page={{ pagina.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if categoria %}&categoria={{ categoria }}{% endif %}">
         <button class="boton-paginacion">Siguiente</button>
       </a>
     {% else %}

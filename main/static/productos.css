@@ -282,6 +282,79 @@
   border: 1px solid var(--border-default);
 }
 
+/* --- Bloque de stock a granel (miel y cera por kilo) --- */
+/* Fila a granel: banda hundida uniforme + acento lateral segun el tipo, para
+   que se lea distinta de las filas de producto envasado sin depender solo del color. */
+.fila-granel--miel {
+  --granel-accent: var(--honey-500);
+}
+
+.fila-granel--cera {
+  --granel-accent: var(--color-cera-texto-etiqueta);
+}
+
+.tabla-productos tbody tr.fila-granel,
+.tabla-productos tbody tr.fila-granel:hover {
+  background-color: var(--surface-sunken);
+}
+
+.fila-granel td {
+  background-color: var(--surface-sunken);
+}
+
+.fila-granel td:first-child {
+  box-shadow: inset 4px 0 0 0 var(--granel-accent);
+}
+
+.granel-sub {
+  color: var(--brand-active);
+  font-weight: var(--weight-semibold);
+}
+
+.fila-granel--cera .granel-sub {
+  color: var(--color-cera-texto-etiqueta);
+}
+
+.granel-unidad {
+  margin-left: 0.1rem;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--text-subtle);
+}
+
+.etiqueta-granel {
+  gap: 0.25rem;
+}
+
+.etiqueta-granel .material-symbols-outlined {
+  font-size: 0.9rem;
+}
+
+.etiqueta-granel--miel {
+  background-color: var(--color-amarillo-claro-etiqueta);
+  color: var(--color-amarillo-texto-etiqueta);
+  border: 1px solid var(--color-amarillo-borde-etiqueta);
+}
+
+.etiqueta-granel--cera {
+  background-color: var(--color-cera-fondo-etiqueta);
+  color: var(--color-cera-texto-etiqueta);
+  border: 1px solid var(--color-cera-borde-etiqueta);
+}
+
+/* Solo lectura: el stock a granel no se edita aca, se gestiona en cotizaciones. */
+.granel-solo-lectura {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.375rem;
+  color: var(--text-subtle);
+}
+
+.granel-solo-lectura .material-symbols-outlined {
+  font-size: 18px;
+}
+
 /* --- Celda de stock: cantidad + unidad + badge de estado --- */
 .prod-stock {
   display: inline-flex;

@@ -539,12 +539,53 @@ def productos(request):
 
     productos = productos.order_by("nombre")
 
-    # Cargo de a 5 productos
-    paginator_productos = Paginator(productos, 5)
-    pagina_numero = request.GET.get("page")
-    pagina_obj = paginator_productos.get_page(pagina_numero)
+    # Stock a granel (miel y cera por kilo): vive en Cotizaciones, no en Producto.
+    # Se muestra como bloque de solo lectura (se gestiona en cotizaciones), filtrado
+    # por la misma busqueda y categoria que los productos.
+    from django.db.models import Q, Case, When, Value, IntegerField
 
-    contexto = {"productos": pagina_obj, "q": q, "categoria": categoria_filtrada}
+    granel = Cotizaciones.objects.none()
+    if categoria_filtrada in ("", "Miel", "Cera"):
+        granel = Cotizaciones.objects.all()
+        if categoria_filtrada == "Miel":
+            granel = granel.filter(articulo__istartswith="Miel")
+        elif categoria_filtrada == "Cera":
+            granel = granel.filter(articulo__istartswith="Cera")
+        else:
+            granel = granel.filter(
+                Q(articulo__istartswith="Miel") | Q(articulo__istartswith="Cera")
+            )
+        if q:
+            # Con busqueda por ID no aplica; los articulos a granel se buscan por nombre
+            granel = granel.filter(filtro_tokens(q, "articulo")) if not q.isdigit() else Cotizaciones.objects.none()
+        # Miel primero, cera despues; alfabetico dentro de cada grupo
+        granel = granel.order_by(
+            Case(
+                When(articulo__istartswith="Miel", then=Value(0)),
+                default=Value(1),
+                output_field=IntegerField(),
+            ),
+            "articulo",
+        )
+
+    # Integro granel y productos en una sola lista paginada de a 5 filas: el stock a
+    # granel aparece primero y despues los productos envasados, contando ambos para la
+    # paginacion (asi la pagina nunca supera 5 filas). Cada pagina se separa de nuevo
+    # por tipo para que el template mantenga su propio render de cada fila.
+    items = list(granel) + list(productos)
+    paginator_productos = Paginator(items, 5)
+    pagina_obj = paginator_productos.get_page(request.GET.get("page"))
+
+    granel_pagina = [item for item in pagina_obj if isinstance(item, Cotizaciones)]
+    productos_pagina = [item for item in pagina_obj if isinstance(item, Producto)]
+
+    contexto = {
+        "productos": productos_pagina,
+        "granel": granel_pagina,
+        "pagina": pagina_obj,
+        "q": q,
+        "categoria": categoria_filtrada,
+    }
 
     # Si es una petición AJAX, devuelvo solo la tabla
     if request.headers.get("x-requested-with") == "XMLHttpRequest":
