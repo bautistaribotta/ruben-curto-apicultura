@@ -6,7 +6,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const carritoVacio = document.getElementById('carrito-vacio');
     const contadorCarrito = document.getElementById('contador-carrito');
     const botonVaciar = document.getElementById('boton-vaciar-carrito');
-    const panelGranel = document.getElementById('panel-granel');
 
     // Formateador en formato argentino (separador de miles con punto)
     const formatoMoneda = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -251,8 +250,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // =============================================
 
     function vincularBotonesGranel() {
-        if (!panelGranel) return;
-        panelGranel.querySelectorAll('.boton-agregar-granel').forEach(boton => {
+        contenedorTabla.querySelectorAll('.boton-agregar-granel').forEach(boton => {
             boton.addEventListener('click', function () {
                 const id = this.dataset.id;
                 const filaExistente = cuerpoCarrito.querySelector(`.cart-item[data-granel-id="${id}"]`);
@@ -321,8 +319,8 @@ document.addEventListener('DOMContentLoaded', () => {
             actualizarTotal();
             actualizarVistaResumen();
             guardarCarrito();
-            const btnPanel = panelGranel ? panelGranel.querySelector(`.boton-agregar-granel[data-id="${idCotizacion}"]`) : null;
-            if (btnPanel) btnPanel.classList.remove('is-incart');
+            const btnTabla = contenedorTabla.querySelector(`.boton-agregar-granel[data-id="${idCotizacion}"]`);
+            if (btnTabla) btnTabla.classList.remove('is-incart');
         }
 
         inputKilos.addEventListener('input', alCambiar);
@@ -333,8 +331,8 @@ document.addEventListener('DOMContentLoaded', () => {
         actualizarSubtotalGranel(fila);
         actualizarVistaResumen();
 
-        const btnPanel = panelGranel ? panelGranel.querySelector(`.boton-agregar-granel[data-id="${idCotizacion}"]`) : null;
-        if (btnPanel) btnPanel.classList.add('is-incart');
+        const btnTabla = contenedorTabla.querySelector(`.boton-agregar-granel[data-id="${idCotizacion}"]`);
+        if (btnTabla) btnTabla.classList.add('is-incart');
 
         // Foco directo al input de kilos para cargar la pesada sin clicks extra
         inputKilos.focus();
@@ -373,7 +371,7 @@ document.addEventListener('DOMContentLoaded', () => {
         actualizarVistaResumen();
         guardarCarrito();
         contenedorTabla.querySelectorAll('.boton-agregar-producto').forEach(btn => btn.classList.remove('is-incart'));
-        if (panelGranel) panelGranel.querySelectorAll('.boton-agregar-granel').forEach(btn => btn.classList.remove('is-incart'));
+        contenedorTabla.querySelectorAll('.boton-agregar-granel').forEach(btn => btn.classList.remove('is-incart'));
     });
 
     // =============================================
@@ -406,13 +404,17 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(html => {
                 contenedorTabla.innerHTML = html;
                 vincularBotonesAgregar();
+                vincularBotonesGranel();
                 vincularPaginacion();
-                
-                // Highlight items already in cart
-                const idsCarrito = Array.from(cuerpoCarrito.querySelectorAll('.cart-item')).map(f => f.dataset.id);
-                idsCarrito.forEach(id => {
-                    const btn = contenedorTabla.querySelector(`.boton-agregar-producto[data-id="${id}"]`);
-                    if(btn) btn.classList.add('is-incart');
+
+                // Vuelvo a resaltar los botones de lo que ya esta en el carrito,
+                // tanto productos envasados como articulos a granel
+                cuerpoCarrito.querySelectorAll('.cart-item').forEach(fila => {
+                    const selector = fila.dataset.tipo === 'granel'
+                        ? `.boton-agregar-granel[data-id="${fila.dataset.granelId}"]`
+                        : `.boton-agregar-producto[data-id="${fila.dataset.id}"]`;
+                    const btn = contenedorTabla.querySelector(selector);
+                    if (btn) btn.classList.add('is-incart');
                 });
             })
             .catch(error => console.error('Error en la búsqueda:', error));

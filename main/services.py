@@ -1078,17 +1078,6 @@ def get_cotizaciones():
     return resultado
 
 
-def get_articulos_granel():
-    """
-    Devuelve los articulos de cotizaciones en el orden semantico del tablero
-    (mieles por calibre y despues ceras), para el panel "A granel" de las
-    pantallas de venta y compra. Los articulos sin fila en la BD se omiten.
-    """
-    orden = ["Miel 34mm", "Miel 50mm", "Miel +50mm", "Cera Operculo", "Cera Recupero"]
-    articulos = {c.articulo: c for c in Cotizaciones.objects.all()}
-    return [articulos[art] for art in orden if art in articulos]
-
-
 def get_total_kilos_granel():
     """
     Suma los kilos a granel por familia de articulo para mostrar el total

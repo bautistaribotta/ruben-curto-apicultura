@@ -7,6 +7,36 @@
     </tr>
   </thead>
   <tbody>
+    {% for articulo in granel %}
+    {% with tipo=articulo.articulo|slice:":4"|lower %}
+    <tr class="cart-row-granel cart-row-granel--{{ tipo }}">
+      <td>
+        <div class="cart-prod">
+          <span class="cart-prod__dot cat-dot--{{ tipo }}"></span>
+          <div>
+            <div class="cart-prod__name">{{ articulo.articulo }}</div>
+            <span class="granel-tag"><span class="material-symbols-outlined">scale</span>a granel</span>
+          </div>
+        </div>
+      </td>
+      <td class="c">
+        <span class="cart-stock">{{ articulo.cantidad|floatformat:"-2g" }}<span class="cart-stock__u"> kg</span></span>
+      </td>
+      <td class="c">
+        <div class="cart-addbtn-wrap">
+          <button class="cart-addbtn boton-agregar-granel"
+                  title="Añadir a la compra"
+                  data-id="{{ articulo.id }}"
+                  data-nombre="{{ articulo.articulo }}"
+                  data-precio="{{ articulo.monto }}"
+                  data-stock="{{ articulo.cantidad }}">
+            <span class="material-symbols-outlined">add</span>
+          </button>
+        </div>
+      </td>
+    </tr>
+    {% endwith %}
+    {% endfor %}
     {% for producto in productos %}
     <tr>
       <td>
@@ -33,32 +63,33 @@
         </div>
       </td>
     </tr>
-    {% empty %}
+    {% endfor %}
+    {% if not granel and not productos %}
     <tr class="fila-vacia">
       <td colspan="3" class="celda-vacia">
         <span class="material-symbols-outlined">search_off</span>
         No se encontraron productos.
       </td>
     </tr>
-    {% endfor %}
+    {% endif %}
   </tbody>
 </table>
 
 <!-- Paginación -->
 <div class="cart-table__foot">
   <span class="paginacion-info">
-    Mostrando <span>{{productos.start_index}}-{{productos.end_index}}</span> de <span>{{productos.paginator.count}}</span>
+    Mostrando <span>{{pagina.start_index}}-{{pagina.end_index}}</span> de <span>{{pagina.paginator.count}}</span>
   </span>
   <div class="paginacion-botones">
-    {% if productos.has_previous %}
-    <a href="?page={{ productos.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if categoria %}&categoria={{ categoria }}{% endif %}#contenedor-tabla-compras">
+    {% if pagina.has_previous %}
+    <a href="?page={{ pagina.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if categoria %}&categoria={{ categoria }}{% endif %}#contenedor-tabla-compras">
       <button class="boton-paginacion">Anterior</button>
     </a>
     {% else %}
     <button class="boton-paginacion" disabled>Anterior</button>
     {% endif %}
-    {% if productos.has_next %}
-    <a href="?page={{ productos.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if categoria %}&categoria={{ categoria }}{% endif %}#contenedor-tabla-compras">
+    {% if pagina.has_next %}
+    <a href="?page={{ pagina.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if categoria %}&categoria={{ categoria }}{% endif %}#contenedor-tabla-compras">
       <button class="boton-paginacion">Siguiente</button>
     </a>
     {% else %}

@@ -23,7 +23,7 @@ from .models import (Cliente, Producto, Operacion, DetalleOperacion, Pago, Cotiz
                      Banco, CuentaCorriente, Cheque, periodo_actual)
 from .pdf_services import Remito, ResumenCuenta
 from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo_cliente, editar_cliente,
-                       eliminar_cliente, buscar_clientes, get_cotizacion_dolar_oficial, get_cotizaciones, get_total_kilos_granel, get_articulos_granel, actualizar_cotizacion, obtener_datos_cliente,
+                       eliminar_cliente, buscar_clientes, get_cotizacion_dolar_oficial, get_cotizaciones, get_total_kilos_granel, actualizar_cotizacion, obtener_datos_cliente,
                        obtener_datos_producto, modificar_stock, crear_operacion, editar_operacion, servicio_cancelar_operacion,
                        obtener_movimientos_cuenta_corriente,
                        obtener_listado_deudores, _iniciales, filtro_nombre_apellido, filtro_tokens, crear_empleado, crear_vehiculo, crear_viaje, obtener_empleados_activos,
@@ -956,6 +956,30 @@ def _contexto_edicion(operacion):
     }
 
 
+def _paginar_operacion_con_granel(productos, categoria, q, pagina_numero):
+    """
+    Arma la pagina del listado de una operacion (venta o compra) intercalando el
+    stock a granel (miel y cera por kilo, desde Cotizaciones) con los productos
+    envasados. El granel solo aparece al filtrar por Miel o Cera, respeta la misma
+    busqueda por nombre y se cuenta dentro de la paginacion (aparece primero en su
+    pagina). Devuelve (granel_pagina, productos_pagina, pagina_obj).
+    """
+    granel = Cotizaciones.objects.none()
+    if categoria in ("Miel", "Cera"):
+        granel = Cotizaciones.objects.filter(articulo__istartswith=categoria)
+        if q:
+            # La busqueda por ID no aplica a granel; los articulos se buscan por nombre
+            granel = granel.filter(filtro_tokens(q, "articulo")) if not q.isdigit() else Cotizaciones.objects.none()
+        granel = granel.order_by("articulo")
+
+    items = list(granel) + list(productos)
+    pagina_obj = Paginator(items, 6).get_page(pagina_numero)
+
+    granel_pagina = [item for item in pagina_obj if isinstance(item, Cotizaciones)]
+    productos_pagina = [item for item in pagina_obj if isinstance(item, Producto)]
+    return granel_pagina, productos_pagina, pagina_obj
+
+
 @login_required
 @ensure_csrf_cookie
 def nueva_operacion_venta(request, id_cliente):
@@ -1038,10 +1062,12 @@ def nueva_operacion_venta(request, id_cliente):
 
     productos = productos.order_by("nombre")
 
-    # Cargo de a 6 productos para tener un alto de tabla acorde
-    paginator_productos = Paginator(productos, 6)
-    pagina_numero = request.GET.get("page")
-    pagina_obj = paginator_productos.get_page(pagina_numero)
+    # Stock a granel (miel y cera por kilo, desde cotizaciones): se intercala en el
+    # listado solo cuando se filtra por Miel o Cera, respetando la busqueda. Se integra
+    # a la misma paginacion (aparece primero) para que la pagina no supere las 6 filas.
+    granel_pagina, productos_pagina, pagina_obj = _paginar_operacion_con_granel(
+        productos, categoria_filtrada, q, request.GET.get("page")
+    )
 
     # Modo edición (solo staff): precarga el carrito con la operación existente
     edicion = None
@@ -1054,11 +1080,12 @@ def nueva_operacion_venta(request, id_cliente):
 
     contexto = {
         "cliente": cliente,
-        "productos": pagina_obj,
+        "productos": productos_pagina,
+        "granel": granel_pagina,
+        "pagina": pagina_obj,
         "q": q,
         "categoria": categoria_filtrada,
         "categorias": Producto.categorias,
-        "granel": get_articulos_granel(),
         "edicion": edicion,
     }
 
@@ -1148,9 +1175,11 @@ def nueva_operacion_compra(request, id_cliente):
 
     productos = productos.order_by("nombre")
 
-    paginator_productos = Paginator(productos, 6)
-    pagina_numero = request.GET.get("page")
-    pagina_obj = paginator_productos.get_page(pagina_numero)
+    # Igual que en venta: el stock a granel se intercala en el listado solo al filtrar
+    # por Miel o Cera, integrado a la paginacion (aparece primero en su pagina).
+    granel_pagina, productos_pagina, pagina_obj = _paginar_operacion_con_granel(
+        productos, categoria_filtrada, q, request.GET.get("page")
+    )
 
     # Modo edición (solo staff): precarga el carrito con la compra existente
     edicion = None
@@ -1163,11 +1192,12 @@ def nueva_operacion_compra(request, id_cliente):
 
     contexto = {
         "cliente": cliente,
-        "productos": pagina_obj,
+        "productos": productos_pagina,
+        "granel": granel_pagina,
+        "pagina": pagina_obj,
         "q": q,
         "categoria": categoria_filtrada,
         "categorias": Producto.categorias,
-        "granel": get_articulos_granel(),
         "edicion": edicion,
     }
 

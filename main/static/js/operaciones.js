@@ -6,7 +6,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const carritoVacio = document.getElementById('carrito-vacio');
     const contadorCarrito = document.getElementById('contador-carrito');
     const botonVaciar = document.getElementById('boton-vaciar-carrito');
-    const panelGranel = document.getElementById('panel-granel');
 
     // Formateadores en formato argentino (separador de miles con punto)
     const formatoMoneda = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -173,39 +172,49 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Tras refrescar la tabla (busqueda/filtro/paginacion) vuelvo a resaltar los
+    // botones de lo que ya esta en el carrito, sean productos o articulos a granel.
+    function marcarBotonesEnCarrito() {
+        cuerpoCarrito.querySelectorAll('.cart-item').forEach(fila => {
+            const selector = fila.dataset.tipo === 'granel'
+                ? `.boton-agregar-granel[data-id="${fila.dataset.granelId}"]`
+                : `.boton-agregar-producto[data-id="${fila.dataset.id}"]`;
+            const btn = contenedorTabla.querySelector(selector);
+            if (btn) btn.classList.add('is-incart');
+        });
+    }
+
     // =============================================
     //  ARTICULOS A GRANEL (kilos desde cotizaciones)
     // =============================================
 
-    function buscarGranelEnPanel(idCotizacion) {
-        if (!panelGranel) return null;
-        const boton = panelGranel.querySelector(`.boton-agregar-granel[data-id="${idCotizacion}"]`);
+    function buscarGranelEnTabla(idCotizacion) {
+        const boton = contenedorTabla.querySelector(`.boton-agregar-granel[data-id="${idCotizacion}"]`);
         if (!boton) return null;
-        const stockCell = panelGranel.querySelector(`[data-granel-stock="${idCotizacion}"]`);
+        const stockCell = contenedorTabla.querySelector(`[data-granel-stock="${idCotizacion}"]`);
         return { boton, stockCell };
     }
 
     function actualizarStockGranel(idCotizacion, kilosDisponibles) {
-        const articulo = buscarGranelEnPanel(idCotizacion);
+        const articulo = buscarGranelEnTabla(idCotizacion);
         if (!articulo) return;
 
         const restante = Math.max(kilosDisponibles, 0);
-        articulo.stockCell.textContent = `${formatoKilos.format(restante)} kg`;
+        articulo.stockCell.innerHTML = `${formatoKilos.format(restante)}<span class="cart-stock__u"> kg</span>`;
 
         if (kilosDisponibles <= 0) {
             articulo.boton.disabled = true;
             articulo.boton.title = 'Sin kilos disponibles';
-            articulo.stockCell.classList.add('granel-item__stock--zero');
+            articulo.stockCell.classList.add('cart-stock--zero');
         } else {
             articulo.boton.disabled = false;
             articulo.boton.title = 'Añadir a la venta';
-            articulo.stockCell.classList.remove('granel-item__stock--zero');
+            articulo.stockCell.classList.remove('cart-stock--zero');
         }
     }
 
     function vincularBotonesGranel() {
-        if (!panelGranel) return;
-        panelGranel.querySelectorAll('.boton-agregar-granel').forEach(boton => {
+        contenedorTabla.querySelectorAll('.boton-agregar-granel').forEach(boton => {
             boton.addEventListener('click', function () {
                 const id = this.dataset.id;
                 const filaExistente = cuerpoCarrito.querySelector(`.cart-item[data-granel-id="${id}"]`);
@@ -276,8 +285,8 @@ document.addEventListener('DOMContentLoaded', () => {
             actualizarTotal();
             actualizarVistaResumen();
             guardarCarrito();
-            const btnPanel = panelGranel ? panelGranel.querySelector(`.boton-agregar-granel[data-id="${idCotizacion}"]`) : null;
-            if (btnPanel) btnPanel.classList.remove('is-incart');
+            const btnTabla = contenedorTabla.querySelector(`.boton-agregar-granel[data-id="${idCotizacion}"]`);
+            if (btnTabla) btnTabla.classList.remove('is-incart');
         }
 
         function alCambiar() {
@@ -294,8 +303,8 @@ document.addEventListener('DOMContentLoaded', () => {
         actualizarFilaGranel(fila);
         actualizarVistaResumen();
 
-        const btnPanel = panelGranel ? panelGranel.querySelector(`.boton-agregar-granel[data-id="${idCotizacion}"]`) : null;
-        if (btnPanel) btnPanel.classList.add('is-incart');
+        const btnTabla = contenedorTabla.querySelector(`.boton-agregar-granel[data-id="${idCotizacion}"]`);
+        if (btnTabla) btnTabla.classList.add('is-incart');
 
         // Foco directo al input de kilos para cargar la pesada sin clicks extra
         inputKilos.focus();
@@ -543,7 +552,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Remover el highlight
         contenedorTabla.querySelectorAll('.boton-agregar-producto').forEach(btn => btn.classList.remove('is-incart'));
-        if (panelGranel) panelGranel.querySelectorAll('.boton-agregar-granel').forEach(btn => btn.classList.remove('is-incart'));
+        contenedorTabla.querySelectorAll('.boton-agregar-granel').forEach(btn => btn.classList.remove('is-incart'));
     });
 
     // =============================================
@@ -576,8 +585,10 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(html => {
                 contenedorTabla.innerHTML = html;
                 vincularBotonesAgregar();
+                vincularBotonesGranel();
                 vincularPaginacion();
                 ajustarStockVisual();
+                marcarBotonesEnCarrito();
             })
             .catch(error => console.error('Error en la búsqueda:', error));
     }
