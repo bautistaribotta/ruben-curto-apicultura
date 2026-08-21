@@ -540,33 +540,16 @@ def productos(request):
     productos = productos.order_by("nombre")
 
     # Stock a granel (miel y cera por kilo): vive en Cotizaciones, no en Producto.
-    # Se muestra como bloque de solo lectura (se gestiona en cotizaciones), filtrado
-    # por la misma busqueda y categoria que los productos.
-    from django.db.models import Q, Case, When, Value, IntegerField
-
+    # Se muestra como bloque de solo lectura (se gestiona en cotizaciones) solo cuando
+    # se filtra explicitamente por Miel o Cera; en la vista por defecto ("Todas") no
+    # aparece, para conservar el listado de productos envasados que ya se mostraba.
     granel = Cotizaciones.objects.none()
-    if categoria_filtrada in ("", "Miel", "Cera"):
-        granel = Cotizaciones.objects.all()
-        if categoria_filtrada == "Miel":
-            granel = granel.filter(articulo__istartswith="Miel")
-        elif categoria_filtrada == "Cera":
-            granel = granel.filter(articulo__istartswith="Cera")
-        else:
-            granel = granel.filter(
-                Q(articulo__istartswith="Miel") | Q(articulo__istartswith="Cera")
-            )
+    if categoria_filtrada in ("Miel", "Cera"):
+        granel = Cotizaciones.objects.filter(articulo__istartswith=categoria_filtrada)
         if q:
             # Con busqueda por ID no aplica; los articulos a granel se buscan por nombre
             granel = granel.filter(filtro_tokens(q, "articulo")) if not q.isdigit() else Cotizaciones.objects.none()
-        # Miel primero, cera despues; alfabetico dentro de cada grupo
-        granel = granel.order_by(
-            Case(
-                When(articulo__istartswith="Miel", then=Value(0)),
-                default=Value(1),
-                output_field=IntegerField(),
-            ),
-            "articulo",
-        )
+        granel = granel.order_by("articulo")
 
     # Integro granel y productos en una sola lista paginada de a 5 filas: el stock a
     # granel aparece primero y despues los productos envasados, contando ambos para la
