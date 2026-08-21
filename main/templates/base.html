@@ -302,7 +302,10 @@
       document.addEventListener('click', function(event) {
         const userDetails = document.getElementById('perfil-usuario-container');
         const summary = document.getElementById('perfil-usuario');
-        
+
+        // En paginas que ocultan la cabecera el elemento no existe
+        if (!userDetails) return;
+
         // Si el menú está abierto y el clic no fue dentro del contenedor
         if (userDetails.open && !userDetails.contains(event.target)) {
           userDetails.removeAttribute('open');
