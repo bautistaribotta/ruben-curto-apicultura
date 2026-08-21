@@ -18,8 +18,8 @@
             <div class="producto-id granel-sub"> Venta por kilo </div>
           </td>
           <td class="texto-centrado categoria-valor">
-            <span class="etiqueta etiqueta-granel etiqueta-granel--{{ tipo }}">
-              <span class="material-symbols-outlined">scale</span> Por kg
+            <span class="etiqueta etiqueta-{{ tipo }}">
+              {{ articulo.articulo|slice:":4" }}
             </span>
           </td>
           <td class="stock-valor texto-centrado">

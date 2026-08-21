@@ -322,26 +322,6 @@
   color: var(--text-subtle);
 }
 
-.etiqueta-granel {
-  gap: 0.25rem;
-}
-
-.etiqueta-granel .material-symbols-outlined {
-  font-size: 0.9rem;
-}
-
-.etiqueta-granel--miel {
-  background-color: var(--color-amarillo-claro-etiqueta);
-  color: var(--color-amarillo-texto-etiqueta);
-  border: 1px solid var(--color-amarillo-borde-etiqueta);
-}
-
-.etiqueta-granel--cera {
-  background-color: var(--color-cera-fondo-etiqueta);
-  color: var(--color-cera-texto-etiqueta);
-  border: 1px solid var(--color-cera-borde-etiqueta);
-}
-
 /* Solo lectura: el stock a granel no se edita aca, se gestiona en cotizaciones. */
 .granel-solo-lectura {
   display: inline-flex;
