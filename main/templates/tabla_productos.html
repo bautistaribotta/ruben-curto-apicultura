@@ -1,3 +1,4 @@
+{% load l10n %}
 <table class="tabla-productos">
   <thead>
     <tr id="encabezado-tabla-productos">
@@ -12,7 +13,7 @@
     {% if granel %}
       {% for articulo in granel %}
         {% with tipo=articulo.articulo|slice:":4"|lower %}
-        <tr class="fila-granel fila-granel--{{ tipo }}">
+        <tr class="fila-granel fila-granel--{{ tipo }}" data-articulo="{{ articulo.articulo }}">
           <td>
             <div class="producto-info"> {{ articulo.articulo }} </div>
             <div class="producto-id granel-sub"> Venta por kilo </div>
@@ -36,9 +37,18 @@
           <td class="precio-valor"> $ {{ articulo.monto|floatformat:"-2g" }}<span class="granel-unidad">/kg</span> </td>
           <td>
             <div class="acciones-tabla">
-              <span class="granel-solo-lectura" title="Stock gestionado desde cotizaciones">
-                <span class="material-symbols-outlined">lock</span>
-              </span>
+              {% if user.is_staff %}
+                <button class="boton-icono editar-precio-granel" title="Editar precio"
+                        data-articulo="{{ articulo.articulo }}"
+                        data-categoria="{{ articulo.articulo|slice:':4' }}"
+                        data-precio="{{ articulo.monto|unlocalize }}">
+                  <span class="material-symbols-outlined">edit</span>
+                </button>
+              {% else %}
+                <span class="granel-solo-lectura" title="Stock gestionado desde cotizaciones">
+                  <span class="material-symbols-outlined">lock</span>
+                </span>
+              {% endif %}
             </div>
           </td>
         </tr>

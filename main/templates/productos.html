@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load static_version %}
 
 {% block nombre-pestaña %}
 <title> Productos </title>
@@ -102,7 +103,8 @@
 
     <!-- Cuerpo del Panel (Formulario) -->
     <div class="panel-cuerpo">
-      <form class="formulario-producto" id="form-producto" method="POST" autocomplete="off">
+      <form class="formulario-producto" id="form-producto" method="POST" autocomplete="off"
+            data-url-cotizacion="{% url 'actualizar_cotizacion' %}">
         {% csrf_token %}
         <input type="hidden" id="id_producto" name="id_producto">
         <div class="campo-formulario">
@@ -267,5 +269,5 @@
 
 {% block codigo-javascript %}
 <script src="{% static 'js/paneles.js' %}"></script>
-<script src="{% static 'js/productos.js' %}"></script>
+<script src="{% static_v 'js/productos.js' %}"></script>
 {% endblock %}
