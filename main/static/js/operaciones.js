@@ -743,7 +743,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 tipo_operacion: 'venta',
                 // null si la operacion es de hoy; "YYYY-MM-DD" si se cargo una fecha distinta
                 fecha: typeof obtenerFechaOperacion === 'function' ? obtenerFechaOperacion() : null,
-                // valores de miel 50mm, dolar oficial y cera operculo de aquel
+                // valores de miel menor a 50 mm, dolar oficial y cera operculo de aquel
                 // dia; null salvo que la fecha sea anterior a hoy
                 cotizaciones_historicas: typeof obtenerCotizacionesHistoricas === 'function' ? obtenerCotizacionesHistoricas() : null,
                 // nota opcional que se imprime en el remito

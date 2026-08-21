@@ -3,7 +3,7 @@
 // "Fecha: hoy · Cambiar". Al tocarlo se despliega el input de fecha.
 //
 // Al elegir una fecha anterior a hoy se abre el modal de cotizaciones
-// históricas: pide miel 50mm, dólar oficial (venta) y cera opérculo de aquel
+// históricas: pide miel menor a 50 mm, dólar oficial (venta) y cera opérculo de aquel
 // día, para guardarlos como cotizaciones de origen de la operación migrada
 // desde el sistema viejo. Cancelar el modal revierte la fecha.
 //

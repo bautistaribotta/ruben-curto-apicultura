@@ -1301,7 +1301,7 @@
 
 /* ============================================================
    Modal de cotizaciones históricas (fecha anterior a hoy)
-   Pide miel 50mm, dólar oficial venta y cera opérculo de aquel
+   Pide miel menor a 50 mm, dólar oficial venta y cera opérculo de aquel
    día para guardarlos como cotizaciones de origen. Mismo
    esqueleto centrado que los modales de pago/cancelación.
    ============================================================ */

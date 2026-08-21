@@ -497,7 +497,7 @@ def _parsear_cotizaciones_historicas(datos):
         return None
 
     nombres = {
-        "valor_kilo_miel": "la miel 50mm",
+        "valor_kilo_miel": "la miel menor a 50 mm",
         "valor_dolar": "el dólar oficial",
         "valor_kilo_cera": "la cera opérculo",
     }
@@ -540,7 +540,7 @@ def crear_operacion(cliente, items, metodo_pago, tipo_operacion, viaje=None, fec
         elif fecha_personalizada.date() < timezone.localdate():
             raise ValueError(
                 "Para una operación con fecha anterior a hoy hay que cargar las "
-                "cotizaciones de ese día (miel 50mm, dólar oficial y cera opérculo)."
+                "cotizaciones de ese día (miel menor a 50 mm, dólar oficial y cera opérculo)."
             )
         else:
             valor_dolar = None
@@ -844,7 +844,7 @@ def editar_operacion(id_operacion, items, metodo_pago, fecha=None, cotizaciones_
                 elif fecha_date < timezone.localdate():
                     raise ValueError(
                         "Para cambiar la operación a una fecha anterior a hoy hay que cargar las "
-                        "cotizaciones de ese día (miel 50mm, dólar oficial y cera opérculo)."
+                        "cotizaciones de ese día (miel menor a 50 mm, dólar oficial y cera opérculo)."
                     )
                 else:
                     operacion.valor_dolar = None
@@ -1062,7 +1062,7 @@ def get_cotizaciones():
     donde los caracteres especiales se reemplazan para facilitar su uso en templates.
     La cantidad son los kilos disponibles a granel de ese articulo.
     """
-    articulos_esperados = ["Miel 34mm", "Miel 50mm", "Miel +50mm", "Cera Operculo", "Cera Recupero"]
+    articulos_esperados = ["Miel menor a 34 mm", "Miel menor a 50 mm", "Miel mayor a 50 mm", "Cera Operculo", "Cera Recupero"]
     cotizaciones_db = {c.articulo: c for c in Cotizaciones.objects.all()}
 
     resultado = {}
@@ -1105,10 +1105,10 @@ def actualizar_cotizacion(articulo, monto):
 
 def get_cotizacion_miel_50mm():
     """
-    Obtiene la cotización de la miel. Se toma 'Miel 50mm' como referencia por defecto.
+    Obtiene la cotización de la miel. Se toma 'Miel menor a 50 mm' como referencia por defecto.
     """
     try:
-        miel = Cotizaciones.objects.get(articulo="Miel 50mm")
+        miel = Cotizaciones.objects.get(articulo="Miel menor a 50 mm")
         return miel.monto
     except Cotizaciones.DoesNotExist:
         return 1.00
