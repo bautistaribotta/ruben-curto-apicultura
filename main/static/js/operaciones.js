@@ -249,7 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="cart-item__top">
                 <div>
                     <div class="cart-item__name" title="${nombre}">${nombre}</div>
-                    <span class="granel-tag"><span class="material-symbols-outlined">scale</span>a granel</span>
+                    <span class="granel-tag"><span class="material-symbols-outlined">scale</span>Por kg</span>
                 </div>
                 <button type="button" class="cart-item__rm" title="Quitar">
                     <span class="material-symbols-outlined">close</span>
