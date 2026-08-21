@@ -404,7 +404,8 @@
   background-color: var(--color_verde-semi-oliva);
 }
 
-.boton-icono.editar:hover {
+.boton-icono.editar:hover,
+.boton-icono.editar-precio-granel:hover {
   color: var(--brand-active);
   background-color: var(--color_verde-semi-oliva);
 }
@@ -596,6 +597,13 @@
 
 .input-con-prefijo {
   padding-left: 1.75rem;
+}
+
+/* Campos bloqueados del slide-over (nombre y categoria al editar el precio de
+   un articulo a granel): el cursor deja claro que no se pueden modificar. */
+#form-producto .input-estandar:disabled,
+#form-producto .select-estandar:disabled {
+  cursor: not-allowed;
 }
 
 /* VALIDACIONES PERSONALIZADAS */
