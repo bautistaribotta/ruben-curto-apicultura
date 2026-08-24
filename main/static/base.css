@@ -502,9 +502,11 @@ body {
    desplegada, asi los iconos no se mueven al abrir; lo unico que entra es el
    texto, que hasta entonces recorta el overflow de la lista.
 
-   Debajo de 1025px no aplica nada de esto: ahi manda el sidebar movil que se
-   abre con la hamburguesa. */
-@media (min-width: 1025px) {
+   Debajo de 1325px no aplica nada de esto: ahi manda el sidebar movil que se
+   abre con la hamburguesa. El corte se adelanto 300px respecto del 1024/1025
+   original para que las tablets grandes tactiles caigan en el modo hamburguesa
+   (la barra fija de escritorio es casi incontrolable con el dedo). */
+@media (min-width: 1325px) {
   #barra-lateral {
     --pad-barra: 0.75rem;
     --pad-item: 0.75rem;
@@ -1035,7 +1037,7 @@ body {
   display: none;
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 1324px) {
   body {
     flex-direction: column;
   }
