@@ -435,6 +435,13 @@ body {
   display: flex;
 }
 
+/* Ademas de la seccion activa, la rama se despliega al pasar el mouse por el
+   item padre. El hover se toma sobre el <li> entero (no solo el .item-menu) para
+   que al bajar el cursor hacia el submenu no se cierre en el hueco intermedio. */
+#menu-navegacion li:hover > .nav-sub {
+  display: flex;
+}
+
 .item-sub {
   position: relative;
   display: block;
