@@ -203,6 +203,10 @@
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-sm);
   padding: 1.25rem 1.35rem;
+  /* Recorta el zocalo a granel al radio de la tarjeta: evita el pelo blanco
+     que se colaba en las esquinas inferiores redondeadas de la franja a
+     ciertos DPI. La box-shadow del hover no la afecta overflow:hidden. */
+  overflow: hidden;
   cursor: pointer;
   transition: transform var(--dur-slow) var(--ease-standard),
               box-shadow var(--dur-slow) var(--ease-standard),
