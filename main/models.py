@@ -197,7 +197,7 @@ class DetalleOperacion(models.Model):
         # Nombre unico para mostrar en listados, remito y detalle de operacion,
         # sin que cada template tenga que ramificar entre producto y cotizacion
         if self.es_granel:
-            return f"{self.cotizacion.articulo} (granel)"
+            return f"{self.cotizacion.articulo} (por kg)"
         return self.producto.nombre
 
     def __str__(self):

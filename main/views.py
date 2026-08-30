@@ -1809,7 +1809,7 @@ def deudores(request):
     for det in detalles:
         if det.cotizacion_id:
             token = f"g{det.cotizacion_id}"
-            nombre = f"{det.cotizacion.articulo} (granel)"
+            nombre = f"{det.cotizacion.articulo} (por kg)"
         else:
             token = f"p{det.producto_id}"
             nombre = det.producto.nombre
