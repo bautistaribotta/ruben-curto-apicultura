@@ -163,7 +163,7 @@ class DetalleOperacion(models.Model):
     # La exclusion mutua la garantiza el CheckConstraint de abajo.
     producto = models.ForeignKey(Producto, on_delete=models.PROTECT, db_column="id_producto",
                                  null=True, blank=True)
-    cotizacion = models.ForeignKey("Cotizaciones", on_delete=models.PROTECT, db_column="id_cotizacion",
+    cotizacion = models.ForeignKey("ProductoPorKg", on_delete=models.PROTECT, db_column="id_cotizacion",
                                    null=True, blank=True)
     cantidad = models.DecimalField(max_digits=10, decimal_places=2)
     precio_unitario = models.DecimalField(max_digits=10, decimal_places=2)
@@ -219,7 +219,7 @@ class Pago(models.Model):
         return f"Pago de la operacion: {self.operacion}"
 
 
-class Cotizaciones(models.Model):
+class ProductoPorKg(models.Model):
     articulo = models.CharField(max_length=25, unique=True)
     monto = models.PositiveIntegerField(default=1)
     # Kilos disponibles a granel del articulo. Uso Decimal (no Float) para evitar
@@ -227,8 +227,8 @@ class Cotizaciones(models.Model):
     cantidad = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     class Meta:
-        db_table = "cotizaciones"
-        verbose_name_plural = "Cotizaciones"
+        db_table = "productos_por_kg"
+        verbose_name_plural = "Productos por kg"
 
     def __str__(self):
         return f"Cotizacion {self.articulo}: {self.monto}"
@@ -781,7 +781,7 @@ class ViajeCereal(models.Model):
     codigo_trazabilidad_granos = models.CharField(max_length=15)
     # Toneladas transportadas. Uso Decimal (no Integer/Float) para admitir hasta dos
     # decimales sin el ruido de precision del punto flotante, igual que en el resto de
-    # las cantidades comerciales del sistema (DetalleOperacion, Cotizaciones).
+    # las cantidades comerciales del sistema (DetalleOperacion, ProductoPorKg).
     toneladas = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     precio_tonelada = models.PositiveIntegerField(default=0)
     porcentaje_empleado = models.PositiveIntegerField(default=0)

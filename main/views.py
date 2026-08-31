@@ -17,7 +17,7 @@ from django.utils.formats import date_format
 from django.contrib.humanize.templatetags.humanize import intcomma
 from django.template.defaultfilters import floatformat
 
-from .models import (Cliente, Producto, Operacion, DetalleOperacion, Pago, Cotizaciones, Empleado,
+from .models import (Cliente, Producto, Operacion, DetalleOperacion, Pago, ProductoPorKg, Empleado,
                      Vehiculo, Viaje, ViajeCereal, ViajeReparto, Gasto, IngresoCaja, GastoViajeCereal, GastoViajeReparto,
                      EstacionDeServicio, CargaCombustible, Empresa, OperacionIva,
                      Banco, CuentaCorriente, Cheque, periodo_actual)
@@ -539,16 +539,16 @@ def productos(request):
 
     productos = productos.order_by("nombre")
 
-    # Stock a granel (miel y cera por kilo): vive en Cotizaciones, no en Producto.
+    # Stock a granel (miel y cera por kilo): vive en ProductoPorKg, no en Producto.
     # Se muestra como bloque de solo lectura (se gestiona en cotizaciones) solo cuando
     # se filtra explicitamente por Miel o Cera; en la vista por defecto ("Todas") no
     # aparece, para conservar el listado de productos envasados que ya se mostraba.
-    granel = Cotizaciones.objects.none()
+    granel = ProductoPorKg.objects.none()
     if categoria_filtrada in ("Miel", "Cera"):
-        granel = Cotizaciones.objects.filter(articulo__istartswith=categoria_filtrada)
+        granel = ProductoPorKg.objects.filter(articulo__istartswith=categoria_filtrada)
         if q:
             # Con busqueda por ID no aplica; los articulos a granel se buscan por nombre
-            granel = granel.filter(filtro_tokens(q, "articulo")) if not q.isdigit() else Cotizaciones.objects.none()
+            granel = granel.filter(filtro_tokens(q, "articulo")) if not q.isdigit() else ProductoPorKg.objects.none()
         granel = granel.order_by("articulo")
 
     # Integro granel y productos en una sola lista paginada de a 5 filas: el stock a
@@ -559,7 +559,7 @@ def productos(request):
     paginator_productos = Paginator(items, 5)
     pagina_obj = paginator_productos.get_page(request.GET.get("page"))
 
-    granel_pagina = [item for item in pagina_obj if isinstance(item, Cotizaciones)]
+    granel_pagina = [item for item in pagina_obj if isinstance(item, ProductoPorKg)]
     productos_pagina = [item for item in pagina_obj if isinstance(item, Producto)]
 
     contexto = {
@@ -959,23 +959,23 @@ def _contexto_edicion(operacion):
 def _paginar_operacion_con_granel(productos, categoria, q, pagina_numero):
     """
     Arma la pagina del listado de una operacion (venta o compra) intercalando el
-    stock a granel (miel y cera por kilo, desde Cotizaciones) con los productos
+    stock a granel (miel y cera por kilo, desde ProductoPorKg) con los productos
     envasados. El granel solo aparece al filtrar por Miel o Cera, respeta la misma
     busqueda por nombre y se cuenta dentro de la paginacion (aparece primero en su
     pagina). Devuelve (granel_pagina, productos_pagina, pagina_obj).
     """
-    granel = Cotizaciones.objects.none()
+    granel = ProductoPorKg.objects.none()
     if categoria in ("Miel", "Cera"):
-        granel = Cotizaciones.objects.filter(articulo__istartswith=categoria)
+        granel = ProductoPorKg.objects.filter(articulo__istartswith=categoria)
         if q:
             # La busqueda por ID no aplica a granel; los articulos se buscan por nombre
-            granel = granel.filter(filtro_tokens(q, "articulo")) if not q.isdigit() else Cotizaciones.objects.none()
+            granel = granel.filter(filtro_tokens(q, "articulo")) if not q.isdigit() else ProductoPorKg.objects.none()
         granel = granel.order_by("articulo")
 
     items = list(granel) + list(productos)
     pagina_obj = Paginator(items, 6).get_page(pagina_numero)
 
-    granel_pagina = [item for item in pagina_obj if isinstance(item, Cotizaciones)]
+    granel_pagina = [item for item in pagina_obj if isinstance(item, ProductoPorKg)]
     productos_pagina = [item for item in pagina_obj if isinstance(item, Producto)]
     return granel_pagina, productos_pagina, pagina_obj
 

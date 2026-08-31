@@ -13,7 +13,7 @@ from django.db.models import (Sum, F, Value, Count, Q, Subquery, OuterRef, Exist
 from django.db.models.functions import Coalesce
 from django.template.defaultfilters import floatformat
 from django.core.cache import cache
-from .models import (Producto, Cliente, Operacion, DetalleOperacion, Pago, Cotizaciones, Empleado, PagosEmpleados,
+from .models import (Producto, Cliente, Operacion, DetalleOperacion, Pago, ProductoPorKg, Empleado, PagosEmpleados,
                      Vehiculo, Viaje, DetalleViaje, Gasto, IngresoCaja, ViajeCereal, DetalleViajeCereal, GastoViajeCereal,
                      ViajeReparto, GastoViajeReparto, DestinoViajeReparto, Casa, Contrato, PagoAlquiler,
                      GastoCasa, RegistroKilometraje, Seguro, VTV, Servis, ObservacionVehiculo,
@@ -440,13 +440,13 @@ def _procesar_item_granel(operacion, item, tipo_operacion):
     if precio_unitario <= 0:
         raise ValueError("El precio por kilo debe ser mayor a 0.")
 
-    cotizacion = get_object_or_404(Cotizaciones, id=item.get("id_cotizacion"))
+    cotizacion = get_object_or_404(ProductoPorKg, id=item.get("id_cotizacion"))
 
     if tipo_operacion == "venta":
         # Descuento condicional atomico, mismo patron que modificar_stock: el
         # chequeo de kilos disponibles y la resta ocurren en una sola sentencia,
         # asi dos ventas concurrentes no pueden sobrevender el mismo tambor
-        filas = Cotizaciones.objects.filter(
+        filas = ProductoPorKg.objects.filter(
             id=cotizacion.id, cantidad__gte=kilos
         ).update(cantidad=F("cantidad") - kilos)
 
@@ -455,7 +455,7 @@ def _procesar_item_granel(operacion, item, tipo_operacion):
                 f"No hay kilos suficientes de {cotizacion.articulo} a granel."
             )
     else:
-        Cotizaciones.objects.filter(id=cotizacion.id).update(
+        ProductoPorKg.objects.filter(id=cotizacion.id).update(
             cantidad=F("cantidad") + kilos
         )
 
@@ -674,13 +674,13 @@ def _revertir_stock_detalles(operacion, detalles):
         if detalle.cotizacion_id:
             if operacion.tipo_operacion == "venta":
                 # Venta revertida: los kilos vuelven al deposito
-                Cotizaciones.objects.filter(id=detalle.cotizacion_id).update(
+                ProductoPorKg.objects.filter(id=detalle.cotizacion_id).update(
                     cantidad=F("cantidad") + detalle.cantidad
                 )
             else:
                 # Compra revertida: quito los kilos, con el mismo chequeo
                 # condicional atomico para no dejar el stock negativo
-                filas = Cotizaciones.objects.filter(
+                filas = ProductoPorKg.objects.filter(
                     id=detalle.cotizacion_id, cantidad__gte=detalle.cantidad
                 ).update(cantidad=F("cantidad") - detalle.cantidad)
 
@@ -1063,7 +1063,7 @@ def get_cotizaciones():
     La cantidad son los kilos disponibles a granel de ese articulo.
     """
     articulos_esperados = ["Miel menor a 34 mm", "Miel menor a 50 mm", "Miel mayor a 50 mm", "Cera Operculo", "Cera Recupero"]
-    cotizaciones_db = {c.articulo: c for c in Cotizaciones.objects.all()}
+    cotizaciones_db = {c.articulo: c for c in ProductoPorKg.objects.all()}
 
     resultado = {}
     for art in articulos_esperados:
@@ -1085,7 +1085,7 @@ def get_total_kilos_granel():
     """
     totales = {}
     for grupo in ("Miel", "Cera"):
-        resultado = Cotizaciones.objects.filter(articulo__startswith=grupo).aggregate(
+        resultado = ProductoPorKg.objects.filter(articulo__startswith=grupo).aggregate(
             total=Sum("cantidad")
         )["total"]
         totales[grupo.lower()] = resultado if resultado is not None else 0
@@ -1096,7 +1096,7 @@ def actualizar_cotizacion(articulo, monto):
     """
     Actualiza o crea una cotización en la base de datos.
     """
-    cotizacion, created = Cotizaciones.objects.update_or_create(
+    cotizacion, created = ProductoPorKg.objects.update_or_create(
         articulo=articulo,
         defaults={"monto": monto}
     )
@@ -1108,9 +1108,9 @@ def get_cotizacion_miel_50mm():
     Obtiene la cotización de la miel. Se toma 'Miel menor a 50 mm' como referencia por defecto.
     """
     try:
-        miel = Cotizaciones.objects.get(articulo="Miel menor a 50 mm")
+        miel = ProductoPorKg.objects.get(articulo="Miel menor a 50 mm")
         return miel.monto
-    except Cotizaciones.DoesNotExist:
+    except ProductoPorKg.DoesNotExist:
         return 1.00
 
 
@@ -1121,9 +1121,9 @@ def get_cotizacion_cera_operculo():
     de calcular una equivalencia sin sentido.
     """
     try:
-        cera = Cotizaciones.objects.get(articulo="Cera Operculo")
+        cera = ProductoPorKg.objects.get(articulo="Cera Operculo")
         return cera.monto
-    except Cotizaciones.DoesNotExist:
+    except ProductoPorKg.DoesNotExist:
         return None
 
 
