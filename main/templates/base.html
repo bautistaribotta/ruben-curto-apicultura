@@ -123,6 +123,12 @@
             Viajes cereales
           </a>
         </li>
+        <li>
+          <a href="{% url 'combustible' %}" class="item-menu {% if request.resolver_match.url_name == 'combustible' or request.resolver_match.url_name == 'informacion_estacion' %} activo {% endif %}">
+            <span class="material-symbols-outlined">local_gas_station</span>
+            Combustible
+          </a>
+        </li>
         {% if user.is_staff %}
         <li>
           <a href="{% url 'deudores' %}" class="item-menu {% if request.resolver_match.url_name == 'deudores' %} activo {% endif %}">
@@ -134,13 +140,6 @@
           <a href="{% url 'alquileres' %}" class="item-menu {% if request.resolver_match.url_name == 'alquileres' or request.resolver_match.url_name == 'informacion_alquileres' %} activo {% endif %}">
             <span class="material-symbols-outlined">key</span>
             Alquileres
-          </a>
-        </li>
-        {% if user.is_staff %}
-        <li>
-          <a href="{% url 'combustible' %}" class="item-menu {% if request.resolver_match.url_name == 'combustible' or request.resolver_match.url_name == 'informacion_estacion' %} activo {% endif %}">
-            <span class="material-symbols-outlined">local_gas_station</span>
-            Combustible
           </a>
         </li>
         {% comment %}
@@ -160,7 +159,6 @@
             IVA
           </a>
         </li>
-        {% endif %}
         {% endif %}
       </ul>
 

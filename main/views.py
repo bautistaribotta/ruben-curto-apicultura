@@ -2291,7 +2291,7 @@ def marcar_pago_alquiler_ajax(request, id_casa, periodo):
 staff_required = user_passes_test(lambda u: u.is_staff, login_url="inicio")
 
 
-@staff_required
+@login_required(login_url="inicio")
 def combustible(request):
     if request.method == "POST":
         id_estacion = request.POST.get("id_estacion")
@@ -2790,7 +2790,7 @@ def obtener_estacion_json(request, id_estacion):
     return JsonResponse({"Error": "Estacion no encontrada"}, status=404)
 
 
-@staff_required
+@login_required(login_url="inicio")
 def informacion_estacion(request, id_estacion):
     """Perfil de una estacion: todas sus cargas de combustible, pagas e impagas.
 
