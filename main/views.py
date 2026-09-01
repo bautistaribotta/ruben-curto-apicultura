@@ -2885,13 +2885,22 @@ def mercado_libre(request):
                 id_vehiculo = request.POST.get("id_vehiculo")
                 gasto_combustible = request.POST.get("gasto_combustible_viaje_reparto")
                 costo_empleado = request.POST.get("costo_empleado")
-                valor_viaje = request.POST.get("valor_viaje")
                 fecha_viaje_reparto = request.POST.get("fecha_viaje_reparto")
                 id_destino = request.POST.get("id_destino")
+                # Cuanto se cobra el viaje lo maneja solo el staff: el campo ni siquiera
+                # esta en el formulario del resto, y lo que llegue por POST se ignora
+                # para que nadie fije la tarifa a mano. Con None, el servicio le pone la
+                # tarifa del catalogo del destino elegido.
+                valor_viaje = request.POST.get("valor_viaje") if request.user.is_staff else None
 
-                # 2. Validacion de presencia de lo obligatorio (lo esencial en la vista)
-                if not all([id_empleado, id_vehiculo, gasto_combustible, costo_empleado,
-                            valor_viaje, fecha_viaje_reparto, id_destino]):
+                # 2. Validacion de presencia de lo obligatorio (lo esencial en la vista).
+                # El valor del viaje solo es obligatorio para el staff: si no lo mandan,
+                # el destino ya trae su tarifa.
+                obligatorios = [id_empleado, id_vehiculo, gasto_combustible, costo_empleado,
+                                fecha_viaje_reparto, id_destino]
+                if request.user.is_staff:
+                    obligatorios.append(valor_viaje)
+                if not all(obligatorios):
                     messages.error(request, "Faltan datos obligatorios para crear el viaje de reparto.")
                     return redirect("mercado_libre")
 
@@ -3002,9 +3011,19 @@ def informacion_viaje_reparto(request, id_viaje_reparto):
             id_vehiculo = request.POST.get("id_vehiculo")
             gasto_combustible = request.POST.get("gasto_combustible_viaje_reparto")
             costo_empleado = request.POST.get("costo_empleado")
-            valor_viaje = request.POST.get("valor_viaje")
             fecha_viaje_reparto = request.POST.get("fecha_viaje_reparto")
             id_destino = request.POST.get("id_destino")
+            # Cuanto se cobra el viaje lo maneja solo el staff: el campo no esta en el
+            # formulario del resto y lo que llegue por POST se ignora. Sin staff, el
+            # monto guardado se conserva tal cual; si la edicion cambia de localidad
+            # mando None para que el servicio aplique la tarifa del destino nuevo, que
+            # es lo mismo que hace el JS en el formulario del staff.
+            if request.user.is_staff:
+                valor_viaje = request.POST.get("valor_viaje")
+            elif str(viaje_reparto.destino_id) == str(id_destino):
+                valor_viaje = viaje_reparto.valor_viaje
+            else:
+                valor_viaje = None
 
             try:
                 editar_viaje_reparto(

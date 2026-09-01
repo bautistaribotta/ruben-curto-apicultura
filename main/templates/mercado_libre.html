@@ -156,14 +156,18 @@
             El destino sale del catalogo: las localidades las define Mercado Libre y
             cada una ya tiene su tarifa, por eso no se escribe a mano. Al elegir una,
             el JS completa el valor del viaje (data-valor-objetivo).
+
+            La tarifa solo se ve si quien carga es staff: para el resto el destino es
+            apenas una localidad. Por eso el data-valor y el data-valor-objetivo
+            tambien quedan afuera, para que el monto no viaje en el HTML.
           {% endcomment %}
           <div class="grupo-input">
             <label for="destino-reparto">Destino</label>
             <select id="destino-reparto" name="id_destino" class="select-estandar" required
-                    data-valor-objetivo="valor-viaje-reparto">
+                    {% if user.is_staff %}data-valor-objetivo="valor-viaje-reparto"{% endif %}>
               <option value="" disabled selected>Seleccione un destino</option>
               {% for destino in destinos %}
-              <option value="{{ destino.id }}" data-valor="{{ destino.valor_viaje }}">{{ destino.localidad_destino }} · $ {{ destino.valor_viaje|floatformat:"-2g" }}</option>
+              <option value="{{ destino.id }}"{% if user.is_staff %} data-valor="{{ destino.valor_viaje }}"{% endif %}>{{ destino.localidad_destino }}{% if user.is_staff %} · $ {{ destino.valor_viaje|floatformat:"-2g" }}{% endif %}</option>
               {% endfor %}
             </select>
             {% comment %}
@@ -205,7 +209,12 @@
             <span class="mensaje-error">Por favor, ingrese un monto valido.</span>
           </div>
 
-          <div class="vje-grid2">
+          {% comment %}
+            El valor del viaje es solo para el staff, igual que las tarjetas de
+            totales: sin esa columna la grilla de dos queda con un hueco, asi que la
+            clase se aplica solo cuando hay algo que poner al lado.
+          {% endcomment %}
+          <div class="{% if user.is_staff %}vje-grid2{% endif %}">
             <div class="grupo-input">
               <label for="empleado-costo-reparto">Costo empleado</label>
               <div class="input-con-icono">
@@ -224,6 +233,12 @@
               <span class="mensaje-error">Por favor, ingrese un monto valido.</span>
             </div>
 
+            {% comment %}
+              Solo el staff ve y ajusta cuanto se cobra el viaje. Si el campo no
+              viaja en el POST, la vista deja que el reparto nazca con la tarifa del
+              catalogo del destino elegido.
+            {% endcomment %}
+            {% if user.is_staff %}
             <div class="grupo-input">
               <label for="valor-viaje-reparto">Valor del viaje</label>
               <div class="input-con-icono">
@@ -241,6 +256,7 @@
               </div>
               <span class="mensaje-error">Por favor, ingrese un monto valido.</span>
             </div>
+            {% endif %}
           </div>
 
           {% if user.is_staff %}
