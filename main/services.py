@@ -48,6 +48,8 @@ REGEX_TEXTO_NUMEROS = re.compile(r"^[a-zA-ZÁÉÍÓÚáéíóúñÑ\s\d]+$")
 REGEX_PATENTE = re.compile(r"^[A-Z0-9]{6,7}$")
 # El codigo de trazabilidad de granos (CTG) admite hasta 15 digitos, solo numeros
 REGEX_CTG = re.compile(r"^[0-9]{1,15}$")
+# El numero de factura admite hasta 20 digitos, solo numeros (conserva ceros a la izquierda)
+REGEX_FACTURA = re.compile(r"^[0-9]{1,20}$")
 
 
 def nuevo_producto(nombre, categoria=None, precio=None, cantidad=None):
@@ -2365,7 +2367,7 @@ def registrar_devolucion_caja(id_viaje, estado, monto_devuelto=None):
 
 def _validar_viaje_cereal(id_cliente, id_empleado, id_vehiculo, tipo_cereal, codigo_trazabilidad,
                           toneladas, precio_tonelada, porcentaje_empleado, fecha_viaje_cereal, destinos,
-                          dadora_carga, dadora_tipo_cobro, dadora_valor):
+                          dadora_carga, dadora_tipo_cobro, dadora_valor, numero_factura=None):
     """
     Centraliza las validaciones de un viaje de cereal (crear y editar comparten las
     mismas reglas). Devuelve una tupla con los valores ya limpios y convertidos,
@@ -2393,6 +2395,19 @@ def _validar_viaje_cereal(id_cliente, id_empleado, id_vehiculo, tipo_cereal, cod
     codigo_limpio = (codigo_trazabilidad or "").strip()
     if not REGEX_CTG.match(codigo_limpio):
         raise ValueError("El codigo de trazabilidad debe ser numerico y tener hasta 15 digitos.")
+
+    """
+    5.b. Numero de factura: opcional. Si viene vacio queda en None (viajes sin
+    factura asociada). Si viene, solo numeros de hasta 20 digitos, conservando
+    los ceros a la izquierda al guardarse como texto (mismo criterio que el CTG).
+    """
+    factura_limpia = (numero_factura or "").strip()
+    if not factura_limpia:
+        factura_val = None
+    elif not REGEX_FACTURA.match(factura_limpia):
+        raise ValueError("El numero de factura debe ser numerico y tener hasta 20 digitos.")
+    else:
+        factura_val = factura_limpia
 
     # 6. Toneladas: numero positivo con hasta dos decimales, dentro del limite de la BD.
     #    Acepto coma o punto como separador decimal (la coma es lo habitual en es-AR).
@@ -2486,13 +2501,13 @@ def _validar_viaje_cereal(id_cliente, id_empleado, id_vehiculo, tipo_cereal, cod
                 raise ValueError("El monto en efectivo de la dadora de carga debe ser un numero entero positivo.")
 
     return (codigo_limpio, toneladas_val, precio_val, porcentaje_val, destinos_limpios,
-            dadora_nombre, dadora_tipo_val, dadora_valor_val)
+            dadora_nombre, dadora_tipo_val, dadora_valor_val, factura_val)
 
 
 def crear_viaje_cereal(id_cliente, id_empleado, id_vehiculo, tipo_cereal, codigo_trazabilidad,
                        toneladas, precio_tonelada, porcentaje_empleado, fecha_viaje_cereal, destinos,
                        dadora_carga=None, dadora_tipo_cobro=None, dadora_valor=None,
-                       pagado=False):
+                       pagado=False, numero_factura=None):
     """
     Crea un viaje de cereal (maestro) y sus destinos asociados (detalle) en una
     transaccion atomica. 'destinos' es una lista de strings.
@@ -2501,10 +2516,10 @@ def crear_viaje_cereal(id_cliente, id_empleado, id_vehiculo, tipo_cereal, codigo
     alcanza con el booleano (o esta cobrado o no lo esta). Por defecto nace impago.
     """
     (codigo, toneladas_val, precio_val, porcentaje_val, destinos_limpios,
-     dadora_nombre, dadora_tipo_val, dadora_valor_val) = _validar_viaje_cereal(
+     dadora_nombre, dadora_tipo_val, dadora_valor_val, factura_val) = _validar_viaje_cereal(
         id_cliente, id_empleado, id_vehiculo, tipo_cereal, codigo_trazabilidad,
         toneladas, precio_tonelada, porcentaje_empleado, fecha_viaje_cereal, destinos,
-        dadora_carga, dadora_tipo_cobro, dadora_valor
+        dadora_carga, dadora_tipo_cobro, dadora_valor, numero_factura
     )
 
     with transaction.atomic():
@@ -2514,6 +2529,7 @@ def crear_viaje_cereal(id_cliente, id_empleado, id_vehiculo, tipo_cereal, codigo
             vehiculo_id=id_vehiculo,
             tipo_cereal=tipo_cereal,
             codigo_trazabilidad_granos=codigo,
+            numero_factura=factura_val,
             toneladas=toneladas_val,
             precio_tonelada=precio_val,
             porcentaje_empleado=porcentaje_val,
@@ -2655,14 +2671,14 @@ def obtener_datos_viaje_cereal(id_viaje_cereal):
 def editar_viaje_cereal(id_viaje_cereal, id_cliente, id_empleado, id_vehiculo, tipo_cereal, codigo_trazabilidad,
                         toneladas, precio_tonelada, porcentaje_empleado, fecha_viaje_cereal, destinos,
                         dadora_carga=None, dadora_tipo_cobro=None, dadora_valor=None,
-                        pagado=None):
+                        pagado=None, numero_factura=None):
     # 'pagado' llega en None cuando quien edita no puede tocar el cobro (no staff):
     # en ese caso el estado de pago queda como estaba, no se pisa con un False.
     (codigo, toneladas_val, precio_val, porcentaje_val, destinos_limpios,
-     dadora_nombre, dadora_tipo_val, dadora_valor_val) = _validar_viaje_cereal(
+     dadora_nombre, dadora_tipo_val, dadora_valor_val, factura_val) = _validar_viaje_cereal(
         id_cliente, id_empleado, id_vehiculo, tipo_cereal, codigo_trazabilidad,
         toneladas, precio_tonelada, porcentaje_empleado, fecha_viaje_cereal, destinos,
-        dadora_carga, dadora_tipo_cobro, dadora_valor
+        dadora_carga, dadora_tipo_cobro, dadora_valor, numero_factura
     )
 
     with transaction.atomic():
@@ -2673,6 +2689,7 @@ def editar_viaje_cereal(id_viaje_cereal, id_cliente, id_empleado, id_vehiculo, t
         viaje_cereal.vehiculo_id = id_vehiculo
         viaje_cereal.tipo_cereal = tipo_cereal
         viaje_cereal.codigo_trazabilidad_granos = codigo
+        viaje_cereal.numero_factura = factura_val
         viaje_cereal.toneladas = toneladas_val
         viaje_cereal.precio_tonelada = precio_val
         viaje_cereal.porcentaje_empleado = porcentaje_val

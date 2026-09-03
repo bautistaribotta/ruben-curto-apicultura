@@ -1,0 +1,208 @@
+/* ============================================================
+   Filtro por numero de factura (pildora + modal).
+   La pildora reusa las clases .filtro-entidad__trigger/__label/__clear (que son
+   autonomas, ver filtro_entidad.css). El modal es propio y toma el mismo lenguaje
+   visual que el selector de entidad (.selent), pero con un input de texto libre en
+   vez de una lista. Autocontenido: solo tokens globales.
+   ============================================================ */
+.filtro-factura {
+  display: inline-flex;
+}
+
+/* --- Modal ---------------------------------------------------------------- */
+.filfac {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  visibility: hidden;
+  transition: visibility var(--dur-slow) var(--ease-standard);
+}
+
+.filfac.abierto {
+  visibility: visible;
+  transition: none;
+}
+
+.filfac__fondo {
+  position: absolute;
+  inset: 0;
+  background-color: var(--overlay-ink);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  transition: opacity var(--dur-slow) var(--ease-standard);
+}
+
+.filfac.abierto .filfac__fondo {
+  opacity: 1;
+}
+
+.filfac__panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 90%;
+  max-width: 26rem;
+  padding: 2.25rem 1.75rem 1.75rem;
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  text-align: center;
+  opacity: 0;
+  transform: scale(0.96);
+  transition: opacity var(--dur-slow) var(--ease-standard),
+              transform var(--dur-slow) var(--ease-standard);
+}
+
+.filfac.abierto .filfac__panel {
+  opacity: 1;
+  transform: scale(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .filfac,
+  .filfac__fondo,
+  .filfac__panel {
+    transition: none;
+  }
+  .filfac__panel {
+    transform: none;
+  }
+}
+
+.filfac__cerrar {
+  position: absolute;
+  top: 0.9rem;
+  right: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  border-radius: var(--radius-pill);
+  background-color: transparent;
+  color: var(--text-subtle);
+  cursor: pointer;
+  transition: background-color var(--dur-normal) var(--ease-standard),
+              color var(--dur-normal) var(--ease-standard);
+}
+
+.filfac__cerrar:hover {
+  background-color: var(--surface-hover);
+  color: var(--text-body);
+}
+
+.filfac__icono {
+  align-self: center;
+  margin-bottom: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: var(--radius-lg);
+  background-color: var(--honey-tint-10);
+  color: var(--brand-active);
+}
+
+.filfac__icono .material-symbols-outlined {
+  font-size: 1.75rem;
+}
+
+.filfac__titulo {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  color: var(--text-strong);
+  margin-bottom: 0.35rem;
+}
+
+.filfac__desc {
+  font-size: var(--text-sm);
+  color: var(--text-subtle);
+  line-height: 1.5;
+  margin-bottom: 1.25rem;
+}
+
+.filfac__form {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Input de texto libre para el numero de factura. Reset de appearance para que
+   Safari/WebKit no imponga su render nativo, igual que el resto de los campos. */
+.filfac__buscador {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.8rem;
+  background-color: var(--surface-sunken);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  margin-bottom: 1rem;
+}
+
+.filfac__buscador .material-symbols-outlined {
+  color: var(--text-subtle);
+  font-size: 1.2rem;
+}
+
+.filfac__input {
+  flex: 1;
+  min-width: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: var(--text-sm);
+  color: var(--text-body);
+  outline: none;
+}
+
+.filfac__input::placeholder {
+  color: var(--text-subtle);
+}
+
+.filfac__acciones {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.filfac__btn {
+  flex: 1;
+  padding: 0.6rem 0.9rem;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  transition: background-color var(--dur-normal) var(--ease-standard),
+              color var(--dur-normal) var(--ease-standard),
+              border-color var(--dur-normal) var(--ease-standard);
+}
+
+.filfac__btn--aplicar {
+  background-color: var(--brand-secondary);
+  color: var(--text-on-inverse);
+}
+
+.filfac__btn--aplicar:hover {
+  background-color: var(--brand-active);
+}
+
+.filfac__btn--ghost {
+  background-color: transparent;
+  color: var(--text-muted);
+  border-color: var(--border-default);
+}
+
+.filfac__btn--ghost:hover {
+  background-color: var(--surface-hover);
+  color: var(--text-body);
+}

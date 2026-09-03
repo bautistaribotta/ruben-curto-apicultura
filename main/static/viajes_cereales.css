@@ -122,66 +122,111 @@
   }
 }
 
-/* --- Anchos de columna propios de esta tabla (staff: 6 columnas).
-   Uso el prefijo .contenedor-tabla para ganarle en especificidad a las
-   reglas que define viajes.css para .tabla-viajes. La primera columna tambien
-   necesita su regla aca: .pago-col sola pierde contra el nth-child de viajes.css.
-   Al entrar Cliente y Monto total hubo que apretar Fecha, Vehiculo y Empleado. --- */
+/* --- Anchos de columna propios de esta tabla (staff: 8 columnas).
+   Orden: Pago, Fecha, Factura, CTG, Vehiculo, Empleado, Cliente, Monto total.
+   Uso el prefijo .contenedor-tabla para ganarle en especificidad a las reglas
+   que define viajes.css para .tabla-viajes. La primera columna tambien necesita
+   su regla aca: .pago-col sola pierde contra el nth-child de viajes.css. Al sacar
+   los iconos de Vehiculo/Empleado/Cliente entra el aire para Factura y CTG. --- */
 .contenedor-tabla .tabla-cereales th:nth-child(1) {
   width: 5rem;
 }
 
 /* Pago */
 .contenedor-tabla .tabla-cereales th:nth-child(2) {
-  width: 15%;
+  width: 12%;
 }
 
 /* Fecha */
 .contenedor-tabla .tabla-cereales th:nth-child(3) {
-  width: 23%;
+  width: 14%;
+}
+
+/* Factura */
+.contenedor-tabla .tabla-cereales th:nth-child(4) {
+  width: 14%;
+}
+
+/* CTG */
+.contenedor-tabla .tabla-cereales th:nth-child(5) {
+  width: 17%;
 }
 
 /* Vehiculo */
-.contenedor-tabla .tabla-cereales th:nth-child(4) {
-  width: 22%;
+.contenedor-tabla .tabla-cereales th:nth-child(6) {
+  width: 16%;
 }
 
 /* Empleado */
-.contenedor-tabla .tabla-cereales th:nth-child(5) {
-  width: 22%;
+.contenedor-tabla .tabla-cereales th:nth-child(7) {
+  width: 15%;
 }
 
 /* Cliente */
-.contenedor-tabla .tabla-cereales th:nth-child(6) {
-  width: 14%;
+.contenedor-tabla .tabla-cereales th:nth-child(8) {
+  width: 12%;
 }
 
 /* Monto total */
 
-/* --- Anchos sin las columnas de pago y monto (usuario no-staff): quedan las
-   cuatro columnas de negocio corridas un lugar, asi que hay que reasignarles el
+/* --- Anchos sin la columna de pago y de monto (usuario no-staff): quedan las
+   seis columnas de negocio corridas un lugar, asi que hay que reasignarles el
    ancho. El espacio liberado se reparte en proporcion al reparto original. --- */
 .contenedor-tabla .tabla-cereales.tabla-cereales--sin-pago th:nth-child(1) {
-  width: 18%;
+  width: 14%;
 }
 
 /* Fecha */
 .contenedor-tabla .tabla-cereales.tabla-cereales--sin-pago th:nth-child(2) {
-  width: 28%;
+  width: 16%;
+}
+
+/* Factura */
+.contenedor-tabla .tabla-cereales.tabla-cereales--sin-pago th:nth-child(3) {
+  width: 16%;
+}
+
+/* CTG */
+.contenedor-tabla .tabla-cereales.tabla-cereales--sin-pago th:nth-child(4) {
+  width: 20%;
 }
 
 /* Vehiculo */
-.contenedor-tabla .tabla-cereales.tabla-cereales--sin-pago th:nth-child(3) {
-  width: 27%;
+.contenedor-tabla .tabla-cereales.tabla-cereales--sin-pago th:nth-child(5) {
+  width: 19%;
 }
 
 /* Empleado */
-.contenedor-tabla .tabla-cereales.tabla-cereales--sin-pago th:nth-child(4) {
-  width: 27%;
+.contenedor-tabla .tabla-cereales.tabla-cereales--sin-pago th:nth-child(6) {
+  width: 15%;
 }
 
 /* Cliente */
 /* La celda de fecha usa .celda-fecha, el componente unificado de base.css */
+
+/* --- Aprieto el padding horizontal de las celdas de esta tabla para darle mas
+   aire a la informacion. Por defecto es 1.5rem (24px) por lado, o sea 48px entre
+   columnas; lo bajo a 22.5px por lado (45px entre columnas). Solo toco el lateral:
+   el vertical (th: 0.9rem, td: 1rem) queda como estaba. El prefijo .contenedor-tabla
+   sube la especificidad para ganarle a las reglas de base.css y viajes.css. --- */
+.contenedor-tabla .tabla-cereales th,
+.contenedor-tabla .tabla-cereales td {
+  padding-left: 1.40625rem;
+  padding-right: 1.40625rem;
+}
+
+/* --- Celdas Factura y CTG: numeros de documento. Cifras tabulares para que las
+   columnas queden a plomo, y un tono apagado con guion cuando el viaje no tiene
+   factura cargada (los viejos quedan en None). --- */
+.vjc-doc {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-strong);
+  letter-spacing: 0.02em;
+}
+
+.vjc-doc--vacio {
+  color: var(--text-subtle);
+}
 
 /* --- Celda Cliente: avatar + nombre, espejo de la celda Empleado de viajes.css.
    El avatar .avatar-iniciales--cliente vive en base.css. --- */

@@ -145,6 +145,10 @@
             <div class="vd-data__value vc-ctg">{{ viaje_cereal.codigo_trazabilidad_granos }}</div>
           </div>
           <div class="vc-carga__cell">
+            <div class="vd-data__label">Factura</div>
+            <div class="vd-data__value vc-ctg">{{ viaje_cereal.numero_factura|default:"--" }}</div>
+          </div>
+          <div class="vc-carga__cell">
             <div class="vd-data__label">Toneladas</div>
             <div class="vd-data__value">{{ viaje_cereal.toneladas|intcomma }} t</div>
           </div>
@@ -451,6 +455,20 @@
               pattern="[0-9]{1,15}"
               value="{{ viaje_cereal.codigo_trazabilidad_granos }}">
             <span class="mensaje-error">Solo números, hasta 15 dígitos.</span>
+          </div>
+
+          <div class="grupo-input">
+            <label for="factura-cereal">Número de factura</label>
+            <input
+              type="text"
+              id="factura-cereal"
+              name="numero_factura"
+              placeholder="Opcional (ej: 00012345)"
+              maxlength="20"
+              inputmode="numeric"
+              pattern="[0-9]{1,20}"
+              value="{{ viaje_cereal.numero_factura|default:'' }}">
+            <span class="mensaje-error">Solo números, hasta 20 dígitos.</span>
           </div>
 
           <div class="vje-grid2">

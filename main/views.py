@@ -3177,6 +3177,8 @@ def viaje_cereales(request):
                 id_vehiculo = request.POST.get("id_vehiculo")
                 tipo_cereal = request.POST.get("tipo_cereal")
                 codigo_trazabilidad = request.POST.get("codigo_trazabilidad")
+                # La factura es opcional: si llega vacia el servicio la guarda como None
+                numero_factura = request.POST.get("numero_factura")
                 toneladas = request.POST.get("toneladas")
                 precio_tonelada = request.POST.get("precio_tonelada")
                 # El porcentaje es opcional: si llega vacio lo paso como None
@@ -3200,7 +3202,8 @@ def viaje_cereales(request):
                                    toneladas, precio_tonelada, porcentaje_empleado, fecha_viaje_cereal, destinos,
                                    dadora_carga=dadora_carga, dadora_tipo_cobro=dadora_tipo_cobro,
                                    dadora_valor=dadora_valor,
-                                   pagado=bool(_pagado_del_formulario(request)))
+                                   pagado=bool(_pagado_del_formulario(request)),
+                                   numero_factura=numero_factura)
                 messages.success(request, "Viaje de cereal registrado exitosamente.")
 
         except ValueError as e:
@@ -3227,6 +3230,14 @@ def viaje_cereales(request):
         lista_viajes = lista_viajes.filter(vehiculo_id=vehiculo)
     if destino:
         lista_viajes = lista_viajes.filter(destinos__destino=destino).distinct()
+
+    # Busqueda por numero de factura (pildora -> modal con input de texto). A
+    # diferencia de los otros filtros, es texto libre: uso icontains para que sirva
+    # aunque el operador no recuerde los ceros a la izquierda (buscar "7777" trae
+    # tambien la factura "0007777").
+    factura = request.GET.get("factura", "").strip()
+    if factura:
+        lista_viajes = lista_viajes.filter(numero_factura__icontains=factura)
 
     # Estado de cobro (segmentado "Por cobrar / Todas"). Por defecto "cobrar": la
     # tabla y las tarjetas arrancan mostrando lo que todavia falta cobrar (viajes
@@ -3262,6 +3273,7 @@ def viaje_cereales(request):
         "vehiculo_nombre": nombre_vehiculo_filtro(vehiculo),
         "destino": destino,
         "destino_nombre": destino,
+        "factura": factura,
         "pago": pago,
         "empleados_filtro": opciones_empleados_filtro(),
         "vehiculos_filtro": opciones_vehiculos_filtro(),
@@ -3317,6 +3329,7 @@ def informacion_viaje_cereal(request, id_viaje_cereal):
             id_vehiculo = request.POST.get("id_vehiculo")
             tipo_cereal = request.POST.get("tipo_cereal")
             codigo_trazabilidad = request.POST.get("codigo_trazabilidad")
+            numero_factura = request.POST.get("numero_factura")
             toneladas = request.POST.get("toneladas")
             precio_tonelada = request.POST.get("precio_tonelada")
             porcentaje_empleado = request.POST.get("porcentaje_empleado") or None
@@ -3343,6 +3356,7 @@ def informacion_viaje_cereal(request, id_viaje_cereal):
                     dadora_tipo_cobro=dadora_tipo_cobro,
                     dadora_valor=dadora_valor,
                     pagado=_pagado_del_formulario(request),
+                    numero_factura=numero_factura,
                 )
                 messages.success(request, "Viaje de cereal modificado exitosamente.")
             except ValueError as e:

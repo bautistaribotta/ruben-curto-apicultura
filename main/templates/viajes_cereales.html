@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="{% static_v 'filtro_fechas.css' %}">
 <link rel="stylesheet" href="{% static_v 'filtro_pago.css' %}">
 <link rel="stylesheet" href="{% static_v 'filtro_entidad.css' %}">
+<link rel="stylesheet" href="{% static_v 'filtro_factura.css' %}">
 <link rel="stylesheet" href="{% static_v 'selector_entidad.css' %}">
 <link rel="stylesheet" href="{% static_v 'autocompletado_ciudades.css' %}">
 <link rel="stylesheet" href="{% static_v 'pago_viaje.css' %}">
@@ -64,6 +65,8 @@
         {% include "chip_filtro_entidad.html" with chip_id="chip-destino" param="destino" modal_id="selector-destino-cereal" icono="location_on" etiqueta="Destino" valor_id=destino valor_nombre=destino_nombre %}
       </div>
       {% include 'filtro_fechas.html' with modos="dia,mes,rango" %}
+      {% comment %} Pildora de busqueda por numero de factura (a la derecha de Fechas). {% endcomment %}
+      {% include 'filtro_factura.html' %}
     </div>
 
     <!-- Flota se llega desde la barra lateral, como sub-item de esta seccion -->
@@ -187,6 +190,19 @@
               inputmode="numeric"
               pattern="[0-9]{1,15}">
             <span class="mensaje-error">Solo números, hasta 15 dígitos.</span>
+          </div>
+
+          <div class="grupo-input">
+            <label for="factura-acopio">Número de factura</label>
+            <input
+              type="text"
+              id="factura-acopio"
+              name="numero_factura"
+              placeholder="Opcional (ej: 00012345)"
+              maxlength="20"
+              inputmode="numeric"
+              pattern="[0-9]{1,20}">
+            <span class="mensaje-error">Solo números, hasta 20 dígitos.</span>
           </div>
 
           <div class="vje-grid2">
@@ -409,6 +425,7 @@
 <script src="{% static_v 'js/filtro_pago.js' %}"></script>
 <script src="{% static_v 'js/selector_entidad.js' %}"></script>
 <script src="{% static_v 'js/filtros_entidad.js' %}"></script>
+<script src="{% static_v 'js/filtro_factura.js' %}"></script>
 <script src="{% static_v 'js/viajes_cereales.js' %}"></script>
 <script src="{% static_v 'js/pago_viaje.js' %}"></script>
 <script src="{% static_v 'js/dadora_carga.js' %}"></script>

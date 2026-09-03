@@ -1,0 +1,57 @@
+{% comment %}
+  Filtro por numero de factura (pildora + modal). A diferencia de los chips de
+  entidad (empleado/vehiculo/destino), que eligen de una lista, la factura es texto
+  libre: la pildora abre un modal con un input donde el operador tipea el numero.
+
+  El estado APLICADO (el numero buscado) viaja en data-valor del contenedor
+  #filtro-factura, fuera de la region que reemplaza el AJAX, asi sobrevive a los
+  refrescos. filtro_factura.js administra el modal y dispara 'filtrofactura:cambio'
+  sobre document al aplicar o limpiar, que la vista engancha a su busqueda AJAX.
+
+  Espera en el contexto: factura (el numero aplicado, vacio si no hay filtro).
+{% endcomment %}
+<div class="filtro-factura" id="filtro-factura" data-valor="{{ factura }}">
+  <button type="button"
+          class="filtro-entidad__trigger {% if factura %}is-active{% endif %}"
+          id="filtro-factura-trigger" aria-haspopup="dialog" aria-expanded="false">
+    <span class="material-symbols-outlined" aria-hidden="true">receipt_long</span>
+    <span class="filtro-entidad__label" id="filtro-factura-label">{% if factura %}Factura {{ factura }}{% else %}Factura{% endif %}</span>
+    {% if factura %}
+      <span class="material-symbols-outlined filtro-entidad__clear" id="filtro-factura-clear"
+            role="button" tabindex="0" aria-label="Quitar filtro de factura">close</span>
+    {% endif %}
+  </button>
+
+  <div class="filfac" id="filtro-factura-modal">
+    <div class="filfac__fondo" data-filfac-cerrar></div>
+
+    <div class="filfac__panel" role="dialog" aria-modal="true"
+         aria-labelledby="filtro-factura-titulo" aria-describedby="filtro-factura-desc">
+      <button type="button" class="filfac__cerrar" data-filfac-cerrar aria-label="Cerrar">
+        <span class="material-symbols-outlined" aria-hidden="true">close</span>
+      </button>
+
+      <div class="filfac__icono" aria-hidden="true">
+        <span class="material-symbols-outlined">receipt_long</span>
+      </div>
+
+      <h3 class="filfac__titulo" id="filtro-factura-titulo">Buscar por factura</h3>
+      <p class="filfac__desc" id="filtro-factura-desc">Ingresá el número de factura para ver todos sus viajes de cereal.</p>
+
+      <form class="filfac__form" id="filtro-factura-form">
+        <div class="filfac__buscador">
+          <span class="material-symbols-outlined" aria-hidden="true">search</span>
+          <input type="text" class="filfac__input" id="filtro-factura-input"
+                 placeholder="Ej: 00012345" autocomplete="off"
+                 inputmode="numeric" pattern="[0-9]{1,20}" maxlength="20"
+                 value="{{ factura }}">
+        </div>
+
+        <div class="filfac__acciones">
+          <button type="submit" class="filfac__btn filfac__btn--aplicar">Buscar</button>
+          <button type="button" class="filfac__btn filfac__btn--ghost" id="filtro-factura-limpiar">Limpiar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

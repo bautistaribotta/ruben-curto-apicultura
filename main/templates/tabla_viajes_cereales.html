@@ -6,6 +6,8 @@
       <th class="pago-col">Pago</th>
       {% endif %}
       <th class="alineado-izq">Fecha</th>
+      <th class="alineado-izq">Factura</th>
+      <th class="alineado-izq">CTG</th>
       <th class="alineado-izq">Vehículo</th>
       <th class="alineado-izq">Empleado</th>
       <th class="alineado-izq">Cliente</th>
@@ -39,8 +41,17 @@
         </span>
       </td>
       <td>
+        {% if viaje.numero_factura %}
+        <span class="vjc-doc">{{ viaje.numero_factura }}</span>
+        {% else %}
+        <span class="vjc-doc vjc-doc--vacio">--</span>
+        {% endif %}
+      </td>
+      <td>
+        <span class="vjc-doc">{{ viaje.codigo_trazabilidad_granos }}</span>
+      </td>
+      <td>
         <div class="vje-veh">
-          <span class="vje-veh__tile"><span class="material-symbols-outlined">local_shipping</span></span>
           <div>
             <div class="vehiculo-nombre">{{ viaje.vehiculo.nombre }}</div>
             <span class="vje-veh__pat">{{ viaje.vehiculo.patente }}</span>
@@ -49,14 +60,12 @@
       </td>
       <td>
         <div class="vje-empleado">
-          <span class="avatar-iniciales avatar-iniciales--empleado">{{ viaje.empleado.nombre|first|upper }}{{ viaje.empleado.apellido|first|upper }}</span>
           <span class="vje-empleado__name">{{ viaje.empleado.nombre }} {{ viaje.empleado.apellido }}</span>
         </div>
       </td>
       <td>
         {% if viaje.cliente %}
         <div class="vje-cliente">
-          <span class="avatar-iniciales avatar-iniciales--cliente">{{ viaje.cliente.nombre|first|upper }}{{ viaje.cliente.apellido|first|upper }}</span>
           <span class="vje-cliente__name">{{ viaje.cliente.nombre }} {{ viaje.cliente.apellido }}</span>
         </div>
         {% else %}
@@ -69,7 +78,7 @@
     </tr>
     {% empty %}
     <tr class="fila-vacia">
-      <td colspan="{% if user.is_staff %}6{% else %}4{% endif %}" class="celda-vacia">
+      <td colspan="{% if user.is_staff %}8{% else %}6{% endif %}" class="celda-vacia">
         <span class="material-symbols-outlined">agriculture</span>
         No se encontraron viajes de cereales con esos filtros.
       </td>
@@ -86,7 +95,7 @@
   </div>
   <div class="paginacion-botones">
     {% if page_obj.has_previous %}
-      <a href="?page={{ page_obj.previous_page_number }}{% if empleado %}&empleado={{ empleado }}{% endif %}{% if vehiculo %}&vehiculo={{ vehiculo }}{% endif %}{% if destino %}&destino={{ destino|urlencode }}{% endif %}{% if desde %}&desde={{ desde }}{% endif %}{% if hasta %}&hasta={{ hasta }}{% endif %}">
+      <a href="?page={{ page_obj.previous_page_number }}{% if empleado %}&empleado={{ empleado }}{% endif %}{% if vehiculo %}&vehiculo={{ vehiculo }}{% endif %}{% if destino %}&destino={{ destino|urlencode }}{% endif %}{% if factura %}&factura={{ factura|urlencode }}{% endif %}{% if desde %}&desde={{ desde }}{% endif %}{% if hasta %}&hasta={{ hasta }}{% endif %}">
         <button class="boton-paginacion">Anterior</button>
       </a>
     {% else %}
@@ -94,7 +103,7 @@
     {% endif %}
 
     {% if page_obj.has_next %}
-      <a href="?page={{ page_obj.next_page_number }}{% if empleado %}&empleado={{ empleado }}{% endif %}{% if vehiculo %}&vehiculo={{ vehiculo }}{% endif %}{% if destino %}&destino={{ destino|urlencode }}{% endif %}{% if desde %}&desde={{ desde }}{% endif %}{% if hasta %}&hasta={{ hasta }}{% endif %}">
+      <a href="?page={{ page_obj.next_page_number }}{% if empleado %}&empleado={{ empleado }}{% endif %}{% if vehiculo %}&vehiculo={{ vehiculo }}{% endif %}{% if destino %}&destino={{ destino|urlencode }}{% endif %}{% if factura %}&factura={{ factura|urlencode }}{% endif %}{% if desde %}&desde={{ desde }}{% endif %}{% if hasta %}&hasta={{ hasta }}{% endif %}">
         <button class="boton-paginacion">Siguiente</button>
       </a>
     {% else %}
