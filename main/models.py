@@ -616,6 +616,9 @@ class DetalleViaje(models.Model):
 
     class Meta:
         db_table = "detalle_viajes"
+        # Los destinos son el recorrido del viaje: el id los deja siempre en el
+        # orden en que se cargaron, en vez de depender de lo que devuelva la base.
+        ordering = ["id"]
 
     def __str__(self):
         return f"Destino {self.destino} (Viaje {self.viaje_id})"
@@ -885,6 +888,8 @@ class DetalleViajeCereal(models.Model):
 
     class Meta:
         db_table = "detalle_viaje_cereal"
+        # Mismo criterio que los destinos de miel/cera: orden de carga, estable.
+        ordering = ["id"]
 
     def __str__(self):
         return f"Destino {self.destino} del {self.viaje_cereal}"
