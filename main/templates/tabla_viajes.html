@@ -13,7 +13,6 @@
     <tr class="fila-viaje" onclick="window.location.href='{% url 'informacion_viaje' viaje.id %}'">
       <td>
         <div class="vje-veh">
-          <span class="vje-veh__tile"><span class="material-symbols-outlined">local_shipping</span></span>
           <div>
             <div class="vehiculo-nombre">{{ viaje.vehiculo.nombre }}</div>
             <span class="vje-veh__pat">{{ viaje.vehiculo.patente }}</span>
@@ -22,7 +21,6 @@
       </td>
       <td>
         <div class="vje-empleado">
-          <span class="avatar-iniciales avatar-iniciales--empleado">{{ viaje.empleado.nombre|first|upper }}{{ viaje.empleado.apellido|first|upper }}</span>
           <span class="vje-empleado__name">{{ viaje.empleado.nombre }} {{ viaje.empleado.apellido }}</span>
         </div>
       </td>
