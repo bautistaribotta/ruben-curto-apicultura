@@ -706,7 +706,7 @@ def informacion_clientes(request, id_cliente):
         messages.success(request, "Cliente editado correctamente")
         return redirect("informacion_clientes", id_cliente=id_cliente)
 
-    operaciones_cliente = Operacion.objects.filter(cliente=cliente).con_totales().prefetch_related("detalleoperacion_set__producto", "detalleoperacion_set__cotizacion", "pago_set").order_by("-fecha")
+    operaciones_cliente = Operacion.objects.filter(cliente=cliente).con_totales().prefetch_related("detalleoperacion_set__producto", "detalleoperacion_set__cotizacion", "pago_set").order_by("-fecha", "-id")
 
     # Filtro por tipo de operacion segun la pestaña activa (todas / venta / compra)
     tipo_actual = request.GET.get("tipo", "todas")
@@ -762,7 +762,7 @@ def informacion_operacion(request, id_operacion):
     operacion = get_object_or_404(Operacion.objects.con_totales(), id=id_operacion)
 
     from django.db.models import F
-    pagos = operacion.pago_set.all().order_by("-fecha")
+    pagos = operacion.pago_set.all().order_by("-fecha", "-id")
     # Anoto el subtotal por linea (cantidad * precio fijado en la operacion) para la tabla de productos
     detalles = DetalleOperacion.objects.filter(operacion=operacion).annotate(
         subtotal=F("cantidad") * F("precio_unitario")
@@ -1697,7 +1697,7 @@ def informacion_viaje(request, id_viaje):
         .con_totales()
         .select_related("cliente")
         .prefetch_related("detalleoperacion_set__producto", "detalleoperacion_set__cotizacion", "pago_set")
-        .order_by("-fecha")
+        .order_by("-fecha", "-id")
     )
 
     # Items para el modal selector de cliente (mismo componente que el filtro de deudas,
@@ -1924,8 +1924,9 @@ def deudores(request):
     # para que el chip ya se pinte correcto al cargar, sin depender del JS.
     fecha_label = _etiqueta_rango(desde, hasta)
 
-    # Las deudas se ordenan siempre de la más antigua a la más nueva
-    lista_deudores.sort(key=lambda d: d["dias"], reverse=True)
+    # Las deudas se ordenan siempre de la mas reciente a la mas antigua. El id
+    # desempata las operaciones del mismo dia, dejando arriba la ultima cargada.
+    lista_deudores.sort(key=lambda d: (d["fecha"], d["id"]), reverse=True)
 
     paginator_deudores = Paginator(lista_deudores, 8)
     pagina_numero = request.GET.get("page")

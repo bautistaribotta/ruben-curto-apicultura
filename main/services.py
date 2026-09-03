@@ -2033,7 +2033,7 @@ def incluir_asignado(opciones, asignado):
 
 
 def obtener_viajes():
-    return Viaje.objects.filter(activo=True).select_related('empleado', 'vehiculo').prefetch_related('destinos').order_by('-fecha_inicio')
+    return Viaje.objects.filter(activo=True).select_related('empleado', 'vehiculo').prefetch_related('destinos').order_by('-fecha_inicio', '-id')
 
 
 def obtener_datos_viaje(id_viaje):
@@ -2541,7 +2541,7 @@ def obtener_viajes_cereales():
         ViajeCereal.objects.filter(activo=True)
         .select_related("cliente", "empleado", "vehiculo")
         .prefetch_related("destinos")
-        .order_by("-fecha_viaje_cereal")
+        .order_by("-fecha_viaje_cereal", "-id")
     )
 
 
@@ -2932,7 +2932,7 @@ def obtener_viajes_reparto():
     return (
         ViajeReparto.objects.filter(activo=True)
         .select_related("empleado", "vehiculo", "destino")
-        .order_by("-fecha_viaje_reparto")
+        .order_by("-fecha_viaje_reparto", "-id")
     )
 
 
