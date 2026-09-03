@@ -123,8 +123,10 @@ class Operacion(models.Model):
 
     @property
     def monto_total(self):
-        # Si el queryset vino anotado con con_totales(), uso el valor ya calculado
-        # para no disparar una query por cada operacion del listado.
+        """
+        Si el queryset vino anotado con con_totales(), uso el valor ya calculado
+        para no disparar una query por cada operacion del listado.
+        """
         if hasattr(self, "_monto_total_anotado"):
             return self._monto_total_anotado or 0
         resultado = self.detalleoperacion_set.aggregate(
@@ -158,9 +160,11 @@ class Operacion(models.Model):
 
 class DetalleOperacion(models.Model):
     operacion = models.ForeignKey(Operacion, on_delete=models.CASCADE, db_column="id_operacion")
-    # Una linea de la operacion apunta a un producto envasado (venta por unidad) O a un
-    # articulo de cotizaciones (venta/compra a granel en kilos), nunca a los dos a la vez.
-    # La exclusion mutua la garantiza el CheckConstraint de abajo.
+    """
+    Una linea de la operacion apunta a un producto envasado (venta por unidad) O a un
+    articulo de cotizaciones (venta/compra a granel en kilos), nunca a los dos a la vez.
+    La exclusion mutua la garantiza el CheckConstraint de abajo.
+    """
     producto = models.ForeignKey(Producto, on_delete=models.PROTECT, db_column="id_producto",
                                  null=True, blank=True)
     cotizacion = models.ForeignKey("ProductoPorKg", on_delete=models.PROTECT, db_column="id_cotizacion",
@@ -194,8 +198,10 @@ class DetalleOperacion(models.Model):
 
     @property
     def nombre_item(self):
-        # Nombre unico para mostrar en listados, remito y detalle de operacion,
-        # sin que cada template tenga que ramificar entre producto y cotizacion
+        """
+        Nombre unico para mostrar en listados, remito y detalle de operacion,
+        sin que cada template tenga que ramificar entre producto y cotizacion
+        """
         if self.es_granel:
             return f"{self.cotizacion.articulo} (por kg)"
         return self.producto.nombre
@@ -206,8 +212,10 @@ class DetalleOperacion(models.Model):
 
 class Pago(models.Model):
     operacion = models.ForeignKey(Operacion, on_delete=models.CASCADE, db_column="id_operacion")
-    # default (y no auto_now_add) para que el pago automatico de una operacion
-    # "contado" con fecha vieja pueda llevar esa misma fecha
+    """
+    default (y no auto_now_add) para que el pago automatico de una operacion
+    "contado" con fecha vieja pueda llevar esa misma fecha
+    """
     fecha = models.DateTimeField(default=timezone.now)
     monto = models.DecimalField(max_digits=15, decimal_places=2)
 
@@ -222,8 +230,10 @@ class Pago(models.Model):
 class ProductoPorKg(models.Model):
     articulo = models.CharField(max_length=25, unique=True)
     monto = models.PositiveIntegerField(default=1)
-    # Kilos disponibles a granel del articulo. Uso Decimal (no Float) para evitar
-    # ruido de precision al acumular pesadas fraccionadas, igual que DetalleOperacion
+    """
+    Kilos disponibles a granel del articulo. Uso Decimal (no Float) para evitar
+    ruido de precision al acumular pesadas fraccionadas, igual que DetalleOperacion
+    """
     cantidad = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     class Meta:
@@ -238,12 +248,16 @@ class Empleado(models.Model):
     nombre = models.CharField(max_length=25)
     apellido = models.CharField(max_length=25)
     sueldo = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    # Dia desde el que arranca a contar la cuenta corriente (saldo en 0). Se fija
-    # solo la primera vez que se carga un sueldo; antes de ese dia no se muestran
-    # sueldos ni se cuentan pagos. Null mientras el empleado no tenga cuenta.
+    """
+    Dia desde el que arranca a contar la cuenta corriente (saldo en 0). Se fija
+    solo la primera vez que se carga un sueldo; antes de ese dia no se muestran
+    sueldos ni se cuentan pagos. Null mientras el empleado no tenga cuenta.
+    """
     inicio_cuenta = models.DateField(null=True, blank=True)
-    # Fecha unica de vencimiento del carnet de conducir. Null mientras no se
-    # cargue: el perfil ofrece un boton para darla de alta y despues editarla.
+    """
+    Fecha unica de vencimiento del carnet de conducir. Null mientras no se
+    cargue: el perfil ofrece un boton para darla de alta y despues editarla.
+    """
     vencimiento_carnet = models.DateField(null=True, blank=True)
     activo = models.BooleanField(default=True)
 
@@ -259,11 +273,13 @@ class Empleado(models.Model):
 
     @property
     def total_viajes(self):
-        # Cantidad de viajes activos del empleado, sumando los tres tipos de viaje
-        # (miel/cera, reparto y cereal). Un viaje cuenta como uno, sin importar
-        # cuantos destinos tenga. Si el queryset vino anotado con _num_viajes
-        # (ver obtener_empleados_activos) reutilizo ese valor para evitar una
-        # query por fila en el listado de flota.
+        """
+        Cantidad de viajes activos del empleado, sumando los tres tipos de viaje
+        (miel/cera, reparto y cereal). Un viaje cuenta como uno, sin importar
+        cuantos destinos tenga. Si el queryset vino anotado con _num_viajes
+        (ver obtener_empleados_activos) reutilizo ese valor para evitar una
+        query por fila en el listado de flota.
+        """
         if hasattr(self, "_num_viajes"):
             return self._num_viajes
         return (
@@ -277,12 +293,14 @@ class Empleado(models.Model):
 
 
 class PagosEmpleados(models.Model):
-    # De donde salio el pago. "manual" es el pago comun que se carga a mano desde
-    # el perfil; "devolucion" es el que nace solo cuando un chofer se queda con
-    # parte del sobrante de la caja de un viaje de miel/cera (ver
-    # Viaje.registrar_devolucion en services). El origen no cambia al editar el
-    # pago, asi la cuenta corriente lo puede seguir distinguiendo visualmente
-    # aunque se le corrija el monto desde cualquiera de los dos lados.
+    """
+    De donde salio el pago. "manual" es el pago comun que se carga a mano desde
+    el perfil; "devolucion" es el que nace solo cuando un chofer se queda con
+    parte del sobrante de la caja de un viaje de miel/cera (ver
+    Viaje.registrar_devolucion en services). El origen no cambia al editar el
+    pago, asi la cuenta corriente lo puede seguir distinguiendo visualmente
+    aunque se le corrija el monto desde cualquiera de los dos lados.
+    """
     ORIGEN_MANUAL = "manual"
     ORIGEN_DEVOLUCION = "devolucion"
     ORIGEN_CHOICES = [
@@ -314,8 +332,10 @@ class Vehiculo(models.Model):
 
     @property
     def total_viajes(self):
-        # Suma los tres tipos de viaje activos (miel/cera, reparto y cereal),
-        # igual que en Empleado.
+        """
+        Suma los tres tipos de viaje activos (miel/cera, reparto y cereal),
+        igual que en Empleado.
+        """
         if hasattr(self, "_num_viajes"):
             return self._num_viajes
         return (
@@ -363,8 +383,10 @@ class RegistroKilometraje(models.Model):
     """
     vehiculo = models.ForeignKey(Vehiculo, on_delete=models.CASCADE, related_name="registros_km",
                                  db_column="id_vehiculo")
-    # default y no auto_now_add: la lectura se anota cuando se puede, y la fecha que
-    # vale es la del dia en que el odometro marcaba ese numero, no la de la carga
+    """
+    default y no auto_now_add: la lectura se anota cuando se puede, y la fecha que
+    vale es la del dia en que el odometro marcaba ese numero, no la de la carga
+    """
     fecha = models.DateField(default=timezone.localdate)
     kilometros = models.DecimalField(max_digits=10, decimal_places=2)
 
@@ -487,11 +509,13 @@ class ObservacionVehiculo(models.Model):
 
 
 class Viaje(models.Model):
-    # Que hizo el chofer con el sobrante de la caja al volver. Solo tiene sentido
-    # cuando final_caja > 0. "" es que todavia no se registro; "total" es que
-    # devolvio todo el sobrante y no queda nada pendiente; "parcial" es que
-    # devolvio una parte y se quedo con el resto, que pasa a figurar como un pago
-    # del empleado (pago_devolucion). Ver services.registrar_devolucion_caja.
+    """
+    Que hizo el chofer con el sobrante de la caja al volver. Solo tiene sentido
+    cuando final_caja > 0. "" es que todavia no se registro; "total" es que
+    devolvio todo el sobrante y no queda nada pendiente; "parcial" es que
+    devolvio una parte y se quedo con el resto, que pasa a figurar como un pago
+    del empleado (pago_devolucion). Ver services.registrar_devolucion_caja.
+    """
     DEVOLUCION_SIN_REGISTRAR = ""
     DEVOLUCION_TOTAL = "total"
     DEVOLUCION_PARCIAL = "parcial"
@@ -514,14 +538,18 @@ class Viaje(models.Model):
     )
     # Cuanto devolvio el chofer del sobrante. En "total" es igual al sobrante.
     monto_devuelto = models.PositiveIntegerField(default=0)
-    # Foto del sobrante (final_caja) al momento de registrar la devolucion. Se
-    # guarda para que el registro quede coherente aunque despues cambien las
-    # operaciones o los gastos y final_caja se mueva.
+    """
+    Foto del sobrante (final_caja) al momento de registrar la devolucion. Se
+    guarda para que el registro quede coherente aunque despues cambien las
+    operaciones o los gastos y final_caja se mueva.
+    """
     sobrante_devolucion = models.PositiveIntegerField(default=0)
-    # El pago que genero una devolucion parcial (lo que el chofer se quedo). Es un
-    # PagosEmpleados con origen "devolucion". OneToOne para poder actualizarlo o
-    # borrarlo al editar la devolucion desde el viaje. SET_NULL: si el pago se
-    # borra desde el perfil del empleado, el viaje no se cae, solo pierde el vinculo.
+    """
+    El pago que genero una devolucion parcial (lo que el chofer se quedo). Es un
+    PagosEmpleados con origen "devolucion". OneToOne para poder actualizarlo o
+    borrarlo al editar la devolucion desde el viaje. SET_NULL: si el pago se
+    borra desde el perfil del empleado, el viaje no se cae, solo pierde el vinculo.
+    """
     pago_devolucion = models.OneToOneField(
         "PagosEmpleados", on_delete=models.SET_NULL, null=True, blank=True,
         related_name="viaje_devolucion",
@@ -540,9 +568,11 @@ class Viaje(models.Model):
 
     @cached_property
     def _operaciones_caja(self):
-        # Ventas y compras activas del viaje en una sola consulta: en la caja del
-        # viaje las ventas ingresan dinero y las compras lo sacan. Sumo linea por
-        # linea (cantidad * precio) igual que la property monto_total de Operacion.
+        """
+        Ventas y compras activas del viaje en una sola consulta: en la caja del
+        viaje las ventas ingresan dinero y las compras lo sacan. Sumo linea por
+        linea (cantidad * precio) igual que la property monto_total de Operacion.
+        """
         agg = self.operaciones.filter(activa=True).aggregate(
             ventas=Sum(F("detalleoperacion__cantidad") * F("detalleoperacion__precio_unitario"),
                        filter=Q(tipo_operacion="venta")),
@@ -566,17 +596,21 @@ class Viaje(models.Model):
     def total_ingresos(self) -> int:
         from django.db.models import Sum
 
-        # Dinero que entra a la caja por fuera de las ventas (hoy, la transferencia
-        # que se le manda al chofer). Si el viaje no tiene ninguno, aggregate devuelve
-        # None y lo normalizo a 0.
+        """
+        Dinero que entra a la caja por fuera de las ventas (hoy, la transferencia
+        que se le manda al chofer). Si el viaje no tiene ninguno, aggregate devuelve
+        None y lo normalizo a 0.
+        """
         resultado = self.ingresos_caja.aggregate(total=Sum('monto'))['total']
         return resultado if resultado is not None else 0
 
     @property
     def final_caja(self) -> int:
-        # La caja arranca en inicio_caja, se le restan los gastos, se le suma lo
-        # vendido y lo transferido al chofer, y se le resta lo comprado. Puede
-        # quedar negativa.
+        """
+        La caja arranca en inicio_caja, se le restan los gastos, se le suma lo
+        vendido y lo transferido al chofer, y se le resta lo comprado. Puede
+        quedar negativa.
+        """
         return (int(self.inicio_caja) - self.total_gastos + self.total_ventas
                 - self.total_compras + self.total_ingresos)
 
@@ -587,9 +621,11 @@ class Viaje(models.Model):
 
     @property
     def devolucion_retenido(self) -> int:
-        # Lo que el chofer se quedo en una devolucion parcial: el sobrante del que
-        # se partio menos lo que devolvio. Es el monto que figura como pago del
-        # empleado. En "total" o sin registrar es cero.
+        """
+        Lo que el chofer se quedo en una devolucion parcial: el sobrante del que
+        se partio menos lo que devolvio. Es el monto que figura como pago del
+        empleado. En "total" o sin registrar es cero.
+        """
         if self.devolucion_estado != self.DEVOLUCION_PARCIAL:
             return 0
         return int(self.sobrante_devolucion) - int(self.monto_devuelto)
@@ -616,8 +652,10 @@ class DetalleViaje(models.Model):
 
     class Meta:
         db_table = "detalle_viajes"
-        # Los destinos son el recorrido del viaje: el id los deja siempre en el
-        # orden en que se cargaron, en vez de depender de lo que devuelva la base.
+        """
+        Los destinos son el recorrido del viaje: el id los deja siempre en el
+        orden en que se cargaron, en vez de depender de lo que devuelva la base.
+        """
         ordering = ["id"]
 
     def __str__(self):
@@ -637,11 +675,13 @@ class GastoBase(models.Model):
     fecha = models.DateField(auto_now_add=True)
     gasto = models.CharField(choices=TIPO_GASTOS, max_length=25)
     monto = models.PositiveIntegerField(default=0)
-    # Solo para los gastos de tipo Combustible: la carga de combustible que este
-    # gasto genero en una estacion de servicio. Queda en None para el resto de los
-    # gastos. Cada tabla de gasto (miel/cera, cereal, reparto) tiene su propia
-    # columna gracias a %(class)s. Al borrar la carga el gasto no se cae: solo
-    # pierde el vinculo (SET_NULL), pero en la practica se sincronizan juntos.
+    """
+    Solo para los gastos de tipo Combustible: la carga de combustible que este
+    gasto genero en una estacion de servicio. Queda en None para el resto de los
+    gastos. Cada tabla de gasto (miel/cera, cereal, reparto) tiene su propia
+    columna gracias a %(class)s. Al borrar la carga el gasto no se cae: solo
+    pierde el vinculo (SET_NULL), pero en la practica se sincronizan juntos.
+    """
     carga_combustible = models.OneToOneField(
         "CargaCombustible", on_delete=models.SET_NULL, null=True, blank=True,
         related_name="%(class)s_gasto",
@@ -685,21 +725,27 @@ class ViajeReparto(models.Model):
     fecha_viaje_reparto = models.DateField()
     empleado = models.ForeignKey(Empleado, on_delete=models.PROTECT, db_column="id_empleado")
     vehiculo = models.ForeignKey(Vehiculo, on_delete=models.PROTECT, db_column="id_vehiculo")
-    # Localidad del reparto, elegida del catalogo. Es nullable solo para los repartos
-    # historicos que se cargaron con destinos escritos a mano y quedaron sin catalogo.
-    # Referencia por texto porque el catalogo se declara mas abajo en este mismo archivo.
+    """
+    Localidad del reparto, elegida del catalogo. Es nullable solo para los repartos
+    historicos que se cargaron con destinos escritos a mano y quedaron sin catalogo.
+    Referencia por texto porque el catalogo se declara mas abajo en este mismo archivo.
+    """
     destino = models.ForeignKey("DestinoViajeReparto", on_delete=models.PROTECT, null=True, blank=True,
                                 db_column="id_destino", related_name="viajes")
     gasto_combustible_viaje_reparto = models.PositiveIntegerField(default=0)
     costo_empleado = models.PositiveIntegerField(default=0)
-    # Decimal porque la tarifa del catalogo puede tener centavos y el viaje se
-    # queda con una copia de ese monto
+    """
+    Decimal porque la tarifa del catalogo puede tener centavos y el viaje se
+    queda con una copia de ese monto
+    """
     valor_viaje = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     activo = models.BooleanField(default=True)
     pagado = models.BooleanField(default=False)
-    # Momento en que se registro el cobro. Queda en None mientras el viaje esta
-    # impago y se limpia si el cobro se da de baja, asi nunca muestra una fecha
-    # que no corresponde al estado actual.
+    """
+    Momento en que se registro el cobro. Queda en None mientras el viaje esta
+    impago y se limpia si el cobro se da de baja, asi nunca muestra una fecha
+    que no corresponde al estado actual.
+    """
     fecha_pago = models.DateTimeField(null=True, blank=True)
 
     class Meta:
@@ -707,8 +753,10 @@ class ViajeReparto(models.Model):
 
     @property
     def total_gastos(self) -> int:
-        # Suma de los gastos extra cargados a este viaje de reparto (tabla hija).
-        # Si el viaje no tiene gastos, aggregate devuelve None y lo normalizo a 0.
+        """
+        Suma de los gastos extra cargados a este viaje de reparto (tabla hija).
+        Si el viaje no tiene gastos, aggregate devuelve None y lo normalizo a 0.
+        """
         resultado = self.detalle_gastos.aggregate(total=Sum('monto'))['total']
         return resultado if resultado is not None else 0
 
@@ -774,49 +822,65 @@ class ViajeCereal(models.Model):
     fecha_viaje_cereal = models.DateField()
     empleado = models.ForeignKey(Empleado, on_delete=models.PROTECT, db_column="id_empleado")
     vehiculo = models.ForeignKey(Vehiculo, on_delete=models.PROTECT, db_column="id_vehiculo")
-    # Cliente al que se le presta el flete. Es nullable para no romper los viajes
-    # de cereal que ya existian antes de incorporar este campo (quedan "Sin cliente").
+    """
+    Cliente al que se le presta el flete. Es nullable para no romper los viajes
+    de cereal que ya existian antes de incorporar este campo (quedan "Sin cliente").
+    """
     cliente = models.ForeignKey(Cliente, on_delete=models.PROTECT, null=True, blank=True,
                                 db_column="id_cliente", related_name="viajes_cereales")
     tipo_cereal = models.CharField(max_length=50, choices=cereales)
-    # El CTG es un codigo de hasta 15 digitos que puede tener ceros a la izquierda, por eso
-    # lo guardo como texto: un IntegerField perderia esos ceros (00123456 -> 123456)
+    """
+    El CTG es un codigo de hasta 15 digitos que puede tener ceros a la izquierda, por eso
+    lo guardo como texto: un IntegerField perderia esos ceros (00123456 -> 123456)
+    """
     codigo_trazabilidad_granos = models.CharField(max_length=15)
-    # Numero de factura al que pertenece el viaje. Es texto y no entero por el mismo
-    # motivo que el CTG: puede tener ceros a la izquierda que un IntegerField perderia.
-    # Una misma factura puede repetirse en varios viajes (el operador la escribe a mano
-    # en cada uno). Es opcional: los viajes viejos sin factura quedan en None.
+    """
+    Numero de factura al que pertenece el viaje. Es texto y no entero por el mismo
+    motivo que el CTG: puede tener ceros a la izquierda que un IntegerField perderia.
+    Una misma factura puede repetirse en varios viajes (el operador la escribe a mano
+    en cada uno). Es opcional: los viajes viejos sin factura quedan en None.
+    """
     numero_factura = models.CharField(max_length=20, null=True, blank=True)
-    # Toneladas transportadas. Uso Decimal (no Integer/Float) para admitir hasta dos
-    # decimales sin el ruido de precision del punto flotante, igual que en el resto de
-    # las cantidades comerciales del sistema (DetalleOperacion, ProductoPorKg).
+    """
+    Toneladas transportadas. Uso Decimal (no Integer/Float) para admitir hasta dos
+    decimales sin el ruido de precision del punto flotante, igual que en el resto de
+    las cantidades comerciales del sistema (DetalleOperacion, ProductoPorKg).
+    """
     toneladas = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     precio_tonelada = models.PositiveIntegerField(default=0)
     porcentaje_empleado = models.PositiveIntegerField(default=0)
     activo = models.BooleanField(default=True)
     pagado = models.BooleanField(default=False)
-    # Momento en que se registro el cobro. Queda en None mientras el viaje esta
-    # impago y se limpia si el cobro se da de baja, asi nunca muestra una fecha
-    # que no corresponde al estado actual.
+    """
+    Momento en que se registro el cobro. Queda en None mientras el viaje esta
+    impago y se limpia si el cobro se da de baja, asi nunca muestra una fecha
+    que no corresponde al estado actual.
+    """
     fecha_pago = models.DateTimeField(null=True, blank=True)
 
-    # --- Dadora de carga ---
-    # La dadora es quien le consigue el flete al cliente. Es opcional: si el nombre
-    # queda vacio, el viaje no tuvo dadora (o no le cobro). Su comision se calcula
-    # sobre la facturacion (toneladas x precio), antes que los gastos: es lo primero
-    # que se descuenta apenas se factura el viaje.
+    """
+    --- Dadora de carga ---
+    La dadora es quien le consigue el flete al cliente. Es opcional: si el nombre
+    queda vacio, el viaje no tuvo dadora (o no le cobro). Su comision se calcula
+    sobre la facturacion (toneladas x precio), antes que los gastos: es lo primero
+    que se descuenta apenas se factura el viaje.
+    """
     COBROS_DADORA = [
         ("porcentaje", "Porcentaje"),
         ("tonelada", "Por tonelada"),
         ("efectivo", "Efectivo"),
     ]
     dadora_carga = models.CharField(max_length=60, blank=True, default="")
-    # Como cobra la dadora, siempre sobre la facturacion: un porcentaje, un monto por
-    # cada tonelada, o un monto fijo en efectivo. Queda vacio cuando no hay dadora.
+    """
+    Como cobra la dadora, siempre sobre la facturacion: un porcentaje, un monto por
+    cada tonelada, o un monto fijo en efectivo. Queda vacio cuando no hay dadora.
+    """
     dadora_tipo_cobro = models.CharField(max_length=20, choices=COBROS_DADORA, blank=True, default="")
-    # El valor cobrado, que se interpreta segun 'dadora_tipo_cobro': si es porcentaje
-    # va de 1 a 100; si es por tonelada son los pesos por cada tonelada; si es efectivo
-    # es el monto fijo. Queda en 0 cuando el viaje no tiene dadora.
+    """
+    El valor cobrado, que se interpreta segun 'dadora_tipo_cobro': si es porcentaje
+    va de 1 a 100; si es por tonelada son los pesos por cada tonelada; si es efectivo
+    es el monto fijo. Queda en 0 cuando el viaje no tiene dadora.
+    """
     dadora_valor = models.PositiveIntegerField(default=0)
 
     class Meta:
@@ -831,8 +895,10 @@ class ViajeCereal(models.Model):
 
     @property
     def total_gastos(self) -> int:
-        # Suma de todos los gastos cargados a este viaje de cereal. Si el viaje no
-        # tiene gastos, aggregate devuelve None y lo normalizo a 0.
+        """
+        Suma de todos los gastos cargados a este viaje de cereal. Si el viaje no
+        tiene gastos, aggregate devuelve None y lo normalizo a 0.
+        """
         resultado = self.detalle_gastos.aggregate(total=Sum('monto'))['total']
         return resultado if resultado is not None else 0
 
@@ -843,14 +909,16 @@ class ViajeCereal(models.Model):
 
     @property
     def costo_dadora(self):
-        # Comision de la dadora, lo primero que se descuenta de la facturacion (antes
-        # que los gastos). Segun como cobre:
-        #  - porcentaje: un porcentaje de la facturacion (toneladas x precio).
-        #  - tonelada: una cantidad de toneladas valuadas al precio del viaje. Si la
-        #    dadora se lleva "1 tonelada", cobra el precio de una tonelada de este
-        #    viaje (dadora_valor toneladas x precio_tonelada).
-        #  - efectivo: un monto fijo.
-        # Sin dadora no hay costo.
+        """
+        Comision de la dadora, lo primero que se descuenta de la facturacion (antes
+        que los gastos). Segun como cobre:
+         - porcentaje: un porcentaje de la facturacion (toneladas x precio).
+         - tonelada: una cantidad de toneladas valuadas al precio del viaje. Si la
+           dadora se lleva "1 tonelada", cobra el precio de una tonelada de este
+           viaje (dadora_valor toneladas x precio_tonelada).
+         - efectivo: un monto fijo.
+        Sin dadora no hay costo.
+        """
         if not self.tiene_dadora:
             return 0
         if self.dadora_tipo_cobro == "porcentaje":
@@ -863,23 +931,29 @@ class ViajeCereal(models.Model):
 
     @property
     def subtotal(self):
-        # Base sobre la que se reparte el empleado: la facturacion menos la comision
-        # de la dadora (que sale primero) y menos los gastos del viaje.
+        """
+        Base sobre la que se reparte el empleado: la facturacion menos la comision
+        de la dadora (que sale primero) y menos los gastos del viaje.
+        """
         return self.total_bruto - self.costo_dadora - self.total_gastos
 
     @property
     def pago_empleado(self):
-        # Lo que se lleva el empleado segun su porcentaje sobre el subtotal (ya
-        # descontadas la dadora y los gastos). Si el subtotal es negativo tomo la base
-        # en 0 para no calcular un pago negativo.
+        """
+        Lo que se lleva el empleado segun su porcentaje sobre el subtotal (ya
+        descontadas la dadora y los gastos). Si el subtotal es negativo tomo la base
+        en 0 para no calcular un pago negativo.
+        """
         base = self.subtotal if self.subtotal > 0 else 0
         return base * self.porcentaje_empleado / 100
 
     @property
     def ganancia_neta(self):
-        # Lo que le queda a la empresa: el subtotal (ya descontadas dadora y gastos)
-        # menos la parte del empleado. Puede ser negativo si los costos superan la
-        # facturacion.
+        """
+        Lo que le queda a la empresa: el subtotal (ya descontadas dadora y gastos)
+        menos la parte del empleado. Puede ser negativo si los costos superan la
+        facturacion.
+        """
         return self.subtotal - self.pago_empleado
 
     def __str__(self):
@@ -968,13 +1042,17 @@ class CasaQuerySet(models.QuerySet):
             .values("total")
         )
         vigente = contratos_del_periodo(periodo).filter(casa=OuterRef("pk"))
-        # El ultimo contrato que ya habia terminado antes de este mes. Solo se usa
-        # para poder decir "contrato vencido" en vez de dejar la casa muda.
+        """
+        El ultimo contrato que ya habia terminado antes de este mes. Solo se usa
+        para poder decir "contrato vencido" en vez de dejar la casa muda.
+        """
         anterior = (Contrato.objects.filter(casa=OuterRef("pk"), fin__lt=periodo)
                     .order_by("-fin", "-id"))
-        # Contrato corriendo HOY, que no es lo mismo que el del mes que se mira:
-        # el boton de contrato carga siempre el que sigue al de hoy, asi que se
-        # bloquea o no segun la fecha real y no segun el mes que este en pantalla.
+        """
+        Contrato corriendo HOY, que no es lo mismo que el del mes que se mira:
+        el boton de contrato carga siempre el que sigue al de hoy, asi que se
+        bloquea o no segun la fecha real y no segun el mes que este en pantalla.
+        """
         hoy = timezone.localdate()
         corriendo = Contrato.objects.filter(
             Q(fin__isnull=True) | Q(fin__gte=hoy), casa=OuterRef("pk"), inicio__lte=hoy
@@ -1047,8 +1125,10 @@ class Casa(models.Model):
 
     @property
     def precio(self):
-        # Alquiler mensual del contrato de ese mes. Sin contrato no hay precio: la
-        # casa no esta alquilada y no hay nada que cobrar.
+        """
+        Alquiler mensual del contrato de ese mes. Sin contrato no hay precio: la
+        casa no esta alquilada y no hay nada que cobrar.
+        """
         if hasattr(self, "_monto_periodo_anotado"):
             return self._monto_periodo_anotado
         contrato = self.contrato_del_periodo
@@ -1056,8 +1136,10 @@ class Casa(models.Model):
 
     @property
     def comision_inmobiliaria(self):
-        # Porcentaje del alquiler (0 a 100) que se lleva la inmobiliaria. Se guarda
-        # como porcentaje y no como monto para que acompañe solo a cada aumento.
+        """
+        Porcentaje del alquiler (0 a 100) que se lleva la inmobiliaria. Se guarda
+        como porcentaje y no como monto para que acompañe solo a cada aumento.
+        """
         if hasattr(self, "_comision_periodo_anotado"):
             return self._comision_periodo_anotado
         contrato = self.contrato_del_periodo
@@ -1080,8 +1162,10 @@ class Casa(models.Model):
 
     @property
     def fin_contrato_anterior(self):
-        # Cuando termino el ultimo contrato, si es que ya termino antes de este mes.
-        # Es lo que separa "se le vencio el contrato" de "nunca estuvo alquilada".
+        """
+        Cuando termino el ultimo contrato, si es que ya termino antes de este mes.
+        Es lo que separa "se le vencio el contrato" de "nunca estuvo alquilada".
+        """
         if hasattr(self, "_fin_anterior_anotado"):
             return self._fin_anterior_anotado
         ultimo = self.contratos.filter(fin__lt=periodo_actual()).order_by("-fin", "-id").first()
@@ -1089,8 +1173,10 @@ class Casa(models.Model):
 
     @property
     def comision_monto(self):
-        # Cuanto se lleva la inmobiliaria por mes. Sin precio cargado no hay nada
-        # que calcular; sin comision cargada, la casa se administra sola y es cero.
+        """
+        Cuanto se lleva la inmobiliaria por mes. Sin precio cargado no hay nada
+        que calcular; sin comision cargada, la casa se administra sola y es cero.
+        """
         if self.precio is None:
             return None
         porcentaje = self.comision_inmobiliaria or 0
@@ -1105,17 +1191,21 @@ class Casa(models.Model):
 
     @property
     def total_pagado_periodo(self):
-        # Cobrado del periodo. Si el queryset vino de con_estado_del_mes() uso ese
-        # valor ya calculado, que ademas es el que fija que mes se esta mirando;
-        # suelto, sin anotacion, cae en el mes en curso.
+        """
+        Cobrado del periodo. Si el queryset vino de con_estado_del_mes() uso ese
+        valor ya calculado, que ademas es el que fija que mes se esta mirando;
+        suelto, sin anotacion, cae en el mes en curso.
+        """
         if hasattr(self, "_pagado_periodo_anotado"):
             return self._pagado_periodo_anotado or Decimal("0")
         return self.pagos.filter(periodo=periodo_actual()).aggregate(total=Sum("monto"))["total"] or Decimal("0")
 
     @property
     def cobrada_en_el_periodo(self):
-        # El alquiler se cobra entero o no se cobra, asi que alcanza con saber si
-        # hay un pago cargado en el mes: no hay monto que comparar contra el precio.
+        """
+        El alquiler se cobra entero o no se cobra, asi que alcanza con saber si
+        hay un pago cargado en el mes: no hay monto que comparar contra el precio.
+        """
         return self.total_pagado_periodo > 0
 
     @property
@@ -1243,8 +1333,10 @@ class GastoCasa(models.Model):
 
     casa = models.ForeignKey(Casa, on_delete=models.CASCADE, related_name="gastos",
                              db_column="id_casa")
-    # default y no auto_now_add: el gasto se carga cuando se puede, no el dia que
-    # se pago, y la fecha de la boleta es la que vale
+    """
+    default y no auto_now_add: el gasto se carga cuando se puede, no el dia que
+    se pago, y la fecha de la boleta es la que vale
+    """
     fecha = models.DateField(default=timezone.localdate)
     categoria = models.CharField(max_length=30, choices=CATEGORIAS)
     # Opcional: la categoria ya ubica el gasto, el detalle solo lo aclara
@@ -1295,8 +1387,10 @@ class PagoAlquiler(models.Model):
 
     @property
     def periodo_label(self):
-        # "07/2026". El nombre del mes lo arma la plantilla con el filtro date,
-        # aca dejo algo corto y sin depender del locale para listados y logs.
+        """
+        "07/2026". El nombre del mes lo arma la plantilla con el filtro date,
+        aca dejo algo corto y sin depender del locale para listados y logs.
+        """
         return self.periodo.strftime("%m/%Y")
 
     def __str__(self):
@@ -1360,10 +1454,12 @@ class CargaCombustible(models.Model):
     pagada = models.BooleanField(default=False)
     activa = models.BooleanField(default=True)
 
-    # Origen de la carga. Si nacio dentro de un viaje, apunta a ese viaje (uno solo
-    # de los tres, segun el tipo); el resto quedan en None. Una carga cargada a mano
-    # desde la estacion tiene los tres en None. Sirve para diferenciarla en el
-    # listado y para llevar al viaje donde se hizo el gasto.
+    """
+    Origen de la carga. Si nacio dentro de un viaje, apunta a ese viaje (uno solo
+    de los tres, segun el tipo); el resto quedan en None. Una carga cargada a mano
+    desde la estacion tiene los tres en None. Sirve para diferenciarla en el
+    listado y para llevar al viaje donde se hizo el gasto.
+    """
     viaje = models.ForeignKey("Viaje", on_delete=models.CASCADE, null=True, blank=True,
                               related_name="cargas_combustible")
     viaje_reparto = models.ForeignKey("ViajeReparto", on_delete=models.CASCADE, null=True, blank=True,
@@ -1389,16 +1485,20 @@ class CargaCombustible(models.Model):
 
     @property
     def de_viaje(self):
-        # True si la carga nacio dentro de un viaje (no se cargo a mano). Uso los
-        # ids para no traer los objetos viaje (evita una query por fila en el listado).
+        """
+        True si la carga nacio dentro de un viaje (no se cargo a mano). Uso los
+        ids para no traer los objetos viaje (evita una query por fila en el listado).
+        """
         return bool(self.viaje_id or self.viaje_reparto_id or self.viaje_cereal_id)
 
     @property
     def viaje_url(self):
-        # URL del detalle del viaje que origino la carga, para llevar al usuario al
-        # viaje donde se hizo el gasto. Vacia si la carga se cargo a mano. Lleva el id
-        # de la estacion como volver_estacion, asi el boton "volver" del viaje puede
-        # devolver a esta ficha en vez de al listado de viajes.
+        """
+        URL del detalle del viaje que origino la carga, para llevar al usuario al
+        viaje donde se hizo el gasto. Vacia si la carga se cargo a mano. Lleva el id
+        de la estacion como volver_estacion, asi el boton "volver" del viaje puede
+        devolver a esta ficha en vez de al listado de viajes.
+        """
         from django.urls import reverse
         if self.viaje_id:
             destino = reverse("informacion_viaje", kwargs={"id_viaje": self.viaje_id})
@@ -1558,8 +1658,10 @@ class Empresa(models.Model):
 
     @property
     def saldo_iva_abs(self):
-        # El signo del saldo lo comunica la etiqueta (a pagar / a favor), asi que
-        # la tarjeta muestra el monto en positivo y no un "-$" que confunde.
+        """
+        El signo del saldo lo comunica la etiqueta (a pagar / a favor), asi que
+        la tarjeta muestra el monto en positivo y no un "-$" que confunde.
+        """
         return abs(self.saldo_iva)
 
     @property
@@ -1572,9 +1674,11 @@ class Empresa(models.Model):
             return "a_favor"
         return "al_dia"
 
-    # --- CHEQUES ---------------------------------------------------------
-    # La empresa maneja sus cheques a pagar (nunca recibe cheques), agrupados por
-    # sus cuentas corrientes. El total a pagar es independiente del saldo de IVA.
+    """
+    --- CHEQUES ---------------------------------------------------------
+    La empresa maneja sus cheques a pagar (nunca recibe cheques), agrupados por
+    sus cuentas corrientes. El total a pagar es independiente del saldo de IVA.
+    """
 
     @property
     def cheques_a_pagar(self):
@@ -1602,8 +1706,10 @@ class OperacionIva(models.Model):
         ("venta", "Venta"),
         ("compra", "Compra"),
     ]
-    # Alicuotas de IVA vigentes en Argentina: 21% general, 10,5% reducida y 27%
-    # aumentada. Se guardan como porcentaje (21.00) y con eso se calcula el IVA.
+    """
+    Alicuotas de IVA vigentes en Argentina: 21% general, 10,5% reducida y 27%
+    aumentada. Se guardan como porcentaje (21.00) y con eso se calcula el IVA.
+    """
     ALICUOTAS = [
         (Decimal("21.00"), "21%"),
         (Decimal("10.50"), "10,5%"),
@@ -1613,8 +1719,10 @@ class OperacionIva(models.Model):
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name="operaciones",
                                 db_column="id_empresa")
     tipo = models.CharField(max_length=10, choices=TIPOS)
-    # default y no auto_now_add: la operacion se carga cuando se puede y la fecha
-    # que vale es la del comprobante, no la de la carga
+    """
+    default y no auto_now_add: la operacion se carga cuando se puede y la fecha
+    que vale es la del comprobante, no la de la carga
+    """
     fecha = models.DateField(default=timezone.localdate)
     # Base imponible en pesos, sin IVA
     monto_neto = models.DecimalField(max_digits=15, decimal_places=2)
@@ -1701,8 +1809,10 @@ class CuentaCorriente(models.Model):
 
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name="cuentas_corrientes",
                                 db_column="id_empresa")
-    # PROTECT y no CASCADE: un banco no se borra (baja logica); PROTECT evita que un
-    # borrado real accidental en el admin se lleve puesta las cuentas y sus cheques.
+    """
+    PROTECT y no CASCADE: un banco no se borra (baja logica); PROTECT evita que un
+    borrado real accidental en el admin se lleve puesta las cuentas y sus cheques.
+    """
     banco = models.ForeignKey(Banco, on_delete=models.PROTECT, related_name="cuentas_corrientes",
                               db_column="id_banco")
     numero = models.CharField(max_length=40)
@@ -1745,8 +1855,10 @@ class Cheque(models.Model):
 
     cuenta_corriente = models.ForeignKey(CuentaCorriente, on_delete=models.CASCADE, related_name="cheques",
                                          db_column="id_cuenta_corriente")
-    # Numero impreso del cheque. Texto y no entero: puede tener ceros a la izquierda
-    # que hay que conservar. default="" para los cheques ya cargados sin numero.
+    """
+    Numero impreso del cheque. Texto y no entero: puede tener ceros a la izquierda
+    que hay que conservar. default="" para los cheques ya cargados sin numero.
+    """
     numero = models.CharField(max_length=20, default="")
     # default y no auto_now_add: la fecha que vale es la del cheque, no la de la carga
     fecha_emision = models.DateField(default=timezone.localdate)
