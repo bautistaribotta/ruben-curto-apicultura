@@ -351,15 +351,20 @@
             Al cambiar de localidad, el JS pisa el valor del viaje con la tarifa del
             destino nuevo (data-valor-objetivo). Si no se toca el selector, el monto
             guardado queda como estaba.
+
+            La tarifa solo se ve si quien edita es staff: para el resto el destino es
+            apenas una localidad. Por eso el data-valor y el data-valor-objetivo
+            tambien quedan afuera, para que el monto no viaje en el HTML. Cuando un
+            no-staff cambia de localidad, la vista aplica la tarifa del destino nuevo.
           {% endcomment %}
           <div class="grupo-input">
             <label for="destino-reparto-editar">Destino</label>
             <select id="destino-reparto-editar" name="id_destino" class="select-estandar" required
-                    data-valor-objetivo="valor-viaje-reparto-editar">
+                    {% if user.is_staff %}data-valor-objetivo="valor-viaje-reparto-editar"{% endif %}>
               <option value="" disabled {% if not viaje_reparto.destino %}selected{% endif %}>Seleccione un destino</option>
               {% for destino in destinos %}
-              <option value="{{ destino.id }}" data-valor="{{ destino.valor_viaje }}"
-                      {% if viaje_reparto.destino_id == destino.id %}selected{% endif %}>{{ destino.localidad_destino }} · $ {{ destino.valor_viaje|floatformat:"-2g" }}</option>
+              <option value="{{ destino.id }}"{% if user.is_staff %} data-valor="{{ destino.valor_viaje }}"{% endif %}
+                      {% if viaje_reparto.destino_id == destino.id %}selected{% endif %}>{{ destino.localidad_destino }}{% if user.is_staff %} · $ {{ destino.valor_viaje|floatformat:"-2g" }}{% endif %}</option>
               {% endfor %}
             </select>
             {% comment %}
@@ -402,7 +407,12 @@
             <span class="mensaje-error">Por favor, ingrese un monto valido.</span>
           </div>
 
-          <div class="vje-grid2">
+          {% comment %}
+            El valor del viaje es solo para el staff, igual que la tarjeta de
+            resultado del reparto: sin esa columna la grilla de dos queda con un
+            hueco, asi que la clase se aplica solo cuando hay algo que poner al lado.
+          {% endcomment %}
+          <div class="{% if user.is_staff %}vje-grid2{% endif %}">
             <div class="grupo-input">
               <label for="empleado-costo-reparto-editar">Costo empleado</label>
               <div class="input-con-icono">
@@ -422,6 +432,12 @@
               <span class="mensaje-error">Por favor, ingrese un monto valido.</span>
             </div>
 
+            {% comment %}
+              Solo el staff ve y ajusta cuanto se cobra el viaje. Si el campo no
+              viaja en el POST, la vista conserva el monto ya guardado (o toma la
+              tarifa del catalogo cuando se cambio de destino).
+            {% endcomment %}
+            {% if user.is_staff %}
             <div class="grupo-input">
               <label for="valor-viaje-reparto-editar">Valor del viaje</label>
               <div class="input-con-icono">
@@ -440,6 +456,7 @@
               </div>
               <span class="mensaje-error">Por favor, ingrese un monto valido.</span>
             </div>
+            {% endif %}
           </div>
 
           {% if user.is_staff %}
