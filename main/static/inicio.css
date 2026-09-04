@@ -225,6 +225,12 @@
   cursor: default;
 }
 
+/* La tarjeta de tambores es informativa (total de unidades), no cotiza ni se
+   edita al click: sin cursor de mano para no sugerir que es editable. */
+.ini-tile--stock {
+  cursor: default;
+}
+
 .ini-tile.is-editing {
   transform: none;
   border-color: var(--brand);

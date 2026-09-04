@@ -1094,6 +1094,24 @@ def get_total_kilos_granel():
     return totales
 
 
+def get_tambores_vacios():
+    """
+    Total de tambores vacios para la tarjeta de inicio. A diferencia de la
+    miel/cera (granel por kg, en ProductoPorKg), los tambores viven en Producto
+    y se miden por unidad. La tarjeta es una sola y suma las unidades de todos
+    los productos de la categoria: cada registro es una capacidad distinta y en
+    inicio interesa el total disponible, no el desglose.
+
+    Me apoyo en la categoria (valor fijo del modelo) y no en el nombre, que el
+    usuario carga a mano y puede variar, asi cualquier tambor nuevo entra solo
+    en la suma. Devuelvo el total de unidades y cuantos productos la componen.
+    """
+    agregado = Producto.objects.filter(categoria="Tambores Vacios", activo=True).aggregate(
+        total=Sum("cantidad"), tipos=Count("id")
+    )
+    return {"total_unidades": agregado["total"] or 0, "tipos": agregado["tipos"]}
+
+
 def actualizar_cotizacion(articulo, monto):
     """
     Actualiza o crea una cotización en la base de datos.

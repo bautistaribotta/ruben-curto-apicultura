@@ -23,7 +23,7 @@ from .models import (Cliente, Producto, Operacion, DetalleOperacion, Pago, Produ
                      Banco, CuentaCorriente, Cheque, periodo_actual)
 from .pdf_services import Remito, ResumenCuenta
 from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo_cliente, editar_cliente,
-                       eliminar_cliente, buscar_clientes, get_cotizacion_dolar_oficial, get_cotizaciones, get_total_kilos_granel, actualizar_cotizacion, obtener_datos_cliente,
+                       eliminar_cliente, buscar_clientes, get_cotizacion_dolar_oficial, get_cotizaciones, get_total_kilos_granel, get_tambores_vacios, actualizar_cotizacion, obtener_datos_cliente,
                        obtener_datos_producto, modificar_stock, crear_operacion, editar_operacion, servicio_cancelar_operacion,
                        obtener_movimientos_cuenta_corriente,
                        obtener_listado_deudores, _iniciales, filtro_nombre_apellido, filtro_tokens, crear_empleado, crear_vehiculo, crear_viaje, obtener_empleados_activos,
@@ -225,7 +225,9 @@ def inicio(request):
     dolar_oficial = get_cotizacion_dolar_oficial()
     cotizaciones = get_cotizaciones()
     totales_granel = get_total_kilos_granel()
-    contexto = {"oficial": dolar_oficial, "cotizaciones": cotizaciones, "totales_granel": totales_granel}
+    tambores = get_tambores_vacios()
+    contexto = {"oficial": dolar_oficial, "cotizaciones": cotizaciones, "totales_granel": totales_granel,
+                "tambores": tambores}
     return render(request, "inicio.html", contexto)
 
 

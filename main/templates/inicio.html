@@ -123,6 +123,28 @@
               <span class="ini-tile__stockval">{{ cotizaciones.Miel_mayor_a_50_mm.cantidad|floatformat:"-2" }} <i>kg</i></span>
             </div>
           </article>
+
+          {% comment %}
+            Tarjeta de tambores vacios: va como una mas del board de miel (a la
+            derecha), pero es de solo lectura. No cotiza: muestra el total de
+            unidades sumando todos los productos de la categoria "Tambores Vacios".
+          {% endcomment %}
+          <article class="ini-tile ini-tile--stock">
+            <div class="ini-tile__head">
+              <span class="ini-tile__glyph"><span class="material-symbols-outlined">oil_barrel</span></span>
+              <div class="ini-tile__id"><h4>Tambores vacios</h4></div>
+            </div>
+            <div class="ini-tile__pricewrap">
+              <div class="ini-tile__price">
+                <span class="ini-tile__amount">{{ tambores.total_unidades|floatformat:"0g" }}</span>
+                <span class="ini-tile__unit">unidades</span>
+              </div>
+            </div>
+            <div class="ini-tile__stock">
+              <span class="ini-tile__stocklabel">Productos</span>
+              <span class="ini-tile__stockval">{{ tambores.tipos }}</span>
+            </div>
+          </article>
         </div>
       </div>
 
