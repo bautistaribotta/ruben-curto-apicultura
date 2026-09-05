@@ -1,0 +1,97 @@
+{% comment %}
+  Tabla del listado global de operaciones (parcial). Se renderiza dentro de
+  #tabla-operaciones-container y tambien sola cuando operaciones_listado.js refresca
+  el listado por AJAX (filtros o paginacion).
+
+  Los montos y el estado de pago van envueltos en {% templatetag openblock %} if user.is_staff {% templatetag closeblock %}: los
+  usuarios no administrativos ven el historial operativo sin la informacion de dinero.
+{% endcomment %}
+<table class="tabla-operaciones">
+  <thead>
+    <tr>
+      <th class="alineado-izq">Fecha</th>
+      <th class="alineado-izq">Cliente</th>
+      <th class="alineado-izq">Detalle</th>
+      <th class="alineado-centro">Tipo</th>
+      {% if user.is_staff %}
+      <th class="alineado-der">Monto</th>
+      {% endif %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for operacion in page_obj %}
+    {% comment %}
+      El link arrastra los filtros aplicados ademas de origen=operaciones, asi el
+      boton "Volver" del detalle (que reconstruye la URL con request.GET) devuelve
+      al listado filtrado igual, no al listado completo.
+    {% endcomment %}
+    <tr class="fila-operacion" onclick="window.location.href='{% url 'informacion_operacion' operacion.id %}?origen=operaciones{% if producto %}&producto={{ producto }}{% endif %}{% if desde %}&desde={{ desde }}{% endif %}{% if hasta %}&hasta={{ hasta }}{% endif %}'">
+      <td>
+        <span class="celda-fecha">
+          <span class="material-symbols-outlined">event</span>
+          {{ operacion.fecha|date:"d/m/Y" }}
+        </span>
+      </td>
+      <td>
+        <span class="opl-cliente">{{ operacion.cliente.nombre }} {{ operacion.cliente.apellido|default:"" }}</span>
+      </td>
+      <td>
+        <ul class="opl-detalle">
+          {% for detalle in operacion.detalleoperacion_set.all|slice:":2" %}
+          <li class="opl-detalle__item">
+            {% if detalle.es_granel %}{{ detalle.cantidad|floatformat:"-2g" }} kg {{ detalle.nombre_item }}{% else %}{{ detalle.cantidad|floatformat:"0g" }}x {{ detalle.producto.nombre }}{% endif %}
+          </li>
+          {% empty %}
+          <li class="opl-detalle__vacio">Sin productos</li>
+          {% endfor %}
+          {% if operacion.detalleoperacion_set.count > 2 %}
+          <li class="opl-detalle__mas">... y {{ operacion.detalleoperacion_set.count|add:"-2" }} más</li>
+          {% endif %}
+        </ul>
+      </td>
+      <td class="alineado-centro">
+        {% if operacion.tipo_operacion == 'compra' %}
+        <span class="badge-tipo-operacion compra">Compra</span>
+        {% else %}
+        <span class="badge-tipo-operacion venta">Venta</span>
+        {% endif %}
+      </td>
+      {% if user.is_staff %}
+      <td class="opl-monto">${{ operacion.monto_total|floatformat:"-2g" }}</td>
+      {% endif %}
+    </tr>
+    {% empty %}
+    <tr class="fila-vacia">
+      <td colspan="{% if user.is_staff %}5{% else %}4{% endif %}" class="celda-vacia">
+        <span class="material-symbols-outlined">receipt_long</span>
+        No se encontraron operaciones con esos filtros.
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<!-- PAGINACION -->
+<div class="paginacion">
+  <div class="paginacion-info">
+    Mostrando <span>{{ page_obj.start_index|default:"0" }}-{{ page_obj.end_index|default:"0" }}</span>
+    de <span>{{ page_obj.paginator.count|default:"0" }}</span> operaciones
+  </div>
+  <div class="paginacion-botones">
+    {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}{% if producto %}&producto={{ producto }}{% endif %}{% if desde %}&desde={{ desde }}{% endif %}{% if hasta %}&hasta={{ hasta }}{% endif %}">
+        <button class="boton-paginacion">Anterior</button>
+      </a>
+    {% else %}
+      <button class="boton-paginacion" disabled>Anterior</button>
+    {% endif %}
+
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}{% if producto %}&producto={{ producto }}{% endif %}{% if desde %}&desde={{ desde }}{% endif %}{% if hasta %}&hasta={{ hasta }}{% endif %}">
+        <button class="boton-paginacion">Siguiente</button>
+      </a>
+    {% else %}
+      <button class="boton-paginacion" disabled>Siguiente</button>
+    {% endif %}
+  </div>
+</div>

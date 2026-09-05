@@ -1,0 +1,159 @@
+/* ============================================================
+   Listado global de operaciones (solo lectura).
+   La barra lateral, la cabecera y el layout base se heredan de base.css.
+   Reutiliza clases compartidas: .cabecera-seccion, .paginacion, .celda-fecha,
+   .celda-vacia y la cabecera unificada de .tabla-operaciones th (base.css); los
+   chips de filtro vienen de filtro_entidad.css / filtro_fechas.css.
+   Solo se declaran colores con variables (oklch) definidas en base.css.
+   ============================================================ */
+
+/* --- BARRA DE FILTROS --- */
+.barra-herramientas {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  gap: 1.5rem;
+}
+
+.grupo-busqueda {
+  display: flex;
+  /* Mismo respiro entre los chips de filtro (entidad y fecha) que en Viajes/Deudas. */
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+/* --- CONTENEDOR TARJETA DE LA TABLA --- */
+.contenedor-tabla {
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+/* --- TABLA --- */
+.tabla-operaciones {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.alineado-izq {
+  text-align: left;
+}
+
+.alineado-centro {
+  text-align: center;
+}
+
+.alineado-der {
+  text-align: right;
+}
+
+.tabla-operaciones td {
+  padding: 1rem 1.5rem;
+  font-size: var(--text-sm);
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-body);
+  vertical-align: middle;
+}
+
+.tabla-operaciones tbody tr {
+  transition: background-color var(--dur-normal) var(--ease-standard);
+}
+
+.tabla-operaciones tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.fila-operacion {
+  cursor: pointer;
+}
+
+.fila-operacion:hover {
+  background-color: var(--surface-hover);
+}
+
+/* --- CELDA CLIENTE: dato principal de la fila --- */
+.opl-cliente {
+  font-weight: var(--weight-semibold);
+  color: var(--text-body);
+}
+
+/* --- CELDA DETALLE: hasta dos items y un resumen del resto --- */
+.opl-detalle {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.opl-detalle__item {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.opl-detalle__vacio {
+  font-size: var(--text-sm);
+  color: var(--text-subtle);
+}
+
+.opl-detalle__mas {
+  font-size: var(--text-xs);
+  font-style: italic;
+  color: var(--text-subtle);
+}
+
+/* --- CELDA MONTO (solo staff) --- */
+.opl-monto {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--weight-semibold);
+  color: var(--text-body);
+  white-space: nowrap;
+}
+
+/* --- BADGE DE TIPO DE OPERACION ---
+   Mismos colores que la tabla del perfil de cliente (operaciones_compartido.css),
+   redefinidos aca porque esa hoja no se carga en esta vista (oculta la cabecera). */
+.badge-tipo-operacion {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.625rem;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+}
+
+.badge-tipo-operacion.venta {
+  background-color: var(--color-verde-claro-etiqueta);
+  color: var(--color-verde-texto-etiqueta);
+  border: 1px solid var(--color-verde-borde-etiqueta);
+}
+
+.badge-tipo-operacion.compra {
+  background-color: var(--color-insumos-fondo-etiqueta);
+  color: var(--color-insumos-texto-etiqueta);
+  border: 1px solid var(--color-insumos-borde-etiqueta);
+}
+
+/* --- RESPONSIVE --- */
+@media (max-width: 1024px) {
+  .barra-herramientas {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  /* La tabla scrollea en horizontal en pantallas chicas en vez de romper el layout. */
+  .contenedor-tabla {
+    overflow-x: auto;
+  }
+  .tabla-operaciones th,
+  .tabla-operaciones td {
+    padding: 0.875rem 1rem;
+    white-space: nowrap;
+  }
+}

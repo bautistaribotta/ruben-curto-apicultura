@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% load static %}
+{% load static_version %}
+
+{% block nombre-pestaña %}
+<title>Operaciones</title>
+{% endblock %}
+
+{% block links %}
+<link rel="stylesheet" href="{% static_v 'operaciones.css' %}">
+<link rel="stylesheet" href="{% static_v 'filtro_fechas.css' %}">
+<link rel="stylesheet" href="{% static_v 'filtro_entidad.css' %}">
+<link rel="stylesheet" href="{% static_v 'selector_entidad.css' %}">
+{% endblock %}
+
+{% block cabecera %}
+<div class="cabecera-seccion">
+  <span class="cabecera-seccion__tile">
+    <span class="material-symbols-outlined">receipt_long</span>
+  </span>
+  <div class="cabecera-seccion__texto">
+    <h2>Operaciones</h2>
+    <p>Historial de todas las compras y ventas registradas</p>
+  </div>
+</div>
+{% endblock %}
+
+{% block area-trabajo %}
+  <!-- ÁREA DE TRABAJO -->
+  <section id="area-trabajo">
+
+    {% comment %}
+      Barra de filtros. Es una vista de solo lectura: no hay botones de alta, solo
+      los dos filtros pedidos, que se combinan entre si.
+        - Producto: chip -> modal selector con los productos presentes en las
+          operaciones. El token viaja como "p<id>" (catalogo) o "g<id>" (por kg).
+        - Fecha: chip + popover compartido (modos dia / mes / rango).
+    {% endcomment %}
+    <div class="barra-herramientas">
+      <div class="grupo-busqueda">
+        <div class="filtros-entidad">
+          {% include "chip_filtro_entidad.html" with chip_id="chip-producto" param="producto" modal_id="selector-producto-operaciones" icono="inventory_2" etiqueta="Producto" valor_id=producto valor_nombre=producto_nombre %}
+        </div>
+        {% include 'filtro_fechas.html' with modos="dia,mes,rango" %}
+      </div>
+    </div>
+
+    <div class="contenedor-tabla" id="tabla-operaciones-container">
+      {% include 'tabla_operaciones.html' %}
+    </div>
+
+  </section>
+
+  {% comment %} Modal del chip de filtro por producto. {% endcomment %}
+  {% include "selector_entidad.html" with selector_id="selector-producto-operaciones" icono="inventory_2" titulo="Elegir producto" descripcion="Filtrá las operaciones por el producto que elijas de la lista." placeholder="Buscar por producto" items=productos_filtro sin_items="Todavía no hay productos en las operaciones." %}
+{% endblock %}
+
+{% block codigo-javascript %}
+<script src="{% static_v 'js/filtro_fechas.js' %}"></script>
+<script src="{% static_v 'js/selector_entidad.js' %}"></script>
+<script src="{% static_v 'js/filtros_entidad.js' %}"></script>
+<script src="{% static_v 'js/operaciones_listado.js' %}"></script>
+{% endblock %}

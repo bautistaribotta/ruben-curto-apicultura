@@ -35,6 +35,7 @@ from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo
                        opciones_empleados_filtro, opciones_vehiculos_filtro,
                        opciones_destinos_viaje, opciones_destinos_cereal, opciones_destinos_reparto_filtro,
                        nombre_empleado_filtro, nombre_vehiculo_filtro, nombre_destino_reparto_filtro,
+                       obtener_operaciones_listado, opciones_productos_operaciones, nombre_producto_operaciones_filtro,
                        editar_empleado, eliminar_empleado, obtener_datos_empleado, crear_pago_empleado, fijar_sueldo_empleado,
                        fijar_vencimiento_carnet, editar_pago_empleado, eliminar_pago_empleado,
                        obtener_cuenta_corriente, resolver_ancla_pagos,
@@ -1389,6 +1390,63 @@ def viajes(request):
         return render(request, "tabla_viajes.html", contexto)
 
     return render(request, "viajes.html", contexto)
+
+
+@login_required
+def operaciones(request):
+    """Listado global de operaciones de compra/venta, de solo lectura.
+
+    Muestra las operaciones activas de la mas reciente a la mas vieja y se puede
+    filtrar por producto (chip + modal) y por rango de fechas (chip + popover),
+    combinados entre si. Los montos y el estado de pago solo se muestran al personal
+    (is_staff); el resto ve el historial operativo sin la informacion de dinero. La
+    fila lleva al detalle de la operacion (?origen=operaciones para volver aca).
+    """
+    import re
+
+    lista = obtener_operaciones_listado()
+
+    """
+    Filtro por producto: token que distingue producto de catalogo ("p<id>") de
+    articulo a granel ("g<id_cotizacion>"), porque una linea apunta a uno u otro.
+    Un token mal formado se ignora y se muestran todas las operaciones.
+    """
+    producto = request.GET.get("producto", "")
+    if not re.fullmatch(r"[pg]\d+", producto):
+        producto = ""
+    if producto:
+        ident = producto[1:]
+        if producto[0] == "p":
+            lista = lista.filter(detalleoperacion__producto_id=ident).distinct()
+        else:
+            lista = lista.filter(detalleoperacion__cotizacion_id=ident).distinct()
+
+    """
+    Filtro por rango de fechas de la operacion (componente compartido). La fecha es
+    un DateTimeField, asi que comparo contra su parte de fecha (__date).
+    """
+    desde, hasta, ctx_fechas = _rango_fechas(request)
+    if desde:
+        lista = lista.filter(fecha__date__gte=desde)
+    if hasta:
+        lista = lista.filter(fecha__date__lte=hasta)
+
+    paginator = Paginator(lista, 10)
+    page_obj = paginator.get_page(request.GET.get("page"))
+
+    contexto = {
+        "page_obj": page_obj,
+        "producto": producto,
+        "producto_nombre": nombre_producto_operaciones_filtro(producto),
+        "productos_filtro": opciones_productos_operaciones(),
+        **ctx_fechas,
+    }
+
+    # Peticion AJAX (chips de filtro o paginacion): devuelvo solo la tabla parcial.
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        return render(request, "tabla_operaciones.html", contexto)
+
+    return render(request, "operaciones.html", contexto)
 
 
 @login_required

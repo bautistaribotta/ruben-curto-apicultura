@@ -64,7 +64,7 @@
           </a>
         </li>
         <li>
-          <a href="{% url 'clientes'%}" class="item-menu {% if request.resolver_match.url_name == 'clientes' or request.resolver_match.url_name == 'informacion_clientes' or request.resolver_match.url_name == 'nueva_operacion_venta' or request.resolver_match.url_name == 'nueva_operacion_compra' or request.resolver_match.url_name == 'informacion_operacion' and request.GET.origen != 'viaje' or request.resolver_match.url_name == 'informacion_viaje_cereal' and request.GET.origen == 'cliente' %} activo {% endif %}">
+          <a href="{% url 'clientes'%}" class="item-menu {% if request.resolver_match.url_name == 'clientes' or request.resolver_match.url_name == 'informacion_clientes' or request.resolver_match.url_name == 'nueva_operacion_venta' or request.resolver_match.url_name == 'nueva_operacion_compra' or request.resolver_match.url_name == 'informacion_operacion' and request.GET.origen != 'viaje' and request.GET.origen != 'operaciones' or request.resolver_match.url_name == 'informacion_viaje_cereal' and request.GET.origen == 'cliente' %} activo {% endif %}">
             <span class="material-symbols-outlined">groups</span>
             Clientes
           </a>
@@ -77,6 +77,17 @@
           </a>
         </li>
         {% endif %}
+        {% comment %}
+          Operaciones es de solo lectura y la ve cualquier usuario logueado (por eso
+          va fuera del bloque is_staff de Empleados). Se resalta tambien al abrir el
+          detalle de una operacion desde este listado (?origen=operaciones).
+        {% endcomment %}
+        <li>
+          <a href="{% url 'operaciones' %}" class="item-menu {% if request.resolver_match.url_name == 'operaciones' or request.resolver_match.url_name == 'informacion_operacion' and request.GET.origen == 'operaciones' %} activo {% endif %}">
+            <span class="material-symbols-outlined">receipt_long</span>
+            Operaciones
+          </a>
+        </li>
         <li>
           <a href="{% url 'flota' %}" class="item-menu {% if request.resolver_match.url_name == 'flota' or request.resolver_match.url_name == 'informacion_vehiculo' %} activo {% endif %}">
             <span class="material-symbols-outlined">local_shipping</span>

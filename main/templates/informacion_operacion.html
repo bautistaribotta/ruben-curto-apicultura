@@ -20,6 +20,12 @@
         <span class="material-symbols-outlined">arrow_back</span>
         Volver a Deudores
     </a>
+    {% elif request.GET.origen == 'operaciones' %}
+    {# Reconstruyo la URL del listado con los mismos filtros con que se llego (viajan en request.GET), asi al volver la tabla queda filtrada igual. La vista de operaciones ignora 'origen'. #}
+    <a href="{% url 'operaciones' %}?{{ request.GET.urlencode }}" class="boton-volver">
+        <span class="material-symbols-outlined">arrow_back</span>
+        Volver a Operaciones
+    </a>
     {% elif request.GET.origen == 'cliente' %}
     <a href="{% url 'informacion_clientes' operacion.cliente.id %}" class="boton-volver">
         <span class="material-symbols-outlined">arrow_back</span>

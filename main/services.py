@@ -2039,6 +2039,71 @@ def nombre_destino_reparto_filtro(id_destino):
     return destino.localidad_destino if destino else ""
 
 
+def obtener_operaciones_listado():
+    """Queryset base del listado global de operaciones de compra/venta.
+
+    Solo trae las operaciones activas (las canceladas quedan fuera), de la mas
+    reciente a la mas vieja, con los totales ya anotados (con_totales) y las
+    relaciones que lee la tabla precargadas, para no disparar una query por fila
+    al iterar el listado.
+    """
+    return (
+        Operacion.objects.filter(activa=True)
+        .con_totales()
+        .select_related("cliente")
+        .prefetch_related("detalleoperacion_set__producto", "detalleoperacion_set__cotizacion")
+        .order_by("-fecha", "-id")
+    )
+
+
+def opciones_productos_operaciones():
+    """Items para el modal selector_entidad del chip "Producto" del listado.
+
+    Ofrece solo lo que realmente aparece en alguna operacion activa, asi el filtro
+    nunca lista un producto que no daria resultados. Cada linea de operacion apunta
+    a un producto de catalogo o a un articulo a granel (nunca a los dos), por eso el
+    id viaja como token: "p<id>" para el producto y "g<id>" para el articulo por kg,
+    el mismo esquema que usa el filtro de Deudas.
+    """
+    items = []
+    productos = (Producto.objects.filter(detalleoperacion__operacion__activa=True)
+                 .distinct().order_by("nombre"))
+    for producto in productos:
+        items.append({
+            "id": f"p{producto.id}",
+            "principal": producto.nombre,
+            "busqueda": producto.nombre.lower(),
+        })
+    granel = (ProductoPorKg.objects.filter(detalleoperacion__operacion__activa=True)
+              .distinct().order_by("articulo"))
+    for cotizacion in granel:
+        nombre = f"{cotizacion.articulo} (por kg)"
+        items.append({
+            "id": f"g{cotizacion.id}",
+            "principal": nombre,
+            "busqueda": nombre.lower(),
+        })
+    items.sort(key=lambda i: i["principal"].lower())
+    return items
+
+
+def nombre_producto_operaciones_filtro(token):
+    """Etiqueta del chip cuando el filtro por producto esta aplicado.
+
+    El token distingue producto de catalogo ("p<id>") de articulo a granel
+    ("g<id>"); resuelve el nombre aunque el articulo ya no aparezca en las opciones,
+    para no dejar el chip sin texto. Un token mal formado devuelve cadena vacia.
+    """
+    if not re.fullmatch(r"[pg]\d+", token or ""):
+        return ""
+    ident = token[1:]
+    if token[0] == "p":
+        producto = Producto.objects.filter(id=ident).first()
+        return producto.nombre if producto else ""
+    cotizacion = ProductoPorKg.objects.filter(id=ident).first()
+    return f"{cotizacion.articulo} (por kg)" if cotizacion else ""
+
+
 def incluir_asignado(opciones, asignado):
     """
     Devuelve las opciones de un <select> incluyendo el registro actualmente asignado,
