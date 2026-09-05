@@ -531,6 +531,20 @@ body {
     margin-left: var(--ancho-riel);
   }
 
+  /* Plegada, la etiqueta se esconde entera en vez de asomar un pedacito recortada
+     al borde del riel (lo que se veia "entrecortado"). Un nodo de texto suelto no
+     acepta opacity, asi que la escondo con font-size 0 y la animo: crece junto con
+     el ancho de la barra, con la misma duracion, y el texto entra de corrido en vez
+     de aparecer de golpe. El icono no se achica porque tiene su propio font-size. */
+  .item-menu {
+    transition: background-color 0.2s, color 0.2s,
+                font-size var(--dur-slow) var(--ease-standard);
+  }
+
+  #barra-lateral:not(:hover):not(:focus-within) .item-menu {
+    font-size: 0;
+  }
+
   /* Plegada no hay lugar para la barra de scroll al lado de los iconos. La
      rueda sigue scrolleando la lista igual. */
   #barra-lateral:not(:hover):not(:focus-within) #menu-navegacion {
