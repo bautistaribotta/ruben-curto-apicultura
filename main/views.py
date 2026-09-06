@@ -1403,6 +1403,7 @@ def operaciones(request):
     fila lleva al detalle de la operacion (?origen=operaciones para volver aca).
     """
     import re
+    from datetime import datetime, time
 
     lista = obtener_operaciones_listado()
 
@@ -1423,13 +1424,17 @@ def operaciones(request):
 
     """
     Filtro por rango de fechas de la operacion (componente compartido). La fecha es
-    un DateTimeField, asi que comparo contra su parte de fecha (__date).
+    un DateTimeField: en SQLite con USE_TZ el lookup __date no matchea, asi que
+    comparo contra los limites del rango como datetimes con zona (mismo criterio que
+    el listado de deudores): desde al inicio del dia y hasta al final.
     """
     desde, hasta, ctx_fechas = _rango_fechas(request)
     if desde:
-        lista = lista.filter(fecha__date__gte=desde)
+        inicio = timezone.make_aware(datetime.combine(desde, time.min))
+        lista = lista.filter(fecha__gte=inicio)
     if hasta:
-        lista = lista.filter(fecha__date__lte=hasta)
+        fin = timezone.make_aware(datetime.combine(hasta, time.max))
+        lista = lista.filter(fecha__lte=fin)
 
     paginator = Paginator(lista, 10)
     page_obj = paginator.get_page(request.GET.get("page"))
