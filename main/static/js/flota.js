@@ -12,11 +12,23 @@ function filtrarVehiculos() {
     if (!input) return;
 
     const termino = input.value.trim().toLowerCase();
-    const tarjetas = document.querySelectorAll('#grilla-flota .tarjeta-vehiculo');
+    const filas = document.querySelectorAll('#cuerpo-flota .fila-vehiculo');
 
-    tarjetas.forEach((tarjeta) => {
-        tarjeta.hidden = !tarjeta.dataset.nombre.includes(termino);
+    let visibles = 0;
+    filas.forEach((fila) => {
+        const coincide = fila.dataset.nombre.includes(termino);
+        fila.hidden = !coincide;
+        if (coincide) visibles++;
     });
+
+    // Muestro el aviso de "sin resultados" solo cuando hay filas pero ninguna
+    // coincide con la busqueda (no cuando la tabla esta vacia de entrada).
+    const sinResultados = document.getElementById('flota-sin-resultados');
+    if (sinResultados) sinResultados.hidden = !(filas.length && visibles === 0);
+
+    // Reflejo en el footer cuantas filas quedan a la vista tras el filtro.
+    const contador = document.getElementById('flota-visibles');
+    if (contador) contador.textContent = visibles;
 }
 
 document.getElementById('buscar-vehiculo')?.addEventListener('input', filtrarVehiculos);
@@ -25,22 +37,22 @@ document.getElementById('buscar-vehiculo')?.addEventListener('input', filtrarVeh
 // La fila entera lleva al perfil del vehiculo, pero la ultima columna tiene los
 // botones de editar/eliminar: ahi el click hace lo suyo y no navega.
 
-function irAlPerfilVehiculo(tarjeta) {
-    const destino = tarjeta.dataset.href;
+function irAlPerfilVehiculo(fila) {
+    const destino = fila.dataset.href;
     if (destino) window.location.href = destino;
 }
 
-document.getElementById('grilla-flota')?.addEventListener('click', (evento) => {
-    const tarjeta = evento.target.closest('.tarjeta-vehiculo');
-    if (!tarjeta || evento.target.closest('.tarjeta-vehiculo__acciones')) return;
-    irAlPerfilVehiculo(tarjeta);
+document.getElementById('cuerpo-flota')?.addEventListener('click', (evento) => {
+    const fila = evento.target.closest('.fila-vehiculo');
+    if (!fila || evento.target.closest('.flota-acciones')) return;
+    irAlPerfilVehiculo(fila);
 });
 
-document.getElementById('grilla-flota')?.addEventListener('keydown', (evento) => {
+document.getElementById('cuerpo-flota')?.addEventListener('keydown', (evento) => {
     if (evento.key !== 'Enter') return;
-    const tarjeta = evento.target.closest('.tarjeta-vehiculo');
-    if (!tarjeta || evento.target !== tarjeta) return;
-    irAlPerfilVehiculo(tarjeta);
+    const fila = evento.target.closest('.fila-vehiculo');
+    if (!fila || evento.target !== fila) return;
+    irAlPerfilVehiculo(fila);
 });
 
 // ---------- VEHÍCULO ----------

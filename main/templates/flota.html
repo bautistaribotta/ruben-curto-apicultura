@@ -50,79 +50,124 @@
     </div>
   </div>
 
-  <!-- Grilla de vehículos: una tarjeta por vehículo, clickeable al perfil -->
-  <div class="grilla-flota" id="grilla-flota">
-    {% for vehiculo in vehiculos %}
-    <article class="tarjeta-vehiculo" data-nombre="{{ vehiculo.nombre|lower }}"
-             data-href="{% url 'informacion_vehiculo' vehiculo.id %}"
-             role="link" tabindex="0"
-             aria-label="Ver información de {{ vehiculo.nombre }}">
+  <!-- Tabla de vehículos: una fila por vehículo, clickeable al perfil -->
+  <div class="contenedor-tabla" id="tabla-flota-container">
+    <table class="tabla-flota">
+      <thead>
+        <tr>
+          <th class="alineado-izq">Vehículo</th>
+          <th class="alineado-izq">Kilometraje</th>
+          <th class="alineado-izq">Seguro</th>
+          <th class="alineado-izq">VTV</th>
+          <th class="alineado-izq">Último service</th>
+          <th class="alineado-centro">Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="cuerpo-flota">
+        {% for vehiculo in vehiculos %}
+        <tr class="fila-vehiculo"
+            data-nombre="{{ vehiculo.nombre|lower }} {{ vehiculo.patente|lower }}"
+            data-href="{% url 'informacion_vehiculo' vehiculo.id %}"
+            tabindex="0"
+            aria-label="Ver información de {{ vehiculo.nombre }}">
+          <td>
+            <div class="vje-veh">
+              <span class="vje-veh__tile">
+                <span class="material-symbols-outlined">local_shipping</span>
+              </span>
+              <div>
+                <div class="vehiculo-nombre">{{ vehiculo.nombre }}</div>
+                <span class="vje-veh__pat">{{ vehiculo.patente }}</span>
+              </div>
+            </div>
+          </td>
+          <td>
+            <span class="flota-km">
+              {{ vehiculo.km_actual|floatformat:0|intcomma }}
+              <span class="flota-km__unidad">km</span>
+            </span>
+          </td>
+          <td>
+            {% if vehiculo.seguro_fin %}
+              <span class="flota-fecha{% if vehiculo.seguro_vencido %} flota-fecha--vencido{% endif %}">
+                <span class="material-symbols-outlined">shield</span>
+                {{ vehiculo.seguro_fin|date:"d/m/Y" }}
+              </span>
+            {% else %}
+              <span class="flota-fecha__sin">Sin registro</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if vehiculo.vtv_fin %}
+              <span class="flota-fecha{% if vehiculo.vtv_vencido %} flota-fecha--vencido{% endif %}">
+                <span class="material-symbols-outlined">verified</span>
+                {{ vehiculo.vtv_fin|date:"d/m/Y" }}
+              </span>
+            {% else %}
+              <span class="flota-fecha__sin">Sin registro</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if vehiculo.servis_fecha %}
+              <span class="flota-fecha">
+                <span class="material-symbols-outlined">build</span>
+                {{ vehiculo.servis_fecha|date:"d/m/Y" }}
+              </span>
+            {% else %}
+              <span class="flota-fecha__sin">Sin registro</span>
+            {% endif %}
+          </td>
+          <td class="alineado-centro">
+            <div class="flota-acciones">
+              <button type="button" class="boton-accion-flota editar"
+                      title="Editar vehículo"
+                      data-id="{{ vehiculo.id }}"
+                      data-nombre="{{ vehiculo.nombre }}"
+                      data-patente="{{ vehiculo.patente }}"
+                      onclick="abrirEditarVehiculo(this)">
+                <span class="material-symbols-outlined">edit</span>
+              </button>
+              <button type="button" class="boton-accion-flota eliminar"
+                      title="Eliminar vehículo"
+                      data-id="{{ vehiculo.id }}"
+                      data-nombre="{{ vehiculo.nombre }}"
+                      onclick="abrirEliminarFlota(this)">
+                <span class="material-symbols-outlined">delete</span>
+              </button>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr class="fila-vacia">
+          <td colspan="6" class="celda-vacia">
+            <span class="material-symbols-outlined">local_shipping</span>
+            No hay vehículos registrados.
+          </td>
+        </tr>
+        {% endfor %}
+        <!-- Fila que aparece cuando la búsqueda no arroja coincidencias -->
+        <tr class="fila-vacia" id="flota-sin-resultados" hidden>
+          <td colspan="6" class="celda-vacia">
+            <span class="material-symbols-outlined">search_off</span>
+            No se encontraron vehículos con ese nombre.
+          </td>
+        </tr>
+      </tbody>
+    </table>
 
-      <!-- Identidad: icono, nombre y patente; acciones al margen -->
-      <header class="tarjeta-vehiculo__cabecera">
-        <span class="tarjeta-vehiculo__icono">
-          <span class="material-symbols-outlined">local_shipping</span>
-        </span>
-        <div class="tarjeta-vehiculo__identidad">
-          <h3 class="tarjeta-vehiculo__nombre">{{ vehiculo.nombre }}</h3>
-          <span class="tarjeta-vehiculo__patente">{{ vehiculo.patente }}</span>
-        </div>
-        <div class="tarjeta-vehiculo__acciones">
-          <button type="button" class="boton-accion-flota editar"
-                  title="Editar vehículo"
-                  data-id="{{ vehiculo.id }}"
-                  data-nombre="{{ vehiculo.nombre }}"
-                  data-patente="{{ vehiculo.patente }}"
-                  onclick="abrirEditarVehiculo(this)">
-            <span class="material-symbols-outlined">edit</span>
-          </button>
-          <button type="button" class="boton-accion-flota eliminar"
-                  title="Eliminar vehículo"
-                  data-id="{{ vehiculo.id }}"
-                  data-nombre="{{ vehiculo.nombre }}"
-                  onclick="abrirEliminarFlota(this)">
-            <span class="material-symbols-outlined">delete</span>
-          </button>
-        </div>
-      </header>
-
-      <!-- Kilometraje: el número protagonista de la tarjeta -->
-      <div class="tarjeta-vehiculo__odometro">
-        <span class="tarjeta-vehiculo__km-valor">{{ vehiculo.km_actual|floatformat:0|intcomma }}</span>
-        <span class="tarjeta-vehiculo__km-unidad">km</span>
+    <!-- Footer: conteo de vehículos. La lista no se pagina (se muestran todos),
+         pero se dejan los botones deshabilitados para conservar el mismo footer
+         que el resto de las tablas del sistema. -->
+    <div class="paginacion">
+      <div class="paginacion-info">
+        Mostrando <span id="flota-visibles">{{ vehiculos|length }}</span>
+        de <span>{{ vehiculos|length }}</span> vehículos
       </div>
-
-      <!-- Estado de los tres vencimientos que se controlan del vehículo -->
-      <dl class="tarjeta-vehiculo__estado">
-        <div class="dato-estado{% if vehiculo.seguro_vencido %} dato-estado--vencido{% endif %}">
-          <span class="material-symbols-outlined dato-estado__icono">shield</span>
-          <dt class="dato-estado__rotulo">Seguro</dt>
-          <dd class="dato-estado__valor">
-            {% if vehiculo.seguro_fin %}{{ vehiculo.seguro_fin|date:"d/m/Y" }}{% else %}Sin registro{% endif %}
-          </dd>
-        </div>
-        <div class="dato-estado{% if vehiculo.vtv_vencido %} dato-estado--vencido{% endif %}">
-          <span class="material-symbols-outlined dato-estado__icono">verified</span>
-          <dt class="dato-estado__rotulo">VTV</dt>
-          <dd class="dato-estado__valor">
-            {% if vehiculo.vtv_fin %}{{ vehiculo.vtv_fin|date:"d/m/Y" }}{% else %}Sin registro{% endif %}
-          </dd>
-        </div>
-        <div class="dato-estado">
-          <span class="material-symbols-outlined dato-estado__icono">build</span>
-          <dt class="dato-estado__rotulo">Último service</dt>
-          <dd class="dato-estado__valor">
-            {% if vehiculo.servis_fecha %}{{ vehiculo.servis_fecha|date:"d/m/Y" }}{% else %}Sin registro{% endif %}
-          </dd>
-        </div>
-      </dl>
-    </article>
-    {% empty %}
-    <div class="flota-vacia">
-      <span class="material-symbols-outlined">local_shipping</span>
-      No hay vehículos registrados.
+      <div class="paginacion-botones">
+        <button class="boton-paginacion" disabled>Anterior</button>
+        <button class="boton-paginacion" disabled>Siguiente</button>
+      </div>
     </div>
-    {% endfor %}
   </div>
 
 </section>
