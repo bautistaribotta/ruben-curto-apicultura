@@ -389,6 +389,26 @@
 }
 
 /* ---- Responsive ---- */
+/* Pantallas grandes (>=1440px): el tablero estaba topado en 1180px y alineado a
+   la izquierda, dejando mucho aire muerto a la derecha en monitores Full HD.
+   Aca se ensancha el wrap y las tarjetas pasan a 4 columnas fijas (el board de
+   Miel tiene 4 articulos, asi que llena la fila sin huecos). Debajo de 1440px
+   sigue vigente el auto-fill que adapta de 4 a 1 columna. */
+@media (min-width: 1440px) {
+  .ini-board-wrap {
+    max-width: 1440px;
+  }
+  .ini-board {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (min-width: 1920px) {
+  .ini-board-wrap {
+    max-width: 1600px;
+  }
+}
+
 @media (max-width: 1080px) {
   .ini-dolar {
     flex-direction: column;
