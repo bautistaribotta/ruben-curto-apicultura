@@ -201,6 +201,30 @@
               <span class="ini-tile__stockval">{{ cotizaciones.Cera_Recupero.cantidad|floatformat:"-2" }} <i>kg</i></span>
             </div>
           </article>
+
+          {% comment %}
+            Tarjeta decorativa: la borra de opérculo todavía no cotiza ni tiene
+            stock cargado, así que muestra guiones. Conserva el hover del resto
+            pero no es editable (sin data-articulo ni lápiz de edición). A futuro
+            se implementará como un artículo más.
+          {% endcomment %}
+          <article class="ini-tile ini-tile--placeholder">
+            <div class="ini-tile__head">
+              <span class="ini-tile__glyph"><span class="material-symbols-outlined">hexagon</span></span>
+              <div class="ini-tile__id"><h4>Borra de opérculo</h4></div>
+            </div>
+            <div class="ini-tile__pricewrap">
+              <div class="ini-tile__price">
+                <span class="ini-tile__prefix">$</span>
+                <span class="ini-tile__amount">—</span>
+                <span class="ini-tile__unit">/kg</span>
+              </div>
+            </div>
+            <div class="ini-tile__stock">
+              <span class="ini-tile__stocklabel">Disponible</span>
+              <span class="ini-tile__stockval">— <i>kg</i></span>
+            </div>
+          </article>
         </div>
       </div>
 

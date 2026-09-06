@@ -231,6 +231,18 @@
   cursor: default;
 }
 
+/* Tarjeta decorativa (todavia sin cotizacion ni stock): conserva el hover del
+   resto, pero no es clickeable ni editable, asi que va sin cursor de mano. Los
+   guiones se atenuan para que se lean como "sin valor por ahora". */
+.ini-tile--placeholder {
+  cursor: default;
+}
+
+.ini-tile--placeholder .ini-tile__amount,
+.ini-tile--placeholder .ini-tile__stockval {
+  color: var(--text-subtle);
+}
+
 .ini-tile.is-editing {
   transform: none;
   border-color: var(--brand);
