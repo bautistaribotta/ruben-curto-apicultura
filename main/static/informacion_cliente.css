@@ -771,6 +771,10 @@ html {
   opacity: 1;
 }
 
+/* El ancho va en rem y no en px: desde 1440px la hoja sube el font-size raiz
+   (18px, y 20px desde 1920px), asi que el contenido del panel crece pero un
+   maximo en px lo dejaria igual de angosto y los campos se desbordarian. En
+   16px equivale a los 450px de siempre. */
 #panel-eliminar, #panel-cancelar-operacion, #panel-pago, #panel-resumen {
   position: relative;
   background-color: var(--surface-card);
@@ -778,7 +782,7 @@ html {
   border: 1px solid var(--border-subtle);
   padding: 2.5rem 2rem 2rem 2rem;
   width: 90%;
-  max-width: 450px;
+  max-width: 28.125rem;
   box-shadow: var(--shadow-xl);
   display: flex;
   flex-direction: column;
@@ -1034,9 +1038,13 @@ html {
   color: var(--brand-secondary);
 }
 
+/* minmax(0, 1fr) y min-width: 0 en el campo: un input[type="date"] trae un
+   ancho minimo propio (el texto de la fecha mas el icono del calendario) y con
+   1fr a secas la columna no puede bajar de ese piso, asi que la fila se pasa
+   del ancho del panel en vez de repartirse. */
 .rc-rango {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.75rem;
   margin-bottom: 1rem;
 }
@@ -1045,6 +1053,7 @@ html {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
+  min-width: 0;
 }
 
 .rc-campo__lbl {
