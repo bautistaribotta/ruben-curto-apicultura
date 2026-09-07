@@ -1001,9 +1001,12 @@ html {
 /* Atajos de periodo: un resumen de cuenta casi siempre se corta en un limite de
    mes o de año, asi que esos cortes van a un toque y las fechas sueltas quedan
    como la excepcion, no como el camino obligado. */
+/* Rejilla de dos columnas en vez de flex-wrap: con ancho libre los cuatro
+   atajos caian tres arriba y uno solo abajo. Asi quedan 2x2, alineados con la
+   fila de fechas y con los botones del pie, que tambien van de a dos. */
 .rc-atajos {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.4rem;
   margin-bottom: 1.25rem;
 }
