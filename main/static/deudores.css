@@ -162,7 +162,10 @@
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  padding: 0.45rem 0.9rem;
+  /* Mismo alto que el chip de fechas (.ff-trigger): 0.625rem de padding vertical.
+     Asi todas las pildoras de la barra (cliente, producto, tipo y fecha) quedan
+     estandarizadas y ninguna se ve mas grande que las demas. */
+  padding: 0.625rem 0.9rem;
   border-radius: var(--radius-pill);
   border: 1px solid var(--border-default);
   background-color: var(--surface-card);
@@ -178,7 +181,7 @@
 }
 
 .prod-chip .material-symbols-outlined {
-  font-size: 1.05rem;
+  font-size: 1.15rem;
 }
 
 .prod-chip:hover {
