@@ -52,17 +52,21 @@
   border-color: var(--brand-secondary);
 }
 
-/* Tilde dibujado con dos bordes rotados: sin iconos ni imagenes de por medio */
+/* Tilde dibujado con dos bordes rotados: sin iconos ni imagenes de por medio.
+   Se ancla al centro de la casilla (top/left 50% + translate) en vez de a un
+   offset fijo en px, asi queda centrado cualquiera sea el tamano de la casilla o
+   la resolucion. El -58% en Y compensa el peso visual del check rotado, que sin
+   ese ajuste cae hacia abajo respecto del centro optico. */
 .pago-check:checked::after {
   content: "";
   position: absolute;
-  top: 1px;
-  left: 5px;
+  top: 50%;
+  left: 50%;
   width: 5px;
   height: 9px;
   border: solid var(--sand-50);
   border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
+  transform: translate(-50%, -58%) rotate(45deg);
 }
 
 /* El anillo de foco es miel, como en el resto del sistema */
