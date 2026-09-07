@@ -427,34 +427,58 @@ document.addEventListener('pago:cambiado', (evento) => {
   const { casilla, datos } = evento.detail;
   if (!casilla || datos.total_empresa_txt === undefined) return;
 
-  const fila = casilla.closest('tr');
-  if (fila) {
-    fila.classList.toggle('cheque-fila--cobrado', Boolean(datos.cobrado));
-    // Un cobrado no puede seguir mostrandose como vencido
-    if (datos.cobrado) fila.classList.remove('cheque-fila--vencido');
-
-    const celdaCobro = fila.querySelector('.cheque-cobro');
-    if (celdaCobro) {
-      const fechaHTML = celdaCobro.querySelector('.op-fecha').outerHTML;
-      let sub;
-      if (datos.cobrado) {
-        sub = '<span class="cheque-badge cheque-badge--cobrado">Cobrado</span>';
-      } else if (celdaCobro.dataset.vencido === '1') {
-        sub = '<span class="cheque-badge cheque-badge--vencido">Vencido</span>';
-        fila.classList.add('cheque-fila--vencido');
-      } else {
-        sub = `<span class="cheque-vence">Vence ${celdaCobro.dataset.vence}</span>`;
-      }
-      celdaCobro.innerHTML = fechaHTML + sub;
-    }
-  }
-
   const totalEmpresa = document.querySelector('.resumen-cheques__valor');
   if (totalEmpresa) totalEmpresa.textContent = `$${datos.total_empresa_txt}`;
 
   const celdaCuenta = document.querySelector(
     `.tabla-cuentas tr[data-cuenta="${datos.id_cuenta}"] .cuenta-a-pagar`);
   if (celdaCuenta) celdaCuenta.textContent = `$${datos.total_cuenta_txt}`;
+
+  const fila = casilla.closest('tr');
+  if (!fila) return;
+
+  // Con la tabla filtrada, un cheque que cambia de estado puede dejar de pertenecer
+  // a lo que se esta viendo: cobrado dentro de "Pendientes", o vuelto a pendiente
+  // dentro de "Cobrados". En ese caso la fila se va (animacion) y la tabla se
+  // resincroniza desde el servidor (conteos, paginacion, relleno). En "Todos" no
+  // se va nadie: solo se actualiza el estilo y el badge en el lugar.
+  const estadoActual = document.getElementById('filtro-estado')?.dataset.estado || 'pendientes';
+  const dejaElFiltro = (estadoActual === 'pendientes' && datos.cobrado)
+    || (estadoActual === 'cobrados' && !datos.cobrado);
+
+  if (dejaElFiltro) {
+    fila.classList.add('cheque-fila--saliendo');
+    let hecho = false;
+    const irse = () => {
+      if (hecho) return;
+      hecho = true;
+      if (typeof refrescarTablaCheques === 'function') refrescarTablaCheques();
+      else fila.remove();
+    };
+    fila.addEventListener('transitionend', irse, { once: true });
+    // Red de seguridad si el navegador no dispara transitionend (reduced motion).
+    setTimeout(irse, 320);
+    return;
+  }
+
+  fila.classList.toggle('cheque-fila--cobrado', Boolean(datos.cobrado));
+  // Un cobrado no puede seguir mostrandose como vencido
+  if (datos.cobrado) fila.classList.remove('cheque-fila--vencido');
+
+  const celdaCobro = fila.querySelector('.cheque-cobro');
+  if (celdaCobro) {
+    const fechaHTML = celdaCobro.querySelector('.op-fecha').outerHTML;
+    let sub;
+    if (datos.cobrado) {
+      sub = '<span class="cheque-badge cheque-badge--cobrado">Cobrado</span>';
+    } else if (celdaCobro.dataset.vencido === '1') {
+      sub = '<span class="cheque-badge cheque-badge--vencido">Vencido</span>';
+      fila.classList.add('cheque-fila--vencido');
+    } else {
+      sub = `<span class="cheque-vence">Vence ${celdaCobro.dataset.vence}</span>`;
+    }
+    celdaCobro.innerHTML = fechaHTML + sub;
+  }
 });
 
 /**
@@ -478,20 +502,160 @@ document.getElementById('cheque-fecha-cobro')?.addEventListener('input', () => {
 
 document.getElementById('cheque-concepto')?.addEventListener('input', actualizarContadorConcepto);
 
-// El filtro de fechas es agnostico: dispara 'filtrofechas:cambio' y aca lo
-// traducimos a una recarga server-side, volviendo a la primera pagina. El estado
-// aplicado (desde/hasta) ya vive en los data-* del contenedor #filtro-fechas.
+/**
+ * -----------------------------------------------------------------------------
+ * FILTRADO AJAX DE LA TABLA DE CHEQUES (estado + fecha)
+ * Los dos filtros (estado de cobro y fecha de cobro) recargan SOLO el contenedor
+ * de la tabla (#cheques-tabla-cont) por AJAX: no refrescan la pagina ni mueven el
+ * scroll. Dejan la URL sincronizada con history.replaceState, asi un refresh o un
+ * bookmark respetan el filtro sin apilar entradas de historial. Se combinan: cada
+ * filtro preserva los parametros del otro en la query, y el servidor cruza estado
+ * y rango de fechas. "pendientes" es el estado por defecto y no viaja en la URL.
+ * -----------------------------------------------------------------------------
+ */
+
+// Un solo pedido en vuelo a la vez: evita que dos filtros que se pisan resuelvan
+// fuera de orden y dejen la tabla y la URL contando distinto.
+let cargandoCheques = false;
+
+/** Sincroniza la pildora de estado (label, pino, menu y data-*) con 'estado'. */
+const sincronizarEstadoCheques = (estado) => {
+  const cont = document.getElementById('filtro-estado');
+  if (!cont) return;
+  const trigger = document.getElementById('filtro-estado-trigger');
+  const label = cont.querySelector('.che-estado__label');
+  const ETIQUETAS = { pendientes: 'Pendientes', cobrados: 'Cobrados', todos: 'Todos' };
+  cont.dataset.estado = estado;
+  if (label) label.textContent = ETIQUETAS[estado] || 'Pendientes';
+  // El pino solo cuando esta acotando el listado (pendientes o cobrados).
+  if (trigger) trigger.classList.toggle('is-active', estado !== 'todos');
+  cont.querySelectorAll('.che-estado__opt').forEach((opcion) => {
+    const activa = opcion.dataset.estado === estado;
+    opcion.classList.toggle('is-active', activa);
+    opcion.setAttribute('aria-checked', activa ? 'true' : 'false');
+  });
+};
+
+/** Trae el HTML de 'url' e intercambia solo el contenedor de la tabla. No toca el
+ *  historial (lo decide quien llama) ni el scroll. Con dim:false no atenua la tabla
+ *  (para refrescos silenciosos, como cuando se cobra un cheque y la fila ya se fue
+ *  con su propia animacion). Devuelve una promesa que resuelve true si intercambio. */
+const swapTablaCheques = (url, { dim = true } = {}) => {
+  const tabla = document.getElementById('cheques-tabla-cont');
+  if (!tabla) return Promise.resolve(false);
+  cargandoCheques = true;
+  tabla.setAttribute('aria-busy', 'true');
+  if (dim) tabla.style.opacity = '0.55';
+
+  return fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+    .then((respuesta) => {
+      if (!respuesta.ok) throw new Error('No se pudo aplicar el filtro.');
+      return respuesta.text();
+    })
+    .then((html) => {
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      const nuevo = doc.getElementById('cheques-tabla-cont');
+      if (!nuevo) throw new Error('Respuesta inesperada.');
+      tabla.innerHTML = nuevo.innerHTML;
+      return true;
+    })
+    .catch((error) => {
+      console.error(error);
+      if (typeof abrirModalError === 'function') abrirModalError(error.message);
+      return false;
+    })
+    .finally(() => {
+      tabla.style.opacity = '';
+      tabla.removeAttribute('aria-busy');
+      cargandoCheques = false;
+    });
+};
+
+// Refresco silencioso de la URL actual (mismo estado, fechas y pagina): lo usa la
+// casilla de cobro para reconciliar la tabla cuando una fila deja de coincidir con
+// el filtro activo (conteos, paginacion y relleno vienen del servidor).
+const refrescarTablaCheques = () => {
+  if (cargandoCheques) return Promise.resolve(false);
+  return swapTablaCheques(window.location.href, { dim: false });
+};
+
+// El filtro de fechas es agnostico: administra su chip del lado del cliente y
+// dispara 'filtrofechas:cambio'. Aca lo traducimos a un swap AJAX, preservando el
+// estado de cobro que ya viva en la query y volviendo a la primera pagina.
 document.addEventListener('filtrofechas:cambio', () => {
   const cont = document.getElementById('filtro-fechas');
-  if (!cont) return;
+  if (!cont || cargandoCheques) return;
   const params = new URLSearchParams(window.location.search);
   if (cont.dataset.desde) params.set('desde', cont.dataset.desde);
   else params.delete('desde');
   if (cont.dataset.hasta) params.set('hasta', cont.dataset.hasta);
   else params.delete('hasta');
   params.delete('page');
-  window.location.search = params.toString();
+  const query = params.toString();
+  const url = window.location.pathname + (query ? `?${query}` : '');
+  swapTablaCheques(url).then((ok) => {
+    if (ok) window.history.replaceState({}, '', url);
+  });
 });
+
+// Filtro de estado de cobro (pildora + menu): abre el menu y aplica el estado por AJAX.
+(() => {
+  const cont = document.getElementById('filtro-estado');
+  const trigger = document.getElementById('filtro-estado-trigger');
+  const pop = document.getElementById('filtro-estado-pop');
+  if (!cont || !trigger || !pop) return;
+
+  const abrir = () => {
+    pop.hidden = false;
+    trigger.setAttribute('aria-expanded', 'true');
+  };
+  const cerrar = () => {
+    pop.hidden = true;
+    trigger.setAttribute('aria-expanded', 'false');
+  };
+
+  /** URL para un estado, preservando el resto de la query (fechas) y sin page. */
+  const urlPara = (estado) => {
+    const params = new URLSearchParams(window.location.search);
+    if (estado === 'pendientes') params.delete('estado');
+    else params.set('estado', estado);
+    params.delete('page');
+    const query = params.toString();
+    return window.location.pathname + (query ? `?${query}` : '');
+  };
+
+  const aplicarEstado = (estado) => {
+    if (cargandoCheques || estado === cont.dataset.estado) {
+      cerrar();
+      return;
+    }
+    cerrar();
+    const url = urlPara(estado);
+    swapTablaCheques(url).then((ok) => {
+      if (!ok) return;
+      sincronizarEstadoCheques(estado);
+      window.history.replaceState({ estado }, '', url);
+    });
+  };
+
+  trigger.addEventListener('click', (evento) => {
+    evento.stopPropagation();
+    if (pop.hidden) abrir();
+    else cerrar();
+  });
+
+  pop.querySelectorAll('.che-estado__opt').forEach((opcion) => {
+    opcion.addEventListener('click', () => aplicarEstado(opcion.dataset.estado));
+  });
+
+  // Un click fuera del filtro o Escape cierran el menu.
+  document.addEventListener('click', (evento) => {
+    if (!pop.hidden && !cont.contains(evento.target)) cerrar();
+  });
+  document.addEventListener('keydown', (evento) => {
+    if (evento.key === 'Escape' && !pop.hidden) cerrar();
+  });
+})();
 
 // Accesibles desde los onclick del HTML
 window.prepararNuevoCheque = prepararNuevoCheque;

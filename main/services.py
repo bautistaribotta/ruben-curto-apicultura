@@ -4413,17 +4413,25 @@ def _validar_cheque(numero, fecha_emision, fecha_cobro, concepto, importe):
     return nro, emision, cobro, texto, monto
 
 
-def obtener_cheques(id_empresa, desde=None, hasta=None):
+def obtener_cheques(id_empresa, desde=None, hasta=None, estado="pendientes"):
     """Cheques a pagar de las cuentas corrientes activas de una empresa.
 
     Ordenados por fecha de cobro (los mas proximos primero, ver Meta del modelo).
     Trae la cuenta y el banco en la misma query para la tabla. El filtro de fecha
     (desde/hasta, inclusive) acota por la fecha de cobro, que es la que ordena y
     agrupa los cheques.
+
+    'estado' filtra por el cobro: "pendientes" (por defecto, cobrado=False),
+    "cobrados" (cobrado=True) o "todos" (sin filtrar). Cualquier valor no
+    reconocido cae en "pendientes", que es la vista por defecto.
     """
     cheques = (Cheque.objects
                .filter(cuenta_corriente__empresa_id=id_empresa, cuenta_corriente__activa=True)
                .select_related("cuenta_corriente__banco"))
+    if estado == "cobrados":
+        cheques = cheques.filter(cobrado=True)
+    elif estado != "todos":
+        cheques = cheques.filter(cobrado=False)
     if desde:
         cheques = cheques.filter(fecha_cobro__gte=desde)
     if hasta:

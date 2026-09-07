@@ -253,6 +253,20 @@
   cursor: pointer;
 }
 
+/* Fila que deja de coincidir con el filtro (se cobro estando en "Pendientes", o
+   se volvio pendiente estando en "Cobrados"): se desvanece antes de que la tabla
+   se resincronice con el servidor. */
+.cheque-fila--saliendo td {
+  opacity: 0;
+  transition: opacity 0.25s var(--ease-standard);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cheque-fila--saliendo td {
+    transition: none;
+  }
+}
+
 .cheque-fila:focus-visible {
   outline: 2px solid var(--brand-active);
   outline-offset: -2px;
@@ -692,6 +706,169 @@
 .det-cheque__eliminar.manteniendo::before {
   width: 100%;
   transition: width 2s linear;
+}
+
+/* --- BARRA DE FILTROS DEL HISTORIAL ---
+   Fila bajo la leyenda "Cheques a pagar", alineada a la izquierda: el filtro de
+   estado de cobro y el de fecha. Se sube un poco (margin-top negativo) para
+   pegarse al titulo sin depender del margen del encabezado. */
+.cheques-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: -0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+/* --- FILTRO DE ESTADO DE COBRO (pildora + menu) ---
+   Mismo lenguaje que el chip de fechas (.ff-trigger): pildora neutra que toma el
+   pino de marca cuando esta filtrando (pendientes o cobrados) y abre un menu con
+   las tres opciones. Reusa la animacion ff-pop-in de filtro_fechas.css. */
+.che-estado {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+}
+
+.che-estado__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.625rem 0.9rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-default);
+  background-color: var(--surface-card);
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color var(--dur-normal) var(--ease-standard),
+              color var(--dur-normal) var(--ease-standard),
+              border-color var(--dur-normal) var(--ease-standard);
+}
+
+.che-estado__trigger:hover {
+  background-color: var(--surface-hover);
+  color: var(--text-body);
+}
+
+.che-estado__trigger .material-symbols-outlined {
+  font-size: 1.15rem;
+}
+
+.che-estado__trigger.is-active {
+  background-color: var(--brand-secondary);
+  color: var(--text-on-inverse);
+  border-color: var(--brand-secondary);
+}
+
+/* La flecha se da vuelta cuando el menu esta abierto */
+.che-estado__caret {
+  transition: transform var(--dur-normal) var(--ease-standard);
+}
+
+.che-estado__trigger[aria-expanded="true"] .che-estado__caret {
+  transform: rotate(180deg);
+}
+
+.che-estado__trigger:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+/* Menu flotante anclado bajo la pildora, alineado a su borde izquierdo. El
+   display:flex le gana al [hidden] del user-agent; restauro el ocultamiento. */
+.che-estado__pop[hidden] {
+  display: none;
+}
+
+.che-estado__pop {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  z-index: 30;
+  min-width: 12rem;
+  max-width: calc(100vw - 2rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.35rem;
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+}
+
+.che-estado__pop:not([hidden]) {
+  animation: ff-pop-in var(--dur-fast) var(--ease-standard);
+  transform-origin: top left;
+}
+
+.che-estado__opt {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.5rem 0.6rem;
+  border: none;
+  border-radius: var(--radius-md);
+  background-color: transparent;
+  color: var(--text-body);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-standard),
+              color var(--dur-fast) var(--ease-standard);
+}
+
+.che-estado__opt:hover {
+  background-color: var(--surface-hover);
+}
+
+.che-estado__opt:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.che-estado__opt-ico {
+  font-size: 1.15rem;
+  color: var(--text-muted);
+}
+
+.che-estado__opt-txt {
+  flex: 1;
+}
+
+/* El check solo se ve en la opcion activa; ocupa lugar siempre para no descuadrar. */
+.che-estado__opt-check {
+  font-size: 1.1rem;
+  color: var(--brand-secondary);
+  opacity: 0;
+}
+
+.che-estado__opt.is-active {
+  color: var(--text-strong);
+}
+
+.che-estado__opt.is-active .che-estado__opt-ico {
+  color: var(--brand-secondary);
+}
+
+.che-estado__opt.is-active .che-estado__opt-check {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .che-estado__pop:not([hidden]) {
+    animation: none;
+  }
+  .che-estado__caret {
+    transition: none;
+  }
 }
 
 /* --- RESPONSIVE --- */

@@ -47,10 +47,6 @@
     </div>
 
     <div class="acciones-empresa">
-      <button type="button" class="boton-nuevo" onclick="prepararNuevoCheque()">
-        <span class="material-symbols-outlined">add</span>
-        Nuevo cheque
-      </button>
       <button type="button" class="boton-accion boton-editar"
               data-nombre="{{ empresa.nombre }}" onclick="prepararEditarEmpresa()">
         <span class="material-symbols-outlined">edit</span>
@@ -142,14 +138,63 @@
         <h3>Cheques a pagar</h3>
       </div>
       {% comment %}
-        Filtro por fecha de cobro (chip + popover, reutilizado de deudas). Al aplicar
-        o limpiar, informacion_empresa_cheques.js recarga preservando el estado en la
-        URL. Cada cheque cae en el rango por su fecha de cobro, igual que el listado.
+        El alta baja al encabezado de la tabla que alimenta: la accion queda al lado
+        del listado sobre el que opera, alineada con la barra de filtros de abajo.
       {% endcomment %}
-      {% include 'filtro_fechas.html' with modos="dia,mes,rango" %}
+      <button type="button" class="boton-nuevo" onclick="prepararNuevoCheque()">
+        <span class="material-symbols-outlined">add</span>
+        Nuevo cheque
+      </button>
     </header>
 
-    <div class="contenedor-tabla">
+    {% comment %}
+      Barra de filtros, alineada a la izquierda bajo la leyenda:
+        - Estado de cobro (pildora + menu): por defecto muestra los pendientes, y
+          permite ver los cobrados o todos. Lo administra informacion_empresa_cheques.js.
+        - Fecha de cobro (chip + popover, reutilizado de deudas): al aplicar o limpiar,
+          el mismo JS recarga preservando el estado en la URL. Cada cheque cae en el
+          rango por su fecha de cobro, igual que el listado.
+    {% endcomment %}
+    <div class="cheques-filtros">
+      <div class="che-estado" id="filtro-estado" data-estado="{{ estado_cheques }}">
+        <button type="button"
+                class="che-estado__trigger {% if estado_cheques != 'todos' %}is-active{% endif %}"
+                id="filtro-estado-trigger" aria-haspopup="menu" aria-expanded="false">
+          <span class="material-symbols-outlined">filter_alt</span>
+          <span class="che-estado__label">{{ estado_label }}</span>
+          <span class="material-symbols-outlined che-estado__caret">expand_more</span>
+        </button>
+
+        <div class="che-estado__pop" id="filtro-estado-pop" role="menu"
+             aria-label="Filtrar cheques por estado de cobro" hidden>
+          <button type="button" class="che-estado__opt {% if estado_cheques == 'pendientes' %}is-active{% endif %}"
+                  data-estado="pendientes" role="menuitemradio"
+                  aria-checked="{% if estado_cheques == 'pendientes' %}true{% else %}false{% endif %}">
+            <span class="material-symbols-outlined che-estado__opt-ico">schedule</span>
+            <span class="che-estado__opt-txt">Pendientes</span>
+            <span class="material-symbols-outlined che-estado__opt-check">check</span>
+          </button>
+          <button type="button" class="che-estado__opt {% if estado_cheques == 'cobrados' %}is-active{% endif %}"
+                  data-estado="cobrados" role="menuitemradio"
+                  aria-checked="{% if estado_cheques == 'cobrados' %}true{% else %}false{% endif %}">
+            <span class="material-symbols-outlined che-estado__opt-ico">task_alt</span>
+            <span class="che-estado__opt-txt">Cobrados</span>
+            <span class="material-symbols-outlined che-estado__opt-check">check</span>
+          </button>
+          <button type="button" class="che-estado__opt {% if estado_cheques == 'todos' %}is-active{% endif %}"
+                  data-estado="todos" role="menuitemradio"
+                  aria-checked="{% if estado_cheques == 'todos' %}true{% else %}false{% endif %}">
+            <span class="material-symbols-outlined che-estado__opt-ico">list</span>
+            <span class="che-estado__opt-txt">Todos</span>
+            <span class="material-symbols-outlined che-estado__opt-check">check</span>
+          </button>
+        </div>
+      </div>
+
+      {% include 'filtro_fechas.html' with modos="dia,mes,rango" %}
+    </div>
+
+    <div class="contenedor-tabla" id="cheques-tabla-cont">
       <table class="tabla-operaciones-iva tabla-cheques">
         <thead>
           <tr>
@@ -208,6 +253,12 @@
                 {% if desde or hasta %}
                   <h4>Sin cheques en el rango</h4>
                   <p>No hay cheques con fecha de cobro en el período elegido.</p>
+                {% elif estado_cheques == 'pendientes' %}
+                  <h4>Sin cheques pendientes</h4>
+                  <p>No hay cheques pendientes de cobro. Cambiá el filtro de estado para ver los cobrados.</p>
+                {% elif estado_cheques == 'cobrados' %}
+                  <h4>Sin cheques cobrados</h4>
+                  <p>Todavía no se cobró ningún cheque de esta empresa.</p>
                 {% else %}
                   <h4>Sin cheques</h4>
                   <p>Cargá un cheque a pagar para empezar.</p>
@@ -227,7 +278,7 @@
         </div>
         <div class="paginacion-botones">
           {% if page_obj.has_previous %}
-            <a href="?page={{ page_obj.previous_page_number }}{% if desde %}&desde={{ desde }}{% endif %}{% if hasta %}&hasta={{ hasta }}{% endif %}">
+            <a href="?page={{ page_obj.previous_page_number }}{% if estado_cheques != 'pendientes' %}&estado={{ estado_cheques }}{% endif %}{% if desde %}&desde={{ desde }}{% endif %}{% if hasta %}&hasta={{ hasta }}{% endif %}">
               <button class="boton-paginacion">Anterior</button>
             </a>
           {% else %}
@@ -235,7 +286,7 @@
           {% endif %}
 
           {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}{% if desde %}&desde={{ desde }}{% endif %}{% if hasta %}&hasta={{ hasta }}{% endif %}">
+            <a href="?page={{ page_obj.next_page_number }}{% if estado_cheques != 'pendientes' %}&estado={{ estado_cheques }}{% endif %}{% if desde %}&desde={{ desde }}{% endif %}{% if hasta %}&hasta={{ hasta }}{% endif %}">
               <button class="boton-paginacion">Siguiente</button>
             </a>
           {% else %}

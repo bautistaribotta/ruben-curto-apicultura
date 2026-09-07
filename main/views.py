@@ -2770,7 +2770,14 @@ def informacion_empresa_cheques(request, id_empresa):
     # Filtro por fecha de cobro (chip + popover, reutilizado de deudas)
     desde, hasta, ctx_fechas = _rango_fechas(request)
 
-    lista_cheques = obtener_cheques(id_empresa, desde, hasta)
+    # Filtro por estado de cobro (pildora + menu). Por defecto se muestran solo los
+    # pendientes; cualquier valor no reconocido tambien cae en "pendientes".
+    ESTADOS_CHEQUE = {"pendientes": "Pendientes", "cobrados": "Cobrados", "todos": "Todos"}
+    estado = request.GET.get("estado", "pendientes")
+    if estado not in ESTADOS_CHEQUE:
+        estado = "pendientes"
+
+    lista_cheques = obtener_cheques(id_empresa, desde, hasta, estado)
     paginator = Paginator(lista_cheques, 8)
     page_obj = paginator.get_page(request.GET.get("page"))
 
@@ -2782,6 +2789,8 @@ def informacion_empresa_cheques(request, id_empresa):
         "cheques": page_obj,
         "total_cheques": Cheque.objects.filter(cuenta_corriente__empresa_id=id_empresa,
                                                cuenta_corriente__activa=True).count(),
+        "estado_cheques": estado,
+        "estado_label": ESTADOS_CHEQUE[estado],
     }
     contexto.update(ctx_fechas)
     return render(request, "informacion_empresa_cheques.html", contexto)
