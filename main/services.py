@@ -2104,6 +2104,40 @@ def nombre_producto_operaciones_filtro(token):
     return f"{cotizacion.articulo} (por kg)" if cotizacion else ""
 
 
+def opciones_clientes_operaciones():
+    """Items para el modal selector_entidad del chip "Cliente" del listado.
+
+    Ofrece solo los clientes que aparecen en alguna operacion activa, asi el filtro
+    nunca lista un cliente que no daria resultados. El id viaja tal cual (numerico),
+    a diferencia del filtro de producto que necesita un token con prefijo.
+    """
+    clientes = (Cliente.objects.filter(operacion__activa=True)
+                .distinct().order_by("nombre", "apellido"))
+    items = []
+    for cliente in clientes:
+        nombre = f"{cliente.nombre} {cliente.apellido or ''}".strip()
+        items.append({
+            "id": str(cliente.id),
+            "principal": nombre,
+            "busqueda": nombre.lower(),
+        })
+    items.sort(key=lambda i: i["principal"].lower())
+    return items
+
+
+def nombre_cliente_operaciones_filtro(id_cliente):
+    """Etiqueta del chip cuando el filtro por cliente esta aplicado.
+
+    Resuelve el nombre aunque el cliente ya no aparezca en las opciones (por ej. si
+    quedo sin operaciones activas), para no dejar el chip sin texto. Un id no
+    numerico o inexistente devuelve cadena vacia.
+    """
+    if not (id_cliente or "").isdigit():
+        return ""
+    cliente = Cliente.objects.filter(id=id_cliente).first()
+    return f"{cliente.nombre} {cliente.apellido or ''}".strip() if cliente else ""
+
+
 def incluir_asignado(opciones, asignado):
     """
     Devuelve las opciones de un <select> incluyendo el registro actualmente asignado,

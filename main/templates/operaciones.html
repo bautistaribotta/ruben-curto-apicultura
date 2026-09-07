@@ -40,6 +40,7 @@
       <div class="grupo-busqueda">
         <div class="filtros-entidad">
           {% include "chip_filtro_entidad.html" with chip_id="chip-producto" param="producto" modal_id="selector-producto-operaciones" icono="inventory_2" etiqueta="Producto" valor_id=producto valor_nombre=producto_nombre %}
+          {% include "chip_filtro_entidad.html" with chip_id="chip-cliente" param="cliente" modal_id="selector-cliente-operaciones" icono="person" etiqueta="Cliente" valor_id=cliente valor_nombre=cliente_nombre %}
         </div>
         {% include 'filtro_fechas.html' with modos="dia,mes,rango" %}
       </div>
@@ -53,6 +54,9 @@
 
   {% comment %} Modal del chip de filtro por producto. {% endcomment %}
   {% include "selector_entidad.html" with selector_id="selector-producto-operaciones" icono="inventory_2" titulo="Elegir producto" descripcion="Filtrá las operaciones por el producto que elijas de la lista." placeholder="Buscar por producto" items=productos_filtro sin_items="Todavía no hay productos en las operaciones." %}
+
+  {% comment %} Modal del chip de filtro por cliente. {% endcomment %}
+  {% include "selector_entidad.html" with selector_id="selector-cliente-operaciones" icono="person_search" titulo="Elegir cliente" descripcion="Filtrá las operaciones por el cliente que elijas de la lista." placeholder="Buscar por cliente" items=clientes_filtro sin_items="Todavía no hay clientes en las operaciones." %}
 {% endblock %}
 
 {% block codigo-javascript %}

@@ -36,6 +36,7 @@ from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo
                        opciones_destinos_viaje, opciones_destinos_cereal, opciones_destinos_reparto_filtro,
                        nombre_empleado_filtro, nombre_vehiculo_filtro, nombre_destino_reparto_filtro,
                        obtener_operaciones_listado, opciones_productos_operaciones, nombre_producto_operaciones_filtro,
+                       opciones_clientes_operaciones, nombre_cliente_operaciones_filtro,
                        editar_empleado, eliminar_empleado, obtener_datos_empleado, crear_pago_empleado, fijar_sueldo_empleado,
                        fijar_vencimiento_carnet, editar_pago_empleado, eliminar_pago_empleado,
                        obtener_cuenta_corriente, resolver_ancla_pagos,
@@ -1423,6 +1424,16 @@ def operaciones(request):
             lista = lista.filter(detalleoperacion__cotizacion_id=ident).distinct()
 
     """
+    Filtro por cliente: el id viaja tal cual (numerico). Un id mal formado se ignora
+    y se muestran todas las operaciones. Se combina con el resto de los filtros.
+    """
+    cliente = request.GET.get("cliente", "")
+    if not cliente.isdigit():
+        cliente = ""
+    if cliente:
+        lista = lista.filter(cliente_id=cliente)
+
+    """
     Filtro por rango de fechas de la operacion (componente compartido). La fecha es
     un DateTimeField: en SQLite con USE_TZ el lookup __date no matchea, asi que
     comparo contra los limites del rango como datetimes con zona (mismo criterio que
@@ -1444,6 +1455,9 @@ def operaciones(request):
         "producto": producto,
         "producto_nombre": nombre_producto_operaciones_filtro(producto),
         "productos_filtro": opciones_productos_operaciones(),
+        "cliente": cliente,
+        "cliente_nombre": nombre_cliente_operaciones_filtro(cliente),
+        "clientes_filtro": opciones_clientes_operaciones(),
         **ctx_fechas,
     }
 

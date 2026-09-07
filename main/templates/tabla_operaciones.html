@@ -25,7 +25,7 @@
       boton "Volver" del detalle (que reconstruye la URL con request.GET) devuelve
       al listado filtrado igual, no al listado completo.
     {% endcomment %}
-    <tr class="fila-operacion" onclick="window.location.href='{% url 'informacion_operacion' operacion.id %}?origen=operaciones{% if producto %}&producto={{ producto }}{% endif %}{% if desde %}&desde={{ desde }}{% endif %}{% if hasta %}&hasta={{ hasta }}{% endif %}'">
+    <tr class="fila-operacion" onclick="window.location.href='{% url 'informacion_operacion' operacion.id %}?origen=operaciones{% if producto %}&producto={{ producto }}{% endif %}{% if cliente %}&cliente={{ cliente }}{% endif %}{% if desde %}&desde={{ desde }}{% endif %}{% if hasta %}&hasta={{ hasta }}{% endif %}'">
       <td>
         <span class="celda-fecha">
           <span class="material-symbols-outlined">event</span>
@@ -79,7 +79,7 @@
   </div>
   <div class="paginacion-botones">
     {% if page_obj.has_previous %}
-      <a href="?page={{ page_obj.previous_page_number }}{% if producto %}&producto={{ producto }}{% endif %}{% if desde %}&desde={{ desde }}{% endif %}{% if hasta %}&hasta={{ hasta }}{% endif %}">
+      <a href="?page={{ page_obj.previous_page_number }}{% if producto %}&producto={{ producto }}{% endif %}{% if cliente %}&cliente={{ cliente }}{% endif %}{% if desde %}&desde={{ desde }}{% endif %}{% if hasta %}&hasta={{ hasta }}{% endif %}">
         <button class="boton-paginacion">Anterior</button>
       </a>
     {% else %}
@@ -87,7 +87,7 @@
     {% endif %}
 
     {% if page_obj.has_next %}
-      <a href="?page={{ page_obj.next_page_number }}{% if producto %}&producto={{ producto }}{% endif %}{% if desde %}&desde={{ desde }}{% endif %}{% if hasta %}&hasta={{ hasta }}{% endif %}">
+      <a href="?page={{ page_obj.next_page_number }}{% if producto %}&producto={{ producto }}{% endif %}{% if cliente %}&cliente={{ cliente }}{% endif %}{% if desde %}&desde={{ desde }}{% endif %}{% if hasta %}&hasta={{ hasta }}{% endif %}">
         <button class="boton-paginacion">Siguiente</button>
       </a>
     {% else %}
