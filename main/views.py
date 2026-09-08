@@ -25,7 +25,7 @@ from .pdf_services import Remito, ResumenCuenta
 from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo_cliente, editar_cliente,
                        eliminar_cliente, buscar_clientes, get_cotizacion_dolar_oficial, get_cotizaciones, get_total_kilos_granel, get_tambores_vacios, actualizar_cotizacion, obtener_datos_cliente,
                        obtener_datos_producto, modificar_stock, crear_operacion, editar_operacion, servicio_cancelar_operacion,
-                       obtener_movimientos_cuenta_corriente,
+                       obtener_movimientos_cuenta_corriente, obtener_saldo_anterior_cuenta_corriente,
                        obtener_listado_deudores, _iniciales, filtro_nombre_apellido, filtro_tokens, crear_empleado, crear_vehiculo, crear_viaje, obtener_empleados_activos,
                        obtener_vehiculos_activos, obtener_viajes, obtener_datos_viaje, editar_viaje, eliminar_viaje, crear_gasto,
                        editar_gasto_viaje, eliminar_gasto_viaje,
@@ -875,7 +875,10 @@ def generar_resumen_cuenta(request, id_cliente):
 
     cliente = get_object_or_404(Cliente, id=id_cliente, activo=True)
     desde, hasta = _rango_resumen_cuenta(request)
-    movimientos, totales = obtener_movimientos_cuenta_corriente(cliente, desde, hasta)
+    saldo_anterior = obtener_saldo_anterior_cuenta_corriente(cliente, desde)
+    movimientos, totales = obtener_movimientos_cuenta_corriente(
+        cliente, desde, hasta, saldo_inicial=saldo_anterior
+    )
 
     pdf = ResumenCuenta(
         cliente=cliente,
@@ -883,6 +886,7 @@ def generar_resumen_cuenta(request, id_cliente):
         totales=totales,
         desde=desde,
         hasta=hasta,
+        saldo_anterior=saldo_anterior if desde else None,
         fecha_emision=timezone.localdate(),
     )
 

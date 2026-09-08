@@ -3283,7 +3283,23 @@ def _items_operacion(operacion):
     return items
 
 
-def obtener_movimientos_cuenta_corriente(cliente, desde=None, hasta=None):
+def obtener_saldo_anterior_cuenta_corriente(cliente, desde):
+    """Devuelve el saldo con el que el cliente llega al periodo que se imprime.
+
+    Es todo lo que se movio antes del dia 'desde', condensado en un solo numero:
+    el resumen tiene que arrancar de ahi y no de cero, o el saldo final no seria
+    lo que el cliente realmente debe. Sin 'desde' no hay historia previa que
+    juntar, porque el resumen ya sale desde el primer movimiento.
+    """
+    if not desde:
+        return Decimal(0)
+    _, totales = obtener_movimientos_cuenta_corriente(
+        cliente, hasta=desde - timedelta(days=1)
+    )
+    return totales["saldo"]
+
+
+def obtener_movimientos_cuenta_corriente(cliente, desde=None, hasta=None, saldo_inicial=None):
     """Arma el libro de cuenta corriente del cliente en formato Debe / Haber.
 
     Criterio de signos, siempre desde la empresa: al Debe va lo que el cliente nos
@@ -3291,8 +3307,9 @@ def obtener_movimientos_cuenta_corriente(cliente, desde=None, hasta=None):
     por una compra) y al Haber lo que lo descarga (compras que le hicimos y los
     pagos que nos hizo). Un saldo positivo significa que el cliente debe.
 
-    El saldo arranca en cero: el resumen refleja el movimiento del periodo, no la
-    deuda historica acumulada.
+    El saldo arranca en 'saldo_inicial', que es lo que el cliente traia de antes
+    del periodo (ver obtener_saldo_anterior_cuenta_corriente). Sin ese dato
+    arranca en cero y el resumen refleja solo el movimiento del periodo.
 
     Devuelve (movimientos, totales); cada movimiento ya trae su saldo acumulado.
     """
@@ -3380,7 +3397,7 @@ def obtener_movimientos_cuenta_corriente(cliente, desde=None, hasta=None):
     movimientos.sort(key=lambda m: (m["fecha"], m["orden"], m["comprobante"]))
 
     # Saldo acumulado fila por fila, que es lo que convierte el listado en un libro
-    saldo = Decimal(0)
+    saldo = Decimal(saldo_inicial or 0)
     total_debe = Decimal(0)
     total_haber = Decimal(0)
     for movimiento in movimientos:
