@@ -457,6 +457,32 @@ def actualizar_cotizacion_ajax(request):
     return JsonResponse({"error": "Método no permitido"}, status=405)
 
 
+def _productos_por_kg_del_listado(q, categoria):
+    """
+    Productos que se venden por kilo que entran en un listado, segun el buscador
+    y el chip de categoria. Aparecen al filtrar por una categoria y tambien
+    cuando se busca por nombre, para que el buscador encuentre en las dos
+    tablas; sin busqueda ni categoria ("Todas") se conserva el listado de
+    productos por unidad que ya se mostraba. La busqueda por ID es solo de los
+    productos por unidad: los de kilo no muestran ID en la tabla.
+    """
+    if not q and not categoria:
+        return ProductoPorKg.objects.none()
+
+    if q and q.isdigit():
+        return ProductoPorKg.objects.none()
+
+    granel = ProductoPorKg.objects.filter(activo=True)
+
+    if categoria:
+        granel = granel.filter(categoria=categoria)
+
+    if q:
+        granel = granel.filter(filtro_tokens(q, "articulo"))
+
+    return granel.order_by("articulo")
+
+
 @login_required
 def productos(request):
     """
@@ -594,19 +620,9 @@ def productos(request):
 
     productos = productos.order_by("nombre")
 
-    """
-    Productos que se venden por kilo: viven en ProductoPorKg, no en Producto. Se
-    listan junto a los de la misma categoria que se venden por unidad, con la fila
-    diferenciada, y solo aparecen al filtrar por una categoria: en la vista "Todas"
-    se conserva el listado de productos por unidad que ya se mostraba.
-    """
-    granel = ProductoPorKg.objects.none()
-    if categoria_filtrada:
-        granel = ProductoPorKg.objects.filter(categoria=categoria_filtrada, activo=True)
-        if q:
-            # Con busqueda por ID no aplica; los productos por kilo se buscan por nombre
-            granel = granel.filter(filtro_tokens(q, "articulo")) if not q.isdigit() else ProductoPorKg.objects.none()
-        granel = granel.order_by("articulo")
+    # Los productos que se venden por kilo viven en ProductoPorKg, no en Producto:
+    # se listan aparte y el template les da su propia fila
+    granel = _productos_por_kg_del_listado(q, categoria_filtrada)
 
     # Integro granel y productos en una sola lista paginada de a 5 filas: el stock a
     # granel aparece primero y despues los productos envasados, contando ambos para la
@@ -1031,17 +1047,11 @@ def _paginar_operacion_con_granel(productos, categoria, q, pagina_numero):
     """
     Arma la pagina del listado de una operacion (venta o compra) intercalando los
     productos que se venden por kilo (ProductoPorKg) con los que se venden por
-    unidad. Los de kilo solo aparecen al filtrar por una categoria, respetan la
-    misma busqueda por nombre y se cuentan dentro de la paginacion (aparecen
-    primero en su pagina). Devuelve (granel_pagina, productos_pagina, pagina_obj).
+    unidad. Los de kilo entran con la misma regla que en el inventario (categoria
+    o busqueda por nombre) y se cuentan dentro de la paginacion, apareciendo
+    primero en su pagina. Devuelve (granel_pagina, productos_pagina, pagina_obj).
     """
-    granel = ProductoPorKg.objects.none()
-    if categoria:
-        granel = ProductoPorKg.objects.filter(categoria=categoria, activo=True)
-        if q:
-            # La busqueda por ID no aplica a granel; los articulos se buscan por nombre
-            granel = granel.filter(filtro_tokens(q, "articulo")) if not q.isdigit() else ProductoPorKg.objects.none()
-        granel = granel.order_by("articulo")
+    granel = _productos_por_kg_del_listado(q, categoria)
 
     items = list(granel) + list(productos)
     pagina_obj = Paginator(items, 6).get_page(pagina_numero)
