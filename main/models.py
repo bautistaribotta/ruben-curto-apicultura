@@ -29,6 +29,12 @@ class Producto(models.Model):
     cantidad_comprada = models.PositiveIntegerField(default=0)
     activo = models.BooleanField(default=True)
     """
+    Marca los productos que se muestran en el tablero de inicio. Es un dato de
+    cada base, no del codigo: asi cada instalacion elige que destacar sin que la
+    plantilla dependa de ids ni de nombres, que cambian de una base a otra.
+    """
+    mostrar_en_inicio = models.BooleanField(default=False)
+    """
         En sistemas comerciales, es mejor usar un campo 'activo' en lugar de borrar
         productos físicamente. Si borro un producto, podría perder el historial de ventas.
         Al usar 'activo=False', el producto deja de mostrarse en la interfaz pero los registros históricos
@@ -256,6 +262,8 @@ class ProductoPorKg(models.Model):
     """
     cantidad = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     activo = models.BooleanField(default=True)
+    # Ver Producto.mostrar_en_inicio: mismo criterio para los que se venden por kilo
+    mostrar_en_inicio = models.BooleanField(default=False)
 
     class Meta:
         db_table = "productos_por_kg"

@@ -10,9 +10,33 @@ from .models import (
 )
 
 admin.site.register(Cliente)
-admin.site.register(Producto)
 admin.site.register(Pago)
-admin.site.register(ProductoPorKg)
+
+
+"""
+Productos: la unica pantalla donde se decide que sale en el tablero de inicio.
+El flag no esta en el panel del inventario a proposito, es una decision de
+configuracion de cada instalacion y no del usuario que carga productos, asi que
+se maneja desde aca con la lista editable.
+"""
+
+
+@admin.register(Producto)
+class ProductoAdmin(admin.ModelAdmin):
+    list_display = ('id', 'nombre', 'categoria', 'precio', 'cantidad', 'mostrar_en_inicio', 'activo')
+    list_editable = ('mostrar_en_inicio',)
+    list_filter = ('mostrar_en_inicio', 'categoria', 'activo')
+    search_fields = ('nombre',)
+
+
+@admin.register(ProductoPorKg)
+class ProductoPorKgAdmin(admin.ModelAdmin):
+    list_display = ('id', 'articulo', 'categoria', 'monto', 'cantidad', 'mostrar_en_inicio', 'activo')
+    list_editable = ('mostrar_en_inicio',)
+    list_filter = ('mostrar_en_inicio', 'categoria', 'activo')
+    search_fields = ('articulo',)
+
+
 admin.site.register(Empleado)
 admin.site.register(PagosEmpleados)
 
