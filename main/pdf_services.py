@@ -370,29 +370,36 @@ def _salida_pdf(documento, path=None):
 # ==========================================================================
 
 # Grilla del resumen sobre A4 vertical (210 x 297 mm): margenes de 12 mm dejan
-# 186 mm utiles, repartidos entre las seis columnas del libro.
+# 186 mm utiles, repartidos entre las cinco columnas del libro.
+#
+# No hay columna DETALLE: el detalle de cada movimiento (sus productos, o la
+# leyenda del pago o del flete) va debajo del comprobante y no al lado. Asi el
+# ancho que ocupaba se reparte entre Debe, Haber y Saldo, que son las que se
+# desbordaban cuando los importes tienen muchos digitos.
 MARGEN = 12
-X_FECHA = MARGEN            # 19 mm
-X_COMPROBANTE = 31          # 29 mm
-X_DETALLE = 60              # 66 mm, la mas ancha: adentro entran los productos
-X_DEBE = 126                # 24 mm
-X_HABER = 150               # 24 mm
-X_SALDO = 174               # 24 mm
+X_FECHA = MARGEN            # 25 mm, entra la fecha con el guion que la une al comprobante
+X_COMPROBANTE = 37          # 71 mm, la mas ancha: adentro entran los productos
+X_DEBE = 108                # 30 mm
+X_HABER = 138               # 30 mm
+X_SALDO = 168               # 30 mm
 X_FIN = 198
-ANCHO_IMPORTE = 24
+ANCHO_IMPORTE = 30
 # Donde arranca la segunda columna del bloque de datos del cliente (CUIT/telefono)
 X_DATOS_DERECHA = 120
 
-# Sangria de los productos dentro de la columna DETALLE y ancho reservado a su
-# subtotal: van dentro de esa columna y no en Debe/Haber, que quedan para el
-# importe de la operacion y no se ensucian con los parciales
-SANGRIA_ITEM = 5
-ANCHO_SUBTOTAL_ITEM = 17
+# Ancho reservado al subtotal de cada producto: va dentro de la columna del
+# comprobante y no en Debe/Haber, que quedan para el importe de la operacion y
+# no se ensucian con los parciales. Los productos no llevan sangria: arrancan
+# en la misma vertical que el "Venta Nro ..." que los agrupa.
+ANCHO_SUBTOTAL_ITEM = 22
 
-# Alturas fijas: donde arranca la grilla, donde cortan las filas para dejar sitio
-# al recuadro de totales, y cuanto mide cada renglon
+# Alturas: donde arranca la grilla, donde cortan las filas para dejar sitio al
+# recuadro de totales, y cuanto mide cada renglon. Y_GRILLA es el piso: cuando
+# el resumen abre con el saldo anterior la grilla baja ese renglon (ver
+# self.y_grilla), porque el arrastre va afuera de la tabla y necesita su lugar
 Y_GRILLA = 40
-Y_CABECERA_TABLA = 48
+ALTO_CABECERA_TABLA = 8
+ALTO_SALDO_ANTERIOR = 7
 Y_LIMITE_FILAS = 262
 ALTO_FILA = 7
 ALTO_ITEM = 4.5
@@ -401,6 +408,11 @@ ALTO_ITEM = 4.5
 PINO = (22, 52, 44)
 GRIS_DATO = (80, 80, 80)
 GRIS_LINEA = (190, 190, 190)
+
+# Los saldos se pintan segun de que lado quedan: verde el positivo, rojo el
+# negativo. Es lo primero que busca el cliente cuando abre el resumen
+VERDE_SALDO = (21, 115, 71)
+ROJO_SALDO = (176, 32, 32)
 
 
 class ResumenCuenta(FPDF):
@@ -412,7 +424,8 @@ class ResumenCuenta(FPDF):
     services.obtener_movimientos_cuenta_corriente().
     """
 
-    def __init__(self, cliente, movimientos, totales, desde=None, hasta=None, fecha_emision=None):
+    def __init__(self, cliente, movimientos, totales, desde=None, hasta=None,
+                 saldo_anterior=None, fecha_emision=None):
         super().__init__(orientation='P', format='A4')
         # La paginacion la manejo a mano: cada fila chequea si entra antes de
         # dibujarse, asi el recuadro de totales nunca queda partido
@@ -423,14 +436,34 @@ class ResumenCuenta(FPDF):
         self.totales = totales
         self.desde = desde
         self.hasta = hasta
+        self.saldo_anterior = saldo_anterior
         self.fecha_emision = fecha_emision
+
+        self.y_grilla = Y_GRILLA
+        self.y_cabecera = Y_GRILLA + ALTO_CABECERA_TABLA
         self.alias_nb_pages()
 
     # ---------------------------------------------------------------- membrete
     def header(self):
+        self._resolver_alturas()
         self._dibujar_membrete()
         self._dibujar_datos_cliente()
+        self._dibujar_saldo_anterior()
         self._dibujar_grilla()
+
+    def _resolver_alturas(self):
+        """Fija donde arranca la grilla en la pagina que se esta dibujando.
+
+        El renglon del saldo anterior va entre los datos del cliente y la tabla,
+        asi que en la primera hoja empuja la grilla hacia abajo. En las que
+        siguen no se repite y la tabla vuelve a su altura de siempre, para no
+        dejar una franja en blanco arrastrada por todo el resumen.
+        """
+        self.y_grilla = Y_GRILLA + (ALTO_SALDO_ANTERIOR if self._muestra_saldo_anterior() else 0)
+        self.y_cabecera = self.y_grilla + ALTO_CABECERA_TABLA
+
+    def _muestra_saldo_anterior(self):
+        return self.saldo_anterior is not None and self.page_no() == 1
 
     def _dibujar_membrete(self):
         # Sin datos del emisor: a la izquierda que documento es, a la derecha a
@@ -489,6 +522,38 @@ class ResumenCuenta(FPDF):
         self.cell(ancho - ancho_etiqueta, 4, self._recortar(dato, ancho - ancho_etiqueta), 0, 0, 'L')
         self.set_text_color(0, 0, 0)
 
+    def _dibujar_saldo_anterior(self):
+        """Renglon de arrastre: con que saldo llega el cliente al periodo.
+
+        Va afuera de la grilla, arriba de todo, porque no es un movimiento del
+        periodo sino el punto de partida del que arranca la columna SALDO. Se
+        repite en cada pagina junto con el resto de la cabecera.
+        """
+        if not self._muestra_saldo_anterior():
+            return
+
+        y = Y_GRILLA + 1
+        self.set_font('Arial', 'B', 8)
+        self.set_text_color(0, 0, 0)
+        self.set_xy(MARGEN, y)
+        self.cell(90, 5, f'SALDO ANTERIOR AL {self._fecha_corta(self.desde)}', 0, 0, 'L')
+
+        texto = _formato_importe(self.saldo_anterior)
+        self._fuente_que_entra(texto, ANCHO_IMPORTE - 2, 'B', 11)
+        self.set_text_color(*self._color_saldo(self.saldo_anterior))
+        self.set_xy(X_SALDO, y)
+        self.cell(ANCHO_IMPORTE - 2, 5, texto, 0, 0, 'R')
+        self.set_text_color(0, 0, 0)
+
+    @staticmethod
+    def _color_saldo(valor):
+        """Verde el saldo a favor, rojo el saldo en contra, negro el cero."""
+        if valor > 0:
+            return VERDE_SALDO
+        if valor < 0:
+            return ROJO_SALDO
+        return (0, 0, 0)
+
     # ----------------------------------------------------------------- grilla
     def _dibujar_grilla(self):
         # Encabezados de las seis columnas
@@ -496,23 +561,22 @@ class ResumenCuenta(FPDF):
         self.set_text_color(0, 0, 0)
         for x, ancho, titulo, alineacion in (
             (X_FECHA, X_COMPROBANTE - X_FECHA, 'FECHA', 'L'),
-            (X_COMPROBANTE, X_DETALLE - X_COMPROBANTE, 'COMPROBANTE', 'L'),
-            (X_DETALLE, X_DEBE - X_DETALLE, 'DETALLE', 'L'),
+            (X_COMPROBANTE, X_DEBE - X_COMPROBANTE, 'COMPROBANTE Y DETALLE', 'L'),
             (X_DEBE, ANCHO_IMPORTE, 'DEBE', 'C'),
             (X_HABER, ANCHO_IMPORTE, 'HABER', 'C'),
             (X_SALDO, ANCHO_IMPORTE, 'SALDO', 'C'),
         ):
-            self.set_xy(x + (1 if alineacion == 'L' else 0), Y_GRILLA)
-            self.cell(ancho, Y_CABECERA_TABLA - Y_GRILLA, titulo, 0, 0, alineacion)
+            self.set_xy(x + (1 if alineacion == 'L' else 0), self.y_grilla)
+            self.cell(ancho, ALTO_CABECERA_TABLA, titulo, 0, 0, alineacion)
 
         # Caja de la tabla y filetes verticales que encolumnan los importes: son
         # los que hacen que el resumen se lea como un libro rayado y no como una lista
         self.set_draw_color(0, 0, 0)
         self.set_line_width(0.2)
-        self.rect(MARGEN, Y_GRILLA, X_FIN - MARGEN, Y_LIMITE_FILAS - Y_GRILLA)
-        self.line(MARGEN, Y_CABECERA_TABLA, X_FIN, Y_CABECERA_TABLA)
+        self.rect(MARGEN, self.y_grilla, X_FIN - MARGEN, Y_LIMITE_FILAS - self.y_grilla)
+        self.line(MARGEN, self.y_cabecera, X_FIN, self.y_cabecera)
         for x in (X_DEBE, X_HABER, X_SALDO):
-            self.line(x, Y_GRILLA, x, Y_LIMITE_FILAS)
+            self.line(x, self.y_grilla, x, Y_LIMITE_FILAS)
 
     def footer(self):
         self.set_y(-14)
@@ -530,16 +594,16 @@ class ResumenCuenta(FPDF):
             self.set_text_color(*GRIS_DATO)
             # Centrado solo en la franja de texto: cruzarlo sobre las columnas de
             # importes lo partiria con los filetes verticales
-            self.set_xy(MARGEN, Y_CABECERA_TABLA + 6)
+            self.set_xy(MARGEN, self.y_cabecera + 6)
             self.cell(X_DEBE - MARGEN, 6, 'Sin movimientos registrados en el período seleccionado.', 0, 0, 'C')
             self.set_text_color(0, 0, 0)
-            return Y_CABECERA_TABLA + 20
+            return self.y_cabecera + 20
 
-        y = Y_CABECERA_TABLA
+        y = self.y_cabecera
         for movimiento in self.movimientos:
             if y + ALTO_FILA > Y_LIMITE_FILAS:
                 self.add_page()
-                y = Y_CABECERA_TABLA
+                y = self.y_cabecera
             self._dibujar_fila(y, movimiento)
             y += ALTO_FILA
 
@@ -549,7 +613,7 @@ class ResumenCuenta(FPDF):
             for item in movimiento.get("items", ()):
                 if y + ALTO_ITEM > Y_LIMITE_FILAS:
                     self.add_page()
-                    y = Y_CABECERA_TABLA
+                    y = self.y_cabecera
                     self._dibujar_continuacion(y, movimiento)
                     y += ALTO_ITEM
                 self._dibujar_item(y, item)
@@ -580,19 +644,27 @@ class ResumenCuenta(FPDF):
         self.set_font('Arial', '', 10)
         self.set_text_color(0, 0, 0)
 
-        self.set_xy(X_FECHA + 1, y)
-        self.cell(X_COMPROBANTE - X_FECHA - 1, ALTO_FILA, self._fecha_corta(movimiento['fecha']), 0, 0, 'L')
+        """La fecha cierra con un guion medio que la ata al comprobante: se leen
+        como un solo encabezado ("06/09/2026 - Venta Nro 00004") aunque cada uno
+        siga en su columna. La escribo midiendo su ancho y arrancando desde el
+        final, asi el guion queda siempre a la misma distancia del comprobante y
+        no colgado a media columna."""
+        fecha = f"{self._fecha_corta(movimiento['fecha'])} -"
+        ancho_fecha = self.get_string_width(fecha)
+        self.set_xy(X_COMPROBANTE - 1.5 - ancho_fecha, y)
+        self.cell(ancho_fecha, ALTO_FILA, fecha, 0, 0, 'L')
+
+        """El detalle de los movimientos sin productos (pagos, fletes, cobros) va
+        pegado al comprobante en el mismo renglon: es una linea corta y abrir un
+        renglon aparte para ella estiraria el resumen sin necesidad."""
+        ancho = X_DEBE - X_COMPROBANTE - 2
+        texto = movimiento['comprobante']
+        if movimiento['detalle']:
+            texto = f"{texto} - {movimiento['detalle']}"
 
         self.set_xy(X_COMPROBANTE + 1, y)
         self.set_text_color(0, 0, 0)
-        self.cell(X_DETALLE - X_COMPROBANTE - 2, ALTO_FILA,
-                  self._recortar(movimiento['comprobante'], X_DETALLE - X_COMPROBANTE - 2), 0, 0, 'L')
-
-        self.set_font('Arial', '', 10)
-        self.set_xy(X_DETALLE + 1, y)
-        self.set_text_color(0, 0, 0)
-        self.cell(X_DEBE - X_DETALLE - 2, ALTO_FILA,
-                  self._recortar(movimiento['detalle'], X_DEBE - X_DETALLE - 2), 0, 0, 'L')
+        self.cell(ancho, ALTO_FILA, self._recortar(texto, ancho), 0, 0, 'L')
 
         # Debe y Haber solo se imprimen cuando la fila los mueve: la columna vacia
         # es la que deja ver de un vistazo si el movimiento sumo o resto
@@ -607,8 +679,8 @@ class ResumenCuenta(FPDF):
 
     def _dibujar_item(self, y, item):
         """Escribe un producto de la operacion: nombre a la izquierda y su
-        subtotal a la derecha, ambos dentro de la columna DETALLE."""
-        x_texto = X_DETALLE + SANGRIA_ITEM
+        subtotal a la derecha, alineados con el comprobante que los agrupa."""
+        x_texto = X_COMPROBANTE + 1
         x_subtotal = X_DEBE - 2 - ANCHO_SUBTOTAL_ITEM
         ancho_texto = x_subtotal - x_texto - 2
 
@@ -684,16 +756,25 @@ class ResumenCuenta(FPDF):
 
             texto = _formato_importe(valor)
             self._fuente_que_entra(texto, ANCHO_IMPORTE - 2, 'B', 12 if x == X_SALDO else 10.5)
-            self.set_text_color(0, 0, 0)
+            self.set_text_color(*(self._color_saldo(valor) if x == X_SALDO else (0, 0, 0)))
             self.set_xy(x, y + 7)
             self.cell(ANCHO_IMPORTE - 2, 5, texto, 0, 0, 'R')
+
+        """Aclaracion al pie del saldo final: con arrastre, Total Debe menos
+        Total Haber no da el saldo final (la diferencia es justo el saldo
+        anterior) y sin la leyenda se lee como una cuenta mal hecha."""
+        if self.saldo_anterior:
+            self.set_font('Arial', 'I', 6)
+            self.set_text_color(*GRIS_DATO)
+            self.set_xy(X_SALDO - 20, y + 11.5)
+            self.cell(ANCHO_IMPORTE + 18, 3, 'incluye el saldo anterior', 0, 0, 'R')
 
         self.set_text_color(0, 0, 0)
 
     def _leyenda_saldo(self):
-        if not self.movimientos:
-            return 'No hubo movimientos en el período.'
         saldo = self.totales['saldo']
+        if not self.movimientos and not saldo:
+            return 'No hubo movimientos en el período.'
         if saldo > 0:
             return 'Saldo deudor: el cliente adeuda este importe.'
         if saldo < 0:
