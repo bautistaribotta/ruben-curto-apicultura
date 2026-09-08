@@ -27,7 +27,7 @@ from .services import (nuevo_producto, editar_producto, eliminar_producto,
                        nuevo_producto_por_kg, editar_producto_por_kg, eliminar_producto_por_kg,
                        obtener_datos_producto_por_kg, modificar_stock_por_kg,
                        nuevo_cliente, editar_cliente,
-                       eliminar_cliente, buscar_clientes, get_cotizacion_dolar_oficial, get_cotizaciones, get_total_kilos_granel, get_tambores_vacios, actualizar_cotizacion, obtener_datos_cliente,
+                       eliminar_cliente, buscar_clientes, get_cotizacion_dolar_oficial, get_tablero_inicio, actualizar_cotizacion, obtener_datos_cliente,
                        obtener_datos_producto, modificar_stock, crear_operacion, editar_operacion, servicio_cancelar_operacion,
                        obtener_movimientos_cuenta_corriente, obtener_saldo_anterior_cuenta_corriente,
                        obtener_listado_deudores, _iniciales, filtro_nombre_apellido, filtro_tokens, crear_empleado, crear_vehiculo, crear_viaje, obtener_empleados_activos,
@@ -229,11 +229,7 @@ para que se loguee. Todo esto implementado usando el wrapped @login_required
 @login_required
 def inicio(request):
     dolar_oficial = get_cotizacion_dolar_oficial()
-    cotizaciones = get_cotizaciones()
-    totales_granel = get_total_kilos_granel()
-    tambores = get_tambores_vacios()
-    contexto = {"oficial": dolar_oficial, "cotizaciones": cotizaciones, "totales_granel": totales_granel,
-                "tambores": tambores}
+    contexto = {"oficial": dolar_oficial, "grupos": get_tablero_inicio()}
     return render(request, "inicio.html", contexto)
 
 

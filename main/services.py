@@ -1199,63 +1199,93 @@ def get_cotizacion_dolar_oficial():
         cache.delete("cotizacion_oficial_lock")
 
 
-def get_cotizaciones():
+"""
+Icono con el que cada categoria se dibuja en el tablero de inicio, y la etiqueta
+de su tarjeta de resumen cuando el nombre de la categoria no es el que se venia
+mostrando. Es lo unico del tablero que sigue viviendo en el codigo: que producto
+aparece lo decide el flag mostrar_en_inicio de cada base, no una lista de aca.
+"""
+CATEGORIAS_INICIO = {
+    "Miel": {"icono": "water_drop"},
+    "Alimento": {"icono": "nutrition"},
+    "Cera": {"icono": "hexagon"},
+    "Madera": {"icono": "forest"},
+    "Estampado": {"icono": "grid_on"},
+    "Insumos": {"icono": "handyman"},
+    "Medicamentos": {"icono": "medication"},
+    "Tambores Vacios": {"icono": "oil_barrel", "etiqueta": "Tambores vacios"},
+    "Otros": {"icono": "category"},
+}
+
+
+def _grupo_inicio(categoria):
+    return {
+        "categoria": categoria,
+        "icono": CATEGORIAS_INICIO.get(categoria, {}).get("icono", "inventory_2"),
+        "articulos": [],
+        "kilos": Decimal("0"),
+        "resumenes": [],
+    }
+
+
+def get_tablero_inicio():
     """
-    Obtiene todas las cotizaciones guardadas en la base de datos.
-    Retorna un diccionario con el formato {articulo_sanitizado: {"monto": x, "cantidad": y}}
-    donde los caracteres especiales se reemplazan para facilitar su uso en templates.
-    La cantidad son los kilos disponibles a granel de ese articulo.
+    Arma los grupos del tablero de inicio con los productos marcados con
+    mostrar_en_inicio. Cada grupo es una categoria: adentro van las tarjetas de
+    los articulos que se venden por kilo (precio editable, kilos disponibles) y
+    los kilos sumados de esos articulos.
+
+    Los productos que se venden por unidad no van tarjeta por tarjeta: se
+    resumen en una sola por categoria, con el total de unidades y cuantos
+    productos la componen. Esa tarjeta acompana al tablero de su categoria y, si
+    esa categoria no tiene articulos por kilo, viaja con el primer grupo: es el
+    caso de los tambores vacios, que siempre se mostraron junto a la miel.
     """
-    articulos_esperados = ProductoPorKg.ARTICULOS_COTIZACION
-    cotizaciones_db = {c.articulo: c for c in ProductoPorKg.objects.all()}
+    orden = {categoria: i for i, (categoria, _) in enumerate(Producto.categorias)}
+    por_categoria = {}
+    grupos = []
 
-    resultado = {}
-    for art in articulos_esperados:
-        # Sanitizar la clave para que sea un identificador válido en Django Templates
-        clave = art.replace(" ", "_").replace("+", "plus")
-        cotizacion = cotizaciones_db.get(art)
-        resultado[clave] = {
-            "monto": cotizacion.monto if cotizacion else 0,
-            "cantidad": cotizacion.cantidad if cotizacion else 0,
-        }
-
-    return resultado
-
-
-def get_total_kilos_granel():
     """
-    Suma los kilos por familia de articulo para mostrar el total de cada grupo
-    (Miel / Cera) en la cabecera del tablero de inicio. Cuento solo los
-    articulos historicos de cotizaciones: los productos por kilo que se dan de
-    alta en el inventario viven en la misma tabla, pero no forman parte de estas
-    tarjetas de inicio.
+    Ordeno por id, o sea por orden de alta: es el orden en el que se vienen
+    mostrando las tarjetas y no se reacomoda solo cuando cambia un precio.
     """
-    totales = {}
-    for grupo in ("Miel", "Cera"):
-        articulos = [a for a in ProductoPorKg.ARTICULOS_COTIZACION if a.startswith(grupo)]
-        resultado = ProductoPorKg.objects.filter(articulo__in=articulos).aggregate(
-            total=Sum("cantidad")
-        )["total"]
-        totales[grupo.lower()] = resultado if resultado is not None else 0
-    return totales
+    for articulo in ProductoPorKg.objects.filter(activo=True, mostrar_en_inicio=True).order_by("id"):
+        grupo = por_categoria.get(articulo.categoria)
+        if grupo is None:
+            grupo = _grupo_inicio(articulo.categoria)
+            por_categoria[articulo.categoria] = grupo
+            grupos.append(grupo)
 
+        grupo["articulos"].append(articulo)
+        grupo["kilos"] += articulo.cantidad
 
-def get_tambores_vacios():
-    """
-    Total de tambores vacios para la tarjeta de inicio. A diferencia de la
-    miel/cera (granel por kg, en ProductoPorKg), los tambores viven en Producto
-    y se miden por unidad. La tarjeta es una sola y suma las unidades de todos
-    los productos de la categoria: cada registro es una capacidad distinta y en
-    inicio interesa el total disponible, no el desglose.
+    # Ordeno antes de repartir los resumenes: el que no tiene tablero propio se
+    # cuelga del primer grupo, y "primero" tiene que ser el de siempre
+    grupos.sort(key=lambda grupo: orden.get(grupo["categoria"], len(orden)))
 
-    Me apoyo en la categoria (valor fijo del modelo) y no en el nombre, que el
-    usuario carga a mano y puede variar, asi cualquier tambor nuevo entra solo
-    en la suma. Devuelvo el total de unidades y cuantos productos la componen.
-    """
-    agregado = Producto.objects.filter(categoria="Tambores Vacios", activo=True).aggregate(
-        total=Sum("cantidad"), tipos=Count("id")
-    )
-    return {"total_unidades": agregado["total"] or 0, "tipos": agregado["tipos"]}
+    resumenes = (Producto.objects.filter(activo=True, mostrar_en_inicio=True)
+                 .values("categoria")
+                 .annotate(unidades=Sum("cantidad"), tipos=Count("id"))
+                 .order_by())
+
+    for fila in sorted(resumenes, key=lambda f: orden.get(f["categoria"], len(orden))):
+        categoria = fila["categoria"]
+        datos = CATEGORIAS_INICIO.get(categoria, {})
+
+        grupo = por_categoria.get(categoria) or (grupos[0] if grupos else None)
+        if grupo is None:
+            grupo = _grupo_inicio(categoria)
+            por_categoria[categoria] = grupo
+            grupos.append(grupo)
+
+        grupo["resumenes"].append({
+            "titulo": datos.get("etiqueta", categoria),
+            "icono": datos.get("icono", "inventory_2"),
+            "unidades": fila["unidades"] or 0,
+            "tipos": fila["tipos"],
+        })
+
+    return grupos
 
 
 def actualizar_cotizacion(articulo, monto):

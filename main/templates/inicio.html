@@ -49,22 +49,32 @@
         </div>
       </section>
 
-      <!-- Grupo: Miel -->
+      {% comment %}
+        Los grupos salen de los productos marcados con "mostrar en inicio" en
+        cada base, no de una lista escrita aca: asi cada instalacion elige que
+        destacar sin depender de ids ni de nombres. Cada grupo es una categoria
+        con sus articulos por kilo, y al final las tarjetas de resumen de los
+        productos por unidad.
+      {% endcomment %}
+      {% for grupo in grupos %}
       <div class="ini-group">
         <div class="ini-group__head">
-          <span class="ini-group__glyph material-symbols-outlined">water_drop</span>
-          <h3>Miel</h3>
-          <span class="ini-group__count">3 articulos - por kilogramo</span>
+          <span class="ini-group__glyph material-symbols-outlined">{{ grupo.icono }}</span>
+          <h3>{{ grupo.categoria }}</h3>
+          {% if grupo.articulos %}
+          <span class="ini-group__count">{{ grupo.articulos|length }} articulo{{ grupo.articulos|length|pluralize }} - por kilogramo</span>
           <span class="ini-group__stock">
             <span class="material-symbols-outlined">scale</span>
-            {{ totales_granel.miel|floatformat:"-2" }} kg a granel
+            {{ grupo.kilos|floatformat:"-2" }} kg a granel
           </span>
+          {% endif %}
         </div>
         <div class="ini-board">
-          <article class="ini-tile" data-articulo="Miel menor a 34 mm">
+          {% for articulo in grupo.articulos %}
+          <article class="ini-tile" data-articulo="{{ articulo.articulo }}">
             <div class="ini-tile__head">
-              <span class="ini-tile__glyph"><span class="material-symbols-outlined">water_drop</span></span>
-              <div class="ini-tile__id"><h4>Miel menor a 34 mm</h4></div>
+              <span class="ini-tile__glyph"><span class="material-symbols-outlined">{{ grupo.icono }}</span></span>
+              <div class="ini-tile__id"><h4>{{ articulo.articulo }}</h4></div>
               {% if user.is_staff %}
               <span class="ini-tile__edit material-symbols-outlined">edit</span>
               {% endif %}
@@ -72,161 +82,43 @@
             <div class="ini-tile__pricewrap">
               <div class="ini-tile__price">
                 <span class="ini-tile__prefix">$</span>
-                <span class="ini-tile__amount monto">{{ cotizaciones.Miel_menor_a_34_mm.monto }}</span>
+                <span class="ini-tile__amount monto">{{ articulo.monto }}</span>
                 <span class="ini-tile__unit">/kg</span>
               </div>
             </div>
             <div class="ini-tile__stock">
               <span class="ini-tile__stocklabel">Disponible</span>
-              <span class="ini-tile__stockval">{{ cotizaciones.Miel_menor_a_34_mm.cantidad|floatformat:"-2" }} <i>kg</i></span>
+              <span class="ini-tile__stockval">{{ articulo.cantidad|floatformat:"-2" }} <i>kg</i></span>
             </div>
           </article>
-
-          <article class="ini-tile" data-articulo="Miel menor a 50 mm">
-            <div class="ini-tile__head">
-              <span class="ini-tile__glyph"><span class="material-symbols-outlined">water_drop</span></span>
-              <div class="ini-tile__id"><h4>Miel menor a 50 mm</h4></div>
-              {% if user.is_staff %}
-              <span class="ini-tile__edit material-symbols-outlined">edit</span>
-              {% endif %}
-            </div>
-            <div class="ini-tile__pricewrap">
-              <div class="ini-tile__price">
-                <span class="ini-tile__prefix">$</span>
-                <span class="ini-tile__amount monto">{{ cotizaciones.Miel_menor_a_50_mm.monto }}</span>
-                <span class="ini-tile__unit">/kg</span>
-              </div>
-            </div>
-            <div class="ini-tile__stock">
-              <span class="ini-tile__stocklabel">Disponible</span>
-              <span class="ini-tile__stockval">{{ cotizaciones.Miel_menor_a_50_mm.cantidad|floatformat:"-2" }} <i>kg</i></span>
-            </div>
-          </article>
-
-          <article class="ini-tile" data-articulo="Miel mayor a 50 mm">
-            <div class="ini-tile__head">
-              <span class="ini-tile__glyph"><span class="material-symbols-outlined">water_drop</span></span>
-              <div class="ini-tile__id"><h4>Miel mayor a 50 mm</h4></div>
-              {% if user.is_staff %}
-              <span class="ini-tile__edit material-symbols-outlined">edit</span>
-              {% endif %}
-            </div>
-            <div class="ini-tile__pricewrap">
-              <div class="ini-tile__price">
-                <span class="ini-tile__prefix">$</span>
-                <span class="ini-tile__amount monto">{{ cotizaciones.Miel_mayor_a_50_mm.monto }}</span>
-                <span class="ini-tile__unit">/kg</span>
-              </div>
-            </div>
-            <div class="ini-tile__stock">
-              <span class="ini-tile__stocklabel">Disponible</span>
-              <span class="ini-tile__stockval">{{ cotizaciones.Miel_mayor_a_50_mm.cantidad|floatformat:"-2" }} <i>kg</i></span>
-            </div>
-          </article>
+          {% endfor %}
 
           {% comment %}
-            Tarjeta de tambores vacios: va como una mas del board de miel (a la
-            derecha), pero es de solo lectura. No cotiza: muestra el total de
-            unidades sumando todos los productos de la categoria "Tambores Vacios".
+            Tarjeta de resumen de los productos por unidad de una categoria: es
+            de solo lectura, no cotiza. Muestra el total de unidades sumando los
+            productos marcados de esa categoria y cuantos son.
           {% endcomment %}
+          {% for resumen in grupo.resumenes %}
           <article class="ini-tile ini-tile--stock">
             <div class="ini-tile__head">
-              <span class="ini-tile__glyph"><span class="material-symbols-outlined">oil_barrel</span></span>
-              <div class="ini-tile__id"><h4>Tambores vacios</h4></div>
+              <span class="ini-tile__glyph"><span class="material-symbols-outlined">{{ resumen.icono }}</span></span>
+              <div class="ini-tile__id"><h4>{{ resumen.titulo }}</h4></div>
             </div>
             <div class="ini-tile__pricewrap">
               <div class="ini-tile__price">
-                <span class="ini-tile__amount">{{ tambores.total_unidades|floatformat:"0g" }}</span>
+                <span class="ini-tile__amount">{{ resumen.unidades|floatformat:"0g" }}</span>
                 <span class="ini-tile__unit">unidades</span>
               </div>
             </div>
             <div class="ini-tile__stock">
               <span class="ini-tile__stocklabel">Productos</span>
-              <span class="ini-tile__stockval">{{ tambores.tipos }}</span>
+              <span class="ini-tile__stockval">{{ resumen.tipos }}</span>
             </div>
           </article>
+          {% endfor %}
         </div>
       </div>
-
-      <!-- Grupo: Cera -->
-      <div class="ini-group">
-        <div class="ini-group__head">
-          <span class="ini-group__glyph material-symbols-outlined">hexagon</span>
-          <h3>Cera</h3>
-          <span class="ini-group__count">2 articulos - por kilogramo</span>
-          <span class="ini-group__stock">
-            <span class="material-symbols-outlined">scale</span>
-            {{ totales_granel.cera|floatformat:"-2" }} kg a granel
-          </span>
-        </div>
-        <div class="ini-board">
-          <article class="ini-tile" data-articulo="Cera Operculo">
-            <div class="ini-tile__head">
-              <span class="ini-tile__glyph"><span class="material-symbols-outlined">hexagon</span></span>
-              <div class="ini-tile__id"><h4>Cera Operculo</h4></div>
-              {% if user.is_staff %}
-              <span class="ini-tile__edit material-symbols-outlined">edit</span>
-              {% endif %}
-            </div>
-            <div class="ini-tile__pricewrap">
-              <div class="ini-tile__price">
-                <span class="ini-tile__prefix">$</span>
-                <span class="ini-tile__amount monto">{{ cotizaciones.Cera_Operculo.monto }}</span>
-                <span class="ini-tile__unit">/kg</span>
-              </div>
-            </div>
-            <div class="ini-tile__stock">
-              <span class="ini-tile__stocklabel">Disponible</span>
-              <span class="ini-tile__stockval">{{ cotizaciones.Cera_Operculo.cantidad|floatformat:"-2" }} <i>kg</i></span>
-            </div>
-          </article>
-
-          <article class="ini-tile" data-articulo="Cera Recupero">
-            <div class="ini-tile__head">
-              <span class="ini-tile__glyph"><span class="material-symbols-outlined">hexagon</span></span>
-              <div class="ini-tile__id"><h4>Cera Recupero</h4></div>
-              {% if user.is_staff %}
-              <span class="ini-tile__edit material-symbols-outlined">edit</span>
-              {% endif %}
-            </div>
-            <div class="ini-tile__pricewrap">
-              <div class="ini-tile__price">
-                <span class="ini-tile__prefix">$</span>
-                <span class="ini-tile__amount monto">{{ cotizaciones.Cera_Recupero.monto }}</span>
-                <span class="ini-tile__unit">/kg</span>
-              </div>
-            </div>
-            <div class="ini-tile__stock">
-              <span class="ini-tile__stocklabel">Disponible</span>
-              <span class="ini-tile__stockval">{{ cotizaciones.Cera_Recupero.cantidad|floatformat:"-2" }} <i>kg</i></span>
-            </div>
-          </article>
-
-          {% comment %}
-            Tarjeta decorativa: la borra de opérculo todavía no cotiza ni tiene
-            stock cargado, así que muestra guiones. Conserva el hover del resto
-            pero no es editable (sin data-articulo ni lápiz de edición). A futuro
-            se implementará como un artículo más.
-          {% endcomment %}
-          <article class="ini-tile ini-tile--placeholder">
-            <div class="ini-tile__head">
-              <span class="ini-tile__glyph"><span class="material-symbols-outlined">hexagon</span></span>
-              <div class="ini-tile__id"><h4>Borra de opérculo</h4></div>
-            </div>
-            <div class="ini-tile__pricewrap">
-              <div class="ini-tile__price">
-                <span class="ini-tile__prefix">$</span>
-                <span class="ini-tile__amount">—</span>
-                <span class="ini-tile__unit">/kg</span>
-              </div>
-            </div>
-            <div class="ini-tile__stock">
-              <span class="ini-tile__stocklabel">Disponible</span>
-              <span class="ini-tile__stockval">— <i>kg</i></span>
-            </div>
-          </article>
-        </div>
-      </div>
+      {% endfor %}
 
       <p class="ini-foot">Valores expresados en pesos argentinos por kilogramo. Los kilos disponibles corresponden al stock a granel.</p>
 
