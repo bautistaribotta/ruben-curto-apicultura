@@ -9,7 +9,7 @@
   </thead>
   <tbody>
     {% for articulo in granel %}
-    {% with tipo=articulo.articulo|slice:":4"|lower %}
+    {% with tipo=articulo.categoria|slugify %}
     <tr class="cart-row-granel cart-row-granel--{{ tipo }}">
       <td>
         <div class="cart-prod">

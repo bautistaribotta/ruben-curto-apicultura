@@ -147,6 +147,148 @@ def eliminar_producto(id_producto):
     return producto
 
 
+# --- PRODUCTOS POR KILO ---
+"""
+Mismo ciclo de vida que un producto envasado, pero sobre ProductoPorKg: la
+unidad de venta es el kilo, asi que el stock admite decimales y el precio se
+guarda por kilo. Los articulos historicos de miel y cera (ARTICULOS_COTIZACION)
+quedan fuera de la edicion y de la baja: su precio se toca en cotizaciones.
+"""
+
+
+def _validar_producto_por_kg(nombre, categoria, precio, id_excluir=None):
+    """
+    Normaliza y valida los datos comunes al alta y a la edicion. Devuelve la
+    tupla (nombre, categoria, precio) ya lista para escribir en la base.
+    """
+    nombre = (nombre or "").strip()
+
+    if not (3 <= len(nombre) <= 30) or not REGEX_TEXTO_NUMEROS.match(nombre):
+        raise ValueError("El nombre debe tener entre 3 y 30 caracteres, sin simbolos.")
+
+    # El nombre es unico en la tabla: aviso antes de que la base tire IntegrityError
+    repetidos = ProductoPorKg.objects.filter(articulo__iexact=nombre)
+    if id_excluir:
+        repetidos = repetidos.exclude(id=id_excluir)
+    if repetidos.exists():
+        raise ValueError("Ya existe un producto por kilo con ese nombre.")
+
+    if categoria not in dict(Producto.categorias):
+        raise ValueError("Seleccione una categoria valida.")
+
+    try:
+        precio = Decimal(str(precio).strip())
+    except (InvalidOperation, TypeError, ValueError):
+        raise ValueError("Ingrese un precio por kilo valido.")
+
+    # El precio por kilo se guarda entero: un valor con decimales seria un
+    # separador de miles mal escrito, y truncarlo guardaria otro precio
+    if precio != precio.to_integral_value():
+        raise ValueError("El precio por kilo se escribe sin decimales.")
+
+    precio = int(precio)
+
+    if precio < 1:
+        raise ValueError("El precio por kilo no puede ser menor a 1.")
+
+    return nombre, categoria, precio
+
+
+def _a_kilos(cantidad):
+    # Los kilos llegan del formulario como texto; acepto vacio como 0
+    if cantidad in (None, ""):
+        return Decimal("0")
+    try:
+        kilos = Decimal(str(cantidad).replace(",", "."))
+    except InvalidOperation:
+        raise ValueError("Ingrese una cantidad de kilos valida.")
+    return kilos.quantize(Decimal("0.01"))
+
+
+def nuevo_producto_por_kg(nombre, categoria=None, precio=None, cantidad=None):
+    nombre, categoria, precio = _validar_producto_por_kg(nombre, categoria, precio)
+    kilos = _a_kilos(cantidad)
+
+    if kilos < 0:
+        raise ValueError("El stock inicial no puede ser negativo.")
+
+    return ProductoPorKg.objects.create(
+        articulo=nombre, categoria=categoria, monto=precio, cantidad=kilos
+    )
+
+
+def obtener_datos_producto_por_kg(id_producto):
+    try:
+        producto = ProductoPorKg.objects.get(id=id_producto, activo=True)
+    except ProductoPorKg.DoesNotExist:
+        return None
+
+    return {
+        "id": producto.id,
+        "nombre": producto.articulo,
+        "categoria": producto.categoria,
+        "precio": str(producto.monto),
+        "cantidad": str(producto.cantidad),
+        "es_cotizacion": producto.es_cotizacion,
+    }
+
+
+def editar_producto_por_kg(id_producto, nombre, categoria, precio):
+    # Como en los envasados, el stock no viaja en la edicion: se mueve solo con
+    # el modal de ajuste y con las operaciones (UPDATE atomico)
+    producto = get_object_or_404(ProductoPorKg, id=id_producto)
+
+    if producto.es_cotizacion:
+        raise ValueError("La miel y la cera se editan desde las cotizaciones.")
+
+    nombre, categoria, precio = _validar_producto_por_kg(nombre, categoria, precio, id_excluir=producto.id)
+
+    producto.articulo = nombre
+    producto.categoria = categoria
+    producto.monto = precio
+    producto.save()
+    return producto
+
+
+def eliminar_producto_por_kg(id_producto):
+    producto = get_object_or_404(ProductoPorKg, id=id_producto)
+
+    if producto.es_cotizacion:
+        raise ValueError("La miel y la cera no se pueden eliminar del inventario.")
+
+    # Baja logica, igual que en Producto: las operaciones historicas siguen
+    # apuntando a esta fila
+    producto.activo = False
+    producto.save()
+    return producto
+
+
+def modificar_stock_por_kg(id_producto, cantidad):
+    """
+    Suma o resta kilos con el mismo UPDATE condicional atomico que uso en los
+    productos envasados: el chequeo de stock y el descuento van en una sola
+    sentencia, para que dos ajustes simultaneos no se pisen.
+    """
+    kilos = _a_kilos(cantidad)
+
+    if not ProductoPorKg.objects.filter(id=id_producto, activo=True).exists():
+        raise Http404("Producto no encontrado")
+
+    if kilos < 0:
+        filas = ProductoPorKg.objects.filter(
+            id=id_producto, activo=True, cantidad__gte=abs(kilos)
+        ).update(cantidad=F("cantidad") + kilos)
+
+        if filas == 0:
+            raise ValueError("No se puede quitar mas stock del existente.")
+    else:
+        ProductoPorKg.objects.filter(id=id_producto, activo=True).update(
+            cantidad=F("cantidad") + kilos
+        )
+
+    return ProductoPorKg.objects.get(id=id_producto)
+
+
 # --- ESTACIONES DE SERVICIO ---
 # Catalogo simple (solo nombre + activa). La baja es logica para no perder
 # el historial cuando las cargas de combustible referencien la estacion.
@@ -1064,7 +1206,7 @@ def get_cotizaciones():
     donde los caracteres especiales se reemplazan para facilitar su uso en templates.
     La cantidad son los kilos disponibles a granel de ese articulo.
     """
-    articulos_esperados = ["Miel menor a 34 mm", "Miel menor a 50 mm", "Miel mayor a 50 mm", "Cera Operculo", "Cera Recupero"]
+    articulos_esperados = ProductoPorKg.ARTICULOS_COTIZACION
     cotizaciones_db = {c.articulo: c for c in ProductoPorKg.objects.all()}
 
     resultado = {}
@@ -1082,12 +1224,16 @@ def get_cotizaciones():
 
 def get_total_kilos_granel():
     """
-    Suma los kilos a granel por familia de articulo para mostrar el total
-    de cada grupo (Miel / Cera) en la cabecera del tablero de inicio.
+    Suma los kilos por familia de articulo para mostrar el total de cada grupo
+    (Miel / Cera) en la cabecera del tablero de inicio. Cuento solo los
+    articulos historicos de cotizaciones: los productos por kilo que se dan de
+    alta en el inventario viven en la misma tabla, pero no forman parte de estas
+    tarjetas de inicio.
     """
     totales = {}
     for grupo in ("Miel", "Cera"):
-        resultado = ProductoPorKg.objects.filter(articulo__startswith=grupo).aggregate(
+        articulos = [a for a in ProductoPorKg.ARTICULOS_COTIZACION if a.startswith(grupo)]
+        resultado = ProductoPorKg.objects.filter(articulo__in=articulos).aggregate(
             total=Sum("cantidad")
         )["total"]
         totales[grupo.lower()] = resultado if resultado is not None else 0

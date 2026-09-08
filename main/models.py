@@ -228,17 +228,43 @@ class Pago(models.Model):
 
 
 class ProductoPorKg(models.Model):
-    articulo = models.CharField(max_length=25, unique=True)
+    """
+    Producto que se vende pesado, no por unidad. Comparte las categorias con
+    Producto: la diferencia con esa tabla es la unidad de venta (kilos con
+    decimales en vez de unidades enteras), no el rubro.
+
+    Los cinco articulos de ARTICULOS_COTIZACION son los historicos de miel y
+    cera: su precio y su stock se gobiernan desde el tablero de cotizaciones y
+    desde las operaciones, asi que en el inventario se muestran de solo lectura.
+    El resto se administra como cualquier producto (alta, edicion, baja y ajuste
+    de stock desde la pantalla de productos).
+    """
+    ARTICULOS_COTIZACION = (
+        "Miel menor a 34 mm",
+        "Miel menor a 50 mm",
+        "Miel mayor a 50 mm",
+        "Cera Operculo",
+        "Cera Recupero",
+    )
+
+    articulo = models.CharField(max_length=30, unique=True)
+    categoria = models.CharField(max_length=50, choices=Producto.categorias, null=True, blank=True)
     monto = models.PositiveIntegerField(default=1)
     """
     Kilos disponibles a granel del articulo. Uso Decimal (no Float) para evitar
     ruido de precision al acumular pesadas fraccionadas, igual que DetalleOperacion
     """
     cantidad = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    activo = models.BooleanField(default=True)
 
     class Meta:
         db_table = "productos_por_kg"
         verbose_name_plural = "Productos por kg"
+
+    @property
+    def es_cotizacion(self):
+        # Miel y cera historicas: el inventario no las edita ni las da de baja
+        return self.articulo in self.ARTICULOS_COTIZACION
 
     def __str__(self):
         return f"Cotizacion {self.articulo}: {self.monto}"

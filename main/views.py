@@ -1,5 +1,6 @@
 import json
 from datetime import date, timedelta
+from decimal import Decimal, InvalidOperation
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
@@ -22,7 +23,10 @@ from .models import (Cliente, Producto, Operacion, DetalleOperacion, Pago, Produ
                      EstacionDeServicio, CargaCombustible, Empresa, OperacionIva,
                      Banco, CuentaCorriente, Cheque, periodo_actual)
 from .pdf_services import Remito, ResumenCuenta
-from .services import (nuevo_producto, editar_producto, eliminar_producto, nuevo_cliente, editar_cliente,
+from .services import (nuevo_producto, editar_producto, eliminar_producto,
+                       nuevo_producto_por_kg, editar_producto_por_kg, eliminar_producto_por_kg,
+                       obtener_datos_producto_por_kg, modificar_stock_por_kg,
+                       nuevo_cliente, editar_cliente,
                        eliminar_cliente, buscar_clientes, get_cotizacion_dolar_oficial, get_cotizaciones, get_total_kilos_granel, get_tambores_vacios, actualizar_cotizacion, obtener_datos_cliente,
                        obtener_datos_producto, modificar_stock, crear_operacion, editar_operacion, servicio_cancelar_operacion,
                        obtener_movimientos_cuenta_corriente, obtener_saldo_anterior_cuenta_corriente,
@@ -466,6 +470,15 @@ def productos(request):
         precio = request.POST.get("precio")
         cantidad = request.POST.get("stock")
 
+        """
+        Unidad de venta elegida en el panel: "kg" manda el producto a
+        productos_por_kg (stock con decimales, precio por kilo) y cualquier otro
+        valor lo trata como producto por unidad, en la tabla de productos. Los
+        formularios de baja y de ajuste de stock mandan la misma marca para
+        saber sobre que tabla operar.
+        """
+        por_kilo = request.POST.get("unidad_venta") == "kg"
+
         # Si el usuario no ingresó un stock (campo vacío), lo coloco en 0
         if not cantidad:
             cantidad = 0
@@ -479,6 +492,26 @@ def productos(request):
             tipo_modificacion = request.POST.get("tipo_modificacion")
             cantidad_modificar = request.POST.get("cantidad")
             
+            if id_producto_stock and cantidad_modificar and por_kilo:
+                try:
+                    producto = ProductoPorKg.objects.get(id=id_producto_stock, activo=True)
+                    kilos = Decimal(str(cantidad_modificar).replace(",", "."))
+                    if tipo_modificacion == "quitar":
+                        kilos = -kilos
+
+                    modificar_stock_por_kg(id_producto_stock, kilos)
+
+                    verbo = "quitó" if tipo_modificacion == "quitar" else "agregó"
+                    messages.success(request, f"Se {verbo} {abs(kilos):g} kg de {producto.articulo}")
+                except ProductoPorKg.DoesNotExist:
+                    messages.error(request, "El producto no existe.")
+                except InvalidOperation:
+                    messages.error(request, "Ingrese una cantidad de kilos válida.")
+                except ValueError as e:
+                    messages.error(request, str(e))
+
+                return redirect("productos")
+
             if id_producto_stock and cantidad_modificar:
                 try:
                     producto = Producto.objects.get(id=id_producto_stock)
@@ -504,9 +537,27 @@ def productos(request):
             return redirect("productos")
 
         elif id_eliminar:
-            eliminar_producto(id_eliminar)
-            messages.success(request, "Producto eliminado correctamente")
+            try:
+                if por_kilo:
+                    eliminar_producto_por_kg(id_eliminar)
+                else:
+                    eliminar_producto(id_eliminar)
+                messages.success(request, "Producto eliminado correctamente")
+            except ValueError as e:
+                messages.error(request, str(e))
             return redirect("productos")
+
+        elif por_kilo:
+            # Producto que se vende pesado: vive en la tabla de productos por kg
+            try:
+                if id_producto:
+                    editar_producto_por_kg(id_producto, nombre_producto, categoria, precio)
+                    messages.success(request, "Producto editado correctamente")
+                else:
+                    nuevo_producto_por_kg(nombre_producto, categoria, precio, cantidad)
+                    messages.success(request, "Producto agregado correctamente")
+            except ValueError as e:
+                messages.error(request, str(e))
 
         else:
             # Si es una EDICION
@@ -543,15 +594,17 @@ def productos(request):
 
     productos = productos.order_by("nombre")
 
-    # Stock a granel (miel y cera por kilo): vive en ProductoPorKg, no en Producto.
-    # Se muestra como bloque de solo lectura (se gestiona en cotizaciones) solo cuando
-    # se filtra explicitamente por Miel o Cera; en la vista por defecto ("Todas") no
-    # aparece, para conservar el listado de productos envasados que ya se mostraba.
+    """
+    Productos que se venden por kilo: viven en ProductoPorKg, no en Producto. Se
+    listan junto a los de la misma categoria que se venden por unidad, con la fila
+    diferenciada, y solo aparecen al filtrar por una categoria: en la vista "Todas"
+    se conserva el listado de productos por unidad que ya se mostraba.
+    """
     granel = ProductoPorKg.objects.none()
-    if categoria_filtrada in ("Miel", "Cera"):
-        granel = ProductoPorKg.objects.filter(articulo__istartswith=categoria_filtrada)
+    if categoria_filtrada:
+        granel = ProductoPorKg.objects.filter(categoria=categoria_filtrada, activo=True)
         if q:
-            # Con busqueda por ID no aplica; los articulos a granel se buscan por nombre
+            # Con busqueda por ID no aplica; los productos por kilo se buscan por nombre
             granel = granel.filter(filtro_tokens(q, "articulo")) if not q.isdigit() else ProductoPorKg.objects.none()
         granel = granel.order_by("articulo")
 
@@ -590,6 +643,16 @@ def obtener_producto_json(request, id_producto):
         return JsonResponse(datos)
 
     # Si no lo encuentro o está inactivo, devuelvo un error 404
+    return JsonResponse({"Error": "Producto no encontrado"}, status=404)
+
+
+@login_required
+def obtener_producto_por_kg_json(request, id_producto):
+    datos = obtener_datos_producto_por_kg(id_producto)
+
+    if datos:
+        return JsonResponse(datos)
+
     return JsonResponse({"Error": "Producto no encontrado"}, status=404)
 
 
@@ -966,15 +1029,15 @@ def _contexto_edicion(operacion):
 
 def _paginar_operacion_con_granel(productos, categoria, q, pagina_numero):
     """
-    Arma la pagina del listado de una operacion (venta o compra) intercalando el
-    stock a granel (miel y cera por kilo, desde ProductoPorKg) con los productos
-    envasados. El granel solo aparece al filtrar por Miel o Cera, respeta la misma
-    busqueda por nombre y se cuenta dentro de la paginacion (aparece primero en su
-    pagina). Devuelve (granel_pagina, productos_pagina, pagina_obj).
+    Arma la pagina del listado de una operacion (venta o compra) intercalando los
+    productos que se venden por kilo (ProductoPorKg) con los que se venden por
+    unidad. Los de kilo solo aparecen al filtrar por una categoria, respetan la
+    misma busqueda por nombre y se cuentan dentro de la paginacion (aparecen
+    primero en su pagina). Devuelve (granel_pagina, productos_pagina, pagina_obj).
     """
     granel = ProductoPorKg.objects.none()
-    if categoria in ("Miel", "Cera"):
-        granel = ProductoPorKg.objects.filter(articulo__istartswith=categoria)
+    if categoria:
+        granel = ProductoPorKg.objects.filter(categoria=categoria, activo=True)
         if q:
             # La busqueda por ID no aplica a granel; los articulos se buscan por nombre
             granel = granel.filter(filtro_tokens(q, "articulo")) if not q.isdigit() else ProductoPorKg.objects.none()

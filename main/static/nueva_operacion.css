@@ -838,17 +838,48 @@
   font-size: 0.95rem;
 }
 
-/* ---- Panel de articulos a granel (miel y cera por kilo) ---------------- */
-/* ---- Filas a granel dentro del listado (miel y cera por kilo) ---------- */
+/* ---- Filas de productos por kilo dentro del listado -------------------- */
 /* Misma lectura que en la vista de productos: banda hundida uniforme + acento
-   lateral segun el tipo, para diferenciar el granel del producto envasado sin
-   depender solo del color. */
+   lateral del color de la categoria, para diferenciar el producto que se pesa
+   del que se cuenta por unidad sin depender solo del color. */
+.cart-row-granel {
+  --granel-accent: var(--color-gris-texto-etiqueta);
+}
+
 .cart-row-granel--miel {
   --granel-accent: var(--honey-500);
 }
 
+.cart-row-granel--alimento {
+  --granel-accent: var(--color-verde-texto-etiqueta);
+}
+
 .cart-row-granel--cera {
   --granel-accent: var(--color-cera-texto-etiqueta);
+}
+
+.cart-row-granel--madera {
+  --granel-accent: var(--color-madera-texto-etiqueta);
+}
+
+.cart-row-granel--estampado {
+  --granel-accent: var(--text-muted);
+}
+
+.cart-row-granel--insumos {
+  --granel-accent: var(--color-insumos-texto-etiqueta);
+}
+
+.cart-row-granel--medicamentos {
+  --granel-accent: var(--color-rojo-texto-etiqueta);
+}
+
+.cart-row-granel--tambores-vacios {
+  --granel-accent: var(--slate-500);
+}
+
+.cart-row-granel--otros {
+  --granel-accent: var(--color-gris-texto-etiqueta);
 }
 
 .cart-table tbody tr.cart-row-granel,
