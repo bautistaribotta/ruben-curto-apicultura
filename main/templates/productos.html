@@ -141,16 +141,16 @@
              o kilos con decimales). Se elige en el alta y queda fija al editar. -->
         <div class="campo-formulario">
           <span class="etiqueta-campo" id="etiqueta-unidad-venta">Cómo se vende</span>
-          <input type="hidden" id="unidad_venta" name="unidad_venta" value="unidad">
+          <input type="hidden" id="unidad_venta" name="unidad_venta" value="">
           <div class="selector-venta" id="selector-venta" role="radiogroup" aria-labelledby="etiqueta-unidad-venta">
-            <input type="radio" id="venta-por-unidad" name="opcion_unidad_venta" value="unidad" checked>
+            <input type="radio" id="venta-por-unidad" name="opcion_unidad_venta" value="unidad" required>
             <label for="venta-por-unidad" class="opcion-venta">
               <span class="material-symbols-outlined opcion-venta__icono">inventory_2</span>
               <span class="opcion-venta__titulo">Por unidad</span>
               <span class="opcion-venta__detalle">Se cuenta de a uno</span>
             </label>
 
-            <input type="radio" id="venta-por-kilo" name="opcion_unidad_venta" value="kg">
+            <input type="radio" id="venta-por-kilo" name="opcion_unidad_venta" value="kg" required>
             <label for="venta-por-kilo" class="opcion-venta">
               <span class="material-symbols-outlined opcion-venta__icono">scale</span>
               <span class="opcion-venta__titulo">Por kilo</span>

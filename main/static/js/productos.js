@@ -98,23 +98,31 @@ const esPorKilo = () => inputUnidadVenta && inputUnidadVenta.value === 'kg';
 
 /**
  * Deja el formulario hablando en la unidad elegida: marca la tarjeta, guarda el
- * valor que viaja en el POST y ajusta las etiquetas de precio y stock.
- * @param {string} unidad - 'kg' o 'unidad'
+ * valor que viaja en el POST y ajusta las etiquetas de precio y stock. Sin
+ * unidad ('' al abrir el alta) las dos tarjetas quedan sin marcar y las
+ * etiquetas se muestran neutras hasta que el usuario elija.
+ * @param {string} unidad - 'kg', 'unidad' o '' para el estado sin elegir
  */
 const aplicarUnidadVenta = (unidad) => {
   if (!inputUnidadVenta) return;
 
+  const elegida = unidad === 'kg' || unidad === 'unidad';
   const porKilo = unidad === 'kg';
-  inputUnidadVenta.value = porKilo ? 'kg' : 'unidad';
+  inputUnidadVenta.value = elegida ? unidad : '';
 
-  const radio = porKilo ? radioPorKilo : radioPorUnidad;
-  if (radio) radio.checked = true;
+  if (radioPorUnidad) radioPorUnidad.checked = elegida && !porKilo;
+  if (radioPorKilo) radioPorKilo.checked = porKilo;
 
   const etiquetaPrecio = document.getElementById('etiqueta-precio');
-  if (etiquetaPrecio) etiquetaPrecio.innerText = porKilo ? 'Precio por kilo' : 'Precio Unitario';
+  if (etiquetaPrecio) {
+    if (!elegida) etiquetaPrecio.innerText = 'Precio';
+    else etiquetaPrecio.innerText = porKilo ? 'Precio por kilo' : 'Precio Unitario';
+  }
 
   const etiquetaStock = document.getElementById('etiqueta-stock');
-  if (etiquetaStock) etiquetaStock.innerText = porKilo ? 'Stock inicial en kilos (opcional)' : 'Stock Inicial (Opcional)';
+  if (etiquetaStock) {
+    etiquetaStock.innerText = porKilo ? 'Stock inicial en kilos (opcional)' : 'Stock Inicial (Opcional)';
+  }
 
   const campoStock = document.getElementById('stock');
   if (campoStock) {
@@ -158,8 +166,8 @@ const prepararPanelNuevoProducto = () => {
   document.getElementById('id_producto').value = '';
   // Si venia de editar un precio a granel, restauro el modo producto normal
   salirModoGranel();
-  // La unidad de venta se elige libremente en el alta
-  aplicarUnidadVenta('unidad');
+  // La unidad de venta arranca sin elegir: es una decision del usuario
+  aplicarUnidadVenta('');
   bloquearUnidadVenta(false);
   // Stock solo se carga en el alta: muestro y habilito el campo
   document.getElementById('campo-stock-container').style.display = 'flex';

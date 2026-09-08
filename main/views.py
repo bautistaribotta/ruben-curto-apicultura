@@ -503,7 +503,8 @@ def productos(request):
         formularios de baja y de ajuste de stock mandan la misma marca para
         saber sobre que tabla operar.
         """
-        por_kilo = request.POST.get("unidad_venta") == "kg"
+        unidad_venta = request.POST.get("unidad_venta")
+        por_kilo = unidad_venta == "kg"
 
         # Si el usuario no ingresó un stock (campo vacío), lo coloco en 0
         if not cantidad:
@@ -572,6 +573,11 @@ def productos(request):
             except ValueError as e:
                 messages.error(request, str(e))
             return redirect("productos")
+
+        elif unidad_venta not in ("unidad", "kg"):
+            # El panel obliga a elegir como se vende: sin ese dato no se sabe en
+            # que tabla va el producto, asi que no lo doy de alta a medias
+            messages.error(request, "Elija si el producto se vende por unidad o por kilo.")
 
         elif por_kilo:
             # Producto que se vende pesado: vive en la tabla de productos por kg

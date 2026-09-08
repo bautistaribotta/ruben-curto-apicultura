@@ -639,23 +639,25 @@
 }
 
 .selector-venta {
+  position: relative;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.625rem;
 }
 
-/* El radio queda invisible pero enfocable: el foco del teclado se dibuja
-   sobre la tarjeta. */
+/* El radio queda invisible pero enfocable: el foco del teclado se dibuja sobre
+   la tarjeta. Lo dejo al pie del selector, no fuera de pantalla, para que el
+   aviso de campo obligatorio del navegador salga apuntando a las tarjetas. */
 .selector-venta input[type="radio"] {
   position: absolute;
+  bottom: 0;
+  left: 50%;
   width: 1px;
   height: 1px;
-  margin: -1px;
+  margin: 0;
   padding: 0;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  clip-path: inset(50%);
-  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .campo-formulario .opcion-venta {
