@@ -1349,7 +1349,7 @@ html {
   height: 100%;
   /* Velo pino translucido y no un rojo mas oscuro: asi la barra se sigue
      viendo cuando el hover ya oscurecio el fondo del boton */
-  background-color: oklch(20.493% 0.0261 168.787 / 0.35);
+  background-color: oklch(14.500% 0.0068 59.500 / 0.35);
   transition: width var(--dur-normal) ease-out;
 }
 

@@ -305,7 +305,7 @@
   align-items: center;
   justify-content: center;
   line-height: 1;
-  background-color: oklch(25.391% 0.0349 170.220 / 0.1);
+  background-color: oklch(19.046% 0.0089 59.082 / 0.1);
   color: var(--brand-olive);
   font-size: 22px;
   font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
@@ -453,7 +453,7 @@
 }
 
 .icono-contenedor {
-  background-color: oklch(25.391% 0.0349 170.220 / 0.1);
+  background-color: oklch(19.046% 0.0089 59.082 / 0.1);
   color: var(--brand-olive);
   width: 40px;
   height: 40px;

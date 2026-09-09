@@ -88,14 +88,14 @@ body.pagina-error {
   font-weight: 700;
   text-decoration: none;
   border-radius: 0.5rem;
-  box-shadow: 0 10px 15px -3px oklch(20.493% 0.0261 168.787 / 0.18);
+  box-shadow: 0 10px 15px -3px oklch(14.500% 0.0068 59.500 / 0.18);
   transition: transform 0.2s, background-color 0.2s, box-shadow 0.2s;
 }
 
 #boton-volver:hover {
   transform: translateY(-1px);
   background-color: var(--pine-950);
-  box-shadow: 0 20px 25px -5px oklch(20.493% 0.0261 168.787 / 0.22);
+  box-shadow: 0 20px 25px -5px oklch(14.500% 0.0068 59.500 / 0.22);
 }
 
 #boton-volver:active {

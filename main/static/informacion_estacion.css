@@ -55,7 +55,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: oklch(25.391% 0.0349 170.220 / 0.1);
+  background-color: oklch(19.046% 0.0089 59.082 / 0.1);
   color: var(--brand-olive);
   font-size: 30px;
   line-height: 1;
@@ -230,7 +230,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: oklch(25.391% 0.0349 170.220 / 0.1);
+  background-color: oklch(19.046% 0.0089 59.082 / 0.1);
   color: var(--brand-olive);
   font-size: 24px;
   line-height: 1;
@@ -351,7 +351,7 @@
   gap: 0.25rem;
   padding: 1px 8px 1px 6px;
   border-radius: var(--radius-pill);
-  background-color: oklch(25.391% 0.0349 170.220 / 0.1);
+  background-color: oklch(19.046% 0.0089 59.082 / 0.1);
   color: var(--brand-olive);
   font-size: 0.7rem;
   font-weight: var(--weight-semibold);
@@ -597,7 +597,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: oklch(25.391% 0.0349 170.220 / 0.1);
+  background-color: oklch(19.046% 0.0089 59.082 / 0.1);
   color: var(--brand-olive);
 }
 
