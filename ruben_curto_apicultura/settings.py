@@ -58,7 +58,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'southern_honey_group.urls'
+ROOT_URLCONF = 'ruben_curto_apicultura.urls'
 
 TEMPLATES = [
     {
@@ -75,7 +75,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'southern_honey_group.wsgi.application'
+WSGI_APPLICATION = 'ruben_curto_apicultura.wsgi.application'
 
 
 # Database

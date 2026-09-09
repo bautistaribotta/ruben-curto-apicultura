@@ -1,5 +1,5 @@
 """
-WSGI config for southern_honey_group project.
+WSGI config for ruben_curto_apicultura project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 
@@ -11,6 +11,6 @@ import os
 
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'southern_honey_group.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'ruben_curto_apicultura.settings')
 
 application = get_wsgi_application()
