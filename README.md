@@ -5,8 +5,8 @@ Asegúrese de tener instalado Python 3.10+ y un servidor MySQL ejecutándose loc
 **1. Clonar el repositorio**
 
 ```bash
-git clone <https://github.com/bautistaribotta/southern_honey_group.git>
-cd southern_honey_group
+git clone <https://github.com/bautistaribotta/ruben-curto-apicultura.git>
+cd ruben-curto-apicultura
 
 ```
 
@@ -35,7 +35,7 @@ Cree un archivo `.env` en la raíz del proyecto (al mismo nivel que `manage.py`)
 
 ```env
 SECRET_KEY=ingrese_su_secret_key_aqui
-DB_NAME=nombre_de_su_base_de_datos
+DB_NAME=ruben_curto_apicultura
 DB_USER=su_usuario_mysql
 DB_PASSWORD=su_contraseña_mysql
 DB_HOST=localhost
