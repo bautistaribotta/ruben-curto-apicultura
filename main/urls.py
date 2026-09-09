@@ -2,22 +2,27 @@ from django.urls import path
 from main.views import (login, inicio, actualizar_cotizacion_ajax,
                         productos, clientes, informacion_clientes, informacion_operacion, generar_remito,
                         nueva_operacion_venta, nueva_operacion_compra, cancelar_operacion, registrar_pago, obtener_cliente_json,
-                        obtener_producto_json, obtener_producto_por_kg_json, viajes, operaciones, informacion_viaje, deudores, mercado_libre, cerrar_sesion, flota,
+                        obtener_producto_json, obtener_producto_por_kg_json, viajes, operaciones, informacion_viaje, deudores, cerrar_sesion, flota,
                         informacion_vehiculo,
-                        viaje_cereales, informacion_viaje_cereal, informacion_viaje_reparto, buscar_clientes_json,
-                        alquileres, combustible, marcar_pago_reparto_ajax, marcar_pago_cereal_ajax,
-                        destinos_reparto, empleados, obtener_empleado_json, informacion_empleado,
+                        viaje_cereales, informacion_viaje_cereal, buscar_clientes_json,
+                        combustible, marcar_pago_cereal_ajax,
+                        empleados, obtener_empleado_json, informacion_empleado,
                         generar_resumen_cuenta, contar_movimientos_cuenta_json,
-                        obtener_casa_json, obtener_contrato_casa_json, marcar_pago_alquiler_ajax,
-                        informacion_alquileres, obtener_estacion_json,
-                        informacion_estacion, obtener_carga_json, iva,
-                        informacion_empresa, obtener_empresa_json, obtener_operacion_iva_json,
-                        cheques, informacion_empresa_cheques, bancos, obtener_cheque_json,
-                        marcar_cobrado_cheque_ajax)
+                        obtener_estacion_json,
+                        informacion_estacion, obtener_carga_json)
 
 """
 La sentencia name="nombre_del_archivo" se usa 
 para que Django sepa la ruta relativa del .html
+"""
+"""
+Viajes repartos (con su catalogo de Destinos), Alquileres, Cheques e IVA quedan
+fuera del sistema: sin path() no hay URL que resuelva, asi que Django contesta
+404 y nada delata que esas pantallas existen. Un permiso habria contestado 403,
+que es justamente lo que confirmaria que estan ahi.
+
+Las vistas siguen en views.py y sus plantillas en su lugar: para reponerlas
+alcanza con devolver los path() y sumar sus vistas al import de arriba.
 """
 urlpatterns = [
     path('', login, name="login"),
@@ -48,30 +53,10 @@ urlpatterns = [
     path('informacion_vehiculo/<int:id_vehiculo>/', informacion_vehiculo, name="informacion_vehiculo"),
     path('informacion_viaje/<int:id_viaje>/', informacion_viaje, name="informacion_viaje"),
     path('deudores/', deudores, name="deudores"),
-    path('alquileres/', alquileres, name="alquileres"),
-    path('informacion_alquileres/<int:id_casa>/', informacion_alquileres, name="informacion_alquileres"),
-    path('api/casas/<int:id_casa>/', obtener_casa_json, name="obtener_casa_json"),
-    path('api/casas/<int:id_casa>/contrato/', obtener_contrato_casa_json, name="obtener_contrato_casa_json"),
-    # El mes va en la URL porque la tabla puede estar mostrando cualquier periodo
-    path('api/casas/<int:id_casa>/pagado/<str:periodo>/', marcar_pago_alquiler_ajax, name="marcar_pago_alquiler"),
     path('combustible/', combustible, name="combustible"),
     path('api/estaciones/<int:id_estacion>/', obtener_estacion_json, name="obtener_estacion_json"),
     path('informacion_estacion/<int:id_estacion>/', informacion_estacion, name="informacion_estacion"),
     path('api/cargas/<int:id_carga>/', obtener_carga_json, name="obtener_carga_json"),
-    path('iva/', iva, name="iva"),
-    path('informacion_empresa/<int:id_empresa>/', informacion_empresa, name="informacion_empresa"),
-    path('api/empresas/<int:id_empresa>/', obtener_empresa_json, name="obtener_empresa_json"),
-    path('api/operaciones_iva/<int:id_operacion>/', obtener_operacion_iva_json, name="obtener_operacion_iva_json"),
-    path('cheques/', cheques, name="cheques"),
-    path('informacion_empresa_cheques/<int:id_empresa>/', informacion_empresa_cheques,
-         name="informacion_empresa_cheques"),
-    path('bancos/', bancos, name="bancos"),
-    path('api/cheques/<int:id_cheque>/', obtener_cheque_json, name="obtener_cheque_json"),
-    path('api/cheques/<int:id_cheque>/cobrado/', marcar_cobrado_cheque_ajax, name="marcar_cobrado_cheque"),
-    path('mercado_libre/', mercado_libre, name="mercado_libre"),
-    path('destinos_reparto/', destinos_reparto, name="destinos_reparto"),
-    path('informacion_viaje_reparto/<int:id_viaje_reparto>/', informacion_viaje_reparto, name="informacion_viaje_reparto"),
-    path('api/viajes_reparto/<int:id_viaje_reparto>/pagado/', marcar_pago_reparto_ajax, name="marcar_pago_reparto"),
     path('viajes_cereales/', viaje_cereales, name="viajes_cereales"),
     path('informacion_viaje_cereal/<int:id_viaje_cereal>/', informacion_viaje_cereal, name="informacion_viaje_cereal"),
     path('api/viajes_cereales/<int:id_viaje_cereal>/pagado/', marcar_pago_cereal_ajax, name="marcar_pago_cereal"),
