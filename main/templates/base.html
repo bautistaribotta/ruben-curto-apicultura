@@ -45,6 +45,12 @@
         <img src="{% static 'icons/ruben_curto_apicultura.svg' %}" alt="Ruben Curto Apicultura" id="isologo-sidebar">
       </div>
 
+      {% comment %}
+        Viajes repartos (con su catalogo de Destinos), Alquileres, Cheques e IVA
+        quedan fuera de la barra para todos los usuarios. Las vistas, las rutas y
+        sus permisos siguen igual: esto solo saca los accesos del menu, asi que a
+        esas pantallas todavia se llega escribiendo la URL.
+      {% endcomment %}
       <ul id="menu-navegacion">
         <li>
           <a href="{% url 'inicio' %}" class="item-menu {% if request.resolver_match.url_name == 'inicio' %} activo {% endif %}">
@@ -89,39 +95,11 @@
             Vehículos
           </a>
         </li>
-        {% comment %}
-          Repartos cuelga su catalogo de Destinos como sub-item de la barra, en vez
-          de repetir el mismo boton en el area de trabajo de la vista.
-
-          El submenu que se ve es siempre el de la seccion en la que ya estas: no
-          hay toggle ni hover. Por eso alcanza con el <ul> hermano del item activo
-          (.item-menu.activo + .nav-sub en base.css) y la condicion de la seccion
-          se sigue escribiendo una sola vez, la misma de antes.
-        {% endcomment %}
         <li>
           <a href="{% url 'viajes' %}" class="item-menu {% if request.resolver_match.url_name == 'viajes' or request.resolver_match.url_name == 'informacion_viaje' or request.resolver_match.url_name == 'informacion_operacion' and request.GET.origen == 'viaje' %} activo {% endif %}">
             <span class="material-symbols-outlined">hive</span>
             Viajes Miel/Cera
           </a>
-        </li>
-        <li>
-          <a href="{% url 'mercado_libre' %}" class="item-menu {% if request.resolver_match.url_name == 'mercado_libre' or request.resolver_match.url_name == 'informacion_viaje_reparto' or request.resolver_match.url_name == 'destinos_reparto' %} activo {% endif %}">
-            <span class="material-symbols-outlined">inventory</span>
-            Viajes repartos
-          </a>
-          {% comment %}
-            El catalogo de destinos define cuanto se cobra cada reparto, asi que lo
-            maneja solo el personal administrativo. La vista tambien valida el permiso.
-          {% endcomment %}
-          {% if user.is_staff %}
-          <ul class="nav-sub">
-            <li>
-              <a href="{% url 'destinos_reparto' %}" class="item-sub {% if request.resolver_match.url_name == 'destinos_reparto' %} activo {% endif %}">
-                Destinos
-              </a>
-            </li>
-          </ul>
-          {% endif %}
         </li>
         <li>
           <a href="{% url 'viajes_cereales' %}" class="item-menu {% if request.resolver_match.url_name == 'viajes_cereales' or request.resolver_match.url_name == 'informacion_viaje_cereal' and request.GET.origen != 'cliente' %} activo {% endif %}">
@@ -140,29 +118,6 @@
           <a href="{% url 'deudores' %}" class="item-menu {% if request.resolver_match.url_name == 'deudores' %} activo {% endif %}">
             <span class="material-symbols-outlined">payments</span>
             Deudas
-          </a>
-        </li>
-        <li>
-          <a href="{% url 'alquileres' %}" class="item-menu {% if request.resolver_match.url_name == 'alquileres' or request.resolver_match.url_name == 'informacion_alquileres' %} activo {% endif %}">
-            <span class="material-symbols-outlined">key</span>
-            Alquileres
-          </a>
-        </li>
-        {% comment %}
-          El catalogo de bancos no cuelga de la barra: se entra desde un boton en
-          la vista de Cheques (barra de herramientas). Igual mantengo 'bancos' en la
-          condicion de activo para que el item de Cheques quede resaltado ahi.
-        {% endcomment %}
-        <li>
-          <a href="{% url 'cheques' %}" class="item-menu {% if request.resolver_match.url_name == 'cheques' or request.resolver_match.url_name == 'informacion_empresa_cheques' or request.resolver_match.url_name == 'bancos' %} activo {% endif %}">
-            <span class="material-symbols-outlined">account_balance</span>
-            Cheques
-          </a>
-        </li>
-        <li>
-          <a href="{% url 'iva' %}" class="item-menu {% if request.resolver_match.url_name == 'iva' or request.resolver_match.url_name == 'informacion_empresa' %} activo {% endif %}">
-            <span class="material-symbols-outlined">receipt_long</span>
-            IVA
           </a>
         </li>
         {% endif %}
