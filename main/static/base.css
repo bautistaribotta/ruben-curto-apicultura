@@ -301,41 +301,19 @@ body {
   flex: none;
 }
 
-/* Isologo (apaisado) e isotipo (la abeja, casi cuadrada). En escritorio se
+/* Isologo (apaisado) e isotipo (el hexagono, cuadrado). En escritorio se
    intercambian segun la barra este desplegada o plegada; en mobile solo existe
-   el isologo, que es como se veia siempre. */
+   el isologo, que es como se veia siempre.
+   Ninguno lleva filtro de color: la version de marca sobre fondo oscuro ya trae
+   su propio crema y su celda en oro, y aplanarla a blanco la perderia. */
 #isologo-sidebar {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
+  width: 100%;
+  height: auto;
 }
 
 #isotipo-sidebar {
   display: none;
   width: auto;
-  filter: brightness(0) invert(1);
-}
-
-#logo-principal-sidebar {
-  height: 55px;
-  width: auto;
-  filter: brightness(0) invert(1);
-}
-
-#logos-secundarios-sidebar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  width: 100%;
-}
-
-.logo-secundario {
-  height: 14px;
-  width: auto;
-  filter: brightness(0) invert(1);
-  opacity: 0.65;
 }
 
 /* La lista toma el alto sobrante y scrollea sola, como ya hace #contenido-principal.
@@ -563,7 +541,7 @@ body {
   #encabezado-sidebar {
     position: relative;
     justify-content: center;
-    height: 5.5rem;
+    height: 6.5rem;
   }
 
   #isotipo-sidebar,
@@ -581,7 +559,7 @@ body {
   }
 
   #isologo-sidebar {
-    width: max-content;
+    width: calc(var(--ancho-barra) - 2 * var(--pad-barra));
     opacity: 0;
   }
 
@@ -1074,8 +1052,7 @@ body {
     justify-content: center;
   }
   .logo-mobile {
-    height: 35px;
-    filter: brightness(0) invert(1);
+    height: 46px;
   }
   #barra-lateral {
     position: fixed;
