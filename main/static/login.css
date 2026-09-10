@@ -13,41 +13,47 @@ body {
   overflow: hidden;
   /* Para que no aparezca ninguna scroll-bar */
   display: flex;
+  /* El login maneja su propio apilado (ver media 1024px). base.css apila el body
+     a partir de 1324px para la app con sidebar; aca lo forzamos en fila para no
+     heredar ese corte y evitar que la foto colapse entre 1025px y 1324px. */
+  flex-direction: row;
 }
 
 /* La imagen ocupa mas espacio que el formulario para que sea protagonista */
 #pantalla-izquierda {
   width: 58%;
+  display: flex;
+  flex-direction: column;
 }
 
 #pantalla-derecha {
   width: 42%;
 }
 
-/* Lado izquierdo: foto del apicultor con el logo de Southern centrado encima.
-   Un velo con tinte pino parejo asegura que el logo blanco se lea sobre la imagen. */
-#pantalla-izquierda {
-  /* Fallback sRGB primero: Safari < 15.4 descarta la declaracion con oklch y usa esta */
-  background-image:
-    linear-gradient(rgba(12, 9, 8, 0.28), rgba(12, 9, 8, 0.28)),
-    url("imagenes/login_apicultor.webp");
-  background-image:
-    linear-gradient(oklch(14.500% 0.0068 59.500 / 0.28), oklch(14.500% 0.0068 59.500 / 0.28)),
-    url("imagenes/login_apicultor.webp");
+/* Lado izquierdo: la foto del apicultor arriba y una banda pino solida abajo.
+   El corte recto entre ambas se siente deliberado; el hilo miel es el unico acento. */
+#login-foto {
+  flex: 1;
+  min-height: 0;
+  background-image: url("imagenes/login_apicultor.webp");
   background-size: cover;
   background-position: center;
+}
+
+/* Banda inferior: el lockup trae su propio rectangulo pino, asi que se funde
+   con la banda y quedan a la vista solo el isotipo y la marca en crema. */
+#login-banda {
+  flex: 0 0 auto;
+  background-color: var(--pine-900);
+  border-top: 2px solid var(--honey-500);
+  padding: 2.5rem 3rem;
   display: flex;
-  justify-content: center;
   align-items: center;
-  padding: 4rem;
 }
 
 #logo-login {
-  width: 70%;
-  max-width: 320px;
-  height: auto;
-  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.45));
-  filter: drop-shadow(0 2px 8px oklch(0% 0 0 / 0.45));
+  height: 5rem;
+  width: auto;
 }
 
 /* Todo el contenido de la derecha */
@@ -259,16 +265,19 @@ body {
   #pantalla-izquierda, #pantalla-derecha {
     width: 100%;
   }
-  /* En móvil el panel izquierdo actúa como cabecera superior con el logo centrado */
-  #pantalla-izquierda {
-    padding: 2.5rem 2rem;
-    height: auto;
+  /* En móvil el panel izquierdo actúa como cabecera: franja de foto y banda con el logo centrado */
+  #login-foto {
+    flex: 0 0 auto;
+    height: 200px;
+    /* En la franja angosta, subir el encuadre para que se vea al apicultor y no solo el campo */
+    background-position: center 25%;
+  }
+  #login-banda {
+    padding: 1.5rem 2rem;
     justify-content: center;
-    align-items: center;
   }
   #logo-login {
-    width: auto;
-    max-width: 200px;
+    height: 4rem;
   }
   /* Ajustes del panel derecho (Formulario) */
   #pantalla-derecha {
@@ -284,8 +293,14 @@ body {
   }
 }
 
-@media (max-width: 480px) {
-  #pantalla-izquierda {
-    padding: 1.5rem;
+/* En telefonos no se muestra la foto: la banda con el logo queda como cabecera.
+   Sin foto encima, el hilo miel del borde superior no tiene sentido, se saca. */
+@media (max-width: 600px) {
+  #login-foto {
+    display: none;
+  }
+  #login-banda {
+    border-top: none;
+    padding: 1.75rem 1.5rem;
   }
 }
