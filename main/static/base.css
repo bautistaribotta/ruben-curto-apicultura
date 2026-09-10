@@ -1520,6 +1520,321 @@ tbody tr.fila-vacia:active {
   cursor: not-allowed;
 }
 
+/* --- MODAL DE ELIMINACION UNIFICADO PARA TODAS LAS VISTAS --- */
+/* Confirmacion de borrado (icono de advertencia, titulo, texto y los dos botones,
+   con la barra del "mantener presionado"). Vivia copiado en cada hoja de pagina:
+   ahora esta una sola vez aca y cada vista solo aporta el markup. Las medidas son
+   las del modal de error global de mas arriba (500px, radio de 16px), asi los dos
+   modales que puede ver una misma persona tienen el mismo tamaño.
+
+   Toma la caja con id #panel-eliminar dentro de #contenedor-panel-eliminar, que es
+   el markup que usan todas las vistas; la apertura la maneja paneles.js agregando
+   la clase .abierto. */
+#contenedor-panel-eliminar {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  visibility: hidden;
+  /* Deja terminar la animacion de salida antes de ocultar */
+  transition: visibility var(--dur-slow);
+}
+
+#contenedor-panel-eliminar.abierto {
+  visibility: visible;
+  /* Aparece al instante para que los hijos se animen */
+  transition: none;
+}
+
+#contenedor-panel-fondo {
+  position: absolute;
+  inset: 0;
+  background-color: var(--overlay-ink);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  transition: opacity var(--dur-slow) var(--ease-standard);
+}
+
+#contenedor-panel-eliminar.abierto #contenedor-panel-fondo {
+  opacity: 1;
+}
+
+#panel-eliminar {
+  position: relative;
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  padding: 2rem 2.5rem 1.75rem;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: var(--shadow-xl);
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  opacity: 0;
+  transform: scale(0.95);
+  transition: all var(--dur-slow) var(--ease-standard);
+}
+
+#contenedor-panel-eliminar.abierto #panel-eliminar {
+  opacity: 1;
+  transform: scale(1);
+}
+
+#icono-cerrar-panel-eliminar {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: auto;
+  background: none;
+  border: none;
+  color: var(--sand-400);
+  cursor: pointer;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all var(--dur-normal) var(--ease-standard);
+}
+
+#icono-cerrar-panel-eliminar:hover {
+  background-color: var(--surface-hover);
+  color: var(--text-muted);
+}
+
+#icono-advertencia {
+  color: var(--color-rojo-eliminacion);
+  align-self: center;
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: center;
+}
+
+#icono-advertencia span {
+  font-size: 4rem;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 48;
+}
+
+#panel-eliminar h3 {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  color: var(--text-strong);
+  margin-bottom: 0.5rem;
+}
+
+#panel-eliminar p {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+.acciones-modal {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+#boton-confirmar-eliminar {
+  background-color: var(--color-rojo-eliminacion);
+  color: var(--color-blanco);
+  border: none;
+  padding: 0.75rem;
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  transition: all var(--dur-normal) var(--ease-standard);
+  position: relative;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#boton-confirmar-eliminar span {
+  position: relative;
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Barra que avanza mientras se mantiene apretado el boton (2 segundos, el mismo
+   plazo que espera paneles.js antes de enviar el formulario) */
+#boton-confirmar-eliminar::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 0%;
+  background-color: var(--color-sombra-oscuro);
+  transition: width 0.2s ease-out;
+  z-index: 1;
+}
+
+#boton-confirmar-eliminar.manteniendo::before {
+  width: 100%;
+  transition: width 2s linear;
+}
+
+#boton-confirmar-eliminar:hover {
+  filter: brightness(0.9);
+}
+
+@media (max-width: 600px) {
+  #panel-eliminar {
+    width: 95%;
+    padding: 2rem 1.5rem;
+  }
+  .acciones-modal {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #contenedor-panel-eliminar,
+  #contenedor-panel-fondo,
+  #panel-eliminar {
+    transition: none;
+  }
+}
+
+/* --- VARIANTE CON CLASES DEL MISMO MODAL DE ELIMINACION --- */
+/* Vehiculos, Destinos y Alquileres arman la confirmacion con clases en vez de
+   ids (su contenedor se abre y cierra con .abierto desde el JS de cada pantalla,
+   que es lo unico que queda en la hoja de esas paginas). Es el mismo componente
+   y comparte medidas con #panel-eliminar de arriba. */
+.modal-eliminar-fondo {
+  position: absolute;
+  inset: 0;
+  background-color: var(--overlay-ink);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+.modal-eliminar-panel {
+  position: relative;
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  padding: 2rem 2.5rem 1.75rem;
+  width: 90%;
+  max-width: 500px;
+  text-align: center;
+  box-shadow: var(--shadow-xl);
+  z-index: 1;
+}
+
+.modal-eliminar-cerrar {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  color: var(--sand-400);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: var(--radius-sm);
+  display: flex;
+  transition: all var(--dur-normal) var(--ease-standard);
+}
+
+.modal-eliminar-cerrar:hover {
+  background-color: var(--surface-hover);
+  color: var(--text-muted);
+}
+
+.modal-eliminar-icono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  color: var(--color-rojo-eliminacion);
+}
+
+.modal-eliminar-icono .material-symbols-outlined {
+  font-size: 4rem;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 48;
+}
+
+.modal-eliminar-panel h3 {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  color: var(--text-strong);
+  margin-bottom: 0.5rem;
+}
+
+.modal-eliminar-panel p {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+}
+
+.modal-eliminar-acciones {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.boton-eliminar-confirmar {
+  background-color: var(--color-rojo-eliminacion);
+  color: var(--color-blanco);
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 0.875rem;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  font-family: inherit;
+  cursor: pointer;
+  transition: all var(--dur-normal) var(--ease-standard);
+  position: relative;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.boton-eliminar-confirmar:hover {
+  filter: brightness(0.9);
+}
+
+.boton-eliminar-confirmar span {
+  position: relative;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.boton-eliminar-confirmar::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 0%;
+  background-color: var(--color-sombra-oscuro);
+  transition: width 0.2s ease-out;
+  z-index: 1;
+}
+
+.boton-eliminar-confirmar.manteniendo::before {
+  width: 100%;
+  transition: width 2s linear;
+}
+
+@media (max-width: 600px) {
+  .modal-eliminar-panel {
+    width: 95%;
+    padding: 2rem 1.5rem;
+  }
+  .modal-eliminar-acciones {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* fallback-oklch-autogenerado */
 /* Safari < 15.4 no soporta oklch(): redefinimos las variables en sRGB. */
 @supports not (color: oklch(0% 0 0)) {

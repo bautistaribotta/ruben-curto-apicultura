@@ -794,9 +794,6 @@ html {
     width: 95%;
     padding: 2rem 1.5rem;
   }
-  .acciones-modal {
-    grid-template-columns: 1fr;
-  }
 }
 
 /* Tokens de estado que aun no estan en base.css */
@@ -898,33 +895,6 @@ html {
 .boton-cerrar:hover {
   background-color: var(--color-gris-claro-hover);
   color: var(--slate-600);
-}
-
-#icono-advertencia {
-  color: var(--color-rojo-eliminacion);
-  align-self: center;
-  margin-bottom: 1rem;
-  display: flex;
-  justify-content: center;
-}
-
-#icono-advertencia span {
-  font-size: 4rem;
-  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 48;
-}
-
-#panel-eliminar h3 {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--slate-900);
-  margin-bottom: 0.5rem;
-}
-
-#panel-eliminar p {
-  font-size: 0.875rem;
-  color: var(--slate-500);
-  margin-bottom: 1.5rem;
-  line-height: 1.5;
 }
 
 #panel-gasto h3 {
@@ -1066,12 +1036,6 @@ html {
   box-shadow: 0 0 0 3px var(--honey-tint-20);
 }
 
-.acciones-modal {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
 /* En el modal de gasto separo los botones del cuerpo con una linea divisoria.
    Scoped para no tocar el modal de eliminacion, que comparte .acciones-modal. */
 #panel-gasto .acciones-modal {
@@ -1094,49 +1058,6 @@ html {
 
 .boton-secundario:hover {
   background-color: var(--color-gris-fondo-input);
-}
-
-#boton-confirmar-eliminar {
-  background-color: var(--color-rojo-eliminacion);
-  color: var(--color-blanco);
-  border: none;
-  padding: 0.75rem;
-  border-radius: 0.5rem;
-  font-weight: 600;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: all 0.2s;
-  position: relative;
-  overflow: hidden;
-  user-select: none;
-  -webkit-user-select: none;
-}
-
-#boton-confirmar-eliminar span {
-  position: relative;
-  z-index: 2;
-  pointer-events: none;
-}
-
-#boton-confirmar-eliminar::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  width: 0%;
-  background-color: var(--color-sombra-oscuro);
-  transition: width 0.2s ease-out;
-  z-index: 1;
-}
-
-#boton-confirmar-eliminar.manteniendo::before {
-  width: 100%;
-  transition: width 2s linear;
-}
-
-#boton-confirmar-eliminar:hover {
-  filter: brightness(0.9);
 }
 
 /* --- Boton Nueva compra (variante outline) --- */
@@ -1263,11 +1184,6 @@ html {
 
 #panel-gasto .boton-primario:hover {
   background-color: var(--pine-950);
-}
-
-#boton-confirmar-eliminar {
-  background-color: var(--danger-500);
-  border-radius: var(--radius-md);
 }
 
 /* Select de tipo de gasto */

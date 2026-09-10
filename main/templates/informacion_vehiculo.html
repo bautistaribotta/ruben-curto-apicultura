@@ -519,12 +519,12 @@
 
 <!-- MODAL CONFIRMAR ELIMINACION (hold-to-delete de paneles.js) -->
 <div id="contenedor-panel-eliminar">
-  <div class="panel-eliminar-fondo" onclick="cerrarPanelEliminar()"></div>
-  <div class="panel-eliminar-caja">
-    <button type="button" class="panel-eliminar-cerrar" onclick="cerrarPanelEliminar()">
+  <div class="modal-eliminar-fondo" onclick="cerrarPanelEliminar()"></div>
+  <div class="modal-eliminar-panel">
+    <button type="button" class="modal-eliminar-cerrar" onclick="cerrarPanelEliminar()">
       <span class="material-symbols-outlined">close</span>
     </button>
-    <div class="panel-eliminar-icono">
+    <div class="modal-eliminar-icono">
       <span class="material-symbols-outlined">warning</span>
     </div>
     <h3>Confirmar eliminación</h3>
@@ -533,7 +533,7 @@
       {% csrf_token %}
       <input type="hidden" name="accion" id="accion-eliminar" value="">
       <input type="hidden" name="id_registro" id="id-eliminar" value="">
-      <div class="panel-eliminar-acciones">
+      <div class="modal-eliminar-acciones">
         <button type="button" class="boton-secundario" onclick="cerrarPanelEliminar()">No, volver</button>
         <button type="button" id="boton-confirmar-eliminar" class="boton-eliminar-confirmar">
           <span>Sí, eliminar</span>

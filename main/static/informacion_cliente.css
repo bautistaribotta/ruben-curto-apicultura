@@ -872,12 +872,6 @@ html {
   font-weight: var(--weight-semibold);
 }
 
-.acciones-modal {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
 .boton-secundario {
   background-color: var(--surface-card);
   color: var(--text-body);
@@ -1229,9 +1223,6 @@ html {
   .tabla-viajes-cereal-container,
   .tabla-operaciones-container {
     overflow-x: auto;
-  }
-  .acciones-modal {
-    grid-template-columns: 1fr;
   }
 }
 
