@@ -1,8 +1,18 @@
 {% extends "base.html" %}
 {% load static %}
+{% load static_version %}
 
 {% block nombre-pestaña %}
   <title> Marcos </title>
+{% endblock %}
+
+{% block links %}
+  <link rel="stylesheet" href="{% static_v 'marcos.css' %}">
+  <link rel="stylesheet" href="{% static_v 'filtro_fechas.css' %}">
+  <link rel="stylesheet" href="{% static_v 'filtro_entidad.css' %}">
+  <link rel="stylesheet" href="{% static_v 'filtro_estado.css' %}">
+  <link rel="stylesheet" href="{% static_v 'selector_entidad.css' %}">
+  <link rel="stylesheet" href="{% static_v 'autocompletado_ciudades.css' %}">
 {% endblock %}
 
 {% block cabecera %}
@@ -20,5 +30,173 @@
 {% block area-trabajo %}
   <!-- Área de Trabajo -->
   <section id="area-trabajo">
+
+    {% comment %}
+      Barra de filtros. Los tres se combinan entre si y viven fuera de la region
+      que reemplaza el AJAX, asi que su estado sobrevive a cada refresco:
+        - Estado:  pildora con menu (Con cera / Intermedio / Apolillado).
+        - Cliente: chip -> modal selector con los clientes que tienen marcos.
+        - Fecha:   chip + popover compartido, sobre la fecha de recepcion.
+    {% endcomment %}
+    <div class="barra-herramientas">
+      <div class="grupo-busqueda">
+        {% include 'filtro_estado_marcos.html' %}
+        <div class="filtros-entidad">
+          {% include "chip_filtro_entidad.html" with chip_id="chip-cliente" param="cliente" modal_id="selector-cliente-marcos" icono="person" etiqueta="Cliente" valor_id=cliente valor_nombre=cliente_nombre %}
+        </div>
+        {% include 'filtro_fechas.html' with modos="dia,mes,rango" %}
+      </div>
+
+      <button class="boton-nuevo" onclick="prepararPanelNuevoMarco()">
+        <span class="material-symbols-outlined">add</span>
+        <span class="texto-boton">Nueva operación</span>
+      </button>
+    </div>
+
+    <div class="contenedor-tabla" id="tabla-marcos-container">
+      {% include 'tabla_marcos.html' %}
+    </div>
+
   </section>
+
+  {% comment %} Modal del chip de filtro por cliente. {% endcomment %}
+  {% include "selector_entidad.html" with selector_id="selector-cliente-marcos" icono="person_search" titulo="Elegir cliente" descripcion="Filtrá las operaciones de marcos por el cliente que elijas de la lista." placeholder="Buscar por nombre" items=clientes_filtro sin_items="Todavía no hay clientes con marcos cargados." %}
+
+  <!-- PANEL LATERAL NUEVA/EDITAR OPERACION (SLIDE-OVER) -->
+  <div id="contenedor-slide-over">
+    <div id="slide-over-fondo" onclick="cerrarSlideOver()"></div>
+
+    <div id="slide-over-panel">
+      <header class="panel-cabecera">
+        <div class="panel-titulo-fila">
+          <div class="icono-contenedor">
+            <span class="material-symbols-outlined">hive</span>
+          </div>
+          <div class="texto-cabecera">
+            <h3>Nueva operación</h3>
+            <p>Registrá los marcos que entran al galpón</p>
+          </div>
+        </div>
+        <button type="button" class="boton-cerrar-panel" onclick="cerrarSlideOver()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </header>
+
+      <div class="panel-cuerpo">
+        <form class="formulario-marco" id="form-marco" method="POST" autocomplete="off">
+          {% csrf_token %}
+          <input type="hidden" id="id_marco" name="id_marco">
+
+          <div class="campo-formulario">
+            <label for="cliente-marco">Cliente</label>
+            {% comment %}
+              El id del cliente elegido viaja en el hidden; el input visible busca
+              contra api/clientes/buscar/ (mismo autocompletado que los acopios).
+            {% endcomment %}
+            <input
+              type="text"
+              id="cliente-marco"
+              class="input-estandar"
+              placeholder="Buscar cliente por nombre"
+              autocomplete="off"
+              data-autocompletar-cliente
+              data-target="#id_cliente_marco"
+              required>
+            <input type="hidden" id="id_cliente_marco" name="id_cliente">
+          </div>
+
+          <div class="campo-formulario">
+            <label for="cantidad-marco">Cantidad de marcos</label>
+            <input
+              type="number"
+              id="cantidad-marco"
+              name="cantidad"
+              class="input-estandar"
+              placeholder="Ej: 300"
+              inputmode="numeric"
+              min="1"
+              max="100000"
+              step="1"
+              required>
+            <span class="mensaje-error">Ingresá un número entero de 1 a 100000.</span>
+          </div>
+
+          <div class="campo-formulario">
+            <label for="estado-marco">Estado en que llegaron</label>
+            <select id="estado-marco" name="estado" class="select-estandar" required>
+              <option value="" disabled selected>Seleccioná un estado</option>
+              {% for valor, etiqueta in estados %}
+                <option value="{{ valor }}">{{ etiqueta }}</option>
+              {% endfor %}
+            </select>
+            <span class="mensaje-error">Elegí el estado en el que llegaron los marcos.</span>
+          </div>
+
+          <div class="campo-formulario">
+            <label for="fecha-recepcion-marco">Fecha de recepción</label>
+            <input
+              type="date"
+              id="fecha-recepcion-marco"
+              name="fecha_recepcion"
+              class="input-estandar"
+              value="{{ hoy }}"
+              required>
+          </div>
+
+          <div class="campo-formulario">
+            <label for="fecha-entrega-marco">Fecha de entrega</label>
+            <input
+              type="date"
+              id="fecha-entrega-marco"
+              name="fecha_entrega"
+              class="input-estandar">
+            <span class="mrc-ayuda">Dejala vacía si los marcos siguen en el galpón.</span>
+          </div>
+        </form>
+      </div>
+
+      <div class="panel-pie">
+        <button type="submit" form="form-marco" class="boton-primario">Guardar operación</button>
+        <button type="button" class="boton-secundario" onclick="cerrarSlideOver()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel de eliminacion -->
+  <form id="formulario-eliminar" method="POST">
+    {% csrf_token %}
+    <input type="hidden" name="accion" value="eliminar_marco">
+    <div id="contenedor-panel-eliminar">
+      <div id="contenedor-panel-fondo" onclick="cerrarPanelEliminar()"></div>
+
+      <div id="panel-eliminar">
+        <input type="hidden" id="id_eliminar" name="id_eliminar" value="">
+
+        <button type="button" class="boton-cerrar-panel" id="icono-cerrar-panel-eliminar" onclick="cerrarPanelEliminar()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+
+        <div id="icono-advertencia">
+          <span class="material-symbols-outlined">warning</span>
+        </div>
+
+        <h3>Confirmar eliminación</h3>
+        <p id="texto-confirmacion-eliminar">¿Querés eliminar esta operación de marcos?</p>
+
+        <div class="acciones-modal">
+          <button type="button" class="boton-secundario" onclick="cerrarPanelEliminar()">No, mantener</button>
+          <button type="button" class="boton-primario-eliminar" id="boton-confirmar-eliminar"><span>Sí, eliminar</span></button>
+        </div>
+      </div>
+    </div>
+  </form>
+{% endblock %}
+
+{% block codigo-javascript %}
+  <script src="{% static_v 'js/filtro_fechas.js' %}"></script>
+  <script src="{% static_v 'js/selector_entidad.js' %}"></script>
+  <script src="{% static_v 'js/filtros_entidad.js' %}"></script>
+  <script src="{% static_v 'js/filtro_estado.js' %}"></script>
+  <script src="{% static_v 'js/autocompletado_clientes.js' %}"></script>
+  <script src="{% static_v 'js/marcos.js' %}"></script>
 {% endblock %}

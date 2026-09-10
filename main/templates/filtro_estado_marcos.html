@@ -1,0 +1,32 @@
+{% comment %}
+  Filtro por estado de los marcos: una sola pildora con menu desplegable, igual
+  que la de Viajes. Comparte los estilos (filtro_estado.css) y la logica
+  (js/filtro_estado.js): al elegir deja el valor en data-estado del contenedor y
+  avisa por el evento 'filtroestado:cambio', que marcos.js engancha a la busqueda.
+
+  Espera en el contexto: estado (el aplicado, vacio si son todos) y estados (la
+  lista de choices del modelo, para no repetir aca los tres valores).
+{% endcomment %}
+<div class="filtro-estado" id="filtro-estado-marcos" data-estado="{{ estado|default:'' }}">
+  <button type="button"
+          class="filtro-estado__trigger {% if estado %}is-active{% endif %}"
+          aria-haspopup="listbox" aria-expanded="false">
+    <span class="material-symbols-outlined" aria-hidden="true">filter_alt</span>
+    <span class="filtro-estado__label">{% if estado %}{{ estado }}{% else %}Todos los estados{% endif %}</span>
+    <span class="material-symbols-outlined filtro-estado__chevron" aria-hidden="true">expand_more</span>
+  </button>
+
+  <ul class="filtro-estado__menu" role="listbox" aria-label="Estado de los marcos" hidden>
+    <li class="filtro-estado__opt {% if not estado %}is-selected{% endif %}" role="option"
+        data-estado="" aria-selected="{% if not estado %}true{% else %}false{% endif %}" tabindex="-1">
+      <span class="filtro-estado__opt-label">Todos los estados</span>
+    </li>
+    {% for valor, etiqueta in estados %}
+      <li class="filtro-estado__opt {% if estado == valor %}is-selected{% endif %}" role="option"
+          data-estado="{{ valor }}" aria-selected="{% if estado == valor %}true{% else %}false{% endif %}" tabindex="-1">
+        <span class="mrc-punto mrc-punto--{{ valor|slugify }}"></span>
+        <span class="filtro-estado__opt-label">{{ etiqueta }}</span>
+      </li>
+    {% endfor %}
+  </ul>
+</div>

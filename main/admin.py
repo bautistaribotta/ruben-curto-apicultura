@@ -6,7 +6,7 @@ from .models import (
     GastoViajeCereal, Casa, Contrato, PagoAlquiler, GastoCasa, EstacionDeServicio,
     RegistroKilometraje, Seguro, VTV, Servis, ObservacionVehiculo,
     Empresa, OperacionIva,
-    Banco, CuentaCorriente, Cheque,
+    Banco, CuentaCorriente, Cheque, OperacionMarco,
 )
 
 admin.site.register(Cliente)
@@ -231,3 +231,9 @@ class CuentaCorrienteAdmin(admin.ModelAdmin):
 class ChequeAdmin(admin.ModelAdmin):
     list_display = ('id', 'cuenta_corriente', 'fecha_emision', 'fecha_cobro', 'importe', 'vencido')
     list_filter = ('cuenta_corriente__banco', 'cuenta_corriente__empresa')
+
+
+@admin.register(OperacionMarco)
+class OperacionMarcoAdmin(admin.ModelAdmin):
+    list_display = ('id', 'cliente', 'cantidad', 'estado', 'fecha_recepcion', 'fecha_entrega', 'activa')
+    list_filter = ('estado', 'activa')

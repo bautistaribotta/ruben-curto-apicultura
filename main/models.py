@@ -1925,3 +1925,56 @@ class Cheque(models.Model):
         return f"Cheque de {self.importe} ({self.cuenta_corriente})"
 
 
+
+class OperacionMarco(models.Model):
+    """Recepcion, procesamiento y entrega de marcos de un apicultor.
+
+    Cada fila es una tanda: la empresa retira los marcos de un cliente, los anota
+    con su cantidad y el estado en que llegaron, y mas tarde los devuelve. La
+    entrega queda vacia mientras la tanda esta en el galpon, y las fechas se cargan a
+    mano (sin auto_now_add) para poder registrar tandas viejas ya entregadas.
+    """
+
+    ESTADOS = [
+        ("Con cera", "Con cera"),
+        ("Intermedio", "Intermedio"),
+        ("Apolillado", "Apolillado"),
+    ]
+
+    cliente = models.ForeignKey(Cliente, on_delete=models.PROTECT,
+                                related_name="operaciones_marcos", db_column="id_cliente")
+    cantidad = models.PositiveIntegerField()
+    estado = models.CharField(max_length=20, choices=ESTADOS)
+    fecha_recepcion = models.DateField()
+    # Vacia mientras los marcos siguen en el galpon
+    fecha_entrega = models.DateField(null=True, blank=True)
+    activa = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = "marcos"
+        verbose_name = "Operacion de marcos"
+        verbose_name_plural = "Operaciones de marcos"
+        # De la mas nueva a la mas vieja, como el resto de los historiales
+        ordering = ["-fecha_recepcion", "-id"]
+
+    @property
+    def entregada(self):
+        return self.fecha_entrega is not None
+
+    @property
+    def estado_entrega(self):
+        return "Entregados" if self.entregada else "En el galpón"
+
+    @property
+    def dias_en_galpon(self):
+        """Dias que los marcos llevan (o llevaron) en el galpon.
+
+        Con la tanda entregada mide el procesamiento completo; mientras sigue en
+        el galpon cuenta desde la recepcion hasta hoy, que es lo que deja ver de un
+        vistazo cuanto hace que una tanda esta esperando.
+        """
+        hasta = self.fecha_entrega or timezone.localdate()
+        return (hasta - self.fecha_recepcion).days
+
+    def __str__(self):
+        return f"{self.cantidad} marcos de {self.cliente} ({self.fecha_recepcion})"

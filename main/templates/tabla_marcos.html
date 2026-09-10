@@ -1,0 +1,115 @@
+{% comment %}
+  Tabla de operaciones de marcos (parcial). Se renderiza dentro de
+  #tabla-marcos-container y tambien sola cuando marcos.js refresca el listado por
+  AJAX (filtros o paginacion).
+
+  La columna de entrega hace de estado de la tanda: con fecha, los marcos ya
+  volvieron; sin fecha, siguen en el galpon y se muestra hace cuantos dias entraron,
+  que es lo que deja ver de un vistazo que tanda esta esperando hace mucho.
+{% endcomment %}
+<table class="tabla-marcos">
+  <thead>
+    <tr>
+      <th class="alineado-izq">Recepción</th>
+      <th class="alineado-izq">Entrega</th>
+      <th class="alineado-izq">Cliente</th>
+      <th class="alineado-der">Marcos</th>
+      <th class="alineado-centro">Estado</th>
+      <th class="alineado-der">Acciones</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for marco in page_obj %}
+      <tr class="fila-marco" data-id="{{ marco.id }}">
+        <td>
+          <span class="celda-fecha">
+            <span class="material-symbols-outlined">event</span>
+            {{ marco.fecha_recepcion|date:"d/m/Y" }}
+          </span>
+        </td>
+        <td>
+          {% if marco.fecha_entrega %}
+            <span class="celda-fecha">
+              <span class="material-symbols-outlined">event_available</span>
+              {{ marco.fecha_entrega|date:"d/m/Y" }}
+            </span>
+          {% else %}
+            <span class="mrc-galpon">
+              <span class="mrc-galpon__punto"></span>
+              En el galpón
+              <span class="mrc-galpon__dias">
+                {% if marco.dias_en_galpon == 1 %}hace 1 día{% else %}hace {{ marco.dias_en_galpon }} días{% endif %}
+              </span>
+            </span>
+          {% endif %}
+        </td>
+        <td>
+          <div class="mrc-cliente">
+            <span class="mrc-cliente__nombre">{{ marco.cliente.nombre }} {{ marco.cliente.apellido|default:"" }}</span>
+            {% if marco.cliente.localidad %}
+              <span class="mrc-cliente__localidad">{{ marco.cliente.localidad }}</span>
+            {% endif %}
+          </div>
+        </td>
+        <td class="alineado-der">
+          <span class="mrc-cantidad">{{ marco.cantidad|floatformat:"0g" }}</span>
+        </td>
+        <td class="alineado-centro">
+          <span class="mrc-estado mrc-estado--{{ marco.estado|slugify }}">
+            <span class="mrc-punto mrc-punto--{{ marco.estado|slugify }}"></span>
+            {{ marco.estado }}
+          </span>
+        </td>
+        <td>
+          <div class="acciones-tabla">
+            <button class="boton-icono editar" title="Editar" data-id="{{ marco.id }}">
+              <span class="material-symbols-outlined">edit</span>
+            </button>
+            <button class="boton-icono eliminar" title="Eliminar"
+                    data-id="{{ marco.id }}"
+                    data-cliente="{{ marco.cliente.nombre }} {{ marco.cliente.apellido|default:'' }}"
+                    data-cantidad="{{ marco.cantidad }}">
+              <span class="material-symbols-outlined">delete</span>
+            </button>
+          </div>
+        </td>
+      </tr>
+    {% empty %}
+      <tr class="fila-vacia">
+        <td colspan="6" class="celda-vacia">
+          <span class="material-symbols-outlined">hive</span>
+          {% if cliente or estado or desde or hasta %}
+            No hay operaciones de marcos con esos filtros.
+          {% else %}
+            Todavía no hay marcos cargados. Registrá la primera recepción.
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<!-- PAGINACION -->
+<div class="paginacion">
+  <div class="paginacion-info">
+    Mostrando <span>{{ page_obj.start_index|default:"0" }}-{{ page_obj.end_index|default:"0" }}</span>
+    de <span>{{ page_obj.paginator.count|default:"0" }}</span> operaciones
+  </div>
+  <div class="paginacion-botones">
+    {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}{% if cliente %}&cliente={{ cliente }}{% endif %}{% if estado %}&estado={{ estado }}{% endif %}{% if desde %}&desde={{ desde }}{% endif %}{% if hasta %}&hasta={{ hasta }}{% endif %}">
+        <button class="boton-paginacion">Anterior</button>
+      </a>
+    {% else %}
+      <button class="boton-paginacion" disabled>Anterior</button>
+    {% endif %}
+
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}{% if cliente %}&cliente={{ cliente }}{% endif %}{% if estado %}&estado={{ estado }}{% endif %}{% if desde %}&desde={{ desde }}{% endif %}{% if hasta %}&hasta={{ hasta }}{% endif %}">
+        <button class="boton-paginacion">Siguiente</button>
+      </a>
+    {% else %}
+      <button class="boton-paginacion" disabled>Siguiente</button>
+    {% endif %}
+  </div>
+</div>

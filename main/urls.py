@@ -1,5 +1,5 @@
 from django.urls import path
-from main.views import (login, inicio, marcos, actualizar_cotizacion_ajax,
+from main.views import (login, inicio, marcos, obtener_marco_json, actualizar_cotizacion_ajax,
                         productos, clientes, informacion_clientes, informacion_operacion, generar_remito,
                         nueva_operacion_venta, nueva_operacion_compra, cancelar_operacion, registrar_pago, obtener_cliente_json,
                         obtener_producto_json, obtener_producto_por_kg_json, viajes, operaciones, informacion_viaje, deudores, cerrar_sesion, flota,
@@ -28,6 +28,7 @@ urlpatterns = [
     path('', login, name="login"),
     path('inicio/', inicio, name="inicio"),
     path('marcos/', marcos, name="marcos"),
+    path('api/marcos/<int:id_marco>/', obtener_marco_json, name="obtener_marco_json"),
     path('actualizar_cotizacion/', actualizar_cotizacion_ajax, name="actualizar_cotizacion"),
     path('productos/', productos, name="productos"),
     path('clientes/', clientes, name="clientes"),

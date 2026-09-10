@@ -1138,6 +1138,7 @@ body {
 .tabla-operaciones-iva th,
 .tabla-viajes-cereal th,
 .tabla-estaciones th,
+.tabla-marcos th,
 .tabla-cargas th,
 #tabla-viajes-meli th {
   padding: 0.9rem 1.5rem;
