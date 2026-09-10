@@ -75,106 +75,10 @@
 
 /* Boton "Nuevo" (.boton-nuevo): estilos unificados en base.css */
 
-/* --- Pildoras de filtro por estado --- */
-/* --- Filtro de estado (pildora con menu desplegable) -------------------------
-   Reemplaza a las tres pildoras sueltas de estado por una sola pildora que abre un
-   menu. Mismo lenguaje visual que los chips de filtro por entidad: pino cuando hay
-   un estado aplicado (distinto de Todos). */
-.filtro-estado {
-  position: relative;
-  display: inline-flex;
-}
+/* --- Filtro de estado (pildora con menu) ---
+   Los estilos de la pildora viven en filtro_estado.css, compartida con Marcos.
+   Aca queda solo el ajuste propio de esta vista: el contador de viajes. */
 
-.filtro-estado__trigger {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  padding: 0.625rem 0.9rem;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--border-default);
-  background-color: var(--surface-card);
-  color: var(--text-muted);
-  font-family: inherit;
-  font-size: var(--text-sm);
-  font-weight: var(--weight-semibold);
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background-color var(--dur-normal) var(--ease-standard),
-              color var(--dur-normal) var(--ease-standard),
-              border-color var(--dur-normal) var(--ease-standard);
-}
-
-.filtro-estado__trigger .material-symbols-outlined {
-  font-size: 1.15rem;
-}
-
-.filtro-estado__trigger:hover {
-  background-color: var(--surface-hover);
-  color: var(--text-body);
-}
-
-.filtro-estado__trigger.is-active {
-  background-color: var(--brand-secondary);
-  color: var(--text-on-inverse);
-  border-color: var(--brand-secondary);
-}
-
-.filtro-estado__chevron {
-  margin-left: -0.1rem;
-  margin-right: -0.2rem;
-  transition: transform var(--dur-normal) var(--ease-standard);
-}
-
-.filtro-estado.is-open .filtro-estado__chevron {
-  transform: rotate(180deg);
-}
-
-.filtro-estado__menu {
-  position: absolute;
-  top: calc(100% + 0.35rem);
-  left: 0;
-  z-index: 20;
-  min-width: 100%;
-  margin: 0;
-  padding: 0.3rem;
-  list-style: none;
-  background-color: var(--surface-card);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
-}
-
-.filtro-estado__opt {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  min-height: 2.5rem;
-  padding: 0.5rem 0.65rem;
-  border-radius: var(--radius-sm);
-  color: var(--text-body);
-  font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.filtro-estado__opt-label {
-  margin-right: auto;
-}
-
-.filtro-estado__opt:hover {
-  background-color: var(--surface-hover);
-}
-
-.filtro-estado__opt.is-selected {
-  background-color: var(--surface-sunken);
-  font-weight: var(--weight-semibold);
-}
-
-.filtro-estado__opt:focus-visible {
-  outline: none;
-  box-shadow: var(--ring);
-}
 
 /* En la opcion elegida (fondo hundido) el contador toma el fondo de tarjeta para
    no perder contraste contra el mismo tono. */

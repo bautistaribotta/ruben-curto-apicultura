@@ -1,19 +1,26 @@
 /**
  * -----------------------------------------------------------------------------
- * FILTRO DE ESTADO DEL VIAJE (PILDORA CON MENU DESPLEGABLE)
+ * FILTRO DE ESTADO (PILDORA CON MENU DESPLEGABLE)
  * -----------------------------------------------------------------------------
- * Reemplaza a las tres pildoras sueltas (Todos / En curso / Finalizado) por una
- * sola pildora que abre un menu. Al elegir una opcion escribe el valor en el input
- * hidden #filtro-estado (que lee viajes.js) y avisa por el evento
- * 'filtroestado:cambio' para que se dispare la busqueda AJAX.
+ * Una sola pildora que abre un menu con los estados posibles, en vez de una
+ * pildora suelta por estado. Es generica: la usan Viajes (En curso / Finalizado)
+ * y Marcos (Con cera / Intermedio / Apolillado); el markup de las opciones lo
+ * pone el partial de cada vista.
+ *
+ * Al elegir una opcion deja el valor en data-estado del contenedor y, si la vista
+ * declara un input hidden con data-hidden, tambien lo escribe ahi (asi lo lee
+ * viajes.js). Despues avisa por el evento 'filtroestado:cambio' para que cada
+ * vista dispare su busqueda AJAX.
  */
 (function () {
-  const cont = document.getElementById('filtro-estado-viaje');
-  const trigger = document.getElementById('filtro-estado-trigger');
-  const menu = document.getElementById('filtro-estado-menu');
-  const label = document.getElementById('filtro-estado-label');
-  const hidden = document.getElementById('filtro-estado');
-  if (!cont || !trigger || !menu || !label) return;
+  const cont = document.querySelector('.filtro-estado');
+  if (!cont) return;
+
+  const trigger = cont.querySelector('.filtro-estado__trigger');
+  const menu = cont.querySelector('.filtro-estado__menu');
+  const label = cont.querySelector('.filtro-estado__label');
+  const hidden = document.getElementById(cont.dataset.hidden || '');
+  if (!trigger || !menu || !label) return;
 
   const opciones = () => Array.from(menu.querySelectorAll('.filtro-estado__opt'));
   const estaAbierto = () => !menu.hidden;
@@ -43,7 +50,8 @@
       o.setAttribute('aria-selected', activo ? 'true' : 'false');
     });
 
-    // Refleja el estado en el trigger y en el input hidden que lee viajes.js.
+    // Refleja el estado en el trigger, en el data-* del contenedor y, si la vista
+    // lo declaro, en su input hidden.
     label.textContent = estado || 'Todos';
     trigger.classList.toggle('is-active', Boolean(estado));
     cont.dataset.estado = estado;

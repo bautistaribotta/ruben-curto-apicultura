@@ -2,10 +2,10 @@
   Filtro de estado del viaje como una sola pildora con menu desplegable. Reemplaza a
   las tres pildoras sueltas (Todos / En curso / Finalizado): ocupa menos y queda en
   linea con los chips de filtro por entidad. El estado aplicado vive en el data-* del
-  contenedor y en el input hidden #filtro-estado que ya lee viajes.js para la busqueda
+  contenedor (data-estado) y en el input hidden #filtro-estado que lee viajes.js para la busqueda
   AJAX. La pildora se pinta de pino (is-active) cuando hay un estado distinto de Todos.
 {% endcomment %}
-<div class="filtro-estado" id="filtro-estado-viaje" data-estado="{{ estado|default:'' }}">
+<div class="filtro-estado" id="filtro-estado-viaje" data-estado="{{ estado|default:'' }}" data-hidden="filtro-estado">
   <button type="button"
           class="filtro-estado__trigger {% if estado %}is-active{% endif %}"
           id="filtro-estado-trigger" aria-haspopup="listbox" aria-expanded="false">
