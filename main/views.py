@@ -233,6 +233,11 @@ def inicio(request):
     return render(request, "inicio.html", contexto)
 
 
+@login_required
+def marcos(request):
+    return render(request, "marcos.html")
+
+
 def _estado_carnet(fecha, hoy):
     """Traduce la fecha de vencimiento del carnet a un estado con semaforo.
 

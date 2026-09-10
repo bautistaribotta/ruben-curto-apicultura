@@ -59,6 +59,12 @@
           </a>
         </li>
         <li>
+          <a href="{% url 'marcos' %}" class="item-menu {% if request.resolver_match.url_name == 'marcos' %} activo {% endif %}">
+            <span class="material-symbols-outlined">hive</span>
+            Marcos
+          </a>
+        </li>
+        <li>
           <a href="{% url 'productos' %}" class="item-menu {% if request.resolver_match.url_name == 'productos' %} activo {% endif %}">
             <span class="material-symbols-outlined">inventory_2</span>
             Productos
