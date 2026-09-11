@@ -3029,7 +3029,9 @@ def eliminar_viaje_cereal(id_viaje_cereal):
     viaje_cereal = get_object_or_404(ViajeCereal, id=id_viaje_cereal)
     # Borrado logico: lo marco inactivo para no perder el historial
     viaje_cereal.activo = False
-    viaje_cereal.save()
+    # Solo 'activo': un save() completo pisaba 'pagado' y 'fecha_pago' con lo leido
+    # al entrar, y deshacia un cobro marcado desde la casilla mientras tanto.
+    viaje_cereal.save(update_fields=["activo"])
     return viaje_cereal
 
 
@@ -4715,7 +4717,13 @@ def editar_cheque(id_cheque, id_cuenta_corriente=None, numero=None, fecha_emisio
     cheque.numero = nro
     cheque.fecha_emision, cheque.fecha_cobro = emision, cobro
     cheque.concepto, cheque.importe = texto, monto
-    cheque.save()
+    """
+    Guardo solo los campos del formulario: un save() completo reescribia tambien
+    'cobrado' con el valor leido al abrir el panel, y pisaba el cobro que alguien
+    marcara desde la casilla mientras tanto.
+    """
+    cheque.save(update_fields=["cuenta_corriente", "numero", "fecha_emision", "fecha_cobro",
+                               "concepto", "importe"])
     return cheque
 
 
