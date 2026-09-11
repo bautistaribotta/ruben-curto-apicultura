@@ -2601,12 +2601,20 @@ def registrar_devolucion_caja(id_viaje, estado, monto_devuelto=None):
     sobrante_devolucion, asi el registro no se descuadra si despues cambian las
     operaciones o los gastos.
     """
-    viaje = get_object_or_404(Viaje, id=id_viaje, activo=True)
-
-    if estado not in (Viaje.DEVOLUCION_SIN_REGISTRAR, Viaje.DEVOLUCION_TOTAL, Viaje.DEVOLUCION_PARCIAL):
-        raise ValueError("El estado de la devolución no es válido.")
-
     with transaction.atomic():
+        """
+        Bloqueo la fila del viaje con select_for_update, y recien ahi leo su estado.
+        Sin el lock, dos registros concurrentes de la misma devolucion (doble click,
+        dos pestañas) leian ambos pago_devolucion=None y creaban dos PagosEmpleados:
+        el segundo quedaba huerfano del viaje pero sumaba igual en la cuenta
+        corriente del empleado. Con el lock, el segundo espera y al desbloquearse ya
+        ve el pago que creo el primero, asi que solo lo actualiza.
+        """
+        viaje = get_object_or_404(Viaje.objects.select_for_update(), id=id_viaje, activo=True)
+
+        if estado not in (Viaje.DEVOLUCION_SIN_REGISTRAR, Viaje.DEVOLUCION_TOTAL, Viaje.DEVOLUCION_PARCIAL):
+            raise ValueError("El estado de la devolución no es válido.")
+
         if estado == Viaje.DEVOLUCION_SIN_REGISTRAR:
             _limpiar_devolucion(viaje)
             return viaje
