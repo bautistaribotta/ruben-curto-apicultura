@@ -12,5 +12,4 @@ skills-lock.json
 .claude/
 .idea/
 servidor.log
-iniciar_servidor.bat
-iniciar_servidor_oculto.vbs
+actualizador.log
