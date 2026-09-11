@@ -31,9 +31,9 @@ class ProductoAdmin(admin.ModelAdmin):
 
 @admin.register(ProductoPorKg)
 class ProductoPorKgAdmin(admin.ModelAdmin):
-    list_display = ('id', 'articulo', 'categoria', 'monto', 'cantidad', 'mostrar_en_inicio', 'activo')
+    list_display = ('id', 'articulo', 'categoria', 'unidad', 'monto', 'cantidad', 'mostrar_en_inicio', 'activo')
     list_editable = ('mostrar_en_inicio',)
-    list_filter = ('mostrar_en_inicio', 'categoria', 'activo')
+    list_filter = ('mostrar_en_inicio', 'categoria', 'unidad', 'activo')
     search_fields = ('articulo',)
 
 

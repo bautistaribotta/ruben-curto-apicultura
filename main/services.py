@@ -147,12 +147,14 @@ def eliminar_producto(id_producto):
     return producto
 
 
-# --- PRODUCTOS POR KILO ---
+# --- PRODUCTOS A GRANEL (POR KILO O POR LITRO) ---
 """
 Mismo ciclo de vida que un producto envasado, pero sobre ProductoPorKg: la
-unidad de venta es el kilo, asi que el stock admite decimales y el precio se
-guarda por kilo. Los articulos historicos de miel y cera (ARTICULOS_COTIZACION)
-quedan fuera de la edicion y de la baja: su precio se toca en cotizaciones.
+unidad de venta es el kilo o el litro, asi que el stock admite decimales y el
+precio se guarda por unidad de medida. Los articulos historicos de miel y cera
+(ARTICULOS_COTIZACION) quedan fuera de la edicion y de la baja: su precio se
+toca en cotizaciones. Las funciones conservan el sufijo "por_kg" de cuando la
+tabla era solo de kilos.
 """
 
 
@@ -171,7 +173,7 @@ def _validar_producto_por_kg(nombre, categoria, precio, id_excluir=None):
     if id_excluir:
         repetidos = repetidos.exclude(id=id_excluir)
     if repetidos.exists():
-        raise ValueError("Ya existe un producto por kilo con ese nombre.")
+        raise ValueError("Ya existe un producto a granel con ese nombre.")
 
     if categoria not in dict(Producto.categorias):
         raise ValueError("Seleccione una categoria valida.")
@@ -179,41 +181,46 @@ def _validar_producto_por_kg(nombre, categoria, precio, id_excluir=None):
     try:
         precio = Decimal(str(precio).strip())
     except (InvalidOperation, TypeError, ValueError):
-        raise ValueError("Ingrese un precio por kilo valido.")
+        raise ValueError("Ingrese un precio valido.")
 
-    # El precio por kilo se guarda entero: un valor con decimales seria un
-    # separador de miles mal escrito, y truncarlo guardaria otro precio
+    # El precio por kilo o litro se guarda entero: un valor con decimales seria
+    # un separador de miles mal escrito, y truncarlo guardaria otro precio
     if precio != precio.to_integral_value():
-        raise ValueError("El precio por kilo se escribe sin decimales.")
+        raise ValueError("El precio se escribe sin decimales.")
 
     precio = int(precio)
 
     if precio < 1:
-        raise ValueError("El precio por kilo no puede ser menor a 1.")
+        raise ValueError("El precio no puede ser menor a 1.")
 
     return nombre, categoria, precio
 
 
 def _a_kilos(cantidad):
-    # Los kilos llegan del formulario como texto; acepto vacio como 0
+    # La cantidad (kilos o litros) llega del formulario como texto; acepto vacio como 0
     if cantidad in (None, ""):
         return Decimal("0")
     try:
         kilos = Decimal(str(cantidad).replace(",", "."))
     except InvalidOperation:
-        raise ValueError("Ingrese una cantidad de kilos valida.")
+        raise ValueError("Ingrese una cantidad valida.")
     return kilos.quantize(Decimal("0.01"))
 
 
-def nuevo_producto_por_kg(nombre, categoria=None, precio=None, cantidad=None):
+def nuevo_producto_por_kg(nombre, categoria=None, precio=None, cantidad=None, unidad=None):
     nombre, categoria, precio = _validar_producto_por_kg(nombre, categoria, precio)
     kilos = _a_kilos(cantidad)
 
     if kilos < 0:
         raise ValueError("El stock inicial no puede ser negativo.")
 
+    # La unidad se fija en el alta y no se edita: cambiarla convertiria el
+    # stock y las operaciones viejas en otra magnitud
+    if unidad not in dict(ProductoPorKg.unidades):
+        raise ValueError("Elija si el producto se vende por kilo o por litro.")
+
     return ProductoPorKg.objects.create(
-        articulo=nombre, categoria=categoria, monto=precio, cantidad=kilos
+        articulo=nombre, categoria=categoria, unidad=unidad, monto=precio, cantidad=kilos
     )
 
 
@@ -227,6 +234,7 @@ def obtener_datos_producto_por_kg(id_producto):
         "id": producto.id,
         "nombre": producto.articulo,
         "categoria": producto.categoria,
+        "unidad": producto.unidad,
         "precio": str(producto.monto),
         "cantidad": str(producto.cantidad),
         "es_cotizacion": producto.es_cotizacion,
@@ -1246,6 +1254,7 @@ def _grupo_inicio(categoria):
         "icono": CATEGORIAS_INICIO.get(categoria, {}).get("icono", "inventory_2"),
         "articulos": [],
         "kilos": Decimal("0"),
+        "litros": Decimal("0"),
         "resumenes": [],
     }
 
@@ -1254,8 +1263,8 @@ def get_tablero_inicio():
     """
     Arma los grupos del tablero de inicio con los productos marcados con
     mostrar_en_inicio. Cada grupo es una categoria: adentro van las tarjetas de
-    los articulos que se venden por kilo (precio editable, kilos disponibles) y
-    los kilos sumados de esos articulos.
+    los articulos que se venden a granel (precio editable, stock disponible) y
+    los kilos y los litros sumados de esos articulos, cada magnitud por su lado.
 
     Los productos que se venden por unidad no van tarjeta por tarjeta: se
     resumen en una sola por categoria, con el total de unidades y cuantos
@@ -1279,7 +1288,10 @@ def get_tablero_inicio():
             grupos.append(grupo)
 
         grupo["articulos"].append(articulo)
-        grupo["kilos"] += articulo.cantidad
+        if articulo.es_por_litro:
+            grupo["litros"] += articulo.cantidad
+        else:
+            grupo["kilos"] += articulo.cantidad
 
     # Ordeno antes de repartir los resumenes: el que no tiene tablero propio se
     # cuelga del primer grupo, y "primero" tiene que ser el de siempre
@@ -2260,7 +2272,7 @@ def opciones_productos_operaciones():
     Ofrece solo lo que realmente aparece en alguna operacion activa, asi el filtro
     nunca lista un producto que no daria resultados. Cada linea de operacion apunta
     a un producto de catalogo o a un articulo a granel (nunca a los dos), por eso el
-    id viaja como token: "p<id>" para el producto y "g<id>" para el articulo por kg,
+    id viaja como token: "p<id>" para el producto y "g<id>" para el articulo a granel,
     el mismo esquema que usa el filtro de Deudas.
     """
     items = []
@@ -2275,7 +2287,7 @@ def opciones_productos_operaciones():
     granel = (ProductoPorKg.objects.filter(detalleoperacion__operacion__activa=True)
               .distinct().order_by("articulo"))
     for cotizacion in granel:
-        nombre = f"{cotizacion.articulo} (por kg)"
+        nombre = f"{cotizacion.articulo} (por {cotizacion.abreviatura})"
         items.append({
             "id": f"g{cotizacion.id}",
             "principal": nombre,
@@ -2299,7 +2311,7 @@ def nombre_producto_operaciones_filtro(token):
         producto = Producto.objects.filter(id=ident).first()
         return producto.nombre if producto else ""
     cotizacion = ProductoPorKg.objects.filter(id=ident).first()
-    return f"{cotizacion.articulo} (por kg)" if cotizacion else ""
+    return f"{cotizacion.articulo} (por {cotizacion.abreviatura})" if cotizacion else ""
 
 
 def opciones_clientes_operaciones():
@@ -3483,7 +3495,7 @@ def _items_operacion(operacion):
     items = []
     for detalle in operacion.detalleoperacion_set.all():
         if detalle.es_granel:
-            cantidad = f"{detalle.cantidad:.2f}".rstrip("0").rstrip(".") + " kg"
+            cantidad = f"{detalle.cantidad:.2f}".rstrip("0").rstrip(".") + f" {detalle.abreviatura}"
         else:
             cantidad = f"{detalle.cantidad:.0f}x"
         items.append({

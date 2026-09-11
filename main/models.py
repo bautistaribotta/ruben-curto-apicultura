@@ -168,7 +168,7 @@ class DetalleOperacion(models.Model):
     operacion = models.ForeignKey(Operacion, on_delete=models.CASCADE, db_column="id_operacion")
     """
     Una linea de la operacion apunta a un producto envasado (venta por unidad) O a un
-    articulo de cotizaciones (venta/compra a granel en kilos), nunca a los dos a la vez.
+    articulo a granel (venta/compra en kilos o litros), nunca a los dos a la vez.
     La exclusion mutua la garantiza el CheckConstraint de abajo.
     """
     producto = models.ForeignKey(Producto, on_delete=models.PROTECT, db_column="id_producto",
@@ -209,8 +209,13 @@ class DetalleOperacion(models.Model):
         sin que cada template tenga que ramificar entre producto y cotizacion
         """
         if self.es_granel:
-            return f"{self.cotizacion.articulo} (por kg)"
+            return f"{self.cotizacion.articulo} (por {self.cotizacion.abreviatura})"
         return self.producto.nombre
+
+    @property
+    def abreviatura(self):
+        # Unidad de la cantidad: "kg" o "l" si es a granel, vacio si se cuenta
+        return self.cotizacion.abreviatura if self.es_granel else ""
 
     def __str__(self):
         return f"{self.cantidad} de {self.nombre_item} (Op: {self.operacion.id})"
@@ -235,9 +240,13 @@ class Pago(models.Model):
 
 class ProductoPorKg(models.Model):
     """
-    Producto que se vende pesado, no por unidad. Comparte las categorias con
-    Producto: la diferencia con esa tabla es la unidad de venta (kilos con
-    decimales en vez de unidades enteras), no el rubro.
+    Producto que se vende a granel (pesado o medido), no por unidad. Comparte
+    las categorias con Producto: la diferencia con esa tabla es la unidad de
+    venta (kilos o litros con decimales en vez de unidades enteras), no el rubro.
+
+    La tabla nacio solo para kilos y conserva ese nombre; el campo unidad dice
+    si el articulo se pesa (kg) o se mide (l), y todo lo que muestra una unidad
+    lo lee de ahi en vez de escribir "kg" a mano.
 
     Los cinco articulos de ARTICULOS_COTIZACION son los historicos de miel y
     cera: su precio y su stock se gobiernan desde el tablero de cotizaciones y
@@ -253,12 +262,21 @@ class ProductoPorKg(models.Model):
         "Cera Recupero",
     )
 
+    UNIDAD_KILO = "kg"
+    UNIDAD_LITRO = "l"
+    unidades = (
+        (UNIDAD_KILO, "Kilo"),
+        (UNIDAD_LITRO, "Litro"),
+    )
+
     articulo = models.CharField(max_length=30, unique=True)
     categoria = models.CharField(max_length=50, choices=Producto.categorias, null=True, blank=True)
+    unidad = models.CharField(max_length=2, choices=unidades, default=UNIDAD_KILO)
     monto = models.PositiveIntegerField(default=1)
     """
-    Kilos disponibles a granel del articulo. Uso Decimal (no Float) para evitar
-    ruido de precision al acumular pesadas fraccionadas, igual que DetalleOperacion
+    Kilos o litros disponibles a granel del articulo. Uso Decimal (no Float)
+    para evitar ruido de precision al acumular pesadas fraccionadas, igual que
+    DetalleOperacion
     """
     cantidad = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     activo = models.BooleanField(default=True)
@@ -273,6 +291,25 @@ class ProductoPorKg(models.Model):
     def es_cotizacion(self):
         # Miel y cera historicas: el inventario no las edita ni las da de baja
         return self.articulo in self.ARTICULOS_COTIZACION
+
+    @property
+    def es_por_litro(self):
+        return self.unidad == self.UNIDAD_LITRO
+
+    @property
+    def abreviatura(self):
+        # Simbolo que acompana a las cantidades: "12,5 kg" o "12,5 L". El litro
+        # va en mayuscula para que no se confunda con el uno o con la i
+        return "L" if self.es_por_litro else self.unidad
+
+    @property
+    def nombre_unidad(self):
+        # Forma larga en singular, para frases: "precio por kilo", "por litro"
+        return "litro" if self.es_por_litro else "kilo"
+
+    @property
+    def etiqueta_venta(self):
+        return f"Por {self.nombre_unidad}"
 
     def __str__(self):
         return f"Cotizacion {self.articulo}: {self.monto}"
