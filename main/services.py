@@ -4562,41 +4562,55 @@ def obtener_cuentas_corrientes(id_empresa):
 
 
 def crear_cuenta_corriente(id_empresa, id_banco, numero):
-    """Registra una cuenta corriente de una empresa en un banco."""
-    empresa = get_object_or_404(Empresa, id=id_empresa, activa=True)
-    if not id_banco:
-        raise ValueError("Elegí un banco para la cuenta corriente.")
-    banco = get_object_or_404(Banco, id=id_banco, activo=True)
-    numero = _validar_numero_cuenta(numero)
+    """Registra una cuenta corriente de una empresa en un banco.
 
-    # No repetir la misma cuenta (empresa + banco + numero) entre las activas
-    duplicada = (CuentaCorriente.objects
-                 .filter(empresa=empresa, banco=banco, numero__iexact=numero, activa=True)
-                 .exists())
-    if duplicada:
-        raise ValueError("Esa cuenta corriente ya existe para esta empresa en ese banco.")
+    Serializa las altas de una misma empresa bloqueando su fila (select_for_update),
+    igual que marcar_pago_alquiler bloquea la casa. El chequeo de duplicado corre
+    recien bajo ese lock, asi que dos altas concurrentes de la misma cuenta no
+    pueden pasar las dos: la segunda espera y ya ve la que creo la primera. No hay
+    UniqueConstraint que lo respalde porque MySQL no soporta constraints
+    condicionales, y una sin condicion impediria volver a dar de alta un numero
+    cuya cuenta anterior fue dada de baja (activa=False), que hoy esta permitido.
+    """
+    with transaction.atomic():
+        empresa = get_object_or_404(Empresa.objects.select_for_update(), id=id_empresa, activa=True)
+        if not id_banco:
+            raise ValueError("Elegí un banco para la cuenta corriente.")
+        banco = get_object_or_404(Banco, id=id_banco, activo=True)
+        numero = _validar_numero_cuenta(numero)
 
-    return CuentaCorriente.objects.create(empresa=empresa, banco=banco, numero=numero)
+        # No repetir la misma cuenta (empresa + banco + numero) entre las activas
+        duplicada = (CuentaCorriente.objects
+                     .filter(empresa=empresa, banco=banco, numero__iexact=numero, activa=True)
+                     .exists())
+        if duplicada:
+            raise ValueError("Esa cuenta corriente ya existe para esta empresa en ese banco.")
+
+        return CuentaCorriente.objects.create(empresa=empresa, banco=banco, numero=numero)
 
 
 def editar_cuenta_corriente(id_cuenta, id_banco, numero):
-    cuenta = get_object_or_404(CuentaCorriente, id=id_cuenta)
-    if not id_banco:
-        raise ValueError("Elegí un banco para la cuenta corriente.")
-    banco = get_object_or_404(Banco, id=id_banco, activo=True)
-    numero = _validar_numero_cuenta(numero)
+    # Mismo lock por empresa que crear_cuenta_corriente: una edicion que choque con
+    # un alta (o con otra edicion) de la misma cuenta tampoco puede duplicarla.
+    with transaction.atomic():
+        cuenta = get_object_or_404(CuentaCorriente, id=id_cuenta)
+        get_object_or_404(Empresa.objects.select_for_update(), id=cuenta.empresa_id)
+        if not id_banco:
+            raise ValueError("Elegí un banco para la cuenta corriente.")
+        banco = get_object_or_404(Banco, id=id_banco, activo=True)
+        numero = _validar_numero_cuenta(numero)
 
-    duplicada = (CuentaCorriente.objects
-                 .filter(empresa=cuenta.empresa, banco=banco, numero__iexact=numero, activa=True)
-                 .exclude(id=cuenta.id)
-                 .exists())
-    if duplicada:
-        raise ValueError("Esa cuenta corriente ya existe para esta empresa en ese banco.")
+        duplicada = (CuentaCorriente.objects
+                     .filter(empresa=cuenta.empresa, banco=banco, numero__iexact=numero, activa=True)
+                     .exclude(id=cuenta.id)
+                     .exists())
+        if duplicada:
+            raise ValueError("Esa cuenta corriente ya existe para esta empresa en ese banco.")
 
-    cuenta.banco = banco
-    cuenta.numero = numero
-    cuenta.save()
-    return cuenta
+        cuenta.banco = banco
+        cuenta.numero = numero
+        cuenta.save()
+        return cuenta
 
 
 def eliminar_cuenta_corriente(id_cuenta):
