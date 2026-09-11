@@ -553,15 +553,12 @@ def actualizar_cotizacion_ajax(request):
 def _productos_por_kg_del_listado(q, categoria):
     """
     Productos a granel (por kilo o por litro) que entran en un listado, segun el
-    buscador y el chip de categoria. Aparecen al filtrar por una categoria y
-    tambien cuando se busca por nombre, para que el buscador encuentre en las
-    dos tablas; sin busqueda ni categoria ("Todas") se conserva el listado de
-    productos por unidad que ya se mostraba. La busqueda por ID es solo de los
-    productos por unidad: los de granel no muestran ID en la tabla.
+    buscador y el chip de categoria. Entran con las mismas reglas que los
+    productos por unidad: todos con "Todas", los de la categoria elegida al
+    filtrar y los que coinciden por nombre al buscar, asi el inventario y las
+    operaciones muestran las dos tablas como un solo catalogo. La busqueda por
+    ID es solo de los productos por unidad: los de granel no muestran ID.
     """
-    if not q and not categoria:
-        return ProductoPorKg.objects.none()
-
     if q and q.isdigit():
         return ProductoPorKg.objects.none()
 
@@ -1147,9 +1144,9 @@ def _paginar_operacion_con_granel(productos, categoria, q, pagina_numero):
     """
     Arma la pagina del listado de una operacion (venta o compra) intercalando los
     productos a granel (ProductoPorKg, por kilo o por litro) con los que se venden
-    por unidad. Los de granel entran con la misma regla que en el inventario
-    (categoria o busqueda por nombre) y se cuentan dentro de la paginacion,
-    apareciendo primero en su pagina. Devuelve (granel_pagina, productos_pagina, pagina_obj).
+    por unidad. Los de granel entran con la misma regla que en el inventario y se
+    cuentan dentro de la paginacion, apareciendo primero en su pagina. Devuelve
+    (granel_pagina, productos_pagina, pagina_obj).
     """
     granel = _productos_por_kg_del_listado(q, categoria)
 
@@ -1243,9 +1240,9 @@ def nueva_operacion_venta(request, id_cliente):
 
     productos = productos.order_by("nombre")
 
-    # Stock a granel (por kilo o por litro): se intercala en el listado solo cuando
-    # se filtra por categoria o se busca por nombre. Se integra a la misma paginacion
-    # (aparece primero) para que la pagina no supere las 6 filas.
+    # Stock a granel (por kilo o por litro): se intercala en el listado respetando
+    # la busqueda y la categoria. Se integra a la misma paginacion (aparece primero)
+    # para que la pagina no supere las 6 filas.
     granel_pagina, productos_pagina, pagina_obj = _paginar_operacion_con_granel(
         productos, categoria_filtrada, q, request.GET.get("page")
     )
@@ -1356,8 +1353,8 @@ def nueva_operacion_compra(request, id_cliente):
 
     productos = productos.order_by("nombre")
 
-    # Igual que en venta: el stock a granel se intercala en el listado solo al filtrar
-    # por categoria o buscar, integrado a la paginacion (aparece primero en su pagina).
+    # Igual que en venta: el stock a granel se intercala en el listado, integrado a
+    # la paginacion (aparece primero en su pagina).
     granel_pagina, productos_pagina, pagina_obj = _paginar_operacion_con_granel(
         productos, categoria_filtrada, q, request.GET.get("page")
     )
