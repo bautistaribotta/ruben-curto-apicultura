@@ -7,7 +7,7 @@ from decimal import Decimal, InvalidOperation
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.http import Http404
-from django.db import transaction
+from django.db import transaction, IntegrityError
 from django.db.models import (Sum, F, Value, Count, Q, Subquery, OuterRef, Exists, Case, When,
                               IntegerField, DecimalField, DateField)
 from django.db.models.functions import Coalesce
@@ -292,6 +292,27 @@ def modificar_stock_por_kg(id_producto, cantidad):
 # --- ESTACIONES DE SERVICIO ---
 # Catalogo simple (solo nombre + activa). La baja es logica para no perder
 # el historial cuando las cargas de combustible referencien la estacion.
+def _guardar_unico(accion, mensaje):
+    """
+    Ejecuta 'accion' (un create o un save) y traduce el IntegrityError que tira la
+    restriccion unica de la base al mismo ValueError que da el chequeo previo.
+
+    El chequeo con exists() y el guardado son dos sentencias distintas: dos altas
+    concurrentes del mismo nombre pasan las dos el chequeo y la segunda choca contra
+    el unique de la base. Tambien cubre el nombre de un registro dado de baja, que
+    el chequeo (acotado a los activos) deja pasar pero la base rechaza igual. Sin
+    esto el usuario veia un error 500 en vez del aviso.
+
+    El atomic interno es un savepoint: si el guardado falla, la transaccion que lo
+    envuelve (si la hay) sigue usable, en vez de quedar rota como pasa en Postgres.
+    """
+    try:
+        with transaction.atomic():
+            return accion()
+    except IntegrityError:
+        raise ValueError(mensaje)
+
+
 def crear_estacion(nombre):
     nombre = (nombre or "").strip()
     if not nombre:
@@ -302,7 +323,8 @@ def crear_estacion(nombre):
     if EstacionDeServicio.objects.filter(nombre__iexact=nombre, activa=True).exists():
         raise ValueError("Ya existe una estacion con ese nombre.")
 
-    return EstacionDeServicio.objects.create(nombre=nombre)
+    return _guardar_unico(lambda: EstacionDeServicio.objects.create(nombre=nombre),
+                          "Ya existe una estacion con ese nombre.")
 
 
 def obtener_estaciones_activas():
@@ -334,7 +356,7 @@ def editar_estacion(id_estacion, nombre):
         raise ValueError("Ya existe una estacion con ese nombre.")
 
     estacion.nombre = nombre
-    estacion.save()
+    _guardar_unico(estacion.save, "Ya existe una estacion con ese nombre.")
     return estacion
 
 
@@ -3111,10 +3133,12 @@ def crear_destino_reparto(localidad_destino, valor_viaje):
         existente.localidad_destino = localidad
         existente.valor_viaje = valor_val
         existente.activo = True
-        existente.save()
+        _guardar_unico(existente.save, f"Ya existe un destino llamado '{localidad}'.")
         return existente
 
-    return DestinoViajeReparto.objects.create(localidad_destino=localidad, valor_viaje=valor_val)
+    return _guardar_unico(
+        lambda: DestinoViajeReparto.objects.create(localidad_destino=localidad, valor_viaje=valor_val),
+        f"Ya existe un destino llamado '{localidad}'.")
 
 
 def editar_destino_reparto(id_destino, localidad_destino, valor_viaje):
@@ -3132,7 +3156,7 @@ def editar_destino_reparto(id_destino, localidad_destino, valor_viaje):
 
     destino.localidad_destino = localidad
     destino.valor_viaje = valor_val
-    destino.save()
+    _guardar_unico(destino.save, f"Ya existe otro destino llamado '{localidad}'.")
     return destino
 
 
@@ -4363,13 +4387,14 @@ def _validar_nombre_empresa(nombre, excluir_id=None):
 
 def crear_empresa(nombre):
     nombre = _validar_nombre_empresa(nombre)
-    return Empresa.objects.create(nombre=nombre)
+    return _guardar_unico(lambda: Empresa.objects.create(nombre=nombre),
+                          "Ya existe una empresa con ese nombre.")
 
 
 def editar_empresa(id_empresa, nombre):
     empresa = get_object_or_404(Empresa, id=id_empresa)
     empresa.nombre = _validar_nombre_empresa(nombre, excluir_id=empresa.id)
-    empresa.save()
+    _guardar_unico(empresa.save, "Ya existe una empresa con ese nombre.")
     return empresa
 
 
@@ -4514,13 +4539,14 @@ def obtener_bancos_activos(q=None):
 
 def crear_banco(nombre):
     nombre = _validar_nombre_banco(nombre)
-    return Banco.objects.create(nombre=nombre)
+    return _guardar_unico(lambda: Banco.objects.create(nombre=nombre),
+                          "Ya existe un banco con ese nombre.")
 
 
 def editar_banco(id_banco, nombre):
     banco = get_object_or_404(Banco, id=id_banco)
     banco.nombre = _validar_nombre_banco(nombre, excluir_id=banco.id)
-    banco.save()
+    _guardar_unico(banco.save, "Ya existe un banco con ese nombre.")
     return banco
 
 
