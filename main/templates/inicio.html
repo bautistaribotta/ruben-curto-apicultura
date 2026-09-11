@@ -53,8 +53,8 @@
         Los grupos salen de los productos marcados con "mostrar en inicio" en
         cada base, no de una lista escrita aca: asi cada instalacion elige que
         destacar sin depender de ids ni de nombres. Cada grupo es una categoria
-        con sus articulos por kilo, y al final las tarjetas de resumen de los
-        productos por unidad.
+        con sus articulos a granel (por kilo o por litro), y al final las
+        tarjetas de resumen de los productos por unidad.
       {% endcomment %}
       {% for grupo in grupos %}
       <div class="ini-group">
@@ -62,11 +62,19 @@
           <span class="ini-group__glyph material-symbols-outlined">{{ grupo.icono }}</span>
           <h3>{{ grupo.categoria }}</h3>
           {% if grupo.articulos %}
-          <span class="ini-group__count">{{ grupo.articulos|length }} articulo{{ grupo.articulos|length|pluralize }} - por kilogramo</span>
+          <span class="ini-group__count">{{ grupo.articulos|length }} articulo{{ grupo.articulos|length|pluralize }} a granel</span>
+          {% if grupo.kilos %}
           <span class="ini-group__stock">
             <span class="material-symbols-outlined">scale</span>
             {{ grupo.kilos|floatformat:"-2" }} kg a granel
           </span>
+          {% endif %}
+          {% if grupo.litros %}
+          <span class="ini-group__stock">
+            <span class="material-symbols-outlined">water_drop</span>
+            {{ grupo.litros|floatformat:"-2" }} L a granel
+          </span>
+          {% endif %}
           {% endif %}
         </div>
         <div class="ini-board">
@@ -83,12 +91,12 @@
               <div class="ini-tile__price">
                 <span class="ini-tile__prefix">$</span>
                 <span class="ini-tile__amount monto">{{ articulo.monto }}</span>
-                <span class="ini-tile__unit">/kg</span>
+                <span class="ini-tile__unit">/{{ articulo.abreviatura }}</span>
               </div>
             </div>
             <div class="ini-tile__stock">
               <span class="ini-tile__stocklabel">Disponible</span>
-              <span class="ini-tile__stockval">{{ articulo.cantidad|floatformat:"-2" }} <i>kg</i></span>
+              <span class="ini-tile__stockval">{{ articulo.cantidad|floatformat:"-2" }} <i>{{ articulo.abreviatura }}</i></span>
             </div>
           </article>
           {% endfor %}
@@ -120,7 +128,7 @@
       </div>
       {% endfor %}
 
-      <p class="ini-foot">Valores expresados en pesos argentinos por kilogramo. Los kilos disponibles corresponden al stock a granel.</p>
+      <p class="ini-foot">Valores expresados en pesos argentinos por kilo o por litro. Las cantidades disponibles corresponden al stock a granel.</p>
 
     </div>
   </section>

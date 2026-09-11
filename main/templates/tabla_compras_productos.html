@@ -15,18 +15,19 @@
           <span class="cart-prod__dot cat-dot--{{ tipo }}"></span>
           <div>
             <div class="cart-prod__name">{{ articulo.articulo }}</div>
-            <span class="granel-tag"><span class="material-symbols-outlined">scale</span>Por kg</span>
+            <span class="granel-tag"><span class="material-symbols-outlined">{% if articulo.es_por_litro %}water_drop{% else %}scale{% endif %}</span>{{ articulo.etiqueta_venta }}</span>
           </div>
         </div>
       </td>
       <td class="c">
-        <span class="cart-stock">{{ articulo.cantidad|floatformat:"-2g" }}<span class="cart-stock__u"> kg</span></span>
+        <span class="cart-stock">{{ articulo.cantidad|floatformat:"-2g" }}<span class="cart-stock__u"> {{ articulo.abreviatura }}</span></span>
       </td>
       <td class="c">
         <div class="cart-addbtn-wrap">
           <button class="cart-addbtn boton-agregar-granel"
                   title="Añadir a la compra"
                   data-id="{{ articulo.id }}"
+                  data-unidad="{{ articulo.unidad }}"
                   data-nombre="{{ articulo.articulo }}"
                   data-precio="{{ articulo.monto }}"
                   data-stock="{{ articulo.cantidad }}">

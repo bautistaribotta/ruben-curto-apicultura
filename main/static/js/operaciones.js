@@ -24,6 +24,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const scriptEdicion = document.getElementById('datos-edicion');
     const edicion = scriptEdicion ? JSON.parse(scriptEdicion.textContent) : null;
 
+    // Unidades de los articulos a granel: como se pesan o miden y con que texto
+    // se muestran en el carrito. La unidad viaja en el data-unidad del boton.
+    const UNIDADES_GRANEL = {
+        kg: { abreviatura: 'kg', etiqueta: 'Por kilo', icono: 'scale' },
+        l: { abreviatura: 'L', etiqueta: 'Por litro', icono: 'water_drop' },
+    };
+
+    function medidaGranel(unidad) {
+        return UNIDADES_GRANEL[unidad] || UNIDADES_GRANEL.kg;
+    }
+
     // =============================================
     //  PERSISTENCIA DEL CARRITO (sessionStorage)
     // =============================================
@@ -36,6 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 items.push({
                     tipo: 'granel',
                     id: fila.dataset.granelId,
+                    unidad: fila.dataset.unidad,
                     nombre: fila.querySelector('.cart-item__name').textContent,
                     kilos: fila.querySelector('.input-kilos').value,
                     precio: fila.querySelector('.input-precio-item').value,
@@ -64,7 +76,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     item.nombre,
                     item.precio,
                     item.cantidad,
-                    normalizarDecimal(item.stock)
+                    normalizarDecimal(item.stock),
+                    item.unidad
                 );
                 return;
             }
@@ -101,7 +114,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     item.nombre,
                     item.precio,
                     item.kilos,
-                    normalizarDecimal(item.stockOriginal)
+                    normalizarDecimal(item.stockOriginal),
+                    item.unidad
                 );
                 return;
             }
@@ -185,14 +199,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =============================================
-    //  ARTICULOS A GRANEL (kilos desde cotizaciones)
+    //  ARTICULOS A GRANEL (kilos o litros)
     // =============================================
 
     function buscarGranelEnTabla(idCotizacion) {
         const boton = contenedorTabla.querySelector(`.boton-agregar-granel[data-id="${idCotizacion}"]`);
         if (!boton) return null;
         const stockCell = contenedorTabla.querySelector(`[data-granel-stock="${idCotizacion}"]`);
-        return { boton, stockCell };
+        return { boton, stockCell, medida: medidaGranel(boton.dataset.unidad) };
     }
 
     function actualizarStockGranel(idCotizacion, kilosDisponibles) {
@@ -200,11 +214,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!articulo) return;
 
         const restante = Math.max(kilosDisponibles, 0);
-        articulo.stockCell.innerHTML = `${formatoKilos.format(restante)}<span class="cart-stock__u"> kg</span>`;
+        articulo.stockCell.innerHTML = `${formatoKilos.format(restante)}<span class="cart-stock__u"> ${articulo.medida.abreviatura}</span>`;
 
         if (kilosDisponibles <= 0) {
             articulo.boton.disabled = true;
-            articulo.boton.title = 'Sin kilos disponibles';
+            articulo.boton.title = 'Sin stock disponible';
             articulo.stockCell.classList.add('cart-stock--zero');
         } else {
             articulo.boton.disabled = false;
@@ -228,28 +242,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 const stockOriginal = normalizarDecimal(this.dataset.stock);
                 if (stockOriginal <= 0) return;
 
-                // Los kilos arrancan vacios: se cargan segun la pesada real
-                crearFilaGranel(id, this.dataset.nombre, normalizarDecimal(this.dataset.precio), '', stockOriginal);
+                // Los kilos o litros arrancan vacios: se cargan segun la pesada o medida real
+                crearFilaGranel(id, this.dataset.nombre, normalizarDecimal(this.dataset.precio), '', stockOriginal, this.dataset.unidad);
                 actualizarTotal();
                 guardarCarrito();
             });
         });
     }
 
-    function crearFilaGranel(idCotizacion, nombre, precio, kilos, stockOriginal) {
+    function crearFilaGranel(idCotizacion, nombre, precio, kilos, stockOriginal, unidad) {
+        const medida = medidaGranel(unidad);
         const fila = document.createElement('div');
         fila.className = 'cart-item cart-item--granel';
         // Prefijo "granel-" en data-id para que nunca colisione con un id de producto
         fila.dataset.id = `granel-${idCotizacion}`;
         fila.dataset.granelId = idCotizacion;
         fila.dataset.tipo = 'granel';
+        fila.dataset.unidad = unidad || 'kg';
         fila.dataset.stockOriginal = stockOriginal;
 
         fila.innerHTML = `
             <div class="cart-item__top">
                 <div>
                     <div class="cart-item__name" title="${nombre}">${nombre}</div>
-                    <span class="granel-tag"><span class="material-symbols-outlined">scale</span>Por kg</span>
+                    <span class="granel-tag"><span class="material-symbols-outlined">${medida.icono}</span>${medida.etiqueta}</span>
                 </div>
                 <button type="button" class="cart-item__rm" title="Quitar">
                     <span class="material-symbols-outlined">close</span>
@@ -258,12 +274,12 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="cart-item__ctrl">
                 <div class="cart-kg">
                     <input type="number" class="input-kilos" placeholder="0" min="0.01" step="0.01" value="${kilos}">
-                    <span class="cart-kg__u">kg</span>
+                    <span class="cart-kg__u">${medida.abreviatura}</span>
                 </div>
                 <div class="cart-priceedit">
                     <span class="cart-priceedit__cur">$</span>
                     <input type="number" class="input-precio-item" placeholder="0.00" min="0" step="0.01" value="${precio}">
-                    <span class="cart-priceedit__u">/kg</span>
+                    <span class="cart-priceedit__u">/${medida.abreviatura}</span>
                 </div>
             </div>
             <div class="cart-item__sub2">
@@ -317,13 +333,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         fila.querySelector('.cart-item__subval').textContent = `$ ${formatoMoneda.format(kilos * precio)}`;
 
-        // Aviso inline si la carga supera los kilos disponibles (la venta se bloquea al confirmar)
+        // Aviso inline si la carga supera el stock disponible (la venta se bloquea al confirmar)
         const excedido = kilos > stockOriginal;
         fila.querySelector('.cart-item__overstock').classList.toggle('oculto', !excedido);
         fila.querySelector('.cart-kg').classList.toggle('is-invalid', excedido);
         if (excedido) {
             fila.querySelector('.cart-item__overstock-msg').textContent =
-                `Supera los ${formatoKilos.format(stockOriginal)} kg disponibles`;
+                `Supera los ${formatoKilos.format(stockOriginal)} ${medidaGranel(fila.dataset.unidad).abreviatura} disponibles`;
         }
 
         actualizarStockGranel(fila.dataset.granelId, stockOriginal - kilos);
@@ -701,12 +717,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (granelInvalido) {
-            avisar('Revisá los kilos a granel: cada artículo necesita kilos mayores a 0 y dentro del stock disponible.');
+            avisar('Revisá las cantidades a granel: cada artículo necesita kilos o litros mayores a 0 y dentro del stock disponible.');
             return;
         }
 
         if (precioGranelInvalido) {
-            avisar('Cargá un precio por kilo mayor a 0 en todos los artículos a granel.');
+            avisar('Cargá un precio mayor a 0 en todos los artículos a granel.');
             return;
         }
 

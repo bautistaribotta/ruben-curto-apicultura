@@ -22,11 +22,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const scriptEdicion = document.getElementById('datos-edicion');
     const edicion = scriptEdicion ? JSON.parse(scriptEdicion.textContent) : null;
 
+    // Unidades de los articulos a granel: como se pesan o miden y con que texto
+    // se muestran en el carrito. La unidad viaja en el data-unidad del boton.
+    const UNIDADES_GRANEL = {
+        kg: { abreviatura: 'kg', etiqueta: 'Por kilo', icono: 'scale' },
+        l: { abreviatura: 'L', etiqueta: 'Por litro', icono: 'water_drop' },
+    };
+
+    function medidaGranel(unidad) {
+        return UNIDADES_GRANEL[unidad] || UNIDADES_GRANEL.kg;
+    }
+
     // Precarga el carrito con los ítems de la compra que se está editando
     function cargarEdicion() {
         edicion.items.forEach(item => {
             if (item.tipo === 'granel') {
-                crearFilaGranel(item.id, item.nombre, item.precio, item.cantidad);
+                crearFilaGranel(item.id, item.nombre, item.precio, item.cantidad, item.unidad);
                 return;
             }
             crearFilaCarrito(item.id, item.nombre, item.cantidad, item.precio, item.bloqueado);
@@ -47,6 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 items.push({
                     tipo: 'granel',
                     id: fila.dataset.granelId,
+                    unidad: fila.dataset.unidad,
                     nombre: fila.querySelector('.cart-item__name').textContent,
                     kilos: fila.querySelector('.input-kilos').value,
                     precio: fila.querySelector('.input-precio-item').value
@@ -79,7 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const items = JSON.parse(datos);
         items.forEach(item => {
             if (item.tipo === 'granel') {
-                crearFilaGranel(item.id, item.nombre, item.precio, item.kilos);
+                crearFilaGranel(item.id, item.nombre, item.precio, item.kilos, item.unidad);
                 return;
             }
             crearFilaCarrito(item.id, item.nombre, item.cantidad, item.precio, item.bloqueado);
@@ -246,7 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =============================================
-    //  ARTICULOS A GRANEL (kilos desde cotizaciones)
+    //  ARTICULOS A GRANEL (kilos o litros)
     // =============================================
 
     function vincularBotonesGranel() {
@@ -262,27 +274,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 // El precio arranca precargado con la cotizacion del dia, pero es editable.
-                // Los kilos arrancan vacios: se cargan segun la pesada real.
-                crearFilaGranel(id, this.dataset.nombre, normalizarDecimal(this.dataset.precio), '');
+                // Los kilos o litros arrancan vacios: se cargan segun la pesada o medida real.
+                crearFilaGranel(id, this.dataset.nombre, normalizarDecimal(this.dataset.precio), '', this.dataset.unidad);
                 actualizarTotal();
                 guardarCarrito();
             });
         });
     }
 
-    function crearFilaGranel(idCotizacion, nombre, precio, kilos) {
+    function crearFilaGranel(idCotizacion, nombre, precio, kilos, unidad) {
+        const medida = medidaGranel(unidad);
         const fila = document.createElement('div');
         fila.className = 'cart-item cart-item--granel';
         // Prefijo "granel-" en data-id para que nunca colisione con un id de producto
         fila.dataset.id = `granel-${idCotizacion}`;
         fila.dataset.granelId = idCotizacion;
         fila.dataset.tipo = 'granel';
+        fila.dataset.unidad = unidad || 'kg';
 
         fila.innerHTML = `
             <div class="cart-item__top">
                 <div>
                     <div class="cart-item__name" title="${nombre}">${nombre}</div>
-                    <span class="granel-tag"><span class="material-symbols-outlined">scale</span>Por kg</span>
+                    <span class="granel-tag"><span class="material-symbols-outlined">${medida.icono}</span>${medida.etiqueta}</span>
                 </div>
                 <button type="button" class="cart-item__rm" title="Quitar">
                     <span class="material-symbols-outlined">close</span>
@@ -291,12 +305,12 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="cart-item__ctrl">
                 <div class="cart-kg">
                     <input type="number" class="input-kilos" placeholder="0" min="0.01" step="0.01" value="${kilos}">
-                    <span class="cart-kg__u">kg</span>
+                    <span class="cart-kg__u">${medida.abreviatura}</span>
                 </div>
                 <div class="cart-priceedit">
                     <span class="cart-priceedit__cur">$</span>
                     <input type="number" class="input-precio-item" placeholder="0.00" min="0" step="0.01" value="${precio}">
-                    <span class="cart-priceedit__u">/kg</span>
+                    <span class="cart-priceedit__u">/${medida.abreviatura}</span>
                 </div>
             </div>
             <div class="cart-item__sub2">

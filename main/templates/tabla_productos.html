@@ -16,7 +16,7 @@
         <tr class="fila-granel fila-granel--{{ categoria_slug }}" data-articulo="{{ articulo.articulo }}">
           <td>
             <div class="producto-info"> {{ articulo.articulo }} </div>
-            <div class="producto-id granel-sub"> Venta por kilo </div>
+            <div class="producto-id granel-sub"> Venta por {{ articulo.nombre_unidad }} </div>
           </td>
           <td class="texto-centrado categoria-valor">
             <span class="etiqueta etiqueta-{{ categoria_slug }}">
@@ -30,11 +30,11 @@
               </span>
             {% else %}
               <span class="prod-stock">
-                <strong>{{ articulo.cantidad|floatformat:"-2g" }}</strong> kg
+                <strong>{{ articulo.cantidad|floatformat:"-2g" }}</strong> {{ articulo.abreviatura }}
               </span>
             {% endif %}
           </td>
-          <td class="precio-valor"> $ {{ articulo.monto|floatformat:"-2g" }}<span class="granel-unidad">/kg</span> </td>
+          <td class="precio-valor"> $ {{ articulo.monto|floatformat:"-2g" }}<span class="granel-unidad">/{{ articulo.abreviatura }}</span> </td>
           <td>
             <div class="acciones-tabla">
               {% if articulo.es_cotizacion %}
@@ -53,18 +53,18 @@
               {% else %}
                 <button class="boton-icono agregar-stock" title="Agregar Stock"
                         data-id="{{ articulo.id }}"
-                        data-unidad="kg"
+                        data-unidad="{{ articulo.unidad }}"
                         data-nombre="{{ articulo.articulo }}"
                         data-stock="{{ articulo.cantidad|unlocalize }}">
                   <span class="material-symbols-outlined">add</span>
                 </button>
-                <button class="boton-icono editar" title="Editar" data-id="{{ articulo.id }}" data-unidad="kg">
+                <button class="boton-icono editar" title="Editar" data-id="{{ articulo.id }}" data-unidad="{{ articulo.unidad }}">
                   <span class="material-symbols-outlined">edit</span>
                 </button>
                 <button class="boton-icono eliminar"
                         title="Eliminar"
                         data-id="{{ articulo.id }}"
-                        data-unidad="kg"
+                        data-unidad="{{ articulo.unidad }}"
                         data-nombre="{{ articulo.articulo }}">
                   <span class="material-symbols-outlined">delete</span>
                 </button>

@@ -628,9 +628,9 @@
   padding-left: 1.75rem;
 }
 
-/* --- Selector de unidad de venta (por unidad / por kilo) --- */
+/* --- Selector de unidad de venta (por unidad / por kilo / por litro) --- */
 /* Es la decision que cambia el significado de los dos campos que siguen (precio
-   y stock), asi que pesa mas que un desplegable: dos tarjetas que se eligen de
+   y stock), asi que pesa mas que un desplegable: tres tarjetas que se eligen de
    un toque y dicen como se cuenta el stock en cada caso. */
 .campo-formulario .etiqueta-campo {
   font-size: 0.875rem;
@@ -641,7 +641,7 @@
 .selector-venta {
   position: relative;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 0.625rem;
 }
 
@@ -1142,6 +1142,22 @@
   /* Ocultar columnas menos importantes en móviles muy pequeños */
   .columna-ocultable-movil {
     display: none;
+  }
+  /* Tres tarjetas no entran a lo ancho: se apilan como filas, con el icono
+     a la izquierda y el titulo y el detalle en linea */
+  .selector-venta {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  .campo-formulario .opcion-venta {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: 0.75rem;
+    align-items: center;
+    padding: 0.625rem 0.75rem;
+  }
+  .opcion-venta__icono {
+    grid-row: 1 / span 2;
   }
 }
 

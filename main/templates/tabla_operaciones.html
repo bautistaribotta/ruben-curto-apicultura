@@ -39,7 +39,7 @@
         <ul class="opl-detalle">
           {% for detalle in operacion.detalleoperacion_set.all|slice:":2" %}
           <li class="opl-detalle__item">
-            {% if detalle.es_granel %}{{ detalle.cantidad|floatformat:"-2g" }} kg {{ detalle.nombre_item }}{% else %}{{ detalle.cantidad|floatformat:"0g" }}x {{ detalle.producto.nombre }}{% endif %}
+            {% if detalle.es_granel %}{{ detalle.cantidad|floatformat:"-2g" }} {{ detalle.abreviatura }} {{ detalle.nombre_item }}{% else %}{{ detalle.cantidad|floatformat:"0g" }}x {{ detalle.producto.nombre }}{% endif %}
           </li>
           {% empty %}
           <li class="opl-detalle__vacio">Sin productos</li>

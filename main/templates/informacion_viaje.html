@@ -283,7 +283,7 @@
             <td>
               <div class="vd-op-detalle">
                 {% for detalle in operacion.detalleoperacion_set.all|slice:":2" %}
-                  <span class="vd-op-detalle__item">{% if detalle.es_granel %}{{ detalle.cantidad|floatformat:"-2g" }} kg {{ detalle.nombre_item }}{% else %}{{ detalle.cantidad|floatformat:"0g" }}x {{ detalle.producto.nombre }}{% endif %}</span>
+                  <span class="vd-op-detalle__item">{% if detalle.es_granel %}{{ detalle.cantidad|floatformat:"-2g" }} {{ detalle.abreviatura }} {{ detalle.nombre_item }}{% else %}{{ detalle.cantidad|floatformat:"0g" }}x {{ detalle.producto.nombre }}{% endif %}</span>
                 {% empty %}
                   <span class="vd-op-detalle__item">Sin productos</span>
                 {% endfor %}

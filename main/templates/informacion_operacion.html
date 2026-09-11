@@ -145,7 +145,7 @@
                     {% for detalle in detalles %}
                     <tr>
                         <td><div class="op-prod__name">{{ detalle.nombre_item }}</div></td>
-                        <td class="c">{% if detalle.es_granel %}{{ detalle.cantidad|floatformat:"-2g" }} kg{% else %}{{ detalle.cantidad|floatformat:"0g" }}{% endif %}</td>
+                        <td class="c">{% if detalle.es_granel %}{{ detalle.cantidad|floatformat:"-2g" }} {{ detalle.abreviatura }}{% else %}{{ detalle.cantidad|floatformat:"0g" }}{% endif %}</td>
                         {% if user.is_staff %}
                         <td class="r">$ {{ detalle.precio_unitario|floatformat:"-2g" }}</td>
                         <td class="r op-sub">$ {{ detalle.subtotal|floatformat:"-2g" }}</td>

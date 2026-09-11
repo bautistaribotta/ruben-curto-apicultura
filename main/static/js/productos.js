@@ -86,54 +86,65 @@ vincularPaginacion();
 
 /**
  * Unidad de venta: el producto se cuenta por unidad (tabla de productos) o se
- * pesa por kilo (tabla de productos por kg). La eleccion cambia el precio que
+ * vende a granel, pesado por kilo o medido por litro (tabla de productos por
+ * kg, que guarda la unidad de cada articulo). La eleccion cambia el precio que
  * se pide, el paso del stock y el endpoint contra el que trabaja el panel.
  */
 const inputUnidadVenta = document.getElementById('unidad_venta');
 const radioPorUnidad = document.getElementById('venta-por-unidad');
 const radioPorKilo = document.getElementById('venta-por-kilo');
+const radioPorLitro = document.getElementById('venta-por-litro');
 const notaUnidadVenta = document.getElementById('nota-venta');
 
-const esPorKilo = () => inputUnidadVenta && inputUnidadVenta.value === 'kg';
+// Unidades a granel: abreviatura y nombre largo con los que hablan las etiquetas
+const UNIDADES_GRANEL = {
+  kg: { abreviatura: 'kg', nombre: 'kilo', plural: 'kilos' },
+  l: { abreviatura: 'L', nombre: 'litro', plural: 'litros' },
+};
+
+const esUnidadGranel = (unidad) => Object.prototype.hasOwnProperty.call(UNIDADES_GRANEL, unidad);
+const esPorGranel = () => inputUnidadVenta && esUnidadGranel(inputUnidadVenta.value);
 
 /**
  * Deja el formulario hablando en la unidad elegida: marca la tarjeta, guarda el
  * valor que viaja en el POST y ajusta las etiquetas de precio y stock. Sin
- * unidad ('' al abrir el alta) las dos tarjetas quedan sin marcar y las
- * etiquetas se muestran neutras hasta que el usuario elija.
- * @param {string} unidad - 'kg', 'unidad' o '' para el estado sin elegir
+ * unidad ('' al abrir el alta) las tarjetas quedan sin marcar y las etiquetas
+ * se muestran neutras hasta que el usuario elija.
+ * @param {string} unidad - 'kg', 'l', 'unidad' o '' para el estado sin elegir
  */
 const aplicarUnidadVenta = (unidad) => {
   if (!inputUnidadVenta) return;
 
-  const elegida = unidad === 'kg' || unidad === 'unidad';
-  const porKilo = unidad === 'kg';
+  const porGranel = esUnidadGranel(unidad);
+  const elegida = porGranel || unidad === 'unidad';
+  const medida = porGranel ? UNIDADES_GRANEL[unidad] : null;
   inputUnidadVenta.value = elegida ? unidad : '';
 
-  if (radioPorUnidad) radioPorUnidad.checked = elegida && !porKilo;
-  if (radioPorKilo) radioPorKilo.checked = porKilo;
+  if (radioPorUnidad) radioPorUnidad.checked = unidad === 'unidad';
+  if (radioPorKilo) radioPorKilo.checked = unidad === 'kg';
+  if (radioPorLitro) radioPorLitro.checked = unidad === 'l';
 
   const etiquetaPrecio = document.getElementById('etiqueta-precio');
   if (etiquetaPrecio) {
     if (!elegida) etiquetaPrecio.innerText = 'Precio';
-    else etiquetaPrecio.innerText = porKilo ? 'Precio por kilo' : 'Precio Unitario';
+    else etiquetaPrecio.innerText = porGranel ? `Precio por ${medida.nombre}` : 'Precio Unitario';
   }
 
   const etiquetaStock = document.getElementById('etiqueta-stock');
   if (etiquetaStock) {
-    etiquetaStock.innerText = porKilo ? 'Stock inicial en kilos (opcional)' : 'Stock Inicial (Opcional)';
+    etiquetaStock.innerText = porGranel ? `Stock inicial en ${medida.plural} (opcional)` : 'Stock Inicial (Opcional)';
   }
 
   const campoStock = document.getElementById('stock');
   if (campoStock) {
-    campoStock.step = porKilo ? '0.01' : '1';
-    campoStock.placeholder = porKilo ? '0.00' : '0';
+    campoStock.step = porGranel ? '0.01' : '1';
+    campoStock.placeholder = porGranel ? '0.00' : '0';
   }
 
   const mensajeStock = document.getElementById('error-stock');
   if (mensajeStock) {
-    mensajeStock.innerText = porKilo
-      ? 'Los kilos se escriben con punto decimal (ej: 12.5).'
+    mensajeStock.innerText = porGranel
+      ? `Los ${medida.plural} se escriben con punto decimal (ej: 12.5).`
       : 'El stock debe ser un número entero (sin puntos ni comas).';
     mensajeStock.style.display = 'none';
   }
@@ -141,12 +152,13 @@ const aplicarUnidadVenta = (unidad) => {
 
 // Al editar, la unidad de venta queda fija: el producto ya vive en una tabla
 const bloquearUnidadVenta = (bloqueada) => {
-  if (radioPorUnidad) radioPorUnidad.disabled = bloqueada;
-  if (radioPorKilo) radioPorKilo.disabled = bloqueada;
+  [radioPorUnidad, radioPorKilo, radioPorLitro].forEach((radio) => {
+    if (radio) radio.disabled = bloqueada;
+  });
   if (notaUnidadVenta) notaUnidadVenta.hidden = !bloqueada;
 };
 
-[radioPorUnidad, radioPorKilo].forEach((radio) => {
+[radioPorUnidad, radioPorKilo, radioPorLitro].forEach((radio) => {
   if (radio) radio.addEventListener('change', () => aplicarUnidadVenta(radio.value));
 });
 
@@ -180,12 +192,12 @@ const prepararPanelNuevoProducto = () => {
   * Creo esta función para traer la información de un producto desde la API
   * y llenar los campos del panel lateral para editarlo.
   * @param {string|number} id - El ID del producto
-  * @param {string} unidad - 'kg' si el producto se pesa, 'unidad' si se cuenta
+  * @param {string} unidad - 'kg' o 'l' si el producto se vende a granel, 'unidad' si se cuenta
   */
   const prepararPanelEditarProducto = (id, unidad = 'unidad') => {
-  const porKilo = unidad === 'kg';
+  const porGranel = esUnidadGranel(unidad);
 
-  fetch(porKilo ? `/api/productos_por_kg/${id}/` : `/api/productos/${id}/`)
+  fetch(porGranel ? `/api/productos_por_kg/${id}/` : `/api/productos/${id}/`)
     .then((response) => response.json())
     .then((producto) => {
       // Actualizo textos e iconos para indicar "Edición"
@@ -267,8 +279,8 @@ document.addEventListener('click', (e) => {
     const nombre = botonAgregarStock.dataset.nombre;
     const stock = botonAgregarStock.dataset.stock;
     const unidad = botonAgregarStock.dataset.unidad || 'unidad';
-    const porKilo = unidad === 'kg';
-    const abreviatura = porKilo ? 'kg' : 'uds';
+    const porGranel = esUnidadGranel(unidad);
+    const abreviatura = porGranel ? UNIDADES_GRANEL[unidad].abreviatura : 'uds';
 
     // Configuro el modal de stock
     document.getElementById('id_producto_stock').value = id;
@@ -289,10 +301,10 @@ document.addEventListener('click', (e) => {
       radioAñadir.checked = true;
     }
 
-    // El producto que se pesa admite fracciones de kilo; el que se cuenta, no
+    // El producto a granel admite fracciones de kilo o litro; el que se cuenta, no
     const inputCantidad = document.getElementById('cantidad-modificar');
-    inputCantidad.step = porKilo ? '0.01' : '1';
-    inputCantidad.min = porKilo ? '0.01' : '1';
+    inputCantidad.step = porGranel ? '0.01' : '1';
+    inputCantidad.min = porGranel ? '0.01' : '1';
     inputCantidad.value = 1;
 
     const modalStock = document.getElementById('contenedor-modal-stock');
@@ -308,8 +320,8 @@ const errorStock = document.getElementById('error-stock');
 
 if (inputStock && errorStock) {
   inputStock.addEventListener('input', (e) => {
-    // Verificamos si hay error por decimales (los kilos si los admiten)
-    if (esPorKilo()) {
+    // Verificamos si hay error por decimales (kilos y litros si los admiten)
+    if (esPorGranel()) {
       errorStock.style.display = inputStock.validity.badInput ? 'block' : 'none';
       return;
     }
@@ -322,7 +334,7 @@ if (inputStock && errorStock) {
   });
 
   inputStock.addEventListener('keydown', (e) => {
-    if (!esPorKilo() && (e.key === '.' || e.key === ',')) {
+    if (!esPorGranel() && (e.key === '.' || e.key === ',')) {
       errorStock.style.display = 'block';
     }
   });

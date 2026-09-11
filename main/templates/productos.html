@@ -137,8 +137,8 @@
             <option value="Otros">Otros</option>
           </select>
         </div>
-        <!-- Unidad de venta: decide en que tabla vive el producto (unidades enteras
-             o kilos con decimales). Se elige en el alta y queda fija al editar. -->
+        <!-- Unidad de venta: decide en que tabla vive el producto (unidades enteras,
+             o kilos/litros con decimales). Se elige en el alta y queda fija al editar. -->
         <div class="campo-formulario">
           <span class="etiqueta-campo" id="etiqueta-unidad-venta">Cómo se vende</span>
           <input type="hidden" id="unidad_venta" name="unidad_venta" value="">
@@ -155,6 +155,13 @@
               <span class="material-symbols-outlined opcion-venta__icono">scale</span>
               <span class="opcion-venta__titulo">Por kilo</span>
               <span class="opcion-venta__detalle">Se pesa, admite decimales</span>
+            </label>
+
+            <input type="radio" id="venta-por-litro" name="opcion_unidad_venta" value="l" required>
+            <label for="venta-por-litro" class="opcion-venta">
+              <span class="material-symbols-outlined opcion-venta__icono">water_drop</span>
+              <span class="opcion-venta__titulo">Por litro</span>
+              <span class="opcion-venta__detalle">Se mide, admite decimales</span>
             </label>
           </div>
           <p class="nota-venta" id="nota-venta" hidden>La unidad de venta se define en el alta y no se puede cambiar.</p>
