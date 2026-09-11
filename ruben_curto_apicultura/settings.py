@@ -20,11 +20,11 @@ ENVIRONMENT = os.getenv('ENVIRONMENT', 'development')
 
 if ENVIRONMENT == 'production':
     DEBUG = False
-    ALLOWED_HOSTS = ['192.168.1.200', '100.72.175.101', 'localhost', '127.0.0.1']
+    ALLOWED_HOSTS = ['192.168.1.200', '100.78.154.119', 'localhost', '127.0.0.1']
     # Para que Django no rechace los formularios
     CSRF_TRUSTED_ORIGINS = [
         'http://192.168.1.200:8000',
-        'http://100.72.175.101:8000',
+        'http://100.78.154.119:8000',
         'http://localhost:8000',
         'http://127.0.0.1:8000',
     ]
