@@ -1,0 +1,403 @@
+%% Diagrama entidad-relacion fisico de la base de datos del sistema.
+%% Refleja las tablas que genera main/models.py (motor MySQL en produccion):
+%% nombres reales de tabla y columna, tipos SQL, PK, FK, UNIQUE y nulabilidad.
+%% Los campos PositiveIntegerField se muestran como int (en MySQL son int unsigned).
+%% Se renderiza con Mermaid (erDiagram) o con el conector de draw.io.
+erDiagram
+    productos {
+        bigint id PK
+        varchar(50) nombre UK
+        varchar(50) categoria "NULL"
+        decimal precio "10,2 NULL"
+        int cantidad
+        int cantidad_vendida
+        int cantidad_comprada
+        bool activo
+        bool mostrar_en_inicio
+    }
+
+    productos_por_kg {
+        bigint id PK
+        varchar(30) articulo UK
+        varchar(50) categoria "NULL"
+        varchar(2) unidad
+        int monto
+        decimal cantidad "10,2"
+        bool activo
+        bool mostrar_en_inicio
+    }
+
+    clientes {
+        bigint id PK
+        varchar(50) nombre
+        varchar(50) apellido "NULL"
+        varchar(20) telefono "NULL"
+        varchar(50) localidad "NULL"
+        varchar(100) direccion "NULL"
+        bool factura_produccion
+        varchar(15) cuit "NULL"
+        bool activo
+    }
+
+    operaciones {
+        bigint id PK
+        bigint id_cliente FK
+        bigint id_viaje FK "NULL"
+        datetime(6) fecha
+        bool activa
+        varchar(10) tipo_operacion
+        decimal valor_dolar "10,2 NULL"
+        decimal valor_kilo_miel "10,2 NULL"
+        decimal valor_kilo_cera "10,2 NULL"
+        varchar(250) observaciones
+    }
+
+    detalle_operaciones {
+        bigint id PK
+        bigint id_operacion FK
+        bigint id_producto FK "NULL, UNIQUE con id_operacion"
+        bigint id_cotizacion FK "NULL, UNIQUE con id_operacion"
+        decimal cantidad "10,2"
+        decimal precio_unitario "10,2"
+    }
+
+    pagos {
+        bigint id PK
+        bigint id_operacion FK
+        datetime(6) fecha
+        decimal monto "15,2"
+    }
+
+    marcos {
+        bigint id PK
+        bigint id_cliente FK
+        int cantidad
+        varchar(20) estado
+        date fecha_recepcion
+        date fecha_entrega "NULL"
+        bool activa
+    }
+
+    empleados {
+        bigint id PK
+        varchar(25) nombre "UNIQUE con apellido"
+        varchar(25) apellido
+        decimal sueldo "10,2"
+        date inicio_cuenta "NULL"
+        date vencimiento_carnet "NULL"
+        bool activo
+    }
+
+    pagos_empleados {
+        bigint id PK
+        bigint id_empleado FK
+        date fecha
+        decimal monto "12,2"
+        varchar(250) observaciones
+        varchar(15) origen
+    }
+
+    vehiculos {
+        bigint id PK
+        varchar(30) nombre
+        varchar(7) patente UK
+        bool activo
+    }
+
+    registros_kilometraje {
+        bigint id PK
+        bigint id_vehiculo FK
+        date fecha
+        decimal kilometros "10,2"
+    }
+
+    seguros {
+        bigint id PK
+        bigint id_vehiculo FK
+        date inicio
+        date fin
+        decimal costo "12,2 NULL"
+        varchar(200) observaciones "NULL"
+    }
+
+    vtv {
+        bigint id PK
+        bigint id_vehiculo FK
+        date inicio
+        date fin
+        decimal costo "12,2 NULL"
+        varchar(200) observaciones "NULL"
+    }
+
+    servicios {
+        bigint id PK
+        bigint id_vehiculo FK
+        date fecha
+        decimal costo "12,2 NULL"
+        varchar(200) observaciones "NULL"
+    }
+
+    observaciones_vehiculo {
+        bigint id PK
+        bigint id_vehiculo FK
+        date fecha
+        varchar(250) texto
+    }
+
+    viajes {
+        bigint id PK
+        bigint id_empleado FK
+        bigint id_vehiculo FK
+        bigint pago_devolucion_id FK "NULL, UNIQUE"
+        int inicio_caja
+        date fecha_inicio
+        date fecha_vuelta "NULL"
+        bool activo
+        varchar(10) devolucion_estado
+        int monto_devuelto
+        int sobrante_devolucion
+    }
+
+    detalle_viajes {
+        bigint id PK
+        bigint id_viaje FK
+        varchar(30) destino
+    }
+
+    gastos {
+        bigint id PK
+        bigint id_viaje FK
+        bigint carga_combustible_id FK "NULL, UNIQUE"
+        date fecha
+        varchar(25) gasto
+        int monto
+    }
+
+    ingresos_caja {
+        bigint id PK
+        bigint id_viaje FK
+        date fecha
+        int monto
+    }
+
+    viaje_reparto {
+        bigint id PK
+        bigint id_empleado FK
+        bigint id_vehiculo FK
+        bigint id_destino FK "NULL"
+        date fecha_viaje_reparto
+        int gasto_combustible_viaje_reparto
+        int costo_empleado
+        decimal valor_viaje "12,2"
+        bool activo
+        bool pagado
+        datetime(6) fecha_pago "NULL"
+    }
+
+    detalle_viaje_reparto {
+        bigint id PK
+        bigint id_viajereparto FK
+        varchar(30) destinos_reparto
+    }
+
+    gastos_viaje_reparto {
+        bigint id PK
+        bigint id_viajereparto FK
+        bigint carga_combustible_id FK "NULL, UNIQUE"
+        date fecha
+        varchar(25) gasto
+        int monto
+    }
+
+    destino_viaje_reparto {
+        bigint id PK
+        varchar(60) localidad_destino UK
+        decimal valor_viaje "12,2"
+        int cant_viajes
+        bool activo
+    }
+
+    viaje_cereal {
+        bigint id PK
+        bigint id_empleado FK
+        bigint id_vehiculo FK
+        bigint id_cliente FK "NULL"
+        date fecha_viaje_cereal
+        varchar(50) tipo_cereal
+        varchar(15) codigo_trazabilidad_granos
+        varchar(20) numero_factura "NULL"
+        decimal toneladas "10,2"
+        int precio_tonelada
+        int porcentaje_empleado
+        bool activo
+        bool pagado
+        datetime(6) fecha_pago "NULL"
+        varchar(60) dadora_carga
+        varchar(20) dadora_tipo_cobro
+        int dadora_valor
+    }
+
+    detalle_viaje_cereal {
+        bigint id PK
+        bigint id_viajecereal FK
+        varchar(30) destino
+    }
+
+    gastos_viaje_cereal {
+        bigint id PK
+        bigint id_viajecereal FK
+        bigint carga_combustible_id FK "NULL, UNIQUE"
+        date fecha
+        varchar(25) gasto
+        int monto
+    }
+
+    estaciones_de_servicio {
+        bigint id PK
+        varchar(30) nombre UK
+        bool activa
+    }
+
+    cargas_combustible {
+        bigint id PK
+        bigint estacion_id FK
+        bigint empleado_id FK
+        bigint vehiculo_id FK
+        bigint viaje_id FK "NULL"
+        bigint viaje_reparto_id FK "NULL"
+        bigint viaje_cereal_id FK "NULL"
+        date fecha
+        decimal monto "12,2"
+        decimal litros "10,2 NULL"
+        bool pagada
+        bool activa
+    }
+
+    casas {
+        bigint id PK
+        varchar(60) nombre "NULL"
+        varchar(60) localidad "NULL"
+        varchar(120) direccion "NULL"
+        bool activa
+    }
+
+    contratos {
+        bigint id PK
+        bigint id_casa FK
+        date inicio
+        date fin "NULL"
+        int monto_mensual
+        int comision_inmobiliaria "NULL"
+        varchar(60) nombre_inquilino "NULL"
+    }
+
+    gastos_casas {
+        bigint id PK
+        bigint id_casa FK
+        date fecha
+        varchar(30) categoria
+        varchar(120) detalle "NULL"
+        decimal monto "12,2"
+    }
+
+    pagos_alquileres {
+        bigint id PK
+        bigint id_casa FK "UNIQUE con periodo"
+        date fecha
+        date periodo
+        decimal monto "12,2"
+    }
+
+    empresas {
+        bigint id PK
+        varchar(60) nombre UK
+        bool activa
+    }
+
+    operaciones_iva {
+        bigint id PK
+        bigint id_empresa FK
+        varchar(10) tipo
+        date fecha
+        decimal monto_neto "15,2"
+        decimal alicuota "5,2"
+        varchar(120) detalle "NULL"
+    }
+
+    bancos {
+        bigint id PK
+        varchar(60) nombre UK
+        bool activo
+    }
+
+    cuentas_corrientes {
+        bigint id PK
+        bigint id_empresa FK
+        bigint id_banco FK
+        varchar(40) numero
+        bool activa
+    }
+
+    cheques {
+        bigint id PK
+        bigint id_cuenta_corriente FK
+        varchar(20) numero
+        date fecha_emision
+        date fecha_cobro
+        varchar(250) concepto
+        decimal importe "15,2"
+        bool cobrado
+    }
+
+    clientes ||--o{ operaciones : "id_cliente"
+    viajes |o--o{ operaciones : "id_viaje"
+    operaciones ||--o{ detalle_operaciones : "id_operacion"
+    productos |o--o{ detalle_operaciones : "id_producto"
+    productos_por_kg |o--o{ detalle_operaciones : "id_cotizacion"
+    operaciones ||--o{ pagos : "id_operacion"
+    clientes ||--o{ marcos : "id_cliente"
+
+    empleados ||--o{ pagos_empleados : "id_empleado"
+    vehiculos ||--o{ registros_kilometraje : "id_vehiculo"
+    vehiculos ||--o{ seguros : "id_vehiculo"
+    vehiculos ||--o{ vtv : "id_vehiculo"
+    vehiculos ||--o{ servicios : "id_vehiculo"
+    vehiculos ||--o{ observaciones_vehiculo : "id_vehiculo"
+
+    empleados ||--o{ viajes : "id_empleado"
+    vehiculos ||--o{ viajes : "id_vehiculo"
+    pagos_empleados |o--o| viajes : "pago_devolucion_id"
+    viajes ||--o{ detalle_viajes : "id_viaje"
+    viajes ||--o{ gastos : "id_viaje"
+    viajes ||--o{ ingresos_caja : "id_viaje"
+    cargas_combustible |o--o| gastos : "carga_combustible_id"
+
+    empleados ||--o{ viaje_reparto : "id_empleado"
+    vehiculos ||--o{ viaje_reparto : "id_vehiculo"
+    destino_viaje_reparto |o--o{ viaje_reparto : "id_destino"
+    viaje_reparto ||--o{ detalle_viaje_reparto : "id_viajereparto"
+    viaje_reparto ||--o{ gastos_viaje_reparto : "id_viajereparto"
+    cargas_combustible |o--o| gastos_viaje_reparto : "carga_combustible_id"
+
+    empleados ||--o{ viaje_cereal : "id_empleado"
+    vehiculos ||--o{ viaje_cereal : "id_vehiculo"
+    clientes |o--o{ viaje_cereal : "id_cliente"
+    viaje_cereal ||--o{ detalle_viaje_cereal : "id_viajecereal"
+    viaje_cereal ||--o{ gastos_viaje_cereal : "id_viajecereal"
+    cargas_combustible |o--o| gastos_viaje_cereal : "carga_combustible_id"
+
+    estaciones_de_servicio ||--o{ cargas_combustible : "estacion_id"
+    empleados ||--o{ cargas_combustible : "empleado_id"
+    vehiculos ||--o{ cargas_combustible : "vehiculo_id"
+    viajes |o--o{ cargas_combustible : "viaje_id"
+    viaje_reparto |o--o{ cargas_combustible : "viaje_reparto_id"
+    viaje_cereal |o--o{ cargas_combustible : "viaje_cereal_id"
+
+    casas ||--o{ contratos : "id_casa"
+    casas ||--o{ gastos_casas : "id_casa"
+    casas ||--o{ pagos_alquileres : "id_casa"
+
+    empresas ||--o{ operaciones_iva : "id_empresa"
+    empresas ||--o{ cuentas_corrientes : "id_empresa"
+    bancos ||--o{ cuentas_corrientes : "id_banco"
+    cuentas_corrientes ||--o{ cheques : "id_cuenta_corriente"
