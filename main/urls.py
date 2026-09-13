@@ -1,15 +1,20 @@
 from django.urls import path
-from main.views import (login, inicio, marcos, obtener_marco_json, actualizar_cotizacion_ajax,
-                        productos, clientes, informacion_clientes, informacion_operacion, generar_remito,
-                        nueva_operacion_venta, nueva_operacion_compra, cancelar_operacion, registrar_pago, obtener_cliente_json,
-                        obtener_producto_json, obtener_producto_por_kg_json, viajes, operaciones, informacion_viaje, deudores, cerrar_sesion, flota,
-                        informacion_vehiculo,
-                        viaje_cereales, informacion_viaje_cereal, buscar_clientes_json,
-                        combustible, marcar_pago_cereal_ajax,
-                        empleados, obtener_empleado_json, informacion_empleado,
-                        generar_resumen_cuenta, contar_movimientos_cuenta_json,
-                        obtener_estacion_json,
-                        informacion_estacion, obtener_carga_json)
+from main.views.cereales import viaje_cereales, informacion_viaje_cereal, marcar_pago_cereal_ajax
+from main.views.clientes import (clientes, informacion_clientes, obtener_cliente_json,
+                                 buscar_clientes_json, generar_resumen_cuenta,
+                                 contar_movimientos_cuenta_json)
+from main.views.combustible import (combustible, obtener_estacion_json, informacion_estacion,
+                                    obtener_carga_json)
+from main.views.deudores import deudores
+from main.views.empleados import empleados, obtener_empleado_json, informacion_empleado
+from main.views.flota import flota, informacion_vehiculo
+from main.views.inicio import login, inicio, actualizar_cotizacion_ajax, cerrar_sesion
+from main.views.marcos import marcos, obtener_marco_json
+from main.views.operaciones import (informacion_operacion, generar_remito, nueva_operacion_venta,
+                                    nueva_operacion_compra, cancelar_operacion, registrar_pago,
+                                    operaciones)
+from main.views.productos import productos, obtener_producto_json, obtener_producto_por_kg_json
+from main.views.viajes import viajes, informacion_viaje
 
 """
 La sentencia name="nombre_del_archivo" se usa 
@@ -21,8 +26,9 @@ fuera del sistema: sin path() no hay URL que resuelva, asi que Django contesta
 404 y nada delata que esas pantallas existen. Un permiso habria contestado 403,
 que es justamente lo que confirmaria que estan ahi.
 
-Las vistas siguen en views.py y sus plantillas en su lugar: para reponerlas
-alcanza con devolver los path() y sumar sus vistas al import de arriba.
+Las vistas siguen en sus modulos (main/views/reparto.py, alquileres.py,
+cheques.py e iva.py) y sus plantillas en su lugar: para reponerlas alcanza con
+devolver los path() e importar sus vistas desde esos modulos.
 """
 urlpatterns = [
     path('', login, name="login"),
