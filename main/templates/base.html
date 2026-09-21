@@ -22,6 +22,7 @@
     <script src="{% static_v 'js/notifications.js' %}"></script>
     <script src="{% static_v 'js/paneles.js' %}"></script>
     <script src="{% static_v 'js/formato_miles.js' %}"></script>
+    <script src="{% static_v 'js/periodo_prueba.js' %}"></script>
 
     <link rel="icon" type="image/svg+xml" href="{% static 'icons/isotipo_ruben_curto_apicultura.svg' %}">
 
@@ -246,6 +247,32 @@
 
         <div id="acciones-modal-error">
           <button type="button" id="boton-entendido-error" onclick="cerrarModalError()">Entendido</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL DE PERIODO DE PRUEBA (aviso desde el 23/09 8:00, bloqueo desde el 25/09 10:00) -->
+    <!-- Las fechas y la logica viven en js/periodo_prueba.js; con la clase "bloqueado" se oculta el boton -->
+    <div id="contenedor-modal-prueba">
+      <div id="modal-prueba-fondo"></div>
+
+      <div id="modal-prueba" role="alertdialog" aria-modal="true" aria-labelledby="titulo-modal-prueba">
+        <div id="icono-modal-prueba">
+          <span class="material-symbols-outlined icono-aviso-prueba">schedule</span>
+          <span class="material-symbols-outlined icono-bloqueo-prueba">lock</span>
+        </div>
+
+        <h3 id="titulo-modal-prueba">
+          <span class="texto-aviso-prueba">El periodo de prueba está por finalizar</span>
+          <span class="texto-bloqueo-prueba">Finalizó el periodo de prueba</span>
+        </h3>
+        <p>
+          <span class="texto-aviso-prueba">El periodo de prueba de la aplicación finaliza el viernes 25 de septiembre a las 10:00 hs. A partir de ese momento el sistema quedará bloqueado.</span>
+          <span class="texto-bloqueo-prueba">El periodo de prueba de la aplicación finalizó el viernes 25 de septiembre a las 10:00 hs.</span>
+        </p>
+
+        <div id="acciones-modal-prueba">
+          <button type="button" id="boton-entendido-prueba">Entendido</button>
         </div>
       </div>
     </div>

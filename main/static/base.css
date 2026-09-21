@@ -12,6 +12,7 @@
   --stone-300: oklch(86.87% 0.0043 56.37);
   --stone-200: oklch(92.32% 0.0026 48.72);
   --color-rojo-eliminacion-transparente-30: oklch(57.71% 0.2152 27.33 / 0.3);
+  --color-amarillo-halo-transparente-30: oklch(55.53% 0.1455 49.00 / 0.3);
   --color-rojo-eliminacion: oklch(57.71% 0.2152 27.33);
   --color-rojo-muy-claro: oklch(97.10% 0.0435 27.33);
   --color-rojo-claro-etiqueta: oklch(94.14% 0.0298 12.58);
@@ -1020,6 +1021,179 @@ body {
   }
 }
 
+/* --- MODAL DE PERIODO DE PRUEBA --- */
+/* Misma anatomia que el modal de error. Va por encima de todo (incluido el de
+   error) porque cuando bloquea no tiene que quedar nada usable delante. Con la
+   clase "bloqueado" cambia el icono y los textos y se oculta el boton. */
+#contenedor-modal-prueba {
+  position: fixed;
+  inset: 0;
+  z-index: 4000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  visibility: hidden;
+  transition: visibility var(--dur-slow);
+}
+
+#contenedor-modal-prueba.abierto {
+  visibility: visible;
+  transition: none;
+}
+
+#modal-prueba-fondo {
+  position: absolute;
+  inset: 0;
+  background-color: var(--overlay-ink);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  transition: opacity var(--dur-slow) var(--ease-standard);
+}
+
+#contenedor-modal-prueba.abierto #modal-prueba-fondo {
+  opacity: 1;
+}
+
+#modal-prueba {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--surface-card);
+  border-radius: 16px;
+  border: 1px solid var(--border-subtle);
+  padding: 2rem 2.5rem 1.75rem;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: var(--shadow-xl);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  opacity: 0;
+  transform: scale(0.95);
+  transition: all var(--dur-slow) var(--ease-standard);
+}
+
+#contenedor-modal-prueba.abierto #modal-prueba {
+  opacity: 1;
+  transform: scale(1);
+}
+
+#icono-modal-prueba {
+  width: 4.5rem;
+  height: 4.5rem;
+  border-radius: 50%;
+  background-color: var(--color-amarillo-claro-etiqueta);
+  color: var(--color-amarillo-texto-etiqueta);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 8px var(--color-amarillo-halo-transparente-30);
+  animation: pulso-halo-prueba 2.4s var(--ease-standard) infinite;
+}
+
+#icono-modal-prueba span {
+  font-size: 2.5rem;
+  font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 40;
+}
+
+@keyframes pulso-halo-prueba {
+  0%, 100% {
+    box-shadow: 0 0 0 8px var(--color-amarillo-halo-transparente-30);
+  }
+  50% {
+    box-shadow: 0 0 0 12px transparent;
+  }
+}
+
+#contenedor-modal-prueba.bloqueado #icono-modal-prueba {
+  background-color: var(--color-rojo-muy-claro);
+  color: var(--color-rojo-eliminacion);
+  box-shadow: 0 0 0 8px var(--color-rojo-eliminacion-transparente-30);
+  animation-name: pulso-halo-error;
+}
+
+/* Los dos juegos de texto/icono conviven en el DOM: se muestra uno u otro.
+   Van anclados al id porque fonts.css (que carga despues) fija el display de
+   .material-symbols-outlined con la misma especificidad que una clase sola. */
+#modal-prueba .icono-bloqueo-prueba,
+#modal-prueba .texto-bloqueo-prueba,
+#contenedor-modal-prueba.bloqueado .icono-aviso-prueba,
+#contenedor-modal-prueba.bloqueado .texto-aviso-prueba {
+  display: none;
+}
+
+#contenedor-modal-prueba.bloqueado .icono-bloqueo-prueba,
+#contenedor-modal-prueba.bloqueado .texto-bloqueo-prueba {
+  display: inline;
+}
+
+#modal-prueba h3 {
+  font-size: 1.375rem;
+  font-weight: var(--weight-bold);
+  color: var(--text-strong);
+  letter-spacing: var(--tracking-tight);
+  margin-bottom: 0.5rem;
+}
+
+#modal-prueba p {
+  font-size: var(--text-base);
+  color: var(--text-muted);
+  line-height: 1.5;
+  max-width: 42ch;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-subtle);
+  width: 100%;
+}
+
+/* Bloqueado: sin boton, el parrafo cierra el modal y no necesita el separador */
+#contenedor-modal-prueba.bloqueado #modal-prueba p {
+  margin-bottom: 0.25rem;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+#acciones-modal-prueba {
+  display: flex;
+  width: 100%;
+}
+
+#contenedor-modal-prueba.bloqueado #acciones-modal-prueba {
+  display: none;
+}
+
+#boton-entendido-prueba {
+  flex: 1;
+  background-color: var(--brand-secondary);
+  color: var(--text-on-inverse);
+  border: none;
+  padding: 0.875rem;
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--dur-normal) var(--ease-standard);
+}
+
+#boton-entendido-prueba:hover {
+  filter: brightness(1.25);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+#boton-entendido-prueba:active {
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #icono-modal-prueba {
+    animation: none;
+  }
+}
+
 /* --- ADAPTACIÓN PARA MÓVILES Y TABLETS --- */
 #mobile-top-bar {
   display: none;
@@ -1085,7 +1259,8 @@ body {
   #contenido-principal {
     padding: 1.5rem 1rem;
   }
-  #modal-error {
+  #modal-error,
+  #modal-prueba {
     padding: 2rem 1.5rem;
     width: 95%;
   }
@@ -1858,6 +2033,7 @@ tbody tr.fila-vacia:active {
     --stone-300: #d6d3d1;
     --stone-200: #e7e5e4;
     --color-rojo-eliminacion-transparente-30: rgba(220, 38, 38, 0.3);
+    --color-amarillo-halo-transparente-30: rgba(180, 83, 9, 0.3);
     --color-rojo-eliminacion: #dc2626;
     --color-rojo-muy-claro: #ffebe6;
     --color-rojo-claro-etiqueta: #ffe4e6;
